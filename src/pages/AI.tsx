@@ -1,29 +1,29 @@
 import { motion } from "framer-motion";
-import { Sparkles, MessageSquare, FileText, Compass, CreditCard } from "lucide-react";
+import { Sparkles, MessageSquare, FileText, Compass, CreditCard, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const aiTools = [
   {
-    title: "Générateur de Réflexion",
-    description: "Décrivez votre situation et l'IA propose un plan de jeu personnalisé avec les cartes pertinentes",
+    title: "GÉNÉRATEUR DE RÉFLEXION",
+    description: "Décrivez votre situation → l'IA propose un plan de jeu personnalisé",
     icon: Compass,
     credits: 2,
-    color: "bg-primary/10 text-primary border-primary/20",
+    bg: "bg-accent",
   },
   {
-    title: "Générateur de Livrables",
-    description: "Pitch deck, SWOT, Business Model Canvas, plan d'action — générés à partir de vos réponses",
+    title: "GÉNÉRATEUR DE LIVRABLES",
+    description: "Pitch deck, SWOT, BMC, plan d'action — générés sur mesure",
     icon: FileText,
     credits: 5,
-    color: "bg-pillar-finance/10 text-pillar-finance border-pillar-finance/20",
+    bg: "bg-pillar-finance",
   },
   {
-    title: "Coach IA Stratégique",
-    description: "Un chatbot qui challenge vos hypothèses en utilisant le framework Hack & Show",
+    title: "COACH IA STRATÉGIQUE",
+    description: "Un chatbot qui challenge vos hypothèses avec le framework H&S",
     icon: MessageSquare,
     credits: 1,
-    color: "bg-pillar-innovation/10 text-pillar-innovation border-pillar-innovation/20",
+    bg: "bg-pillar-marketing",
   },
 ];
 
@@ -34,36 +34,35 @@ export default function AI() {
     <div className="min-h-screen bg-background pb-24">
       <div className="px-6 pt-12 pb-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 mb-4">
+          <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 mb-4 border border-border">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-semibold text-accent-foreground">Alimenté par l'IA</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Alimenté par l'IA</span>
           </div>
-          <h1 className="font-display text-3xl font-bold mb-1">Outils IA</h1>
-          <p className="text-sm text-muted-foreground">Des générateurs intelligents pour vos réflexions stratégiques</p>
+          <h1 className="font-display text-4xl font-bold mb-1 uppercase tracking-tight">Outils IA</h1>
+          <p className="text-sm text-muted-foreground">Générateurs intelligents pour vos réflexions</p>
         </motion.div>
       </div>
 
-      {/* Credits banner */}
+      {/* Credits */}
       <div className="px-6 mb-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 card-shadow"
+          className="flex items-center justify-between rounded-2xl bg-secondary p-4 border border-border"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pillar-impact/10">
-              <CreditCard className="h-5 w-5 text-pillar-impact" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pillar-impact">
+              <CreditCard className="h-5 w-5 text-foreground" />
             </div>
             <div>
-              <p className="text-sm font-semibold">5 crédits gratuits</p>
+              <p className="text-sm font-bold">5 crédits gratuits</p>
               <p className="text-xs text-muted-foreground">Connectez-vous pour commencer</p>
             </div>
           </div>
           <Button
             size="sm"
-            variant="outline"
-            className="rounded-xl"
+            className="rounded-xl bg-primary text-primary-foreground font-bold"
             onClick={() => navigate("/auth")}
           >
             Obtenir
@@ -81,19 +80,23 @@ export default function AI() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 + i * 0.1 }}
-              className={`rounded-2xl border ${tool.color} bg-card p-5 card-shadow cursor-pointer hover:card-shadow-hover transition-all`}
+              className={`rounded-3xl ${tool.bg} p-6 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-transform relative overflow-hidden`}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
-                  <Icon className="h-6 w-6" />
+              <div className="absolute -bottom-8 -right-8 w-28 h-28 rounded-full bg-foreground/5" />
+              <div className="relative">
+                <div className="flex items-start justify-between mb-3">
+                  <Icon className="h-7 w-7 text-foreground" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-background/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-foreground">
+                    <Sparkles className="h-3 w-3" />
+                    {tool.credits} crédit{tool.credits > 1 ? "s" : ""}
+                  </span>
                 </div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
-                  <Sparkles className="h-3 w-3" />
-                  {tool.credits} crédit{tool.credits > 1 ? "s" : ""}
-                </span>
+                <h3 className="font-display font-bold text-lg text-foreground mb-1 tracking-tight">{tool.title}</h3>
+                <p className="text-sm text-foreground/60">{tool.description}</p>
+                <div className="mt-4 flex items-center gap-1 text-xs font-bold text-foreground/50 uppercase tracking-wider">
+                  Lancer <ChevronRight className="h-3.5 w-3.5" />
+                </div>
               </div>
-              <h3 className="font-display font-bold text-lg mb-1">{tool.title}</h3>
-              <p className="text-sm text-muted-foreground">{tool.description}</p>
             </motion.div>
           );
         })}

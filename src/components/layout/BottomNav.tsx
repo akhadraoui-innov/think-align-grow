@@ -14,12 +14,11 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide on landing page
   if (location.pathname === "/") return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/80 backdrop-blur-xl safe-area-bottom">
-      <div className="flex items-center justify-around px-2 py-1">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border glass safe-area-bottom">
+      <div className="flex items-center justify-around px-2 py-1.5">
         {navItems.map((item) => {
           const isActive = location.pathname.startsWith(item.path);
           const Icon = item.icon;
@@ -34,7 +33,7 @@ export function BottomNav() {
                 {isActive && (
                   <motion.div
                     layoutId="bottomnav-indicator"
-                    className="absolute -inset-2 rounded-xl bg-primary/10"
+                    className="absolute -inset-2.5 rounded-xl bg-primary/15"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -45,7 +44,7 @@ export function BottomNav() {
                 />
               </div>
               <span
-                className={`text-[10px] font-medium transition-colors ${
+                className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${
                   isActive ? "text-primary" : "text-muted-foreground"
                 }`}
               >

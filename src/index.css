@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,135 +6,77 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 230 25% 10%;
+    --background: 220 15% 8%;
+    --foreground: 60 10% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 230 25% 10%;
+    --card: 220 15% 12%;
+    --card-foreground: 60 10% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 230 25% 10%;
+    --popover: 220 15% 12%;
+    --popover-foreground: 60 10% 95%;
 
-    --primary: 252 85% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 14 90% 58%;
+    --primary-foreground: 60 10% 95%;
 
-    --secondary: 220 15% 92%;
-    --secondary-foreground: 230 25% 10%;
+    --secondary: 220 12% 18%;
+    --secondary-foreground: 60 10% 95%;
 
-    --muted: 220 15% 94%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 220 12% 18%;
+    --muted-foreground: 220 10% 55%;
 
-    --accent: 252 85% 95%;
-    --accent-foreground: 252 85% 35%;
+    --accent: 252 60% 58%;
+    --accent-foreground: 60 10% 95%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 60 10% 95%;
 
-    --border: 220 15% 90%;
-    --input: 220 15% 90%;
-    --ring: 252 85% 60%;
+    --border: 220 12% 20%;
+    --input: 220 12% 20%;
+    --ring: 14 90% 58%;
 
     --radius: 1rem;
 
-    /* Pillar colors */
-    --pillar-thinking: 340 82% 52%;
-    --pillar-thinking-light: 340 82% 94%;
-    --pillar-business: 35 95% 55%;
-    --pillar-business-light: 35 95% 93%;
-    --pillar-innovation: 252 85% 60%;
-    --pillar-innovation-light: 252 85% 94%;
-    --pillar-finance: 160 70% 42%;
-    --pillar-finance-light: 160 70% 93%;
-    --pillar-marketing: 200 90% 50%;
-    --pillar-marketing-light: 200 90% 93%;
-    --pillar-operations: 280 70% 55%;
-    --pillar-operations-light: 280 70% 93%;
-    --pillar-team: 15 85% 55%;
-    --pillar-team-light: 15 85% 93%;
-    --pillar-legal: 220 60% 50%;
-    --pillar-legal-light: 220 60% 93%;
-    --pillar-growth: 145 65% 45%;
-    --pillar-growth-light: 145 65% 93%;
-    --pillar-impact: 45 90% 50%;
-    --pillar-impact-light: 45 90% 93%;
+    /* Pillar colors — vivid & bold */
+    --pillar-thinking: 350 85% 58%;
+    --pillar-thinking-light: 350 70% 18%;
+    --pillar-business: 38 95% 55%;
+    --pillar-business-light: 38 70% 18%;
+    --pillar-innovation: 252 75% 62%;
+    --pillar-innovation-light: 252 50% 18%;
+    --pillar-finance: 155 70% 45%;
+    --pillar-finance-light: 155 50% 16%;
+    --pillar-marketing: 195 90% 52%;
+    --pillar-marketing-light: 195 60% 16%;
+    --pillar-operations: 280 65% 58%;
+    --pillar-operations-light: 280 45% 18%;
+    --pillar-team: 18 85% 55%;
+    --pillar-team-light: 18 60% 18%;
+    --pillar-legal: 215 65% 55%;
+    --pillar-legal-light: 215 45% 18%;
+    --pillar-growth: 145 65% 48%;
+    --pillar-growth-light: 145 45% 16%;
+    --pillar-impact: 48 92% 52%;
+    --pillar-impact-light: 48 60% 18%;
 
     /* Phase colors */
-    --phase-fondations: 252 85% 60%;
-    --phase-modele: 35 95% 55%;
-    --phase-croissance: 160 70% 42%;
-    --phase-execution: 340 82% 52%;
-
-    /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(252 85% 60%), hsl(340 82% 52%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 20% 98%));
+    --phase-fondations: 252 75% 62%;
+    --phase-modele: 38 95% 55%;
+    --phase-croissance: 155 70% 45%;
+    --phase-execution: 350 85% 58%;
 
     /* Shadows */
-    --shadow-card: 0 4px 24px -4px hsl(252 85% 60% / 0.1);
-    --shadow-card-hover: 0 8px 40px -8px hsl(252 85% 60% / 0.2);
-    --shadow-elevated: 0 20px 60px -15px hsl(230 25% 10% / 0.15);
+    --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.4);
+    --shadow-card-hover: 0 12px 40px -8px hsl(0 0% 0% / 0.5);
+    --shadow-elevated: 0 20px 60px -15px hsl(0 0% 0% / 0.6);
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 230 25% 7%;
-    --foreground: 220 20% 95%;
-
-    --card: 230 20% 11%;
-    --card-foreground: 220 20% 95%;
-
-    --popover: 230 20% 11%;
-    --popover-foreground: 220 20% 95%;
-
-    --primary: 252 85% 65%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 230 15% 16%;
-    --secondary-foreground: 220 20% 95%;
-
-    --muted: 230 15% 16%;
-    --muted-foreground: 220 10% 55%;
-
-    --accent: 252 50% 18%;
-    --accent-foreground: 252 85% 80%;
-
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 230 15% 18%;
-    --input: 230 15% 18%;
-    --ring: 252 85% 65%;
-
-    --pillar-thinking-light: 340 60% 15%;
-    --pillar-business-light: 35 60% 15%;
-    --pillar-innovation-light: 252 50% 15%;
-    --pillar-finance-light: 160 40% 15%;
-    --pillar-marketing-light: 200 50% 15%;
-    --pillar-operations-light: 280 40% 15%;
-    --pillar-team-light: 15 50% 15%;
-    --pillar-legal-light: 220 40% 15%;
-    --pillar-growth-light: 145 40% 15%;
-    --pillar-impact-light: 45 50% 15%;
-
-    --gradient-card: linear-gradient(145deg, hsl(230 20% 12%), hsl(230 20% 10%));
-    --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.3);
-    --shadow-card-hover: 0 8px 40px -8px hsl(252 85% 60% / 0.3);
-
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 220 15% 10%;
+    --sidebar-foreground: 60 10% 95%;
+    --sidebar-primary: 14 90% 58%;
+    --sidebar-primary-foreground: 60 10% 95%;
+    --sidebar-accent: 220 12% 18%;
+    --sidebar-accent-foreground: 60 10% 95%;
+    --sidebar-border: 220 12% 20%;
+    --sidebar-ring: 14 90% 58%;
   }
 }
 
@@ -154,7 +96,7 @@
 
 @layer utilities {
   .text-gradient-hero {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--pillar-thinking)));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--pillar-impact)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -162,6 +104,10 @@
 
   .bg-gradient-hero {
     background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--pillar-thinking)));
+  }
+
+  .bg-gradient-accent {
+    background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--pillar-marketing)));
   }
 
   .card-shadow {
@@ -174,5 +120,11 @@
 
   .shadow-elevated {
     box-shadow: var(--shadow-elevated);
+  }
+
+  .glass {
+    background: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
 }
