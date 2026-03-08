@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import type { StrategyCard, PillarId } from "@/data/mockCards";
+import type { DbCard } from "@/hooks/useToolkitData";
+import { PHASE_LABELS } from "@/hooks/useToolkitData";
 
-const pillarColors: Record<PillarId, string> = {
+const slugColors: Record<string, string> = {
   thinking: "from-pillar-thinking/20 to-pillar-thinking/5 border-pillar-thinking/30",
   business: "from-pillar-business/20 to-pillar-business/5 border-pillar-business/30",
   innovation: "from-pillar-innovation/20 to-pillar-innovation/5 border-pillar-innovation/30",
@@ -15,7 +16,7 @@ const pillarColors: Record<PillarId, string> = {
   impact: "from-pillar-impact/20 to-pillar-impact/5 border-pillar-impact/30",
 };
 
-const pillarTextColors: Record<PillarId, string> = {
+const slugTextColors: Record<string, string> = {
   thinking: "text-pillar-thinking",
   business: "text-pillar-business",
   innovation: "text-pillar-innovation",
@@ -29,11 +30,14 @@ const pillarTextColors: Record<PillarId, string> = {
 };
 
 interface FlipCardProps {
-  card: StrategyCard;
+  card: DbCard;
+  pillarSlug?: string;
 }
 
-export function FlipCard({ card }: FlipCardProps) {
+export function FlipCard({ card, pillarSlug = "business" }: FlipCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const colorClass = slugColors[pillarSlug] || slugColors.business;
+  const textClass = slugTextColors[pillarSlug] || slugTextColors.business;
 
   return (
     <div
@@ -48,12 +52,12 @@ export function FlipCard({ card }: FlipCardProps) {
       >
         {/* Front */}
         <div
-          className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${pillarColors[card.pillar]} border p-5 flex flex-col justify-between`}
+          className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${colorClass} border p-5 flex flex-col justify-between`}
           style={{ backfaceVisibility: "hidden" }}
         >
           <div>
-            <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${pillarTextColors[card.pillar]}`}>
-              {card.pillar} · {card.phase}
+            <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${textClass}`}>
+              {pillarSlug} · {PHASE_LABELS[card.phase] || card.phase}
             </span>
             <h3 className="font-display font-bold text-lg text-foreground uppercase tracking-wide mt-2">
               {card.title}
@@ -65,17 +69,17 @@ export function FlipCard({ card }: FlipCardProps) {
 
         {/* Back */}
         <div
-          className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${pillarColors[card.pillar]} border p-5 flex flex-col justify-between`}
+          className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${colorClass} border p-5 flex flex-col justify-between`}
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
           <div>
-            <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${pillarTextColors[card.pillar]}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${textClass}`}>
               Action
             </span>
             <p className="text-sm text-foreground mt-2 leading-relaxed">{card.action}</p>
           </div>
           <div>
-            <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${pillarTextColors[card.pillar]}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${textClass}`}>
               KPI
             </span>
             <p className="text-sm text-muted-foreground mt-1">{card.kpi}</p>
