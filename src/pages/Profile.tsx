@@ -17,7 +17,7 @@ export default function Profile() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <PageTransition><div className="min-h-screen bg-background pb-24">
       <div className="px-6 pt-12 pb-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
