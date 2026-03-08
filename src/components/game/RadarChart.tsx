@@ -1,29 +1,35 @@
 import { motion } from "framer-motion";
-import type { PillarId } from "@/data/mockCards";
 
-const PILLAR_LABELS: { id: PillarId; short: string }[] = [
-  { id: "thinking", short: "THK" },
-  { id: "business", short: "BIZ" },
-  { id: "innovation", short: "INN" },
-  { id: "finance", short: "FIN" },
-  { id: "marketing", short: "MKT" },
-  { id: "operations", short: "OPS" },
-  { id: "team", short: "TEA" },
-  { id: "legal", short: "LEG" },
-  { id: "growth", short: "GRO" },
-  { id: "impact", short: "IMP" },
-];
+interface RadarLabel {
+  slug: string;
+  short: string;
+}
 
 interface RadarChartProps {
-  scores: Record<PillarId, number>;
+  /** Map of pillar slug -> score 0-100 */
+  scores: Record<string, number>;
+  labels?: RadarLabel[];
   size?: number;
 }
 
-export function RadarChart({ scores, size = 200 }: RadarChartProps) {
+const DEFAULT_LABELS: RadarLabel[] = [
+  { slug: "thinking", short: "THK" },
+  { slug: "business", short: "BIZ" },
+  { slug: "innovation", short: "INN" },
+  { slug: "finance", short: "FIN" },
+  { slug: "marketing", short: "MKT" },
+  { slug: "operations", short: "OPS" },
+  { slug: "team", short: "TEA" },
+  { slug: "legal", short: "LEG" },
+  { slug: "growth", short: "GRO" },
+  { slug: "impact", short: "IMP" },
+];
+
+export function RadarChart({ scores, labels = DEFAULT_LABELS, size = 200 }: RadarChartProps) {
   const cx = size / 2;
   const cy = size / 2;
   const maxR = size * 0.38;
-  const n = PILLAR_LABELS.length;
+  const n = labels.length;
 
   const getPoint = (index: number, value: number) => {
     const angle = (Math.PI * 2 * index) / n - Math.PI / 2;
@@ -31,12 +37,11 @@ export function RadarChart({ scores, size = 200 }: RadarChartProps) {
     return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
   };
 
-  const dataPoints = PILLAR_LABELS.map((p, i) => getPoint(i, scores[p.id] || 0));
+  const dataPoints = labels.map((p, i) => getPoint(i, scores[p.slug] || 0));
   const dataPath = dataPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {/* Grid rings */}
       {[25, 50, 75, 100].map((v) => (
         <polygon
           key={v}
@@ -49,14 +54,10 @@ export function RadarChart({ scores, size = 200 }: RadarChartProps) {
           strokeWidth="0.5"
         />
       ))}
-
-      {/* Axis lines */}
-      {PILLAR_LABELS.map((_, i) => {
+      {labels.map((_, i) => {
         const pt = getPoint(i, 100);
         return <line key={i} x1={cx} y1={cy} x2={pt.x} y2={pt.y} stroke="hsl(60 10% 95% / 0.05)" strokeWidth="0.5" />;
       })}
-
-      {/* Data shape */}
       <motion.path
         d={dataPath}
         fill="hsl(14 90% 58% / 0.15)"
@@ -67,8 +68,6 @@ export function RadarChart({ scores, size = 200 }: RadarChartProps) {
         transition={{ duration: 0.8, type: "spring" }}
         style={{ transformOrigin: `${cx}px ${cy}px` }}
       />
-
-      {/* Data points */}
       {dataPoints.map((pt, i) => (
         <motion.circle
           key={i}
@@ -81,13 +80,11 @@ export function RadarChart({ scores, size = 200 }: RadarChartProps) {
           transition={{ delay: 0.3 + i * 0.05 }}
         />
       ))}
-
-      {/* Labels */}
-      {PILLAR_LABELS.map((p, i) => {
+      {labels.map((p, i) => {
         const pt = getPoint(i, 120);
         return (
           <text
-            key={p.id}
+            key={p.slug}
             x={pt.x}
             y={pt.y}
             textAnchor="middle"
