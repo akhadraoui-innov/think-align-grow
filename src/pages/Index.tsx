@@ -9,6 +9,7 @@ import { Logo } from "@/components/brand/Logo";
 import { GradientIcon } from "@/components/ui/GradientIcon";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { MeshGradient, DotPattern } from "@/components/ui/PatternBackground";
+import { PageTransition } from "@/components/ui/PageTransition";
 
 const valueProps = [
   {
