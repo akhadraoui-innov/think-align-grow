@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { User, LogIn, ArrowRight, BookOpen, Target, Sparkles, Trophy, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GradientIcon } from "@/components/ui/GradientIcon";
+import { PageTransition } from "@/components/ui/PageTransition";
 import { useNavigate } from "react-router-dom";
 
 const benefits = [
