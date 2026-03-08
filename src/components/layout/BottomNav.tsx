@@ -17,23 +17,24 @@ export function BottomNav() {
   if (location.pathname === "/") return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border glass safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/80 backdrop-blur-xl safe-area-bottom">
       <div className="flex items-center justify-around px-2 py-1.5">
         {navItems.map((item) => {
           const isActive = location.pathname.startsWith(item.path);
           const Icon = item.icon;
 
           return (
-            <button
+            <motion.button
               key={item.path}
               onClick={() => navigate(item.path)}
+              whileTap={{ scale: 0.85 }}
               className="relative flex flex-col items-center gap-0.5 px-3 py-2 transition-colors"
             >
               <div className="relative">
                 {isActive && (
                   <motion.div
                     layoutId="bottomnav-indicator"
-                    className="absolute -inset-2.5 rounded-xl bg-primary/15"
+                    className="absolute -inset-2.5 rounded-xl bg-primary/12"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -50,7 +51,14 @@ export function BottomNav() {
               >
                 {item.label}
               </span>
-            </button>
+              {isActive && (
+                <motion.div
+                  layoutId="bottomnav-dot"
+                  className="absolute -top-0.5 h-1 w-1 rounded-full bg-primary"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+            </motion.button>
           );
         })}
       </div>
