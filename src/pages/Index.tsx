@@ -62,7 +62,7 @@ export default function Index() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <PageTransition><div className="min-h-screen bg-background overflow-hidden">
       {/* ===== HERO ===== */}
       <section className="relative px-6 pt-14 pb-8">
         <MeshGradient />
