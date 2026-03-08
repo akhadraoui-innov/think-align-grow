@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { User, LogIn, ArrowRight, BookOpen, Target, Sparkles, Trophy, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GradientIcon } from "@/components/ui/GradientIcon";
+import { PageTransition } from "@/components/ui/PageTransition";
 import { useNavigate } from "react-router-dom";
 
 const benefits = [
@@ -16,7 +17,7 @@ export default function Profile() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <PageTransition><div className="min-h-screen bg-background pb-24">
       <div className="px-6 pt-12 pb-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -83,6 +84,6 @@ export default function Profile() {
           ))}
         </div>
       </div>
-    </div>
+    </div></PageTransition>
   );
 }

@@ -9,6 +9,7 @@ import { Logo } from "@/components/brand/Logo";
 import { GradientIcon } from "@/components/ui/GradientIcon";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { MeshGradient, DotPattern } from "@/components/ui/PatternBackground";
+import { PageTransition } from "@/components/ui/PageTransition";
 
 const valueProps = [
   {
@@ -61,7 +62,7 @@ export default function Index() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <PageTransition><div className="min-h-screen bg-background overflow-hidden">
       {/* ===== HERO ===== */}
       <section className="relative px-6 pt-14 pb-8">
         <MeshGradient />
@@ -281,6 +282,6 @@ export default function Index() {
           </div>
         </motion.div>
       </section>
-    </div>
+    </div></PageTransition>
   );
 }
