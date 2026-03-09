@@ -161,11 +161,21 @@ export function CanvasCard({
             {card.title}
           </h3>
 
-          {/* Subtitle */}
+          {/* Subtitle / Pourquoi */}
           {displayMode !== "light" && card.subtitle && (
             <p className="text-xs text-muted-foreground italic mb-2">
               {card.subtitle}
             </p>
+          )}
+
+          {/* Objective */}
+          {displayMode === "full" && (card as any).objective && (
+            <div className="flex items-start gap-2 mb-3">
+              <Target className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: pillarColor }} />
+              <p className="text-xs text-foreground/80 leading-relaxed">
+                {(card as any).objective}
+              </p>
+            </div>
           )}
 
           {/* Definition */}
@@ -178,7 +188,7 @@ export function CanvasCard({
             </p>
           )}
 
-          {/* Action */}
+          {/* Step name + Action */}
           {displayMode !== "light" && card.action && (
             <div 
               className="rounded-xl p-3 mb-3"
@@ -190,7 +200,7 @@ export function CanvasCard({
                   className="text-[9px] font-black uppercase tracking-widest"
                   style={{ color: pillarColor }}
                 >
-                  Action
+                  {(card as any).step_name || "Action"}
                 </span>
               </div>
               <p className={cn(
@@ -202,13 +212,34 @@ export function CanvasCard({
             </div>
           )}
 
-          {/* KPI */}
-          {displayMode === "full" && card.kpi && (
-            <div className="flex items-start gap-2 mb-4 bg-muted/30 p-3 rounded-lg border border-border/50">
+          {/* KPI - 3 maturity indicators */}
+          {displayMode !== "light" && card.kpi && (
+            <div className={cn(
+              "flex items-start gap-2 bg-muted/30 p-3 rounded-lg border border-border/50",
+              displayMode === "preview" ? "mb-2" : "mb-4"
+            )}>
               <BarChart3 className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
               <div className="text-xs leading-relaxed">
-                <div className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Indicateur clé</div>
-                <div className="text-foreground/90">{card.kpi}</div>
+                <div className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Indicateurs de maturité</div>
+                <div className={cn("text-foreground/90 space-y-0.5", displayMode === "preview" && "line-clamp-3")}>
+                  {card.kpi.split('\n').map((line, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <div 
+                        className={cn(
+                          "h-1.5 w-1.5 rounded-full shrink-0",
+                          maturityLevel >= (i + 1) ? "opacity-100" : "opacity-30"
+                        )}
+                        style={{ background: pillarColor }}
+                      />
+                      <span className={cn(
+                        "text-[10px]",
+                        maturityLevel >= (i + 1) ? "font-bold" : "font-normal"
+                      )}>
+                        {line}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
