@@ -12,6 +12,8 @@ import Lab from "./pages/Lab";
 import AI from "./pages/AI";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
+import Workshop from "./pages/Workshop";
+import WorkshopRoom from "./pages/WorkshopRoom";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +31,8 @@ function AnimatedRoutes() {
           <Route path="/ai" element={<AI />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/workshop" element={<Workshop />} />
+          <Route path="/workshop/:id" element={<WorkshopRoom />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

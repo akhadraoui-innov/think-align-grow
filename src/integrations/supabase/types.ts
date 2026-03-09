@@ -561,6 +561,187 @@ export type Database = {
         }
         Relationships: []
       }
+      workshop_deliverables: {
+        Row: {
+          content: Json
+          credits_used: number | null
+          generated_at: string
+          generated_by: string | null
+          id: string
+          type: Database["public"]["Enums"]["deliverable_type"]
+          workshop_id: string
+        }
+        Insert: {
+          content?: Json
+          credits_used?: number | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          type: Database["public"]["Enums"]["deliverable_type"]
+          workshop_id: string
+        }
+        Update: {
+          content?: Json
+          credits_used?: number | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          type?: Database["public"]["Enums"]["deliverable_type"]
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_deliverables_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_participants: {
+        Row: {
+          display_name: string
+          id: string
+          is_connected: boolean
+          joined_at: string
+          role: string
+          user_id: string
+          workshop_id: string
+        }
+        Insert: {
+          display_name: string
+          id?: string
+          is_connected?: boolean
+          joined_at?: string
+          role?: string
+          user_id: string
+          workshop_id: string
+        }
+        Update: {
+          display_name?: string
+          id?: string
+          is_connected?: boolean
+          joined_at?: string
+          role?: string
+          user_id?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_participants_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_responses: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          participant_id: string
+          response_text: string | null
+          vote: number | null
+          workshop_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          participant_id: string
+          response_text?: string | null
+          vote?: number | null
+          workshop_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          participant_id?: string
+          response_text?: string | null
+          vote?: number | null
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_responses_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_responses_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_responses_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshops: {
+        Row: {
+          code: string
+          config: Json
+          created_at: string
+          current_card_id: string | null
+          current_step: number
+          host_id: string
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["workshop_status"]
+          timer_seconds: number | null
+          timer_started_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          config?: Json
+          created_at?: string
+          current_card_id?: string | null
+          current_step?: number
+          host_id: string
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["workshop_status"]
+          timer_seconds?: number | null
+          timer_started_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          config?: Json
+          created_at?: string
+          current_card_id?: string | null
+          current_step?: number
+          host_id?: string
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["workshop_status"]
+          timer_seconds?: number | null
+          timer_started_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshops_current_card_id_fkey"
+            columns: ["current_card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -585,7 +766,9 @@ export type Database = {
     Enums: {
       app_role: "owner" | "admin" | "member"
       card_phase: "foundations" | "model" | "growth" | "execution"
+      deliverable_type: "swot" | "bmc" | "pitch_deck" | "action_plan"
       toolkit_status: "draft" | "published" | "archived"
+      workshop_status: "lobby" | "active" | "paused" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -715,7 +898,9 @@ export const Constants = {
     Enums: {
       app_role: ["owner", "admin", "member"],
       card_phase: ["foundations", "model", "growth", "execution"],
+      deliverable_type: ["swot", "bmc", "pitch_deck", "action_plan"],
       toolkit_status: ["draft", "published", "archived"],
+      workshop_status: ["lobby", "active", "paused", "completed"],
     },
   },
 } as const
