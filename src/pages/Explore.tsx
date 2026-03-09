@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Brain, Lightbulb, TrendingUp, Briefcase, Megaphone, Settings, Users, Shield, Rocket, Heart, Sparkles, ArrowLeft, X } from "lucide-react";
+import { Search, Brain, Lightbulb, TrendingUp, Briefcase, BarChart3, Hammer, Users, Shield, Heart, Sparkles, ArrowLeft, X, Wallet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { GradientIcon } from "@/components/ui/GradientIcon";
 import { DotPattern } from "@/components/ui/PatternBackground";
