@@ -175,7 +175,7 @@ export function useWorkshopRoom(workshopId: string | undefined) {
   }, [workshopId]);
 
   // Host controls
-  const updateWorkshop = useCallback(async (updates: Partial<Workshop>) => {
+  const updateWorkshop = useCallback(async (updates: any) => {
     if (!workshopId || !isHost) return;
     await supabase.from("workshops").update(updates).eq("id", workshopId);
   }, [workshopId, isHost]);
