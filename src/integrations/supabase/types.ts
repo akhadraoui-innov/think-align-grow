@@ -19,11 +19,14 @@ export type Database = {
           action: string | null
           created_at: string
           definition: string | null
+          icon_name: string | null
           id: string
           kpi: string | null
+          objective: string | null
           phase: Database["public"]["Enums"]["card_phase"]
           pillar_id: string
           sort_order: number
+          step_name: string | null
           subtitle: string | null
           title: string
         }
@@ -31,11 +34,14 @@ export type Database = {
           action?: string | null
           created_at?: string
           definition?: string | null
+          icon_name?: string | null
           id?: string
           kpi?: string | null
+          objective?: string | null
           phase?: Database["public"]["Enums"]["card_phase"]
           pillar_id: string
           sort_order?: number
+          step_name?: string | null
           subtitle?: string | null
           title: string
         }
@@ -43,11 +49,14 @@ export type Database = {
           action?: string | null
           created_at?: string
           definition?: string | null
+          icon_name?: string | null
           id?: string
           kpi?: string | null
+          objective?: string | null
           phase?: Database["public"]["Enums"]["card_phase"]
           pillar_id?: string
           sort_order?: number
+          step_name?: string | null
           subtitle?: string | null
           title?: string
         }
