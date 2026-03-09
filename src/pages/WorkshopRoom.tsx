@@ -10,7 +10,7 @@ import { useCards, usePillars } from "@/hooks/useToolkitData";
 import { useCanvasItems } from "@/hooks/useCanvasItems";
 import { useCanvasComments } from "@/hooks/useCanvasComments";
 import { useAuth } from "@/hooks/useAuth";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkshopCanvas } from "@/components/workshop/WorkshopCanvas";
 import { WorkshopToolbar } from "@/components/workshop/WorkshopToolbar";
 import { CardSidebar } from "@/components/workshop/CardSidebar";
