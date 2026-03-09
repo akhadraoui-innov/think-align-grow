@@ -299,6 +299,8 @@ export default function WorkshopRoom() {
         onComplete={completeWorkshop}
         onBack={() => navigate("/workshop")}
         workshopName={workshop.name}
+        selectedIconName={selectedIconName}
+        onSelectIcon={setSelectedIconName}
       />
 
       {/* Main area */}
