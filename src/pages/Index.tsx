@@ -2,286 +2,298 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight, Sparkles, Compass, Gamepad2, Brain, Zap,
-  ChevronRight, BookOpen, Target, FileText, Layers, Eye, Rocket
+  ChevronRight, BookOpen, Target, FileText, Layers, Eye, Rocket, ArrowUpRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/brand/Logo";
-import { GradientIcon } from "@/components/ui/GradientIcon";
-import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
-import { MeshGradient, DotPattern } from "@/components/ui/PatternBackground";
-import { PageTransition } from "@/components/ui/PageTransition";
 
 const valueProps = [
   {
+    num: "01",
     title: "S'acculturer",
-    subtitle: "Explorez 200+ concepts stratégiques structurés en 10 piliers. Montez en compétence à votre rythme.",
-    icon: BookOpen,
-    gradient: "accent",
+    subtitle: "200+ concepts stratégiques structurés en 10 piliers.",
+    color: "hsl(var(--primary))",
+    bg: "hsl(var(--pillar-business-light))",
     route: "/explore",
-    emoji: "🧠",
   },
   {
+    num: "02",
     title: "Challenger",
-    subtitle: "Testez votre maturité stratégique via des quiz, des défis et un coaching IA qui confronte vos hypothèses.",
-    icon: Target,
-    gradient: "thinking",
+    subtitle: "Quiz, défis et coaching IA qui confronte vos hypothèses.",
+    color: "hsl(var(--pillar-thinking))",
+    bg: "hsl(var(--pillar-thinking-light))",
     route: "/lab",
-    emoji: "⚡",
   },
   {
-    title: "Structurer & Orchestrer",
-    subtitle: "Composez des plans de jeu, générez des livrables (SWOT, BMC, pitch deck) et pilotez vos réflexions.",
-    icon: FileText,
-    gradient: "finance",
+    num: "03",
+    title: "Structurer",
+    subtitle: "Livrables SWOT, BMC, Pitch Deck — prêts en minutes.",
+    color: "hsl(var(--accent))",
+    bg: "hsl(var(--pillar-innovation-light))",
     route: "/ai",
-    emoji: "🚀",
   },
-];
-
-const stats = [
-  { value: "200+", label: "Cartes" },
-  { value: "10", label: "Piliers" },
-  { value: "4", label: "Phases" },
-  { value: "∞", label: "Possibilités" },
 ];
 
 const phases = [
-  { name: "Fondations", desc: "Posez les bases de votre réflexion", icon: Brain, color: "bg-accent" },
-  { name: "Modèle", desc: "Structurez le business model", icon: Layers, color: "bg-pillar-business" },
-  { name: "Croissance", desc: "Scalez la stratégie", icon: Zap, color: "bg-pillar-finance" },
-  { name: "Exécution", desc: "Passez à l'action concrète", icon: Gamepad2, color: "bg-pillar-thinking" },
-];
-
-const steps = [
-  { num: "01", title: "Explorez", desc: "Parcourez les 10 piliers et 200+ cartes stratégiques", icon: Eye },
-  { num: "02", title: "Jouez", desc: "Testez-vous avec les plans de jeu et le diagnostic IA", icon: Gamepad2 },
-  { num: "03", title: "Générez", desc: "Créez vos livrables et plans d'action personnalisés", icon: Rocket },
+  { name: "Fondations", color: "bg-accent text-accent-foreground" },
+  { name: "Modèle", color: "bg-pillar-business text-white" },
+  { name: "Croissance", color: "bg-pillar-finance text-white" },
+  { name: "Exécution", color: "bg-pillar-thinking text-white" },
 ];
 
 export default function Index() {
   const navigate = useNavigate();
 
   return (
-    <PageTransition><div className="min-h-screen bg-background overflow-hidden">
-      {/* ===== HERO ===== */}
-      <section className="relative px-6 pt-14 pb-8">
-        <MeshGradient />
-        <DotPattern />
-
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-          className="relative"
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      
+      {/* ─── NAV ─── */}
+      <nav className="flex items-center justify-between px-5 pt-6 pb-2">
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded-lg bg-foreground flex items-center justify-center">
+            <span className="font-display text-xs font-black text-background">H</span>
+          </div>
+          <span className="font-display text-sm font-bold uppercase tracking-widest text-foreground">Hack & Show</span>
+        </div>
+        <button
+          onClick={() => navigate("/auth")}
+          className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
         >
-          {/* Logo */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
-            className="mb-8"
-          >
-            <Logo size="md" />
-          </motion.div>
+          Connexion
+        </button>
+      </nav>
 
-          {/* Toolkit badge */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="inline-flex items-center gap-2 rounded-full bg-secondary/80 backdrop-blur-sm px-4 py-2 mb-6 border border-border"
-          >
-            <div className="h-2 w-2 rounded-full bg-pillar-impact animate-pulse-soft" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-              Toolkit · Bootstrap in Business
-            </span>
-          </motion.div>
+      {/* ─── HERO ─── */}
+      <section className="px-5 pt-8 pb-0 relative">
+        {/* Label */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="inline-flex items-center gap-2 mb-6"
+        >
+          <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+            Serious Game Stratégique
+          </span>
+        </motion.div>
 
-          <h1 className="font-display text-[3.2rem] sm:text-6xl font-bold leading-[0.92] tracking-tight mb-5 uppercase">
+        {/* Headline ultra-bold */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <h1 className="font-display font-black uppercase leading-none tracking-tight" style={{ fontSize: 'clamp(3.8rem, 18vw, 7rem)', lineHeight: '0.86' }}>
             Structure
             <br />
-            <span className="text-gradient-hero">the Chaos.</span>
+            <span
+              style={{
+                WebkitTextStroke: '2px hsl(var(--foreground))',
+                WebkitTextFillColor: 'transparent',
+                color: 'transparent',
+              }}
+            >
+              le Chaos.
+            </span>
           </h1>
-
-          <p className="text-base text-muted-foreground max-w-sm mb-8 leading-relaxed">
-            Le serious game stratégique qui transforme vos idées business en plans d'action structurés.
-          </p>
-
-          <div className="flex gap-3">
-            <Button
-              size="lg"
-              className="rounded-2xl bg-primary text-primary-foreground font-bold h-14 px-8 text-base uppercase tracking-wide hover:bg-primary/90 shadow-lg shadow-primary/25"
-              onClick={() => navigate("/explore")}
-            >
-              Explorer
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="rounded-2xl h-14 px-6 text-base font-bold border-border hover:bg-secondary"
-              onClick={() => navigate("/auth")}
-            >
-              S'inscrire
-            </Button>
-          </div>
         </motion.div>
-      </section>
 
-      {/* ===== VALUE PROPOSITIONS ===== */}
-      <section className="px-6 py-8">
-        <motion.div
+        {/* Sous-titre */}
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="mt-5 text-sm text-muted-foreground leading-relaxed max-w-xs"
         >
-          <h2 className="font-display text-2xl font-bold mb-2 uppercase tracking-tight">
-            Pourquoi Hack & Show ?
-          </h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            3 propositions de valeur pour transformer votre réflexion stratégique.
-          </p>
+          Le toolkit qui transforme vos idées business en stratégies exécutables. 
+          200+ cartes, 10 piliers, 4 phases.
+        </motion.p>
 
-          <div className="space-y-4">
-            {valueProps.map((vp, i) => (
-              <motion.div
-                key={vp.title}
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + i * 0.1 }}
-                onClick={() => navigate(vp.route)}
-                className="group relative rounded-3xl bg-card border border-border p-5 cursor-pointer hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5"
-              >
-                <div className="flex items-start gap-4">
-                  <GradientIcon icon={vp.icon} gradient={vp.gradient} size="md" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{vp.emoji}</span>
-                      <h3 className="font-display font-bold text-base uppercase tracking-wide text-foreground">
-                        {vp.title}
-                      </h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {vp.subtitle}
-                    </p>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-1" />
-                </div>
-              </motion.div>
-            ))}
-          </div>
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="flex gap-3 mt-7"
+        >
+          <button
+            onClick={() => navigate("/explore")}
+            className="flex items-center gap-2 bg-foreground text-background font-black text-sm uppercase tracking-wider px-6 py-3.5 rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-elevated"
+          >
+            Jouer maintenant
+            <ArrowRight className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => navigate("/auth")}
+            className="flex items-center gap-2 border-2 border-foreground/20 text-foreground font-bold text-sm uppercase tracking-wider px-5 py-3.5 rounded-2xl hover:border-foreground/50 active:scale-95 transition-all"
+          >
+            S'inscrire
+          </button>
         </motion.div>
       </section>
 
-      {/* ===== STATS ===== */}
-      <section className="px-6 py-6">
-        <div className="grid grid-cols-4 gap-3">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-2xl bg-secondary/60 backdrop-blur-sm p-4 text-center border border-border"
+      {/* ─── BANDE ORANGE COUPER ─── */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ delay: 0.5, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="mx-5 mt-10 mb-0 h-1.5 bg-primary rounded-full origin-left"
+      />
+
+      {/* ─── STATS ─── */}
+      <section className="px-5 pt-6 pb-0">
+        <div className="flex gap-0 overflow-x-auto no-scrollbar">
+          {[
+            { val: "200+", lbl: "Cartes" },
+            { val: "10", lbl: "Piliers" },
+            { val: "4", lbl: "Phases" },
+            { val: "∞", lbl: "Combos" },
+          ].map((s, i) => (
+            <motion.div
+              key={s.lbl}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55 + i * 0.06 }}
+              className="flex-1 min-w-0 border-r border-border last:border-0 px-4 first:pl-0 last:pr-0 py-2"
             >
-              <AnimatedCounter value={stat.value} label={stat.label} />
-            </div>
+              <div className="font-display font-black text-2xl leading-none text-foreground">{s.val}</div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">{s.lbl}</div>
+            </motion.div>
           ))}
         </div>
       </section>
 
-      {/* ===== 4 PHASES ===== */}
-      <section className="px-6 py-8">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
-          <h2 className="font-display text-2xl font-bold mb-5 uppercase tracking-tight">4 Phases</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {phases.map((phase, i) => {
-              const Icon = phase.icon;
-              return (
-                <motion.div
-                  key={phase.name}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.55 + i * 0.08 }}
-                  className={`${phase.color} rounded-3xl p-5 cursor-pointer hover:scale-[1.03] active:scale-[0.97] transition-transform relative overflow-hidden`}
-                  onClick={() => navigate("/explore")}
+      {/* ─── 3 PROPOSITIONS ─── */}
+      <section className="px-5 pt-10">
+        <div className="flex items-baseline justify-between mb-5">
+          <h2 className="font-display font-black text-xl uppercase tracking-tight">Pourquoi ?</h2>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">3 raisons</span>
+        </div>
+
+        <div className="space-y-3">
+          {valueProps.map((vp, i) => (
+            <motion.button
+              key={vp.num}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 + i * 0.1 }}
+              onClick={() => navigate(vp.route)}
+              className="w-full text-left group"
+            >
+              <div
+                className="rounded-2xl p-5 flex items-center gap-4 active:scale-[0.98] transition-transform card-shadow"
+                style={{ backgroundColor: vp.bg }}
+              >
+                <div
+                  className="font-display font-black text-4xl leading-none shrink-0 w-14"
+                  style={{ color: vp.color, opacity: 0.2 }}
                 >
-                  <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-foreground/5" />
-                  <div className="relative">
-                    <Icon className="h-7 w-7 text-foreground mb-3" />
-                    <h3 className="font-display font-bold text-sm text-foreground uppercase tracking-wide">
-                      {phase.name}
-                    </h3>
-                    <p className="text-xs text-foreground/60 mt-1">{phase.desc}</p>
+                  {vp.num}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-display font-black text-base uppercase tracking-tight text-foreground mb-0.5">
+                    {vp.title}
                   </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
+                  <div className="text-xs text-muted-foreground leading-snug">{vp.subtitle}</div>
+                </div>
+                <ArrowUpRight
+                  className="h-5 w-5 shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
+                  style={{ color: vp.color }}
+                />
+              </div>
+            </motion.button>
+          ))}
+        </div>
       </section>
 
-      {/* ===== COMMENT ÇA MARCHE ===== */}
-      <section className="px-6 py-8">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
-          <h2 className="font-display text-2xl font-bold mb-6 uppercase tracking-tight">
-            Comment ça marche ?
-          </h2>
-          <div className="space-y-4">
-            {steps.map((step, i) => {
-              const Icon = step.icon;
-              return (
-                <motion.div
-                  key={step.num}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.65 + i * 0.1 }}
-                  className="flex items-start gap-4"
-                >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary border border-border">
-                    <span className="font-display text-sm font-bold text-primary">{step.num}</span>
-                  </div>
-                  <div className="flex-1 pt-1">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <Icon className="h-4 w-4 text-primary" />
-                      <h3 className="font-display font-bold text-sm uppercase tracking-wide">{step.title}</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{step.desc}</p>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
+      {/* ─── PHASES PILLS ─── */}
+      <section className="px-5 pt-10">
+        <h2 className="font-display font-black text-xl uppercase tracking-tight mb-5">4 Phases</h2>
+        <div className="flex flex-wrap gap-2">
+          {phases.map((p, i) => (
+            <motion.button
+              key={p.name}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7 + i * 0.07, type: "spring", stiffness: 300 }}
+              onClick={() => navigate("/explore")}
+              className={`${p.color} font-display font-black text-sm uppercase tracking-wider px-5 py-2.5 rounded-2xl active:scale-95 transition-transform`}
+            >
+              {p.name}
+            </motion.button>
+          ))}
+        </div>
       </section>
 
-      {/* ===== CTA FINAL ===== */}
-      <section className="px-6 py-8 pb-28">
+      {/* ─── COMMENT ÇA MARCHE ─── */}
+      <section className="px-5 pt-10">
+        <h2 className="font-display font-black text-xl uppercase tracking-tight mb-6">Comment ?</h2>
+        <div className="space-y-0">
+          {[
+            { num: "1", title: "Explorez les 10 piliers", sub: "200+ cartes stratégiques gratuites" },
+            { num: "2", title: "Testez votre maturité", sub: "Diagnostic IA en 5 minutes" },
+            { num: "3", title: "Générez vos livrables", sub: "SWOT, BMC, Pitch — prêts à présenter" },
+          ].map((step, i) => (
+            <motion.div
+              key={step.num}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.75 + i * 0.1 }}
+              className="flex items-start gap-5 py-5 border-b border-border last:border-0"
+            >
+              <span className="font-display font-black text-5xl leading-none text-muted/60 shrink-0 w-10">
+                {step.num}
+              </span>
+              <div className="pt-1">
+                <div className="font-display font-bold text-base uppercase tracking-tight text-foreground">
+                  {step.title}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">{step.sub}</div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── CTA FINAL — bloc noir total ─── */}
+      <section className="px-5 pt-10 pb-24">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="rounded-3xl bg-gradient-to-br from-primary to-pillar-thinking p-8 relative overflow-hidden"
+          transition={{ delay: 0.9, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-3xl bg-foreground p-8 relative overflow-hidden"
         >
-          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-foreground/5" />
-          <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-foreground/5" />
-          <DotPattern className="opacity-[0.06]" />
+          {/* Texture stripe */}
+          <div className="absolute inset-0 stripe-bg opacity-[0.04] rounded-3xl" />
+          
+          {/* Accent spot */}
+          <div
+            className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-30 blur-2xl"
+            style={{ background: 'hsl(var(--primary))' }}
+          />
+
           <div className="relative">
-            <Sparkles className="h-8 w-8 text-primary-foreground mb-4 animate-pulse-soft" />
-            <h2 className="font-display text-2xl font-bold text-primary-foreground mb-2 uppercase">
+            <div className="inline-flex items-center gap-1.5 bg-primary rounded-full px-3 py-1 mb-5">
+              <Sparkles className="h-3 w-3 text-primary-foreground" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary-foreground">Coach IA inclus</span>
+            </div>
+
+            <h2 className="font-display font-black text-background leading-none mb-2" style={{ fontSize: 'clamp(2rem, 10vw, 3.5rem)', lineHeight: '0.9' }}>
               Prêt à jouer ?
             </h2>
-            <p className="text-sm text-primary-foreground/70 mb-6">
-              Lancez un diagnostic IA de votre maturité stratégique.
+            <p className="text-sm text-background/50 mb-7 mt-3">
+              Lancez un diagnostic de votre maturité stratégique. Gratuit, sans CB.
             </p>
-            <Button
-              size="lg"
-              className="rounded-2xl bg-background text-foreground font-bold h-13 px-8 hover:bg-secondary shadow-lg"
+            <button
               onClick={() => navigate("/lab")}
+              className="flex items-center gap-2 bg-primary text-primary-foreground font-black text-sm uppercase tracking-wider px-7 py-4 rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-primary-glow"
             >
-              Commencer
-              <ChevronRight className="ml-1 h-5 w-5" />
-            </Button>
+              Démarrer le diagnostic
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         </motion.div>
       </section>
-    </div></PageTransition>
+    </div>
   );
 }

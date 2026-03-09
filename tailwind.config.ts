@@ -73,6 +73,7 @@ export default {
           impact: "hsl(var(--pillar-impact))",
           "impact-light": "hsl(var(--pillar-impact-light))",
         },
+        white: "hsl(0 0% 100%)",
         phase: {
           fondations: "hsl(var(--phase-fondations))",
           modele: "hsl(var(--phase-modele))",

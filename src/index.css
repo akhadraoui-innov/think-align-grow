@@ -6,77 +6,80 @@
 
 @layer base {
   :root {
-    --background: 220 15% 8%;
-    --foreground: 60 10% 95%;
+    /* === Light mode — éditorial, blanc, courageux === */
+    --background: 40 20% 97%;
+    --foreground: 220 20% 8%;
 
-    --card: 220 15% 12%;
-    --card-foreground: 60 10% 95%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 8%;
 
-    --popover: 220 15% 12%;
-    --popover-foreground: 60 10% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 8%;
 
-    --primary: 14 90% 58%;
-    --primary-foreground: 60 10% 95%;
+    /* Orange brûlé — couleur signature */
+    --primary: 22 95% 52%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 12% 18%;
-    --secondary-foreground: 60 10% 95%;
+    --secondary: 40 15% 93%;
+    --secondary-foreground: 220 20% 20%;
 
-    --muted: 220 12% 18%;
-    --muted-foreground: 220 10% 55%;
+    --muted: 40 12% 90%;
+    --muted-foreground: 220 10% 48%;
 
-    --accent: 252 60% 58%;
-    --accent-foreground: 60 10% 95%;
+    --accent: 252 75% 58%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 60 10% 95%;
+    --destructive: 0 84% 58%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 12% 20%;
-    --input: 220 12% 20%;
-    --ring: 14 90% 58%;
+    --border: 220 12% 88%;
+    --input: 220 12% 88%;
+    --ring: 22 95% 52%;
 
     --radius: 1rem;
 
-    /* Pillar colors — vivid & bold */
-    --pillar-thinking: 350 85% 58%;
-    --pillar-thinking-light: 350 70% 18%;
-    --pillar-business: 38 95% 55%;
-    --pillar-business-light: 38 70% 18%;
-    --pillar-innovation: 252 75% 62%;
-    --pillar-innovation-light: 252 50% 18%;
-    --pillar-finance: 155 70% 45%;
-    --pillar-finance-light: 155 50% 16%;
-    --pillar-marketing: 195 90% 52%;
-    --pillar-marketing-light: 195 60% 16%;
-    --pillar-operations: 280 65% 58%;
-    --pillar-operations-light: 280 45% 18%;
-    --pillar-team: 18 85% 55%;
-    --pillar-team-light: 18 60% 18%;
-    --pillar-legal: 215 65% 55%;
-    --pillar-legal-light: 215 45% 18%;
-    --pillar-growth: 145 65% 48%;
-    --pillar-growth-light: 145 45% 16%;
-    --pillar-impact: 48 92% 52%;
-    --pillar-impact-light: 48 60% 18%;
+    /* Pillar colors — saturées, nettes */
+    --pillar-thinking: 350 85% 52%;
+    --pillar-thinking-light: 350 90% 96%;
+    --pillar-business: 38 95% 50%;
+    --pillar-business-light: 38 95% 94%;
+    --pillar-innovation: 252 75% 60%;
+    --pillar-innovation-light: 252 80% 95%;
+    --pillar-finance: 155 65% 42%;
+    --pillar-finance-light: 155 60% 93%;
+    --pillar-marketing: 195 85% 48%;
+    --pillar-marketing-light: 195 80% 93%;
+    --pillar-operations: 280 65% 55%;
+    --pillar-operations-light: 280 60% 95%;
+    --pillar-team: 18 85% 52%;
+    --pillar-team-light: 18 85% 94%;
+    --pillar-legal: 215 65% 52%;
+    --pillar-legal-light: 215 65% 94%;
+    --pillar-growth: 145 65% 44%;
+    --pillar-growth-light: 145 60% 93%;
+    --pillar-impact: 48 92% 50%;
+    --pillar-impact-light: 48 95% 92%;
 
     /* Phase colors */
-    --phase-fondations: 252 75% 62%;
-    --phase-modele: 38 95% 55%;
-    --phase-croissance: 155 70% 45%;
-    --phase-execution: 350 85% 58%;
+    --phase-fondations: 252 75% 60%;
+    --phase-modele: 38 95% 50%;
+    --phase-croissance: 155 65% 42%;
+    --phase-execution: 350 85% 52%;
 
-    /* Shadows */
-    --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.4);
-    --shadow-card-hover: 0 12px 40px -8px hsl(0 0% 0% / 0.5);
-    --shadow-elevated: 0 20px 60px -15px hsl(0 0% 0% / 0.6);
+    /* Shadows — nettes, réelles */
+    --shadow-card: 0 2px 12px -2px hsl(220 20% 8% / 0.08), 0 1px 3px hsl(220 20% 8% / 0.06);
+    --shadow-card-hover: 0 8px 30px -6px hsl(220 20% 8% / 0.14), 0 2px 8px hsl(220 20% 8% / 0.08);
+    --shadow-elevated: 0 20px 50px -12px hsl(220 20% 8% / 0.18);
+    --shadow-primary: 0 8px 24px -4px hsl(22 95% 52% / 0.35);
 
-    --sidebar-background: 220 15% 10%;
-    --sidebar-foreground: 60 10% 95%;
-    --sidebar-primary: 14 90% 58%;
-    --sidebar-primary-foreground: 60 10% 95%;
-    --sidebar-accent: 220 12% 18%;
-    --sidebar-accent-foreground: 60 10% 95%;
-    --sidebar-border: 220 12% 20%;
-    --sidebar-ring: 14 90% 58%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 8%;
+    --sidebar-primary: 22 95% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 15% 93%;
+    --sidebar-accent-foreground: 220 20% 20%;
+    --sidebar-border: 220 12% 88%;
+    --sidebar-ring: 22 95% 52%;
   }
 }
 
@@ -96,7 +99,14 @@
 
 @layer utilities {
   .text-gradient-hero {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--pillar-impact)));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--pillar-thinking)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-cool {
+    background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--pillar-marketing)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -122,9 +132,38 @@
     box-shadow: var(--shadow-elevated);
   }
 
+  .shadow-primary-glow {
+    box-shadow: var(--shadow-primary);
+  }
+
   .glass {
-    background: hsl(var(--card) / 0.6);
+    background: hsl(0 0% 100% / 0.75);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--border));
+  }
+
+  /* Stripe éditoriale diagonale */
+  .stripe-bg {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 8px,
+      hsl(var(--foreground) / 0.025) 8px,
+      hsl(var(--foreground) / 0.025) 10px
+    );
+  }
+
+  /* Texte immense héro */
+  .text-hero-xl {
+    font-size: clamp(3.5rem, 14vw, 8rem);
+    line-height: 0.88;
+    letter-spacing: -0.04em;
+  }
+
+  .text-hero-lg {
+    font-size: clamp(2.5rem, 10vw, 5.5rem);
+    line-height: 0.9;
+    letter-spacing: -0.03em;
   }
 }
