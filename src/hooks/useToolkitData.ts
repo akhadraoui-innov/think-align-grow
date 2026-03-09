@@ -116,13 +116,13 @@ const PILLAR_ICON_MAP: Record<string, string> = {
   thinking: "Brain",
   business: "Briefcase",
   innovation: "Lightbulb",
-  finance: "TrendingUp",
-  marketing: "Megaphone",
-  operations: "Settings",
-  team: "Users",
-  legal: "Shield",
-  growth: "Rocket",
-  impact: "Heart",
+  finance: "Wallet",
+  indicators: "BarChart3",
+  building: "Hammer",
+  managing: "Users",
+  gouvernance: "Shield",
+  profitability: "TrendingUp",
+  fundraising: "Heart",
 };
 
 const PILLAR_GRADIENT_MAP: Record<string, string> = {
