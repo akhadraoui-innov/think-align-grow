@@ -146,15 +146,20 @@ export function useCanvasItems(workshopId: string | undefined) {
     debounceTimers.current.set(itemId, timer);
   }, []);
 
-  // Update content
+  // Update content (merges with existing content)
   const updateContent = useCallback(async (itemId: string, content: Record<string, any>) => {
-    setItems(prev => prev.map(item => 
-      item.id === itemId ? { ...item, content: { ...item.content, ...content } } : item
-    ));
+    let mergedContent = content;
+    setItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        mergedContent = { ...item.content, ...content };
+        return { ...item, content: mergedContent };
+      }
+      return item;
+    }));
 
     await supabase
       .from("workshop_canvas_items")
-      .update({ content })
+      .update({ content: mergedContent })
       .eq("id", itemId);
   }, []);
 

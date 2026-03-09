@@ -34,7 +34,7 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
           style={{ background: pillarColor }}
         />
         <ScrollArea className="flex-1 p-6">
-          <SheetHeader className="mb-6 text-left">
+          <div className="mb-6 text-left">
             <div className="flex items-center gap-2 mb-2">
               <span 
                 className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
