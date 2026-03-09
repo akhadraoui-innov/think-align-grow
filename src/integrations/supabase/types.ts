@@ -920,7 +920,7 @@ export type Database = {
     }
     Enums: {
       app_role: "owner" | "admin" | "member"
-      canvas_item_type: "card" | "sticky" | "group" | "arrow"
+      canvas_item_type: "card" | "sticky" | "group" | "arrow" | "icon" | "text"
       card_phase: "foundations" | "model" | "growth" | "execution"
       deliverable_type: "swot" | "bmc" | "pitch_deck" | "action_plan"
       toolkit_status: "draft" | "published" | "archived"
@@ -1053,7 +1053,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "admin", "member"],
-      canvas_item_type: ["card", "sticky", "group", "arrow"],
+      canvas_item_type: ["card", "sticky", "group", "arrow", "icon", "text"],
       card_phase: ["foundations", "model", "growth", "execution"],
       deliverable_type: ["swot", "bmc", "pitch_deck", "action_plan"],
       toolkit_status: ["draft", "published", "archived"],

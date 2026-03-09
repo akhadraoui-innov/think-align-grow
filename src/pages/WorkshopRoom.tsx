@@ -52,9 +52,10 @@ export default function WorkshopRoom() {
 
   // Canvas state
   const [viewport, setViewport] = useState({ x: 100, y: 80, scale: 1 });
-  const [mode, setMode] = useState<"select" | "sticky" | "arrow" | "group">("select");
+  const [mode, setMode] = useState<string>("select");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [arrowStart, setArrowStart] = useState<string | null>(null);
+  const [selectedIconName, setSelectedIconName] = useState("Star");
   const [showDiscussion, setShowDiscussion] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -113,6 +114,16 @@ export default function WorkshopRoom() {
 
   const handleAddGroup = useCallback(async (x: number, y: number) => {
     await addItem("group", x, y, { width: 400, height: 300, content: { title: "Groupe" } });
+    setMode("select");
+  }, [addItem]);
+
+  const handleAddIcon = useCallback(async (x: number, y: number) => {
+    await addItem("icon", x, y, { content: { icon_name: selectedIconName, label: "", icon_color: "default", icon_size: "md" } });
+    setMode("select");
+  }, [addItem, selectedIconName]);
+
+  const handleAddText = useCallback(async (x: number, y: number) => {
+    await addItem("text", x, y, { content: { text: "Texte", text_style: "heading" } });
     setMode("select");
   }, [addItem]);
 
@@ -288,6 +299,8 @@ export default function WorkshopRoom() {
         onComplete={completeWorkshop}
         onBack={() => navigate("/workshop")}
         workshopName={workshop.name}
+        selectedIconName={selectedIconName}
+        onSelectIcon={setSelectedIconName}
       />
 
       {/* Main area */}
@@ -320,6 +333,8 @@ export default function WorkshopRoom() {
             onDeleteItem={deleteItem}
             onAddSticky={handleAddSticky}
             onAddGroup={handleAddGroup}
+            onAddIcon={handleAddIcon}
+            onAddText={handleAddText}
             onArrowClick={handleArrowClick}
             viewport={viewport}
             onViewportChange={setViewport}

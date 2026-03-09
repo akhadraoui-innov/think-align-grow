@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-export type CanvasItemType = "card" | "sticky" | "group" | "arrow";
+export type CanvasItemType = "card" | "sticky" | "group" | "arrow" | "icon" | "text";
 
 export interface CanvasItem {
   id: string;
