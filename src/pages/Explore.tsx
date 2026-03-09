@@ -10,7 +10,7 @@ import { usePillars, useCards, getPillarGradient, PHASE_LABELS } from "@/hooks/u
 import type { DbPillar, DbCard } from "@/hooks/useToolkitData";
 
 const iconMap: Record<string, typeof Brain> = {
-  Brain, Briefcase, Lightbulb, TrendingUp, Megaphone, Settings, Users, Shield, Rocket, Heart,
+  Brain, Briefcase, Lightbulb, TrendingUp, BarChart3, Hammer, Users, Shield, Heart, Wallet,
 };
 
 const phases = [

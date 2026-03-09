@@ -21,12 +21,12 @@ const slugTextColors: Record<string, string> = {
   business: "text-pillar-business",
   innovation: "text-pillar-innovation",
   finance: "text-pillar-finance",
-  marketing: "text-pillar-marketing",
-  operations: "text-pillar-operations",
-  team: "text-pillar-team",
-  legal: "text-pillar-legal",
-  growth: "text-pillar-growth",
-  impact: "text-pillar-impact",
+  indicators: "text-pillar-marketing",
+  building: "text-pillar-operations",
+  managing: "text-pillar-team",
+  gouvernance: "text-pillar-legal",
+  profitability: "text-pillar-growth",
+  fundraising: "text-pillar-impact",
 };
 
 interface FlipCardProps {
