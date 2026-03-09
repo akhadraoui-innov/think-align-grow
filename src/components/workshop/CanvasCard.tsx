@@ -5,7 +5,20 @@ import dynamicIconImports from "lucide-react/dynamicIconImports";
 import { cn } from "@/lib/utils";
 import { CanvasItem } from "@/hooks/useCanvasItems";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
-import { getPillarGradient, PHASE_LABELS } from "@/hooks/useToolkitData";
+import { getPillarGradient, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
+
+// Dynamic icon loader for pillar icons
+function DynamicIcon({ name, className }: { name: string; className?: string }) {
+  const kebab = name.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+  const importFn = dynamicIconImports[kebab as keyof typeof dynamicIconImports];
+  if (!importFn) return null;
+  const LazyIcon = lazy(importFn);
+  return (
+    <Suspense fallback={<div className={className} />}>
+      <LazyIcon className={className} />
+    </Suspense>
+  );
+}
 import { CardContextSheet } from "./CardContextSheet";
 
 interface CanvasCardProps {
