@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Compass, Layers, Gamepad2, Sparkles, User, LogOut, Coins, Search } from "lucide-react";
+import { Compass, Layers, Gamepad2, Sparkles, User, LogOut, Coins, Search, LayoutDashboard, Plus, List } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -24,6 +24,11 @@ const navItems = [
   { path: "/lab", icon: Gamepad2, label: "Lab" },
   { path: "/ai", icon: Sparkles, label: "Coach IA" },
   { path: "/profile", icon: User, label: "Profil" },
+];
+
+const workshopItems = [
+  { path: "/workshop", icon: List, label: "Mes workshops", exact: true },
+  { path: "/workshop/new", icon: Plus, label: "Nouveau workshop" },
 ];
 
 interface AppSidebarProps {
@@ -106,6 +111,46 @@ export function AppSidebar({ onCommandPalette }: AppSidebarProps) {
                         {active && !collapsed && (
                           <motion.div
                             layoutId="sidebar-active"
+                            className="ml-auto h-1.5 w-1.5 rounded-full bg-primary"
+                          />
+                        )}
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Workshop section */}
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-3">Workshop</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {workshopItems.map((item) => {
+                const active = item.exact ? location.pathname === item.path : isActive(item.path);
+                const Icon = item.icon;
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      tooltip={item.label}
+                    >
+                      <button
+                        onClick={() => navigate(item.path)}
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                          active
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!collapsed && <span>{item.label}</span>}
+                        {active && !collapsed && (
+                          <motion.div
+                            layoutId="sidebar-workshop-active"
                             className="ml-auto h-1.5 w-1.5 rounded-full bg-primary"
                           />
                         )}
