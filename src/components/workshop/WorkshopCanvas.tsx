@@ -5,6 +5,7 @@ import { CanvasCard } from "./CanvasCard";
 import { StickyNote } from "./StickyNote";
 import { CanvasGroup } from "./CanvasGroup";
 import { CanvasArrow } from "./CanvasArrow";
+import { ArrowToolbar } from "./ArrowToolbar";
 import { CanvasIcon } from "./CanvasIcon";
 import { CanvasText } from "./CanvasText";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
@@ -219,6 +220,26 @@ export function WorkshopCanvas({
             );
           })}
         </svg>
+
+        {/* Arrow toolbar when arrow is selected */}
+        {arrows.map(arrow => {
+          if (selectedItemId !== arrow.id) return null;
+          const fromItem = items.find(i => i.id === arrow.from_item_id);
+          const toItem = items.find(i => i.id === arrow.to_item_id);
+          if (!fromItem || !toItem) return null;
+          const midX = (fromItem.x + (fromItem.width || 240) / 2 + toItem.x + (toItem.width || 240) / 2) / 2;
+          const midY = (fromItem.y + 60 + toItem.y) / 2;
+          return (
+            <ArrowToolbar
+              key={`toolbar-${arrow.id}`}
+              item={arrow}
+              onUpdateContent={(content) => onUpdateContent(arrow.id, content)}
+              onDelete={() => onDeleteItem(arrow.id)}
+              position={{ x: midX, y: midY }}
+              scale={viewport.scale}
+            />
+          );
+        })}
 
         {/* Items */}
         {nonArrows.map(item => {
