@@ -333,6 +333,8 @@ export default function WorkshopRoom() {
             onDeleteItem={deleteItem}
             onAddSticky={handleAddSticky}
             onAddGroup={handleAddGroup}
+            onAddIcon={handleAddIcon}
+            onAddText={handleAddText}
             onArrowClick={handleArrowClick}
             viewport={viewport}
             onViewportChange={setViewport}
