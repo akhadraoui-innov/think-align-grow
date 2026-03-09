@@ -561,6 +561,144 @@ export type Database = {
         }
         Relationships: []
       }
+      workshop_canvas_items: {
+        Row: {
+          card_id: string | null
+          color: string | null
+          content: Json
+          created_at: string
+          created_by: string
+          from_item_id: string | null
+          height: number | null
+          id: string
+          parent_group_id: string | null
+          to_item_id: string | null
+          type: Database["public"]["Enums"]["canvas_item_type"]
+          updated_at: string
+          width: number | null
+          workshop_id: string
+          x: number
+          y: number
+          z_index: number
+        }
+        Insert: {
+          card_id?: string | null
+          color?: string | null
+          content?: Json
+          created_at?: string
+          created_by: string
+          from_item_id?: string | null
+          height?: number | null
+          id?: string
+          parent_group_id?: string | null
+          to_item_id?: string | null
+          type: Database["public"]["Enums"]["canvas_item_type"]
+          updated_at?: string
+          width?: number | null
+          workshop_id: string
+          x?: number
+          y?: number
+          z_index?: number
+        }
+        Update: {
+          card_id?: string | null
+          color?: string | null
+          content?: Json
+          created_at?: string
+          created_by?: string
+          from_item_id?: string | null
+          height?: number | null
+          id?: string
+          parent_group_id?: string | null
+          to_item_id?: string | null
+          type?: Database["public"]["Enums"]["canvas_item_type"]
+          updated_at?: string
+          width?: number | null
+          workshop_id?: string
+          x?: number
+          y?: number
+          z_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_canvas_items_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_canvas_items_from_item_id_fkey"
+            columns: ["from_item_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_canvas_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_canvas_items_parent_group_id_fkey"
+            columns: ["parent_group_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_canvas_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_canvas_items_to_item_id_fkey"
+            columns: ["to_item_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_canvas_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_canvas_items_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_comments: {
+        Row: {
+          canvas_item_id: string
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+          workshop_id: string
+        }
+        Insert: {
+          canvas_item_id: string
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+          workshop_id: string
+        }
+        Update: {
+          canvas_item_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_comments_canvas_item_id_fkey"
+            columns: ["canvas_item_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_canvas_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_comments_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workshop_deliverables: {
         Row: {
           content: Json
@@ -773,6 +911,7 @@ export type Database = {
     }
     Enums: {
       app_role: "owner" | "admin" | "member"
+      canvas_item_type: "card" | "sticky" | "group" | "arrow"
       card_phase: "foundations" | "model" | "growth" | "execution"
       deliverable_type: "swot" | "bmc" | "pitch_deck" | "action_plan"
       toolkit_status: "draft" | "published" | "archived"
@@ -905,6 +1044,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "admin", "member"],
+      canvas_item_type: ["card", "sticky", "group", "arrow"],
       card_phase: ["foundations", "model", "growth", "execution"],
       deliverable_type: ["swot", "bmc", "pitch_deck", "action_plan"],
       toolkit_status: ["draft", "published", "archived"],
