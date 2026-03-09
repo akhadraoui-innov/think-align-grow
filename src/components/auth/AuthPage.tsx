@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Sparkles, Chrome } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DotPattern } from "@/components/ui/PatternBackground";
 
@@ -59,12 +60,15 @@ export function AuthPage() {
 
   async function handleGoogle() {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/explore` },
-    });
-    if (error) {
-      toast({ variant: "destructive", title: "Erreur Google", description: error.message });
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: `${window.location.origin}/explore`,
+      });
+      if (result.error) throw result.error;
+      if (!result.redirected) navigate("/explore");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erreur Google";
+      toast({ variant: "destructive", title: "Erreur", description: message });
       setLoading(false);
     }
   }
@@ -78,7 +82,7 @@ export function AuthPage() {
           </div>
           <h2 className="font-display text-2xl font-bold mb-2 uppercase">Vérifiez votre email</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Un lien de confirmation a été envoyé à <strong>{email}</strong>. Cliquez dessus pour activer votre compte.
+            Un lien de confirmation a été envoyé à <strong>{email}</strong>. Cliquez dessus pour activer votre compte et recevoir vos 10 crédits gratuits.
           </p>
           <Button variant="outline" className="rounded-2xl" onClick={() => { setSent(false); setMode("login"); }}>
             Retour à la connexion
@@ -89,7 +93,7 @@ export function AuthPage() {
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen px-6 overflow-hidden">
+    <div className="relative flex flex-col items-center justify-center min-h-screen px-6 overflow-hidden bg-background">
       <DotPattern className="opacity-[0.04] absolute inset-0" />
 
       {/* Logo */}
@@ -103,7 +107,7 @@ export function AuthPage() {
         </div>
         <h1 className="font-display text-2xl font-bold uppercase tracking-tight">Hack & Show</h1>
         <p className="text-xs text-muted-foreground mt-1">
-          {mode === "login" ? "Bon retour !" : mode === "signup" ? "Créer un compte" : "Réinitialiser le mot de passe"}
+          {mode === "login" ? "Bon retour !" : mode === "signup" ? "Créer votre compte stratégique" : "Réinitialiser le mot de passe"}
         </p>
       </motion.div>
 
@@ -123,7 +127,12 @@ export function AuthPage() {
               onClick={handleGoogle}
               disabled={loading}
             >
-              <Chrome className="h-4 w-4 mr-2" />
+              <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
               Continuer avec Google
             </Button>
 
@@ -215,16 +224,21 @@ export function AuthPage() {
             </>
           )}
           {mode === "signup" && (
-            <p className="text-xs text-muted-foreground">
-              Déjà un compte ?{" "}
-              <button type="button" className="text-primary font-semibold hover:underline" onClick={() => setMode("login")}>
-                Se connecter
-              </button>
-            </p>
+            <>
+              <p className="text-xs text-muted-foreground/60 px-4">
+                En vous inscrivant, vous recevez <strong>10 crédits gratuits</strong> pour essayer le Coach IA.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Déjà un compte ?{" "}
+                <button type="button" className="text-primary font-semibold hover:underline" onClick={() => setMode("login")}>
+                  Se connecter
+                </button>
+              </p>
+            </>
           )}
           {mode === "forgot" && (
             <button type="button" className="text-xs text-primary font-semibold hover:underline" onClick={() => setMode("login")}>
-              ← Retour
+              ← Retour à la connexion
             </button>
           )}
         </div>
