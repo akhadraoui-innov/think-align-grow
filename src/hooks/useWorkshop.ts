@@ -40,7 +40,7 @@ export function useCreateWorkshop() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const create = async (name: string, config: Record<string, unknown> = {}) => {
+  const create = async (name: string, config: any = {}) => {
     if (!user) {
       toast.error("Connectez-vous pour créer un workshop");
       return;
