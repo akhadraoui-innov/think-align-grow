@@ -110,14 +110,14 @@ export default function WorkshopRoom() {
   }, [viewport, addItem]);
 
   const handleAddSticky = useCallback(async (x: number, y: number) => {
-    await addItem("sticky", x, y, { color: "yellow", content: { text: "" } });
+    await addItem("sticky", x, y, { color: "yellow", content: { text: "", sticky_shape: stickyShape } });
     setMode("select");
-  }, [addItem]);
+  }, [addItem, stickyShape]);
 
   const handleAddGroup = useCallback(async (x: number, y: number) => {
-    await addItem("group", x, y, { width: 400, height: 300, content: { title: "Groupe" } });
+    await addItem("group", x, y, { width: 400, height: 300, content: { title: "Groupe", group_shape: groupShape } });
     setMode("select");
-  }, [addItem]);
+  }, [addItem, groupShape]);
 
   const handleAddIcon = useCallback(async (x: number, y: number) => {
     await addItem("icon", x, y, { content: { icon_name: selectedIconName, label: "", icon_color: "default", icon_size: "md" } });
