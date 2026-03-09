@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Trash2, BarChart3, Zap, PanelRight, Minimize2, Maximize2, Columns } from "lucide-react";
+import { Trash2, BarChart3, Zap, PanelRight, Minimize2, Maximize2, Columns, Target, Footprints } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CanvasItem } from "@/hooks/useCanvasItems";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
