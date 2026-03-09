@@ -22,7 +22,7 @@ export default function WorkshopRoom() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   const {
     workshop,
