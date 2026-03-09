@@ -245,6 +245,7 @@ export function WorkshopCanvas({
                 creatorName={profile?.display_name || ""}
                 onPointerDown={(e) => handleItemDragStart(item.id, e, item)}
                 onDelete={() => onDeleteItem(item.id)}
+                onUpdateContent={(content) => onUpdateContent(item.id, content)}
               />
             );
           }
