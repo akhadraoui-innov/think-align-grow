@@ -203,3 +203,77 @@ export function useWorkshopRoom(workshopId: string | undefined) {
     updateWorkshop,
   };
 }
+
+export interface MyWorkshopItem {
+  id: string;
+  name: string;
+  code: string;
+  status: Workshop["status"];
+  created_at: string;
+  host_id: string;
+  role: string;
+  participant_count: number;
+}
+
+export function useMyWorkshops() {
+  const { user } = useAuth();
+  const [workshops, setWorkshops] = useState<MyWorkshopItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      setWorkshops([]);
+      setLoading(false);
+      return;
+    }
+
+    const fetch = async () => {
+      setLoading(true);
+      // Get workshops where user is participant
+      const { data: participations } = await supabase
+        .from("workshop_participants")
+        .select("workshop_id, role")
+        .eq("user_id", user.id);
+
+      if (!participations || participations.length === 0) {
+        setWorkshops([]);
+        setLoading(false);
+        return;
+      }
+
+      const workshopIds = participations.map((p) => p.workshop_id);
+      const roleMap = Object.fromEntries(participations.map((p) => [p.workshop_id, p.role]));
+
+      const { data: ws } = await supabase
+        .from("workshops")
+        .select("id, name, code, status, created_at, host_id")
+        .in("id", workshopIds)
+        .order("created_at", { ascending: false });
+
+      // Get participant counts
+      const { data: allParticipants } = await supabase
+        .from("workshop_participants")
+        .select("workshop_id")
+        .in("workshop_id", workshopIds);
+
+      const countMap: Record<string, number> = {};
+      allParticipants?.forEach((p) => {
+        countMap[p.workshop_id] = (countMap[p.workshop_id] || 0) + 1;
+      });
+
+      const items: MyWorkshopItem[] = (ws || []).map((w) => ({
+        ...w,
+        status: w.status as Workshop["status"],
+        role: roleMap[w.id] || "participant",
+        participant_count: countMap[w.id] || 0,
+      }));
+
+      setWorkshops(items);
+      setLoading(false);
+    };
+
+    fetch();
+  }, [user]);
+
+  return { workshops, loading };
+}
