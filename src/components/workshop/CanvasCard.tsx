@@ -94,6 +94,137 @@ export function CanvasCard({
     );
   };
 
+  const pillarIconName = pillar ? getPillarIconName(pillar.slug) : "Circle";
+
+  // ═══════════════════════════════════════════
+  // GAMIFIED MODE — Full-color collectible card
+  // ═══════════════════════════════════════════
+  if (displayMode === "gamified") {
+    return (
+      <>
+        <motion.div
+          className={cn(
+            "absolute rounded-3xl overflow-hidden select-none flex flex-col group transition-all",
+            isSelected ? "ring-4 ring-white/40 shadow-2xl" : "shadow-xl hover:shadow-2xl",
+            isDragging ? "opacity-90 cursor-grabbing scale-105" : "cursor-grab"
+          )}
+          style={{
+            width: `${width}px`,
+            left: item.x,
+            top: item.y,
+            zIndex: item.z_index,
+            background: `linear-gradient(145deg, ${pillarColor}, ${pillarColor}dd)`,
+          }}
+          onPointerDown={onPointerDown}
+          initial={{ scale: 0.8, opacity: 0, rotateZ: -2 }}
+          animate={{ scale: 1, opacity: 1, rotateZ: 0 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        >
+          {/* Decorative pattern overlay */}
+          <div className="absolute inset-0 opacity-[0.07]" style={{
+            backgroundImage: `radial-gradient(circle at 20% 80%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)`,
+            backgroundSize: '30px 30px',
+          }} />
+
+          {/* Top controls */}
+          <div className={cn(
+            "absolute top-2 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
+            isSelected && "opacity-100"
+          )}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsSheetOpen(true); }}
+              className="p-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white/80 hover:bg-white/30 hover:text-white transition-colors"
+            >
+              <PanelRight className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const modes: Array<"light" | "preview" | "full" | "gamified"> = ["light", "preview", "full", "gamified"];
+                const idx = modes.indexOf(displayMode as any);
+                setDisplayMode(modes[(idx + 1) % modes.length]);
+              }}
+              className="p-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white/80 hover:bg-white/30 hover:text-white transition-colors"
+            >
+              <Gem className="h-3.5 w-3.5" />
+            </button>
+            {isSelected && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                className="p-1.5 rounded-lg bg-red-500/30 backdrop-blur-sm text-white/80 hover:bg-red-500/50 hover:text-white transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Card content */}
+          <div className="relative p-5 flex flex-col items-center text-center min-h-[280px]">
+            {/* Phase badge */}
+            <div className="inline-flex px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm mb-4">
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/90">
+                {PHASE_LABELS[card.phase] || card.phase}
+              </span>
+            </div>
+
+            {/* Icon */}
+            <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4 shadow-inner">
+              <DynamicIcon name={pillarIconName} className="h-8 w-8 text-white" />
+            </div>
+
+            {/* Pillar name (family) */}
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/60 mb-1">
+              {pillar?.name || "Pilier"}
+            </span>
+
+            {/* Card title */}
+            <h3 className="font-display font-black text-base uppercase tracking-tight leading-tight text-white mb-3 line-clamp-3">
+              {card.title}
+            </h3>
+
+            {/* Subtitle */}
+            {card.subtitle && (
+              <p className="text-[11px] text-white/60 italic line-clamp-2 mb-3">
+                {card.subtitle}
+              </p>
+            )}
+
+            {/* Maturity dots at bottom */}
+            <div className="mt-auto flex gap-2 pt-3">
+              {[1, 2, 3].map((level) => (
+                <button
+                  key={level}
+                  onClick={(e) => { e.stopPropagation(); setMaturityLevel(level); }}
+                  className={cn(
+                    "h-3 w-3 rounded-full border-2 transition-all",
+                    maturityLevel >= level
+                      ? "bg-white border-white shadow-lg shadow-white/30 scale-110"
+                      : "bg-transparent border-white/30 hover:border-white/60"
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom glow */}
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+        </motion.div>
+
+        <CardContextSheet
+          isOpen={isSheetOpen}
+          onOpenChange={setIsSheetOpen}
+          card={card}
+          pillar={pillar}
+          item={item}
+          onUpdateContent={onUpdateContent}
+        />
+      </>
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // STANDARD MODES — light / preview / full
+  // ═══════════════════════════════════════════
   return (
     <>
       <motion.div
@@ -163,7 +294,7 @@ export function CanvasCard({
                 className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                 title="Changer l'affichage"
               >
-                {displayMode === "gamified" ? <Gem className="h-3.5 w-3.5" /> : displayMode === "light" ? <Columns className="h-3.5 w-3.5" /> : displayMode === "preview" ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
+                {displayMode === "light" ? <Columns className="h-3.5 w-3.5" /> : displayMode === "preview" ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
               </button>
             </div>
           </div>
