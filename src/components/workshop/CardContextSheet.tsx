@@ -57,7 +57,7 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
                 {card.subtitle}
               </SheetDescription>
             )}
-          </SheetHeader>
+          </div>
 
           <div className="space-y-6 pb-12">
             {/* Definition */}
