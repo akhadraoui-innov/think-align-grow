@@ -26,6 +26,11 @@ const navItems = [
   { path: "/profile", icon: User, label: "Profil" },
 ];
 
+const workshopItems = [
+  { path: "/workshop", icon: List, label: "Mes workshops", exact: true },
+  { path: "/workshop/new", icon: Plus, label: "Nouveau workshop" },
+];
+
 interface AppSidebarProps {
   onCommandPalette?: () => void;
 }
