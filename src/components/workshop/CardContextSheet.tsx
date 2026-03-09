@@ -1,15 +1,15 @@
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DbCard, DbPillar, getPillarGradient, PHASE_LABELS } from "@/hooks/useToolkitData";
 import { CanvasItem } from "@/hooks/useCanvasItems";
-import { Zap, BarChart3, Target } from "lucide-react";
+import { Zap, BarChart3, Target, Footprints } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 interface CardContextSheetProps {
   isOpen: boolean;
