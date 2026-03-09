@@ -52,9 +52,10 @@ export default function WorkshopRoom() {
 
   // Canvas state
   const [viewport, setViewport] = useState({ x: 100, y: 80, scale: 1 });
-  const [mode, setMode] = useState<"select" | "sticky" | "arrow" | "group">("select");
+  const [mode, setMode] = useState<string>("select");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [arrowStart, setArrowStart] = useState<string | null>(null);
+  const [selectedIconName, setSelectedIconName] = useState("Star");
   const [showDiscussion, setShowDiscussion] = useState(false);
   const [copied, setCopied] = useState(false);
 
