@@ -49,7 +49,7 @@ export function CanvasCard({
   const displayMode = item.content?.display_mode || "preview"; // "light" | "preview" | "full" | "gamified"
   const maturityLevel = item.content?.maturity_level || 0; // 0, 1, 2, 3
 
-  const setDisplayMode = (mode: "light" | "preview" | "full") => {
+  const setDisplayMode = (mode: "light" | "preview" | "full" | "gamified") => {
     onUpdateContent({ display_mode: mode });
   };
 
