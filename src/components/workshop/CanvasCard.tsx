@@ -46,7 +46,7 @@ export function CanvasCard({
 }: CanvasCardProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const displayMode = item.content?.display_mode || "preview"; // "light" | "preview" | "full"
+  const displayMode = item.content?.display_mode || "preview"; // "light" | "preview" | "full" | "gamified"
   const maturityLevel = item.content?.maturity_level || 0; // 0, 1, 2, 3
 
   const setDisplayMode = (mode: "light" | "preview" | "full") => {
