@@ -1,1 +1,4 @@
 project_id = "yucwxukikfianvaokebs"
+
+[functions.import-toolkit-cards]
+verify_jwt = false

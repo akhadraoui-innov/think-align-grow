@@ -8,12 +8,12 @@ const slugColors: Record<string, string> = {
   business: "from-pillar-business/20 to-pillar-business/5 border-pillar-business/30",
   innovation: "from-pillar-innovation/20 to-pillar-innovation/5 border-pillar-innovation/30",
   finance: "from-pillar-finance/20 to-pillar-finance/5 border-pillar-finance/30",
-  marketing: "from-pillar-marketing/20 to-pillar-marketing/5 border-pillar-marketing/30",
-  operations: "from-pillar-operations/20 to-pillar-operations/5 border-pillar-operations/30",
-  team: "from-pillar-team/20 to-pillar-team/5 border-pillar-team/30",
-  legal: "from-pillar-legal/20 to-pillar-legal/5 border-pillar-legal/30",
-  growth: "from-pillar-growth/20 to-pillar-growth/5 border-pillar-growth/30",
-  impact: "from-pillar-impact/20 to-pillar-impact/5 border-pillar-impact/30",
+  indicators: "from-pillar-marketing/20 to-pillar-marketing/5 border-pillar-marketing/30",
+  building: "from-pillar-operations/20 to-pillar-operations/5 border-pillar-operations/30",
+  managing: "from-pillar-team/20 to-pillar-team/5 border-pillar-team/30",
+  gouvernance: "from-pillar-legal/20 to-pillar-legal/5 border-pillar-legal/30",
+  profitability: "from-pillar-growth/20 to-pillar-growth/5 border-pillar-growth/30",
+  fundraising: "from-pillar-impact/20 to-pillar-impact/5 border-pillar-impact/30",
 };
 
 const slugTextColors: Record<string, string> = {
@@ -21,12 +21,12 @@ const slugTextColors: Record<string, string> = {
   business: "text-pillar-business",
   innovation: "text-pillar-innovation",
   finance: "text-pillar-finance",
-  marketing: "text-pillar-marketing",
-  operations: "text-pillar-operations",
-  team: "text-pillar-team",
-  legal: "text-pillar-legal",
-  growth: "text-pillar-growth",
-  impact: "text-pillar-impact",
+  indicators: "text-pillar-marketing",
+  building: "text-pillar-operations",
+  managing: "text-pillar-team",
+  gouvernance: "text-pillar-legal",
+  profitability: "text-pillar-growth",
+  fundraising: "text-pillar-impact",
 };
 
 interface FlipCardProps {
