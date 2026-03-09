@@ -117,6 +117,16 @@ export default function WorkshopRoom() {
     setMode("select");
   }, [addItem]);
 
+  const handleAddIcon = useCallback(async (x: number, y: number) => {
+    await addItem("icon", x, y, { content: { icon_name: selectedIconName, label: "", icon_color: "default", icon_size: "md" } });
+    setMode("select");
+  }, [addItem, selectedIconName]);
+
+  const handleAddText = useCallback(async (x: number, y: number) => {
+    await addItem("text", x, y, { content: { text: "Texte", text_style: "heading" } });
+    setMode("select");
+  }, [addItem]);
+
   const handleArrowClick = useCallback(async (itemId: string) => {
     if (!arrowStart) {
       setArrowStart(itemId);
