@@ -762,6 +762,14 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      is_workshop_host: {
+        Args: { _user_id: string; _workshop_id: string }
+        Returns: boolean
+      }
+      is_workshop_participant: {
+        Args: { _user_id: string; _workshop_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "owner" | "admin" | "member"
