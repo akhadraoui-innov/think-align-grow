@@ -12,7 +12,7 @@ export interface Workshop {
   status: "lobby" | "active" | "paused" | "completed";
   current_card_id: string | null;
   current_step: number;
-  config: Record<string, unknown>;
+  config: any;
   timer_seconds: number | null;
   timer_started_at: string | null;
   created_at: string;
