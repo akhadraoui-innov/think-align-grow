@@ -56,6 +56,8 @@ export default function WorkshopRoom() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [arrowStart, setArrowStart] = useState<string | null>(null);
   const [selectedIconName, setSelectedIconName] = useState("Star");
+  const [stickyShape, setStickyShape] = useState("square");
+  const [groupShape, setGroupShape] = useState("rectangle");
   const [showDiscussion, setShowDiscussion] = useState(false);
   const [copied, setCopied] = useState(false);
 
