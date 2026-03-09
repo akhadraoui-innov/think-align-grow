@@ -5,6 +5,7 @@ import { CanvasCard } from "./CanvasCard";
 import { StickyNote } from "./StickyNote";
 import { CanvasGroup } from "./CanvasGroup";
 import { CanvasArrow } from "./CanvasArrow";
+import { ArrowToolbar } from "./ArrowToolbar";
 import { CanvasIcon } from "./CanvasIcon";
 import { CanvasText } from "./CanvasText";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
