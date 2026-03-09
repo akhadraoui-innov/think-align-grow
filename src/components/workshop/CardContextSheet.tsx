@@ -36,6 +36,11 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
         <ScrollArea className="flex-1 p-6">
           <div className="mb-6 text-left">
             <div className="flex items-center gap-2 mb-2">
+              {(card as any).icon_name && (
+                <span className="text-[10px] text-muted-foreground">
+                  {(card as any).icon_name}
+                </span>
+              )}
               <span 
                 className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
                 style={{ 
@@ -60,6 +65,21 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
           </div>
 
           <div className="space-y-6 pb-12">
+            {/* Objective */}
+            {(card as any).objective && (
+              <div className="flex items-start gap-3 p-4 rounded-xl" style={{ background: `${pillarColor}06` }}>
+                <Target className="h-5 w-5 shrink-0 mt-0.5" style={{ color: pillarColor }} />
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: pillarColor }}>
+                    Objectif
+                  </h4>
+                  <p className="text-sm text-foreground/90 leading-relaxed">
+                    {(card as any).objective}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Definition */}
             {card.definition && (
               <div>
@@ -72,19 +92,19 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
               </div>
             )}
 
-            {/* Action */}
+            {/* Step + Action */}
             {card.action && (
               <div 
                 className="rounded-xl p-4"
                 style={{ background: `${pillarColor}08`, borderLeft: `4px solid ${pillarColor}` }}
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <Zap className="h-4 w-4" style={{ color: pillarColor }} />
+                <div className="flex items-center gap-2 mb-1">
+                  <Footprints className="h-4 w-4" style={{ color: pillarColor }} />
                   <span 
                     className="text-[10px] font-black uppercase tracking-widest"
                     style={{ color: pillarColor }}
                   >
-                    Action recommandée
+                    {(card as any).step_name || "Action recommandée"}
                   </span>
                 </div>
                 <p className="text-sm text-foreground/90 leading-relaxed">
@@ -93,17 +113,40 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
               </div>
             )}
 
-            {/* KPI */}
+            {/* KPI - Structured as 3 maturity indicators */}
             {card.kpi && (
-              <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-xl border border-border/50">
-                <BarChart3 className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
-                    Indicateur clé (KPI)
+              <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart3 className="h-5 w-5 text-muted-foreground" />
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    Indicateurs de maturité (KPI)
                   </h4>
-                  <p className="text-sm text-foreground/90 leading-relaxed">
-                    {card.kpi}
-                  </p>
+                </div>
+                <div className="space-y-2">
+                  {card.kpi.split('\n').map((line, i) => {
+                    const maturityLevel = item.content?.maturity_level || 0;
+                    const isActive = maturityLevel >= (i + 1);
+                    return (
+                      <div 
+                        key={i} 
+                        className={cn(
+                          "flex items-center gap-3 p-2.5 rounded-lg border transition-all",
+                          isActive 
+                            ? "border-transparent shadow-sm" 
+                            : "border-border/50 bg-background/50"
+                        )}
+                        style={isActive ? { background: `${pillarColor}12` } : {}}
+                      >
+                        <div 
+                          className={cn("h-3 w-3 rounded-full shrink-0", isActive ? "opacity-100" : "opacity-20")}
+                          style={{ background: pillarColor }}
+                        />
+                        <span className={cn("text-sm", isActive ? "font-semibold" : "text-muted-foreground")}>
+                          {line}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
