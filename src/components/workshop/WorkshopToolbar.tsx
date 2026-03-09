@@ -1,16 +1,19 @@
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   MousePointer2, StickyNote, ArrowRight, Square, 
   ZoomIn, ZoomOut, Play, Pause, Check, 
-  Timer, Users, ArrowLeft
+  Users, ArrowLeft, Type, Smile, ChevronDown,
+  icons
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { WorkshopParticipant } from "@/hooks/useWorkshop";
+import { ICON_LIBRARY } from "./CanvasIcon";
 
 interface WorkshopToolbarProps {
-  mode: "select" | "sticky" | "arrow" | "group";
-  onModeChange: (mode: "select" | "sticky" | "arrow" | "group") => void;
+  mode: string;
+  onModeChange: (mode: string) => void;
   viewport: { x: number; y: number; scale: number };
   onViewportChange: (vp: { x: number; y: number; scale: number }) => void;
   workshopStatus: "lobby" | "active" | "paused" | "completed";
@@ -22,55 +25,47 @@ interface WorkshopToolbarProps {
   onComplete: () => void;
   onBack: () => void;
   workshopName: string;
+  selectedIconName: string;
+  onSelectIcon: (name: string) => void;
 }
 
 const TOOLS = [
-  { id: "select" as const, icon: MousePointer2, label: "Sélection" },
-  { id: "sticky" as const, icon: StickyNote, label: "Post-it" },
-  { id: "arrow" as const, icon: ArrowRight, label: "Flèche" },
-  { id: "group" as const, icon: Square, label: "Groupe" },
+  { id: "select", icon: MousePointer2, label: "Sélection" },
+  { id: "sticky", icon: StickyNote, label: "Post-it" },
+  { id: "arrow", icon: ArrowRight, label: "Flèche" },
+  { id: "group", icon: Square, label: "Groupe" },
+  { id: "text", icon: Type, label: "Texte" },
+  { id: "icon", icon: Smile, label: "Icône" },
 ];
 
 export function WorkshopToolbar({
-  mode,
-  onModeChange,
-  viewport,
-  onViewportChange,
-  workshopStatus,
-  isHost,
-  participants,
-  onStart,
-  onPause,
-  onResume,
-  onComplete,
-  onBack,
+  mode, onModeChange,
+  viewport, onViewportChange,
+  workshopStatus, isHost, participants,
+  onStart, onPause, onResume, onComplete, onBack,
   workshopName,
+  selectedIconName, onSelectIcon,
 }: WorkshopToolbarProps) {
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [iconSearch, setIconSearch] = useState("");
+
   const handleZoom = (delta: number) => {
-    const newScale = Math.max(0.25, Math.min(2, viewport.scale + delta));
-    onViewportChange({ ...viewport, scale: newScale });
+    onViewportChange({ ...viewport, scale: Math.max(0.25, Math.min(2, viewport.scale + delta)) });
   };
 
-  const resetView = () => {
-    onViewportChange({ x: 0, y: 0, scale: 1 });
-  };
+  const filteredIcons = ICON_LIBRARY.filter(name => 
+    name.toLowerCase().includes(iconSearch.toLowerCase())
+  );
 
   return (
     <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between gap-4 px-4 py-3 bg-background/80 backdrop-blur-sm border-b border-border">
-      {/* Left: Back + Name */}
+      {/* Left */}
       <div className="flex items-center gap-3">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={onBack}
-          className="rounded-xl"
-        >
+        <Button variant="ghost" size="icon" onClick={onBack} className="rounded-xl">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="font-display font-bold text-sm uppercase tracking-tight">
-            {workshopName}
-          </h1>
+          <h1 className="font-display font-bold text-sm uppercase tracking-tight">{workshopName}</h1>
           <StatusBadge status={workshopStatus} />
         </div>
       </div>
@@ -78,51 +73,43 @@ export function WorkshopToolbar({
       {/* Center: Tools */}
       <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/50">
         {TOOLS.map(tool => (
-          <motion.button
-            key={tool.id}
-            onClick={() => onModeChange(tool.id)}
-            className={cn(
-              "p-2.5 rounded-lg transition-colors",
-              mode === tool.id 
-                ? "bg-primary text-primary-foreground" 
-                : "hover:bg-secondary text-muted-foreground hover:text-foreground"
-            )}
-            whileTap={{ scale: 0.95 }}
-            title={tool.label}
-          >
-            <tool.icon className="h-4 w-4" />
-          </motion.button>
+          <div key={tool.id} className="relative">
+            <motion.button
+              onClick={() => {
+                onModeChange(tool.id);
+                if (tool.id === "icon") setShowIconPicker(!showIconPicker);
+                else setShowIconPicker(false);
+              }}
+              className={cn(
+                "p-2.5 rounded-lg transition-colors flex items-center gap-1",
+                mode === tool.id 
+                  ? "bg-primary text-primary-foreground" 
+                  : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+              )}
+              whileTap={{ scale: 0.95 }}
+              title={tool.label}
+            >
+              <tool.icon className="h-4 w-4" />
+              {tool.id === "icon" && <ChevronDown className="h-3 w-3" />}
+            </motion.button>
+          </div>
         ))}
 
         <div className="w-px h-6 bg-border mx-1" />
 
-        {/* Zoom */}
-        <button
-          onClick={() => handleZoom(-0.1)}
-          className="p-2.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-          title="Zoom -"
-        >
+        <button onClick={() => handleZoom(-0.1)} className="p-2.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Zoom -">
           <ZoomOut className="h-4 w-4" />
         </button>
-        <button
-          onClick={resetView}
-          className="px-2 py-1 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
-          title="Reset zoom"
-        >
+        <button onClick={() => onViewportChange({ x: 0, y: 0, scale: 1 })} className="px-2 py-1 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors" title="Reset">
           {Math.round(viewport.scale * 100)}%
         </button>
-        <button
-          onClick={() => handleZoom(0.1)}
-          className="p-2.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-          title="Zoom +"
-        >
+        <button onClick={() => handleZoom(0.1)} className="p-2.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Zoom +">
           <ZoomIn className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Right: Participants + Controls */}
+      {/* Right */}
       <div className="flex items-center gap-3">
-        {/* Participants */}
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-secondary/50">
           <Users className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs font-bold">{participants.length}</span>
@@ -147,57 +134,29 @@ export function WorkshopToolbar({
           </div>
         </div>
 
-        {/* Host controls */}
         {isHost && workshopStatus !== "completed" && (
           <div className="flex items-center gap-2">
             {workshopStatus === "lobby" && (
-              <Button 
-                onClick={onStart} 
-                size="sm" 
-                className="rounded-xl font-bold uppercase tracking-wider text-xs"
-              >
-                <Play className="h-3.5 w-3.5 mr-1.5" />
-                Démarrer
+              <Button onClick={onStart} size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                <Play className="h-3.5 w-3.5 mr-1.5" />Démarrer
               </Button>
             )}
             {workshopStatus === "active" && (
               <>
-                <Button 
-                  onClick={onPause} 
-                  variant="outline" 
-                  size="sm" 
-                  className="rounded-xl font-bold uppercase tracking-wider text-xs"
-                >
-                  <Pause className="h-3.5 w-3.5 mr-1.5" />
-                  Pause
+                <Button onClick={onPause} variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                  <Pause className="h-3.5 w-3.5 mr-1.5" />Pause
                 </Button>
-                <Button 
-                  onClick={onComplete} 
-                  variant="destructive" 
-                  size="sm" 
-                  className="rounded-xl font-bold uppercase tracking-wider text-xs"
-                >
-                  <Check className="h-3.5 w-3.5 mr-1.5" />
-                  Terminer
+                <Button onClick={onComplete} variant="destructive" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                  <Check className="h-3.5 w-3.5 mr-1.5" />Terminer
                 </Button>
               </>
             )}
             {workshopStatus === "paused" && (
               <>
-                <Button 
-                  onClick={onResume} 
-                  size="sm" 
-                  className="rounded-xl font-bold uppercase tracking-wider text-xs"
-                >
-                  <Play className="h-3.5 w-3.5 mr-1.5" />
-                  Reprendre
+                <Button onClick={onResume} size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                  <Play className="h-3.5 w-3.5 mr-1.5" />Reprendre
                 </Button>
-                <Button 
-                  onClick={onComplete} 
-                  variant="destructive" 
-                  size="sm" 
-                  className="rounded-xl font-bold uppercase tracking-wider text-xs"
-                >
+                <Button onClick={onComplete} variant="destructive" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
                   Terminer
                 </Button>
               </>
@@ -205,6 +164,50 @@ export function WorkshopToolbar({
           </div>
         )}
       </div>
+
+      {/* Icon picker dropdown */}
+      <AnimatePresence>
+        {showIconPicker && mode === "icon" && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-80 max-h-72 bg-background border border-border rounded-xl shadow-lg overflow-hidden z-50"
+          >
+            <div className="p-2 border-b border-border">
+              <input
+                value={iconSearch}
+                onChange={(e) => setIconSearch(e.target.value)}
+                placeholder="Rechercher une icône..."
+                className="w-full px-3 py-1.5 text-sm bg-secondary/50 rounded-lg outline-none"
+                autoFocus
+              />
+            </div>
+            <div className="p-2 grid grid-cols-8 gap-1 overflow-y-auto max-h-52">
+              {filteredIcons.map(name => {
+                const Icon = (icons as any)[name];
+                if (!Icon) return null;
+                return (
+                  <button
+                    key={name}
+                    onClick={() => {
+                      onSelectIcon(name);
+                      setShowIconPicker(false);
+                    }}
+                    className={cn(
+                      "p-2 rounded-lg hover:bg-secondary transition-colors flex items-center justify-center",
+                      selectedIconName === name && "bg-primary/10 text-primary"
+                    )}
+                    title={name}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
