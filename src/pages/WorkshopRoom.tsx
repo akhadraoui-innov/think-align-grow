@@ -1,11 +1,11 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Play, Pause, Copy, Check, ChevronRight, Timer, Crown, Wifi } from "lucide-react";
+import { Users, Play, Pause, Copy, Check, ChevronRight, Timer, Crown, Wifi, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useWorkshopRoom } from "@/hooks/useWorkshop";
 import { useCards, usePillars } from "@/hooks/useToolkitData";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 
 function StatusBadge({ status }: { status: string }) {
@@ -26,6 +26,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function WorkshopRoom() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const {
     workshop,
     participants,
@@ -41,6 +42,12 @@ export default function WorkshopRoom() {
   const { data: allCards } = useCards();
   const { data: pillars } = usePillars();
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (id === ":id") {
+      navigate("/workshop", { replace: true });
+    }
+  }, [id, navigate]);
 
   // Get current card info
   const currentCard = useMemo(() => {
@@ -74,8 +81,12 @@ export default function WorkshopRoom() {
   if (!workshop) {
     return (
       <PageTransition>
-        <div className="min-h-screen flex items-center justify-center px-5">
+        <div className="min-h-screen flex flex-col items-center justify-center px-5 gap-4">
           <p className="text-muted-foreground">Workshop introuvable.</p>
+          <Button onClick={() => navigate("/workshop")} variant="outline" className="rounded-xl font-bold uppercase tracking-wider">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Retour aux workshops
+          </Button>
         </div>
       </PageTransition>
     );
