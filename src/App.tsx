@@ -31,6 +31,8 @@ function AnimatedRoutes() {
           <Route path="/ai" element={<AI />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/workshop" element={<Workshop />} />
+          <Route path="/workshop/:id" element={<WorkshopRoom />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

@@ -1,10 +1,11 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Compass, Layers, Gamepad2, Sparkles, User } from "lucide-react";
+import { Compass, Layers, Gamepad2, Sparkles, User, Users } from "lucide-react";
 
 const navItems = [
   { path: "/explore", icon: Compass, label: "Explorer" },
   { path: "/plans", icon: Layers, label: "Plans" },
+  { path: "/workshop", icon: Users, label: "Workshop" },
   { path: "/lab", icon: Gamepad2, label: "Lab" },
   { path: "/ai", icon: Sparkles, label: "IA" },
   { path: "/profile", icon: User, label: "Profil" },
