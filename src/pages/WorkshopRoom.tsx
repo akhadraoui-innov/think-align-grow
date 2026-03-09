@@ -303,6 +303,10 @@ export default function WorkshopRoom() {
         workshopName={workshop.name}
         selectedIconName={selectedIconName}
         onSelectIcon={setSelectedIconName}
+        stickyShape={stickyShape}
+        onStickyShapeChange={setStickyShape}
+        groupShape={groupShape}
+        onGroupShapeChange={setGroupShape}
       />
 
       {/* Main area */}
