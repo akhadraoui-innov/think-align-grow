@@ -57,6 +57,27 @@ export function WorkshopCanvas({
   const [draggingItem, setDraggingItem] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
+  // Drag threshold: don't capture pointer until user moves > 5px
+  const dragIntentRef = useRef<{
+    itemId: string; item: CanvasItem; startX: number; startY: number;
+    pointerId: number; captured: boolean;
+  } | null>(null);
+
+  // rAF throttle for viewport updates
+  const viewportRef = useRef(viewport);
+  const rafRef = useRef<number | null>(null);
+  viewportRef.current = viewport;
+
+  const scheduleViewportUpdate = useCallback((newVp: { x: number; y: number; scale: number }) => {
+    viewportRef.current = newVp;
+    if (rafRef.current === null) {
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        onViewportChange(viewportRef.current);
+      });
+    }
+  }, [onViewportChange]);
+
   // Touch state for pinch-zoom
   const touchRef = useRef<{ dist: number; midX: number; midY: number; vp: typeof viewport } | null>(null);
 
