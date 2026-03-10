@@ -40,6 +40,9 @@ export interface ChallengeResponse {
   slot_id: string;
   card_id: string;
   user_id: string;
+  format: string;
+  maturity: number;
+  rank: number;
   created_at: string;
 }
 
