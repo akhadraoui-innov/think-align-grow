@@ -336,21 +336,21 @@ export default function WorkshopRoom() {
             items={items}
             cards={allCards || []}
             pillars={pillars || []}
-            selectedItemId={selectedItemId}
-            mode={mode}
-            arrowStart={arrowStart}
-            onSelectItem={handleSelectItem}
-            onUpdatePosition={updatePosition}
-            onUpdateContent={updateContent}
-            onUpdateSize={updateSize}
-            onUpdateColor={updateColor}
-            onBringToFront={bringToFront}
-            onDeleteItem={deleteItem}
-            onAddSticky={handleAddSticky}
-            onAddGroup={handleAddGroup}
-            onAddIcon={handleAddIcon}
-            onAddText={handleAddText}
-            onArrowClick={handleArrowClick}
+            selectedItemId={isReadOnly ? null : selectedItemId}
+            mode={isReadOnly ? "select" : mode}
+            arrowStart={isReadOnly ? null : arrowStart}
+            onSelectItem={isReadOnly ? () => {} : handleSelectItem}
+            onUpdatePosition={isReadOnly ? () => {} : updatePosition}
+            onUpdateContent={isReadOnly ? () => {} : updateContent}
+            onUpdateSize={isReadOnly ? () => {} : updateSize}
+            onUpdateColor={isReadOnly ? () => {} : updateColor}
+            onBringToFront={isReadOnly ? () => {} : bringToFront}
+            onDeleteItem={isReadOnly ? () => {} : deleteItem}
+            onAddSticky={isReadOnly ? () => {} : handleAddSticky}
+            onAddGroup={isReadOnly ? () => {} : handleAddGroup}
+            onAddIcon={isReadOnly ? () => {} : handleAddIcon}
+            onAddText={isReadOnly ? () => {} : handleAddText}
+            onArrowClick={isReadOnly ? () => {} : handleArrowClick}
             viewport={viewport}
             onViewportChange={setViewport}
             profiles={profiles}
