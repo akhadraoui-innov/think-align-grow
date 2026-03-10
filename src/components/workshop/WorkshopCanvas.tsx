@@ -488,6 +488,26 @@ export function WorkshopCanvas({
           return null;
         })}
 
+        {/* Anchor handles overlay in arrow mode */}
+        {mode === "arrow" && nonArrows.filter(i => i.type !== "group").map(item => {
+          const itemW = item.width || (item.type === "sticky" ? 180 : item.type === "icon" ? 48 : 240);
+          const itemH = item.height || (item.type === "sticky" ? 140 : item.type === "icon" ? 48 : 120);
+          return (
+            <div
+              key={`anchors-${item.id}`}
+              className="absolute pointer-events-none"
+              style={{ left: item.x, top: item.y, width: itemW, height: itemH }}
+            >
+              <AnchorHandles
+                width={itemW}
+                height={itemH}
+                onAnchorClick={(anchor) => onArrowClick(item.id, anchor)}
+                activeAnchor={arrowStart === item.id ? undefined : undefined}
+              />
+            </div>
+          );
+        })}
+
         {/* Fix #1: Arrow indicator removed from here — it's already in WorkshopRoom */}
       </div>
     </div>
