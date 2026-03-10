@@ -39,6 +39,8 @@ export default function WorkshopRoom() {
 
   const { data: allCards } = useCards();
   const { data: pillars } = usePillars();
+  const { data: toolkit } = useToolkit();
+  const { data: challengeTemplates } = useChallengeTemplates(toolkit?.id);
   const {
     items,
     loading: canvasLoading,
