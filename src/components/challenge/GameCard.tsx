@@ -33,7 +33,7 @@ export function GameCard({
 
   return (
     <div
-      className="perspective-1000 w-44 h-60 shrink-0"
+      className="perspective-1000 w-44 h-60 shrink-0 group/card"
       draggable={draggable && !readOnly}
       onDragStart={onDragStart}
     >
