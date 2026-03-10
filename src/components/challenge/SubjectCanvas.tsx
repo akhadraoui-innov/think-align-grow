@@ -142,6 +142,29 @@ export function SubjectCanvas({
             />
           </div>
         )}
+        </div>
+
+        {/* Floating scroll buttons */}
+        {(canScrollUp || canScrollDown) && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
+            {canScrollUp && (
+              <button
+                onClick={() => scrollRef.current?.scrollBy({ top: -300, behavior: 'smooth' })}
+                className="h-8 w-8 rounded-full bg-background/80 backdrop-blur border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </button>
+            )}
+            {canScrollDown && (
+              <button
+                onClick={() => scrollRef.current?.scrollBy({ top: 300, behavior: 'smooth' })}
+                className="h-8 w-8 rounded-full bg-background/80 backdrop-blur border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </motion.div>
   );
