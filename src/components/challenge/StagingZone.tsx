@@ -10,6 +10,8 @@ export interface StagingItem {
   id: string;
   card_id: string;
   format: string;
+  subject_id?: string;
+  [key: string]: any;
 }
 
 interface StagingZoneProps {
