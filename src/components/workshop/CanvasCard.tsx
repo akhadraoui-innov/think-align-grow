@@ -174,7 +174,7 @@ export function CanvasCard({
           className={cn(
             "absolute rounded-2xl select-none flex flex-col group transition-colors animate-canvas-in",
             isSelected ? "ring-2 ring-white/40 shadow-xl" : "shadow-md hover:shadow-lg",
-            isDragging ? "opacity-90 cursor-grabbing" : "cursor-grab"
+            isDragging ? "opacity-80 cursor-grabbing scale-[1.04] shadow-2xl" : "cursor-grab"
           )}
           style={{
             width: `${width}px`, left: item.x, top: item.y, zIndex: item.z_index,
