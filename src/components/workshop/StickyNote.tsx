@@ -79,7 +79,7 @@ export function StickyNote({
   return (
     <motion.div
       className={cn(
-        "absolute shadow-md cursor-grab active:cursor-grabbing select-none overflow-hidden",
+        "absolute shadow-md cursor-grab active:cursor-grabbing select-none",
         colorConfig.bg,
         isRound ? "rounded-full" : "rounded-lg",
         isSelected && "ring-2 ring-foreground/20",

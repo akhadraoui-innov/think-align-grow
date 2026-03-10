@@ -57,6 +57,27 @@ export function WorkshopCanvas({
   const [draggingItem, setDraggingItem] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
+  // Drag threshold: don't capture pointer until user moves > 5px
+  const dragIntentRef = useRef<{
+    itemId: string; item: CanvasItem; startX: number; startY: number;
+    pointerId: number; captured: boolean;
+  } | null>(null);
+
+  // rAF throttle for viewport updates
+  const viewportRef = useRef(viewport);
+  const rafRef = useRef<number | null>(null);
+  viewportRef.current = viewport;
+
+  const scheduleViewportUpdate = useCallback((newVp: { x: number; y: number; scale: number }) => {
+    viewportRef.current = newVp;
+    if (rafRef.current === null) {
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        onViewportChange(viewportRef.current);
+      });
+    }
+  }, [onViewportChange]);
+
   // Touch state for pinch-zoom
   const touchRef = useRef<{ dist: number; midX: number; midY: number; vp: typeof viewport } | null>(null);
 
@@ -108,32 +129,31 @@ export function WorkshopCanvas({
     return sorted;
   }, [items]);
 
-  // Wheel: scroll = pan, Ctrl+scroll = zoom
+  // Wheel: scroll = pan, Ctrl+scroll = zoom (rAF throttled)
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
+    const vp = viewportRef.current;
     if (e.ctrlKey || e.metaKey) {
-      // Zoom
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
       const delta = -e.deltaY * 0.001;
-      const newScale = Math.max(0.25, Math.min(2, viewport.scale + delta));
-      const scaleRatio = newScale / viewport.scale;
-      onViewportChange({
-        x: mouseX - (mouseX - viewport.x) * scaleRatio,
-        y: mouseY - (mouseY - viewport.y) * scaleRatio,
+      const newScale = Math.max(0.25, Math.min(2, vp.scale + delta));
+      const scaleRatio = newScale / vp.scale;
+      scheduleViewportUpdate({
+        x: mouseX - (mouseX - vp.x) * scaleRatio,
+        y: mouseY - (mouseY - vp.y) * scaleRatio,
         scale: newScale,
       });
     } else {
-      // Pan
-      onViewportChange({
-        ...viewport,
-        x: viewport.x - e.deltaX,
-        y: viewport.y - e.deltaY,
+      scheduleViewportUpdate({
+        ...vp,
+        x: vp.x - e.deltaX,
+        y: vp.y - e.deltaY,
       });
     }
-  }, [viewport, onViewportChange]);
+  }, [scheduleViewportUpdate]);
 
   // Prevent default wheel on the container to avoid page scroll
   useEffect(() => {
@@ -174,13 +194,13 @@ export function WorkshopCanvas({
       const originY = ref.midY - rect.top;
       const panDx = midX - ref.midX;
       const panDy = midY - ref.midY;
-      onViewportChange({
+      scheduleViewportUpdate({
         x: originX - (originX - ref.vp.x) * ratio + panDx,
         y: originY - (originY - ref.vp.y) * ratio + panDy,
         scale: newScale,
       });
     }
-  }, [onViewportChange]);
+  }, [scheduleViewportUpdate]);
 
   const handleTouchEnd = useCallback(() => {
     touchRef.current = null;
@@ -206,18 +226,44 @@ export function WorkshopCanvas({
   }, [mode, viewport, onAddSticky, onAddGroup, onAddIcon, onAddText, onSelectItem]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    // Check drag intent threshold before starting item drag
+    if (dragIntentRef.current && !dragIntentRef.current.captured) {
+      const di = dragIntentRef.current;
+      const dist = Math.hypot(e.clientX - di.startX, e.clientY - di.startY);
+      if (dist > 5) {
+        // Threshold exceeded — start actual drag
+        di.captured = true;
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+          const vp = viewportRef.current;
+          const canvasX = (di.startX - rect.left - vp.x) / vp.scale;
+          const canvasY = (di.startY - rect.top - vp.y) / vp.scale;
+          setDragOffset({ x: canvasX - di.item.x, y: canvasY - di.item.y });
+          setDraggingItem(di.itemId);
+          onBringToFront(di.itemId);
+          containerRef.current?.setPointerCapture(di.pointerId);
+        }
+      }
+      return;
+    }
+
     if (isPanning) {
-      onViewportChange({ ...viewport, x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+      const vp = viewportRef.current;
+      scheduleViewportUpdate({ ...vp, x: e.clientX - panStart.x, y: e.clientY - panStart.y });
     } else if (draggingItem) {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const canvasX = (e.clientX - rect.left - viewport.x) / viewport.scale - dragOffset.x;
-      const canvasY = (e.clientY - rect.top - viewport.y) / viewport.scale - dragOffset.y;
+      const vp = viewportRef.current;
+      const canvasX = (e.clientX - rect.left - vp.x) / vp.scale - dragOffset.x;
+      const canvasY = (e.clientY - rect.top - vp.y) / vp.scale - dragOffset.y;
       onUpdatePosition(draggingItem, snapValue(canvasX, snapToGrid), snapValue(canvasY, snapToGrid));
     }
-  }, [isPanning, panStart, viewport, onViewportChange, draggingItem, dragOffset, onUpdatePosition, snapToGrid]);
+  }, [isPanning, panStart, scheduleViewportUpdate, draggingItem, dragOffset, onUpdatePosition, snapToGrid, onBringToFront]);
 
   const handlePointerUp = useCallback(() => {
+    // If drag intent was never captured, it was a click — let it pass through
+    dragIntentRef.current = null;
+
     if (draggingItem) {
       const draggedItem = items.find(i => i.id === draggingItem);
       if (draggedItem && draggedItem.type !== "group" && draggedItem.type !== "arrow") {
@@ -237,19 +283,15 @@ export function WorkshopCanvas({
     setDraggingItem(null);
   }, [draggingItem, items, onUpdateContent]);
 
-  // Fix #2: capture on containerRef instead of e.target
+  // Drag threshold: register intent on pointerdown, actual drag starts on move > 5px
   const handleItemDragStart = useCallback((itemId: string, e: React.PointerEvent, item: CanvasItem) => {
     if (mode === "arrow") { onArrowClick(itemId); return; }
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const canvasX = (e.clientX - rect.left - viewport.x) / viewport.scale;
-    const canvasY = (e.clientY - rect.top - viewport.y) / viewport.scale;
-    setDragOffset({ x: canvasX - item.x, y: canvasY - item.y });
-    setDraggingItem(itemId);
-    onBringToFront(itemId);
     onSelectItem(itemId);
-    containerRef.current?.setPointerCapture(e.pointerId);
-  }, [mode, viewport, onBringToFront, onSelectItem, onArrowClick]);
+    dragIntentRef.current = {
+      itemId, item, startX: e.clientX, startY: e.clientY,
+      pointerId: e.pointerId, captured: false,
+    };
+  }, [mode, onSelectItem, onArrowClick]);
 
   const getCardData = (cardId: string | null) => cardId ? cards.find(c => c.id === cardId) || null : null;
   const getPillarData = (pillarId: string) => pillars.find(p => p.id === pillarId) || null;
