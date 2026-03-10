@@ -8,6 +8,7 @@ import { CanvasArrow } from "./CanvasArrow";
 import { ArrowToolbar } from "./ArrowToolbar";
 import { CanvasIcon } from "./CanvasIcon";
 import { CanvasText } from "./CanvasText";
+import { AnchorHandles, getAnchorCoords, type AnchorPosition } from "./AnchorHandles";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 
 interface WorkshopCanvasProps {
@@ -28,7 +29,7 @@ interface WorkshopCanvasProps {
   onAddGroup: (x: number, y: number) => void;
   onAddIcon: (x: number, y: number) => void;
   onAddText: (x: number, y: number) => void;
-  onArrowClick: (itemId: string) => void;
+  onArrowClick: (itemId: string, anchor?: AnchorPosition) => void;
   viewport: { x: number; y: number; scale: number };
   onViewportChange: (vp: { x: number; y: number; scale: number }) => void;
   profiles: Record<string, { display_name: string; avatar_url: string | null }>;
@@ -358,18 +359,22 @@ export function WorkshopCanvas({
         data-canvas="true"
       >
         {/* Arrows SVG layer */}
-        <svg className="absolute pointer-events-none" style={{ width: "1px", height: "1px", overflow: "visible", left: 0, top: 0 }}>
+        <svg className="absolute pointer-events-none" width="0" height="0" overflow="visible" style={{ left: 0, top: 0 }}>
           {arrows.map(arrow => {
             const fromItem = items.find(i => i.id === arrow.from_item_id);
             const toItem = items.find(i => i.id === arrow.to_item_id);
             if (!fromItem || !toItem) return null;
+            const fromAnchor = (arrow.content?.from_anchor as AnchorPosition) || "bottom";
+            const toAnchor = (arrow.content?.to_anchor as AnchorPosition) || "top";
+            const from = getAnchorCoords(fromItem, fromAnchor);
+            const to = getAnchorCoords(toItem, toAnchor);
             return (
               <CanvasArrow
                 key={arrow.id}
-                fromX={fromItem.x + (fromItem.width || 240) / 2}
-                fromY={fromItem.y + 60}
-                toX={toItem.x + (toItem.width || 240) / 2}
-                toY={toItem.y}
+                fromX={from.x}
+                fromY={from.y}
+                toX={to.x}
+                toY={to.y}
                 isSelected={selectedItemId === arrow.id}
                 onClick={() => onSelectItem(arrow.id)}
                 style={(arrow.content?.arrow_style as string) || "solid"}
@@ -385,8 +390,12 @@ export function WorkshopCanvas({
           const fromItem = items.find(i => i.id === arrow.from_item_id);
           const toItem = items.find(i => i.id === arrow.to_item_id);
           if (!fromItem || !toItem) return null;
-          const midX = (fromItem.x + (fromItem.width || 240) / 2 + toItem.x + (toItem.width || 240) / 2) / 2;
-          const midY = (fromItem.y + 60 + toItem.y) / 2;
+          const fromAnchor = (arrow.content?.from_anchor as AnchorPosition) || "bottom";
+          const toAnchor = (arrow.content?.to_anchor as AnchorPosition) || "top";
+          const from = getAnchorCoords(fromItem, fromAnchor);
+          const to = getAnchorCoords(toItem, toAnchor);
+          const midX = (from.x + to.x) / 2;
+          const midY = (from.y + to.y) / 2;
           return (
             <ArrowToolbar
               key={`toolbar-${arrow.id}`}
@@ -404,6 +413,9 @@ export function WorkshopCanvas({
           const isSelected = selectedItemId === item.id;
           const isDragging = draggingItem === item.id;
           const profile = profiles[item.created_by];
+          const showAnchors = mode === "arrow" && item.type !== "group";
+          const itemW = item.width || (item.type === "sticky" ? 180 : item.type === "icon" ? 48 : 240);
+          const itemH = item.height || (item.type === "sticky" ? 140 : item.type === "icon" ? 48 : 120);
 
           if (item.type === "card") {
             const card = getCardData(item.card_id);
@@ -474,6 +486,26 @@ export function WorkshopCanvas({
           }
 
           return null;
+        })}
+
+        {/* Anchor handles overlay in arrow mode */}
+        {mode === "arrow" && nonArrows.filter(i => i.type !== "group").map(item => {
+          const itemW = item.width || (item.type === "sticky" ? 180 : item.type === "icon" ? 48 : 240);
+          const itemH = item.height || (item.type === "sticky" ? 140 : item.type === "icon" ? 48 : 120);
+          return (
+            <div
+              key={`anchors-${item.id}`}
+              className="absolute pointer-events-none"
+              style={{ left: item.x, top: item.y, width: itemW, height: itemH }}
+            >
+              <AnchorHandles
+                width={itemW}
+                height={itemH}
+                onAnchorClick={(anchor) => onArrowClick(item.id, anchor)}
+                activeAnchor={arrowStart === item.id ? undefined : undefined}
+              />
+            </div>
+          );
         })}
 
         {/* Fix #1: Arrow indicator removed from here — it's already in WorkshopRoom */}
