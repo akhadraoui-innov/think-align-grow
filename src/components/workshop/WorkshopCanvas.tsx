@@ -333,8 +333,8 @@ export function WorkshopCanvas({
         style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})` }}
         data-canvas="true"
       >
-        {/* Arrows — Fix #10: width/height 0 with overflow visible */}
-        <svg className="absolute top-0 left-0 pointer-events-none" style={{ width: 0, height: 0, overflow: "visible" }}>
+        {/* Arrows SVG layer */}
+        <svg className="absolute top-0 left-0 pointer-events-none" style={{ width: "10000px", height: "10000px", overflow: "visible", left: "-5000px", top: "-5000px" }}>
           {arrows.map(arrow => {
             const fromItem = items.find(i => i.id === arrow.from_item_id);
             const toItem = items.find(i => i.id === arrow.to_item_id);

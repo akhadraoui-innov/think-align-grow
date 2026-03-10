@@ -1,57 +1,75 @@
 
 
-## Diagnostic rigoureux — 3 bugs identifies
+## Audit Front-End du Workshop Canvas
 
-### Bug 1 : Cartes section/gamifie GRISES — Cause racine trouvee
+Apres analyse complete de toutes les couches (WorkshopCanvas, WorkshopToolbar, CanvasCard, StickyNote, CanvasGroup, CanvasIcon, CanvasText, DiscussionPanel, CanvasStats, WorkshopRoom), voici les problemes identifies et le plan de correction.
 
-Dans `CanvasCard.tsx` ligne 96 et 180 :
-```
-background: `linear-gradient(145deg, ${pillarColor}, ${pillarColor}dd)`
-```
-`pillarColor` = `hsl(var(--pillar-thinking))`. Donc le second stop devient `hsl(var(--pillar-thinking))dd` — **CSS totalement invalide**. Le navigateur ignore tout le `background`, resultat : fond transparent/gris.
+---
 
-De plus, le fallback dans `getPillarGradient` renvoie `"primary"` → `hsl(var(--pillar-primary))` qui **n'existe pas** dans le CSS (la variable s'appelle `--primary`, pas `--pillar-primary`).
+### Bugs critiques
 
-**Fix** :
-- `CanvasCard.tsx` : remplacer `${pillarColor}dd` par la syntaxe correcte `hsl(var(--pillar-xxx) / 0.87)` pour l'alpha
-- `useToolkitData.ts` : changer le fallback de `"primary"` a une couleur valide, ou creer `--pillar-primary` dans le CSS
-- Utiliser une variable intermediaire pour la couleur brute (sans `hsl()`) pour construire les gradients correctement
+**1. Indicateur fleche duplique et casse**
+- `WorkshopCanvas.tsx` ligne 321 : un `<div className="fixed ...">` est rendu DANS le conteneur transforme (`translate + scale`). CSS `fixed` ne fonctionne pas dans un parent avec `transform` → l'indicateur est mal positionne ou invisible.
+- Le meme indicateur existe deja dans `WorkshopRoom.tsx` ligne 396. Le doublon dans WorkshopCanvas doit etre supprime.
 
-Approche : stocker la valeur brute du CSS var et construire les couleurs ainsi :
-```typescript
-const gradientName = pillar ? getPillarGradient(pillar.slug) : "primary";
-const colorVar = `var(--pillar-${gradientName})`;
-// Usage dans style:
-background: `linear-gradient(145deg, hsl(${colorVar}), hsl(${colorVar} / 0.85))`
-```
+**2. Perte de capture pointer sur les elements enfants**
+- `handleItemDragStart` fait `(e.target as HTMLElement).setPointerCapture(e.pointerId)` — si l'utilisateur clique sur un element enfant (texte, icone, badge), la capture est mise sur cet enfant et non sur le conteneur. Quand le pointer bouge hors de ce petit element, le drag cesse brusquement.
+- Fix : capturer sur `containerRef.current` au lieu de `e.target`.
 
-### Bug 2 : Fleches invisibles
+**3. Resize des groupes perd les events**
+- Le resize handler dans `CanvasGroup` ecoute `onPointerMove/Up` sur le handle lui-meme (div 24x24px). Si le curseur sort de ce petit element pendant le resize, les events sont perdus.
+- Fix : le resize doit aussi utiliser `setPointerCapture` sur le handle pour garantir le tracking.
 
-Le SVG dans `WorkshopCanvas.tsx` ligne 337 :
-```html
-<svg style={{ width: 0, height: 0, overflow: "visible" }}>
-```
-Un SVG avec `width: 0, height: 0` ne cree pas de viewport de rendu. Certains navigateurs ignorent `overflow: visible` quand les dimensions sont nulles. Les paths sont generes mais pas rendus.
+**4. Margin-top hardcodee pour le canvas**
+- `WorkshopRoom.tsx` ligne 322 : `mt-[60px]` ou `mt-[92px]` selon le statut. Tout changement de hauteur de toolbar ou banniere casse le layout.
+- Fix : utiliser un layout flex naturel sans margin-top fixe (la toolbar doit etre dans le flux flex, pas absolute).
 
-**Fix** : Donner au SVG des dimensions qui couvrent tout le canvas, ou utiliser `width: "100%", height: "100%"` avec position absolute. Alternativement, utiliser un SVG avec des dimensions tres grandes (10000x10000) et `overflow: visible`.
+---
 
-### Bug 3 : Post-it rond → carre a l'edition
+### Ameliorations UX majeures
 
-Dans `StickyNote.tsx`, le conteneur a un `height` fixe en mode rond (ligne 85). Mais quand le textarea s'affiche, le `min-h-[60px]` / `min-h-[40px]` ne respecte pas le cercle. Le vrai probleme : la textarea a `resize-none` mais le contenu peut deborder, et le container `div` n'a pas `overflow-hidden` (retire dans un fix precedent). Le `height` est fixe en inline style, mais la classe `rounded-full` reste. Le probleme est que la textarea/texte n'est pas contraint dans le cercle.
+**5. Zoom au scroll (sans Ctrl)**
+- Actuellement le scroll sans Ctrl ne fait rien. Sur un canvas infini, le scroll devrait panner le canvas (standard Figma/Miro).
+- Ajouter : scroll = pan, Ctrl+scroll = zoom.
 
-Apres investigation plus poussee : le conteneur utilise `height: dimension` pour le rond, mais `minHeight` pour le carre. Quand le contenu (textarea) pousse au-dela de `dimension`, le container grandit et perd sa forme circulaire car `rounded-full` ne fonctionne visuellement que sur un carre parfait.
+**6. Pinch-to-zoom / Touch**
+- Aucun support tactile pour le zoom ou le pan a deux doigts. Sur tablette/mobile le canvas est inutilisable.
+- Ajouter la gestion des `touchstart/touchmove` pour pinch-zoom et pan 2 doigts.
 
-**Fix** : Ajouter `overflow-hidden` uniquement sur le contenu interieur du post-it rond (pas sur le parent, pour que la toolbar reste visible). Forcer `maxHeight: dimension` sur le conteneur interieur en mode rond.
+**7. Raccourcis clavier**
+- Pas de `Delete`/`Backspace` pour supprimer l'element selectionne
+- Pas de `Escape` pour deselectionner
+- Ajouter ces raccourcis dans WorkshopCanvas via `useEffect` + `keydown`.
+
+**8. Snap-to-grid optionnel**
+- Ajouter un snap magnetique lors du drag (arrondir x/y au multiple de 20px le plus proche quand actif).
+- Toggle dans la toolbar.
+
+**9. Fit-to-content / Reset view**
+- Le bouton "%" reset a `{x:0, y:0, scale:1}` ce qui ne correspond pas forcement au contenu.
+- Ajouter un bouton "Fit" qui calcule le bounding box de tous les items et ajuste viewport pour tout afficher.
+
+---
+
+### Corrections mineures
+
+**10. SVG arrows container trop grand**
+- `width: 10000px, height: 10000px` est excessif. Utiliser `width: 0, height: 0` avec `overflow: visible` suffit.
+
+**11. Performance du drag**
+- Le debounce DB est a 300ms mais le state local est mis a jour a chaque pointermove. C'est correct, mais `onUpdatePosition` dans `useCanvasItems` declenche un re-render de la liste entiere. Pas critique pour < 100 items.
 
 ---
 
 ### Plan d'implementation
 
-| Fichier | Modification |
+| Fichier | Modifications |
 |---|---|
-| `CanvasCard.tsx` | Refactorer `pillarColor` pour separer la variable CSS brute de la construction `hsl()`. Corriger tous les gradients avec la syntaxe `hsl(var / alpha)` |
-| `useToolkitData.ts` | Ajouter `--pillar-primary` au fallback ou mapper vers une variable existante |
-| `index.css` | Ajouter `--pillar-primary: 22 95% 52%` pour le fallback |
-| `WorkshopCanvas.tsx` | Changer le SVG des fleches : supprimer `width:0, height:0`, utiliser `position: absolute, inset: 0` avec des dimensions qui couvrent le canvas |
-| `StickyNote.tsx` | Ajouter `overflow-hidden` et `maxHeight` sur le conteneur de contenu (pas le parent) en mode rond |
+| `WorkshopCanvas.tsx` | Supprimer indicateur fleche duplique, fix pointer capture sur containerRef, ajouter scroll=pan, pinch-zoom, keydown (Delete/Escape), snap-to-grid, fit-to-content |
+| `WorkshopRoom.tsx` | Retirer mt-[60px]/mt-[92px], rendre toolbar dans le flux flex (retirer position absolute), ajouter snap toggle dans toolbar state |
+| `WorkshopToolbar.tsx` | Retirer `absolute top-0`, rendre en flux flex, ajouter bouton Fit + toggle Snap |
+| `CanvasGroup.tsx` | Fix resize avec setPointerCapture sur le handle |
+| `CanvasArrow.tsx` | SVG container : passer a width/height 0 |
+
+Environ 7 fichiers touches, principalement WorkshopCanvas et WorkshopRoom.
 

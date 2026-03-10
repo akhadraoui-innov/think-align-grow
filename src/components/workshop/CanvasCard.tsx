@@ -49,7 +49,8 @@ export function CanvasCard({
   };
 
   const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
-  const pillarColor = `hsl(var(--pillar-${gradient}))`;
+  const pillarColorVar = `var(--pillar-${gradient})`;
+  const pillarColor = `hsl(${pillarColorVar})`;
 
   const width = displayMode === "section" ? 220 : displayMode === "full" ? 420 : displayMode === "gamified" ? 240 : 280;
 
@@ -93,7 +94,7 @@ export function CanvasCard({
           )}
           style={{
             width: `${width}px`, left: item.x, top: item.y, zIndex: item.z_index,
-            background: `linear-gradient(145deg, ${pillarColor}, ${pillarColor}dd)`,
+            background: `linear-gradient(145deg, hsl(${pillarColorVar}), hsl(${pillarColorVar} / 0.85))`,
           }}
           onPointerDown={onPointerDown}
         >
@@ -177,7 +178,7 @@ export function CanvasCard({
           )}
           style={{
             width: `${width}px`, left: item.x, top: item.y, zIndex: item.z_index,
-            background: `linear-gradient(145deg, ${pillarColor}, ${pillarColor}dd)`,
+            background: `linear-gradient(145deg, hsl(${pillarColorVar}), hsl(${pillarColorVar} / 0.85))`,
           }}
           onPointerDown={onPointerDown}
         >
@@ -256,7 +257,7 @@ export function CanvasCard({
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-black uppercase tracking-widest rounded-full text-[9px] px-2 py-0.5"
-                style={{ background: `${pillarColor}15`, color: pillarColor }}>
+                style={{ background: `hsl(${pillarColorVar} / 0.08)`, color: pillarColor }}>
                 {pillar?.name || "Pilier"}
               </span>
               <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -312,7 +313,7 @@ export function CanvasCard({
 
           {/* Action */}
           {card.action && (
-            <div className="rounded-xl p-3 mb-3" style={{ background: `${pillarColor}08`, borderLeft: `3px solid ${pillarColor}` }}>
+            <div className="rounded-xl p-3 mb-3" style={{ background: `hsl(${pillarColorVar} / 0.04)`, borderLeft: `3px solid ${pillarColor}` }}>
               <div className="flex items-center gap-1.5 mb-1">
                 <Zap className="h-3 w-3" style={{ color: pillarColor }} />
                 <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: pillarColor }}>
