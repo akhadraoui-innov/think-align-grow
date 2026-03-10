@@ -75,6 +75,7 @@ export function WorkshopToolbar({
   groupShape, onGroupShapeChange,
   readOnly,
   snapToGrid, onSnapToggle, onFitToContent,
+  editMode, onEditModeChange,
 }: WorkshopToolbarProps) {
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [iconSearch, setIconSearch] = useState("");
