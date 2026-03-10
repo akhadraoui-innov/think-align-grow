@@ -318,9 +318,42 @@ export default function WorkshopRoom() {
         onEditModeChange={(em) => { setEditMode(em); if (!em) toast.success("Modifications enregistrées"); }}
       />
 
+      {/* Mode toggle bar (canvas / challenge) */}
+      {challengeTemplates && challengeTemplates.length > 0 && !isReadOnly && (
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-card shrink-0">
+          <button
+            onClick={() => setWorkshopMode("canvas")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              workshopMode === "canvas" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+            }`}
+          >
+            <Pencil className="h-3 w-3" /> Canvas libre
+          </button>
+          <button
+            onClick={() => setWorkshopMode("challenge")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              workshopMode === "challenge" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+            }`}
+          >
+            <LayoutGrid className="h-3 w-3" /> Challenge
+          </button>
+          {workshopMode === "challenge" && challengeTemplates.length > 1 && (
+            <select
+              value={selectedTemplateId || ""}
+              onChange={e => setSelectedTemplateId(e.target.value)}
+              className="ml-2 text-xs rounded-lg border border-border bg-background px-2 py-1.5"
+            >
+              {challengeTemplates.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
       {/* Main area — flex-1, no margin-top */}
       <div className="flex-1 flex relative min-h-0">
-        {/* Card Sidebar — hidden in read-only */}
+        {/* Card Sidebar — always visible when not read-only */}
         {!isReadOnly && allCards && pillars && (
           <CardSidebar cards={allCards} pillars={pillars} onAddCard={handleAddCard} isMobile={isMobile} />
         )}
