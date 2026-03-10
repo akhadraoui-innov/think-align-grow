@@ -92,6 +92,7 @@ export function GameCard({
               {!readOnly && onRemove && (
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
                   onClick={handleRemoveClick}
                   className="p-1 rounded-md hover:bg-destructive/20 transition-colors z-10 relative"
                 >
