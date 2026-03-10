@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import type { ChallengeSubject, ChallengeSlot, ChallengeResponse } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
@@ -78,11 +77,7 @@ export function ChallengeBoard({
   }, [onDrop, onUnstage, subjectStaging]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col h-full overflow-hidden"
-    >
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Subject header */}
       <div className="px-6 py-4 border-b border-border shrink-0">
         <div className="flex items-center gap-3 mb-1">
@@ -159,6 +154,6 @@ export function ChallengeBoard({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
