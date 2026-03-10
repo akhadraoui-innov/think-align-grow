@@ -12,6 +12,7 @@ import {
   useChallengeAnalysis,
   type ChallengeTemplate,
 } from "@/hooks/useChallengeData";
+import { useChallengeStaging } from "@/hooks/useChallengeStaging";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,13 +27,13 @@ interface ChallengeViewProps {
 
 export function ChallengeView({ template, workshopId, cards, pillars, isHost, readOnly }: ChallengeViewProps) {
   const { subjects, slots, loading } = useChallengeStructure(template.id);
-  const { responses, placeCard, removeCard } = useChallengeResponses(workshopId);
+  const { responses, placeCard, removeCard, updateResponse } = useChallengeResponses(workshopId);
   const { data: analysis, refetch: refetchAnalysis } = useChallengeAnalysis(workshopId);
+  const { items: stagingItems, stageCard, unstageCard, updateStagingFormat } = useChallengeStaging(workshopId);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
 
-  // Cards already placed in any slot
   const placedCardIds = useMemo(() => new Set(responses.map(r => r.card_id)), [responses]);
 
   const handleDrop = useCallback((slotId: string, cardId: string) => {
@@ -40,6 +41,12 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
     if (!subject) return;
     placeCard(slotId, subject.id, cardId);
   }, [subjects, currentIndex, placeCard]);
+
+  const handleStage = useCallback((cardId: string) => {
+    const subject = subjects[currentIndex];
+    if (!subject) return;
+    stageCard(subject.id, cardId);
+  }, [subjects, currentIndex, stageCard]);
 
   const handleAnalyze = useCallback(async () => {
     setAnalyzing(true);
@@ -113,27 +120,13 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
           })}
         </div>
 
-        {/* Navigation + Analyze */}
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-xl"
-            disabled={currentIndex === 0}
-            onClick={() => setCurrentIndex(i => i - 1)}
-          >
+          <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl" disabled={currentIndex === 0} onClick={() => setCurrentIndex(i => i - 1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-xl"
-            disabled={currentIndex === subjects.length - 1}
-            onClick={() => setCurrentIndex(i => i + 1)}
-          >
+          <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl" disabled={currentIndex === subjects.length - 1} onClick={() => setCurrentIndex(i => i + 1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-
           {isHost && (
             <>
               {analysis && (
@@ -141,17 +134,8 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
                   Voir l'analyse
                 </Button>
               )}
-              <Button
-                size="sm"
-                className="rounded-xl font-bold"
-                onClick={handleAnalyze}
-                disabled={analyzing || responses.length === 0}
-              >
-                {analyzing ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                ) : (
-                  <Sparkles className="h-4 w-4 mr-1" />
-                )}
+              <Button size="sm" className="rounded-xl font-bold" onClick={handleAnalyze} disabled={analyzing || responses.length === 0}>
+                {analyzing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
                 Analyser
               </Button>
             </>
@@ -171,6 +155,11 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
             pillars={pillars}
             onDrop={handleDrop}
             onRemove={removeCard}
+            onUpdateResponse={updateResponse}
+            stagingItems={stagingItems}
+            onStage={handleStage}
+            onUnstage={unstageCard}
+            onStagingFormatChange={updateStagingFormat}
             readOnly={readOnly}
           />
         )}
