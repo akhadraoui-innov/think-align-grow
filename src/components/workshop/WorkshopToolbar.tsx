@@ -32,6 +32,7 @@ interface WorkshopToolbarProps {
   onStickyShapeChange: (shape: string) => void;
   groupShape: string;
   onGroupShapeChange: (shape: string) => void;
+  readOnly?: boolean;
 }
 
 const TOOLS = [
