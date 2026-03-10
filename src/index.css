@@ -59,6 +59,10 @@
     --pillar-growth-light: 145 60% 93%;
     --pillar-impact: 48 92% 50%;
     --pillar-impact-light: 48 95% 92%;
+    --pillar-building: 210 60% 48%;
+    --pillar-building-light: 210 55% 93%;
+    --pillar-gouvernance: 170 55% 38%;
+    --pillar-gouvernance-light: 170 50% 92%;
 
     /* Phase colors */
     --phase-fondations: 252 75% 60%;
