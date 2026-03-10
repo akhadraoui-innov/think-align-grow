@@ -197,8 +197,8 @@ export function CanvasCard({
                 </button>
                 <button onClick={(e) => {
                   e.stopPropagation();
-                  const modes: Array<"light" | "preview" | "full" | "gamified"> = ["light", "preview", "full", "gamified"];
-                  setDisplayMode(modes[(modes.indexOf("light") + 1) % modes.length]);
+                  const modes: Array<"section" | "preview" | "full" | "gamified"> = ["section", "preview", "full", "gamified"];
+                  setDisplayMode(modes[(modes.indexOf("section") + 1) % modes.length]);
                 }}
                   className="p-1 rounded hover:bg-white/20 text-white/70 hover:text-white transition-colors">
                   <Columns className="h-3 w-3" />
