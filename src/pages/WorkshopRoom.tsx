@@ -468,3 +468,19 @@ export default function WorkshopRoom() {
     </div>
   );
 }
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; class: string }> = {
+    lobby: { label: "En attente", class: "bg-muted text-muted-foreground" },
+    active: { label: "En cours", class: "bg-pillar-finance/15 text-pillar-finance" },
+    paused: { label: "Pause", class: "bg-pillar-business/15 text-pillar-business" },
+    completed: { label: "Terminé", class: "bg-primary/15 text-primary" },
+  };
+  const s = map[status] || map.lobby;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${s.class}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+      {s.label}
+    </span>
+  );
+}
