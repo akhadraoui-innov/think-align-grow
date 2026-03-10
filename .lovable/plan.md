@@ -1,75 +1,65 @@
 
 
-## Audit Front-End du Workshop Canvas
+## Améliorations du Challenge Canvas + Vue Gamifiée
 
-Apres analyse complete de toutes les couches (WorkshopCanvas, WorkshopToolbar, CanvasCard, StickyNote, CanvasGroup, CanvasIcon, CanvasText, DiscussionPanel, CanvasStats, WorkshopRoom), voici les problemes identifies et le plan de correction.
+### 1. Amélioration de la vue actuelle (DropSlot)
 
----
+**Problème** : Les cartes dans les blocs n'affichent pas le pilier (famille), la phase (sous-famille), et le sélecteur de maturité est trop discret (petits cercles).
 
-### Bugs critiques
+**Changements dans `DropSlot.tsx`** :
+- Afficher un **badge pilier** (nom + couleur) et un **badge phase** (Fondations/Modèle/Croissance/Exécution) sur chaque carte placée
+- Remplacer le sélecteur de maturité par un **slider visuel 1-5** avec labels textuels (Débutant → Expert) et couleur progressive
+- Améliorer le drag-reorder avec un numéro de rang visible et un handle plus explicite
 
-**1. Indicateur fleche duplique et casse**
-- `WorkshopCanvas.tsx` ligne 321 : un `<div className="fixed ...">` est rendu DANS le conteneur transforme (`translate + scale`). CSS `fixed` ne fonctionne pas dans un parent avec `transform` → l'indicateur est mal positionne ou invisible.
-- Le meme indicateur existe deja dans `WorkshopRoom.tsx` ligne 396. Le doublon dans WorkshopCanvas doit etre supprime.
+**Changements dans `MaturitySelector.tsx`** :
+- Passer de 5 petits cercles à un vrai **sélecteur segmenté** avec labels : Novice (1), Débutant (2), Intermédiaire (3), Avancé (4), Expert (5)
+- Couleur progressive de rouge à vert
+- Plus grand et plus cliquable
 
-**2. Perte de capture pointer sur les elements enfants**
-- `handleItemDragStart` fait `(e.target as HTMLElement).setPointerCapture(e.pointerId)` — si l'utilisateur clique sur un element enfant (texte, icone, badge), la capture est mise sur cet enfant et non sur le conteneur. Quand le pointer bouge hors de ce petit element, le drag cesse brusquement.
-- Fix : capturer sur `containerRef.current` au lieu de `e.target`.
+**Changements dans `SubjectCanvas.tsx`** :
+- Grouper visuellement les cartes dans chaque slot par pilier (séparateur ou sous-groupe coloré)
 
-**3. Resize des groupes perd les events**
-- Le resize handler dans `CanvasGroup` ecoute `onPointerMove/Up` sur le handle lui-meme (div 24x24px). Si le curseur sort de ce petit element pendant le resize, les events sont perdus.
-- Fix : le resize doit aussi utiliser `setPointerCapture` sur le handle pour garantir le tracking.
+### 2. Nouvelle vue gamifiée : `ChallengeBoard.tsx`
 
-**4. Margin-top hardcodee pour le canvas**
-- `WorkshopRoom.tsx` ligne 322 : `mt-[60px]` ou `mt-[92px]` selon le statut. Tout changement de hauteur de toolbar ou banniere casse le layout.
-- Fix : utiliser un layout flex naturel sans margin-top fixe (la toolbar doit etre dans le flux flex, pas absolute).
+Un canvas libre où l'utilisateur positionne de **vraies cartes visuelles** (style cartes physiques) par drag libre sur un plateau.
 
----
+**Concept** :
+- Le plateau affiche les slots comme des **zones nommées** (rectangles avec titre et bordure en pointillés)
+- Les cartes sont rendues en **format carte complète** : fond coloré pilier, titre, sous-titre, icône, badge phase — comme de vraies cartes à jouer
+- L'utilisateur drag les cartes librement sur le plateau (position x/y libre au sein d'une zone)
+- Les cartes qui chevauchent une zone sont automatiquement assignées à ce slot
+- Les cartes hors zone restent visibles mais non comptées (staging visuel)
 
-### Ameliorations UX majeures
+**Composants** :
 
-**5. Zoom au scroll (sans Ctrl)**
-- Actuellement le scroll sans Ctrl ne fait rien. Sur un canvas infini, le scroll devrait panner le canvas (standard Figma/Miro).
-- Ajouter : scroll = pan, Ctrl+scroll = zoom.
-
-**6. Pinch-to-zoom / Touch**
-- Aucun support tactile pour le zoom ou le pan a deux doigts. Sur tablette/mobile le canvas est inutilisable.
-- Ajouter la gestion des `touchstart/touchmove` pour pinch-zoom et pan 2 doigts.
-
-**7. Raccourcis clavier**
-- Pas de `Delete`/`Backspace` pour supprimer l'element selectionne
-- Pas de `Escape` pour deselectionner
-- Ajouter ces raccourcis dans WorkshopCanvas via `useEffect` + `keydown`.
-
-**8. Snap-to-grid optionnel**
-- Ajouter un snap magnetique lors du drag (arrondir x/y au multiple de 20px le plus proche quand actif).
-- Toggle dans la toolbar.
-
-**9. Fit-to-content / Reset view**
-- Le bouton "%" reset a `{x:0, y:0, scale:1}` ce qui ne correspond pas forcement au contenu.
-- Ajouter un bouton "Fit" qui calcule le bounding box de tous les items et ajuste viewport pour tout afficher.
-
----
-
-### Corrections mineures
-
-**10. SVG arrows container trop grand**
-- `width: 10000px, height: 10000px` est excessif. Utiliser `width: 0, height: 0` avec `overflow: visible` suffit.
-
-**11. Performance du drag**
-- Le debounce DB est a 300ms mais le state local est mis a jour a chaque pointermove. C'est correct, mais `onUpdatePosition` dans `useCanvasItems` declenche un re-render de la liste entiere. Pas critique pour < 100 items.
-
----
-
-### Plan d'implementation
-
-| Fichier | Modifications |
+| Fichier | Rôle |
 |---|---|
-| `WorkshopCanvas.tsx` | Supprimer indicateur fleche duplique, fix pointer capture sur containerRef, ajouter scroll=pan, pinch-zoom, keydown (Delete/Escape), snap-to-grid, fit-to-content |
-| `WorkshopRoom.tsx` | Retirer mt-[60px]/mt-[92px], rendre toolbar dans le flux flex (retirer position absolute), ajouter snap toggle dans toolbar state |
-| `WorkshopToolbar.tsx` | Retirer `absolute top-0`, rendre en flux flex, ajouter bouton Fit + toggle Snap |
-| `CanvasGroup.tsx` | Fix resize avec setPointerCapture sur le handle |
-| `CanvasArrow.tsx` | SVG container : passer a width/height 0 |
+| `src/components/challenge/ChallengeBoard.tsx` | Canvas gamifié avec zones et cartes positionnables |
+| `src/components/challenge/GameCard.tsx` | Carte visuelle complète style "carte à jouer" avec pilier, phase, maturité |
+| `src/components/challenge/BoardZone.tsx` | Zone de drop nommée sur le plateau |
 
-Environ 7 fichiers touches, principalement WorkshopCanvas et WorkshopRoom.
+**Architecture `ChallengeBoard`** :
+- Container scrollable avec grille de `BoardZone` (disposition spatiale des slots)
+- Les cartes draggées depuis la sidebar apparaissent comme des `GameCard` positionnées
+- Chaque `GameCard` affiche : couleur pilier en fond, titre en gras, sous-titre, phase badge, sélecteur maturité intégré
+- Clic sur une carte = flip pour voir définition/action/KPI (réutilise le concept FlipCard existant)
+- Un toggle dans `ChallengeView.tsx` permet de basculer entre vue "Liste" (actuelle) et vue "Plateau" (gamifiée)
+
+**Toggle dans `ChallengeView.tsx`** :
+- Deux boutons dans le header : `List` (icône liste) / `Board` (icône grille)
+- Même données, même hooks, juste le rendu qui change
+
+### Fichiers impactés
+
+| Fichier | Action |
+|---|---|
+| `src/components/challenge/DropSlot.tsx` | Ajouter badges pilier/phase, améliorer le reorder visuel |
+| `src/components/challenge/MaturitySelector.tsx` | Refaire en sélecteur segmenté avec labels |
+| `src/components/challenge/ChallengeBoard.tsx` | Nouveau — vue gamifiée plateau |
+| `src/components/challenge/GameCard.tsx` | Nouveau — carte visuelle complète |
+| `src/components/challenge/BoardZone.tsx` | Nouveau — zone drop sur le plateau |
+| `src/components/challenge/ChallengeView.tsx` | Ajouter toggle Liste/Plateau |
+| `src/components/challenge/SubjectCanvas.tsx` | Pas de changement structurel |
+
+Aucun changement base de données requis — les mêmes tables `challenge_responses` et `challenge_staging` sont utilisées.
 
