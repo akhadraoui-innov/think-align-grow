@@ -23,7 +23,7 @@ export function AnchorHandles({ width, height, onAnchorClick, activeAnchor }: An
         <button
           key={a.id}
           className={cn(
-            "absolute w-3 h-3 rounded-full border-2 border-primary bg-background z-50 cursor-crosshair transition-transform hover:scale-150",
+            "absolute w-3 h-3 rounded-full border-2 border-primary bg-background z-50 cursor-crosshair transition-transform hover:scale-150 pointer-events-auto",
             activeAnchor === a.id && "bg-primary scale-125"
           )}
           style={a.style}
