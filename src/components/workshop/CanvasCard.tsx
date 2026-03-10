@@ -273,7 +273,7 @@ export function CanvasCard({
               </button>
               <button onClick={(e) => {
                 e.stopPropagation();
-                const modes: Array<"light" | "preview" | "full" | "gamified"> = ["light", "preview", "full", "gamified"];
+                const modes: Array<"section" | "preview" | "full" | "gamified"> = ["section", "preview", "full", "gamified"];
                 setDisplayMode(modes[(modes.indexOf(displayMode as any) + 1) % modes.length]);
               }}
                 className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Changer l'affichage">
