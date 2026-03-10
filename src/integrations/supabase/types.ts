@@ -113,7 +113,10 @@ export type Database = {
         Row: {
           card_id: string
           created_at: string
+          format: string
           id: string
+          maturity: number
+          rank: number
           slot_id: string
           subject_id: string
           user_id: string
@@ -122,7 +125,10 @@ export type Database = {
         Insert: {
           card_id: string
           created_at?: string
+          format?: string
           id?: string
+          maturity?: number
+          rank?: number
           slot_id: string
           subject_id: string
           user_id: string
@@ -131,7 +137,10 @@ export type Database = {
         Update: {
           card_id?: string
           created_at?: string
+          format?: string
           id?: string
+          maturity?: number
+          rank?: number
           slot_id?: string
           subject_id?: string
           user_id?: string
@@ -202,6 +211,58 @@ export type Database = {
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "challenge_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_staging: {
+        Row: {
+          card_id: string
+          created_at: string
+          format: string
+          id: string
+          subject_id: string
+          user_id: string
+          workshop_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          format?: string
+          id?: string
+          subject_id: string
+          user_id: string
+          workshop_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          format?: string
+          id?: string
+          subject_id?: string
+          user_id?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_staging_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_staging_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_staging_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
             referencedColumns: ["id"]
           },
         ]
