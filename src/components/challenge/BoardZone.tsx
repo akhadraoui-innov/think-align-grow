@@ -12,11 +12,12 @@ interface BoardZoneProps {
   pillars: DbPillar[];
   onDrop: (slotId: string, cardId: string) => void;
   onRemove: (responseId: string) => void;
+  onMoveToSlot?: (sourceResponseId: string, targetSlotId: string, cardId: string) => void;
   onUpdateResponse?: (responseId: string, updates: { maturity?: number; rank?: number }) => void;
   readOnly?: boolean;
 }
 
-export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, onUpdateResponse, readOnly }: BoardZoneProps) {
+export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, onMoveToSlot, onUpdateResponse, readOnly }: BoardZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const slotResponses = responses
@@ -29,7 +30,12 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
     setIsDragOver(true);
   }, []);
 
-  const handleDragLeave = useCallback(() => setIsDragOver(false), []);
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    // Only handle leave if we're actually leaving the zone, not entering a child
+    const relatedTarget = e.relatedTarget as Node;
+    if (e.currentTarget.contains(relatedTarget)) return;
+    setIsDragOver(false);
+  }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -39,25 +45,28 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
     const cardId = e.dataTransfer.getData("card-id");
     if (!cardId) return;
 
-    // If dragged from another slot, remove the source response first
-    const sourceResponseId = e.dataTransfer.getData("source-response-id");
-    if (sourceResponseId) {
-      // Check if it's the same slot (reorder) — skip for now, just move
-      const isFromThisSlot = slotResponses.some(r => r.id === sourceResponseId);
-      if (isFromThisSlot) {
-        // Same slot reorder — don't duplicate, just ignore for now
-        return;
-      }
-      // Cross-slot move: remove from source
-      onRemove(sourceResponseId);
-    }
-
-    // Check if card is already in this slot
+    // Check if card is already in this slot — prevent duplicates
     const alreadyHere = slotResponses.some(r => r.card_id === cardId);
     if (alreadyHere) return;
 
+    // If dragged from another slot (has source-response-id), it's a MOVE
+    const sourceResponseId = e.dataTransfer.getData("source-response-id");
+    if (sourceResponseId) {
+      // Use onMoveToSlot if available (removes source + adds to target atomically)
+      if (onMoveToSlot) {
+        onMoveToSlot(sourceResponseId, slot.id, cardId);
+        return;
+      }
+      // Fallback: remove source, then add
+      onRemove(sourceResponseId);
+    }
+
+    // If dragged from staging, remove staging item
+    const stagingId = e.dataTransfer.getData("staging-id");
+    // Note: staging removal is handled by the parent via onDrop chain
+
     onDrop(slot.id, cardId);
-  }, [slot.id, onDrop, onRemove, slotResponses]);
+  }, [slot.id, onDrop, onRemove, onMoveToSlot, slotResponses]);
 
   return (
     <div
@@ -91,7 +100,7 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
             if (!card) return null;
 
             return (
-              <div key={resp.id} className="relative group">
+              <div key={resp.id} className="relative">
                 {slot.slot_type === "ranked" && (
                   <div className="absolute -top-2 -left-2 z-10 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-black">
                     {idx + 1}
