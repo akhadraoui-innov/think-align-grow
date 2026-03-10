@@ -364,13 +364,17 @@ export function WorkshopCanvas({
             const fromItem = items.find(i => i.id === arrow.from_item_id);
             const toItem = items.find(i => i.id === arrow.to_item_id);
             if (!fromItem || !toItem) return null;
+            const fromAnchor = (arrow.content?.from_anchor as AnchorPosition) || "bottom";
+            const toAnchor = (arrow.content?.to_anchor as AnchorPosition) || "top";
+            const from = getAnchorCoords(fromItem, fromAnchor);
+            const to = getAnchorCoords(toItem, toAnchor);
             return (
               <CanvasArrow
                 key={arrow.id}
-                fromX={fromItem.x + (fromItem.width || 240) / 2}
-                fromY={fromItem.y + 60}
-                toX={toItem.x + (toItem.width || 240) / 2}
-                toY={toItem.y}
+                fromX={from.x}
+                fromY={from.y}
+                toX={to.x}
+                toY={to.y}
                 isSelected={selectedItemId === arrow.id}
                 onClick={() => onSelectItem(arrow.id)}
                 style={(arrow.content?.arrow_style as string) || "solid"}
@@ -386,8 +390,12 @@ export function WorkshopCanvas({
           const fromItem = items.find(i => i.id === arrow.from_item_id);
           const toItem = items.find(i => i.id === arrow.to_item_id);
           if (!fromItem || !toItem) return null;
-          const midX = (fromItem.x + (fromItem.width || 240) / 2 + toItem.x + (toItem.width || 240) / 2) / 2;
-          const midY = (fromItem.y + 60 + toItem.y) / 2;
+          const fromAnchor = (arrow.content?.from_anchor as AnchorPosition) || "bottom";
+          const toAnchor = (arrow.content?.to_anchor as AnchorPosition) || "top";
+          const from = getAnchorCoords(fromItem, fromAnchor);
+          const to = getAnchorCoords(toItem, toAnchor);
+          const midX = (from.x + to.x) / 2;
+          const midY = (from.y + to.y) / 2;
           return (
             <ArrowToolbar
               key={`toolbar-${arrow.id}`}
