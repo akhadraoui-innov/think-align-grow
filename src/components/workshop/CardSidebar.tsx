@@ -125,6 +125,8 @@ function CardItem({ card, pillar, onAdd }: { card: DbCard; pillar: DbPillar | un
     <HoverCard openDelay={1200} closeDelay={200}>
       <HoverCardTrigger asChild>
         <div
+          draggable
+          onDragStart={(e) => { e.dataTransfer.setData("card-id", card.id); e.dataTransfer.effectAllowed = "move"; }}
           className="group relative flex items-center gap-2 p-2.5 rounded-xl hover:bg-secondary/60 transition-colors cursor-pointer"
           onClick={onAdd}
         >
