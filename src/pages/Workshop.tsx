@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, LogIn, Users, Zap, ArrowRight, Crown, Clock, UserCheck } from "lucide-react";
+import { Plus, LogIn, Users, Zap, ArrowRight, Crown, Clock, UserCheck, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,8 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCreateWorkshop, useJoinWorkshop, useMyWorkshops } from "@/hooks/useWorkshop";
+import { useChallengeTemplates } from "@/hooks/useChallengeData";
+import { useToolkit } from "@/hooks/useToolkitData";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -27,14 +29,22 @@ export default function Workshop() {
   const [joinOpen, setJoinOpen] = useState(false);
   const [workshopName, setWorkshopName] = useState("");
   const [joinCode, setJoinCode] = useState("");
+  const [challengeOpen, setChallengeOpen] = useState(false);
   const { create, loading: creating } = useCreateWorkshop();
   const { join, loading: joining } = useJoinWorkshop();
   const { workshops, loading: loadingList } = useMyWorkshops();
+  const { data: toolkit } = useToolkit();
+  const { data: challengeTemplates } = useChallengeTemplates(toolkit?.id);
 
   // Handle ?action=create from sidebar
   useEffect(() => {
-    if (searchParams.get("action") === "create" && user) {
+    const action = searchParams.get("action");
+    if (!user) return;
+    if (action === "create") {
       setCreateOpen(true);
+      setSearchParams({}, { replace: true });
+    } else if (action === "challenge") {
+      setChallengeOpen(true);
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, user, setSearchParams]);
@@ -85,7 +95,7 @@ export default function Workshop() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 gap-3 mb-8"
+          className="grid grid-cols-3 gap-3 mb-8"
         >
           <button
             onClick={() => setCreateOpen(true)}
@@ -112,6 +122,20 @@ export default function Workshop() {
               </div>
               <div className="font-display font-black text-sm uppercase tracking-tight">Rejoindre</div>
               <div className="text-[10px] text-muted-foreground mt-0.5">Code à 6 caractères</div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setChallengeOpen(true)}
+            className="group relative rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-5 text-left hover:border-pillar-finance/30 hover:bg-card transition-all"
+          >
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pillar-finance/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="h-10 w-10 rounded-xl bg-pillar-finance/10 flex items-center justify-center mb-3">
+                <LayoutGrid className="h-5 w-5 text-pillar-finance" />
+              </div>
+              <div className="font-display font-black text-sm uppercase tracking-tight">Challenge</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">Diagnostic stratégique</div>
             </div>
           </button>
         </motion.div>
@@ -243,6 +267,54 @@ export default function Workshop() {
                 {joining ? "Connexion..." : "Rejoindre"}
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Challenge Dialog */}
+        <Dialog open={challengeOpen} onOpenChange={setChallengeOpen}>
+          <DialogContent className="rounded-2xl border-border/50 bg-card backdrop-blur-xl">
+            <DialogHeader>
+              <DialogTitle className="font-display font-black uppercase tracking-tight">Lancer un Challenge</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">
+                Créez un workshop avec un challenge intégré. Les participants placeront des cartes sur des emplacements stratégiques.
+              </p>
+              {challengeTemplates && challengeTemplates.length > 0 ? (
+                <div className="space-y-2">
+                  {challengeTemplates.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={async () => {
+                        const w = await create(t.name);
+                        setChallengeOpen(false);
+                      }}
+                      disabled={creating}
+                      className="w-full text-left rounded-xl border border-border p-4 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-pillar-finance/10 flex items-center justify-center shrink-0">
+                          <LayoutGrid className="h-5 w-5 text-pillar-finance" />
+                        </div>
+                        <div>
+                          <div className="font-display font-bold text-sm">{t.name}</div>
+                          {t.description && (
+                            <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{t.description}</div>
+                          )}
+                          {t.difficulty && (
+                            <Badge variant="outline" className="mt-1 text-[10px]">{t.difficulty}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground text-sm">
+                  Aucun template de challenge disponible.
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>

@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Compass, Layers, Gamepad2, Sparkles, User, LogOut, Coins, Search, LayoutDashboard, Plus, List } from "lucide-react";
+import { Compass, Layers, Gamepad2, Sparkles, User, LogOut, Coins, Search, LayoutDashboard, Plus, List, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -29,6 +29,7 @@ const navItems = [
 const workshopItems = [
   { path: "/workshop", icon: List, label: "Mes workshops", exact: true },
   { path: "/workshop?action=create", icon: Plus, label: "Nouveau workshop", exact: true },
+  { path: "/workshop?action=challenge", icon: LayoutGrid, label: "Challenge", exact: true },
 ];
 
 interface AppSidebarProps {
