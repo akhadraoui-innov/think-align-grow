@@ -37,6 +37,8 @@ interface WorkshopToolbarProps {
   snapToGrid?: boolean;
   onSnapToggle?: () => void;
   onFitToContent?: () => void;
+  editMode?: boolean;
+  onEditModeChange?: (editMode: boolean) => void;
 }
 
 const TOOLS = [
