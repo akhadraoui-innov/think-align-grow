@@ -38,8 +38,13 @@ export default function Workshop() {
 
   // Handle ?action=create from sidebar
   useEffect(() => {
-    if (searchParams.get("action") === "create" && user) {
+    const action = searchParams.get("action");
+    if (!user) return;
+    if (action === "create") {
       setCreateOpen(true);
+      setSearchParams({}, { replace: true });
+    } else if (action === "challenge") {
+      setChallengeOpen(true);
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, user, setSearchParams]);
