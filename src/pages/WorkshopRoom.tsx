@@ -291,6 +291,8 @@ export default function WorkshopRoom() {
         snapToGrid={snapToGrid}
         onSnapToggle={() => setSnapToGrid(!snapToGrid)}
         onFitToContent={handleFitToContent}
+        editMode={editMode}
+        onEditModeChange={(em) => { setEditMode(em); if (!em) toast.success("Modifications enregistrées"); }}
       />
 
       {/* Main area — flex-1, no margin-top */}
