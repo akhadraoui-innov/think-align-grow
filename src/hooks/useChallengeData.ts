@@ -40,6 +40,9 @@ export interface ChallengeResponse {
   slot_id: string;
   card_id: string;
   user_id: string;
+  format: string;
+  maturity: number;
+  rank: number;
   created_at: string;
 }
 
@@ -184,7 +187,15 @@ export function useChallengeResponses(workshopId: string | undefined) {
     if (error) toast.error("Erreur lors du retrait de la carte");
   }, []);
 
-  return { responses, placeCard, removeCard };
+  const updateResponse = useCallback(async (responseId: string, updates: { format?: string; maturity?: number; rank?: number }) => {
+    const { error } = await supabase
+      .from("challenge_responses")
+      .update(updates)
+      .eq("id", responseId);
+    if (error) toast.error("Erreur lors de la mise à jour");
+  }, []);
+
+  return { responses, placeCard, removeCard, updateResponse };
 }
 
 export function useChallengeAnalysis(workshopId: string | undefined) {

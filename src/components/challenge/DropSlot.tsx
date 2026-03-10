@@ -5,6 +5,8 @@ import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import { getPillarGradient } from "@/hooks/useToolkitData";
 import { X, GripVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { MaturitySelector } from "./MaturitySelector";
+import { FormatSelector, type CardFormat } from "./FormatSelector";
 
 interface DropSlotProps {
   slot: ChallengeSlot;
@@ -13,20 +15,22 @@ interface DropSlotProps {
   pillars: DbPillar[];
   onDrop: (slotId: string, cardId: string) => void;
   onRemove: (responseId: string) => void;
+  onUpdateResponse?: (responseId: string, updates: { format?: string; maturity?: number; rank?: number }) => void;
   readOnly?: boolean;
 }
 
-export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, readOnly }: DropSlotProps) {
+export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, onUpdateResponse, readOnly }: DropSlotProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const slotResponses = responses.filter(r => r.slot_id === slot.id);
-  const isFilled = slot.slot_type === "single" ? slotResponses.length > 0 : false;
+  const slotResponses = responses
+    .filter(r => r.slot_id === slot.id)
+    .sort((a, b) => a.rank - b.rank);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    if (!isFilled || slot.slot_type !== "single") setIsDragOver(true);
-  }, [isFilled, slot.slot_type]);
+    setIsDragOver(true);
+  }, []);
 
   const handleDragLeave = useCallback(() => setIsDragOver(false), []);
 
@@ -35,16 +39,27 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, re
     setIsDragOver(false);
     const cardId = e.dataTransfer.getData("card-id");
     if (!cardId) return;
-    if (isFilled && slot.slot_type === "single") return;
+    // Remove staging item if dragged from staging
+    const stagingId = e.dataTransfer.getData("staging-id");
     onDrop(slot.id, cardId);
-  }, [slot.id, isFilled, slot.slot_type, onDrop]);
+  }, [slot.id, onDrop]);
+
+  const handleReorder = useCallback((dragIdx: number, dropIdx: number) => {
+    if (dragIdx === dropIdx || !onUpdateResponse) return;
+    const reordered = [...slotResponses];
+    const [moved] = reordered.splice(dragIdx, 1);
+    reordered.splice(dropIdx, 0, moved);
+    reordered.forEach((r, i) => {
+      onUpdateResponse(r.id, { rank: i });
+    });
+  }, [slotResponses, onUpdateResponse]);
 
   return (
     <div
       className={cn(
         "relative rounded-2xl border-2 border-dashed p-4 min-h-[120px] transition-all duration-200",
         isDragOver && "border-primary bg-primary/5 scale-[1.02]",
-        isFilled && slot.slot_type === "single" ? "border-solid border-border bg-card" : "border-muted-foreground/30 bg-secondary/20",
+        slotResponses.length > 0 ? "border-solid border-border bg-card" : "border-muted-foreground/30 bg-secondary/20",
         slot.required && slotResponses.length === 0 && "border-destructive/40"
       )}
       onDragOver={readOnly ? undefined : handleDragOver}
@@ -57,11 +72,9 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, re
           {slot.label}
         </span>
         {slot.required && <span className="text-destructive ml-1 text-xs">*</span>}
-        {slot.slot_type !== "single" && (
-          <span className="ml-2 text-[10px] text-muted-foreground/70">
-            ({slot.slot_type === "multi" ? "plusieurs cartes" : "ordre important"})
-          </span>
-        )}
+        <span className="ml-2 text-[10px] text-muted-foreground/70">
+          ({slot.slot_type === "ranked" ? "ordre important" : "plusieurs cartes"})
+        </span>
       </div>
 
       {/* Hint */}
@@ -77,29 +90,105 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, re
           const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
           if (!card) return null;
 
+          const fmt = (resp.format || "normal") as CardFormat;
+
           return (
             <motion.div
               key={resp.id}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="flex items-center gap-2 p-2 rounded-xl bg-card border border-border mb-1 group"
-            >
-              {slot.slot_type === "ranked" && (
-                <span className="text-xs font-black text-muted-foreground w-5 text-center">{idx + 1}</span>
+              draggable={!readOnly && slot.slot_type === "ranked"}
+              onDragStart={(e: any) => {
+                e.dataTransfer?.setData("reorder-idx", String(idx));
+              }}
+              onDrop={(e: any) => {
+                const dragIdx = parseInt(e.dataTransfer?.getData("reorder-idx") || "-1");
+                if (dragIdx >= 0) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleReorder(dragIdx, idx);
+                }
+              }}
+              onDragOver={(e: any) => {
+                if (e.dataTransfer?.types.includes("reorder-idx")) {
+                  e.preventDefault();
+                }
+              }}
+              className={cn(
+                "rounded-xl bg-card border border-border mb-1 group",
+                !readOnly && slot.slot_type === "ranked" && "cursor-grab active:cursor-grabbing"
               )}
-              <div
-                className="h-6 w-1.5 rounded-full shrink-0"
-                style={{ background: `hsl(var(--pillar-${gradient}))` }}
-              />
-              <span className="text-sm font-medium flex-1 truncate">{card.title}</span>
-              {!readOnly && (
-                <button
-                  onClick={() => onRemove(resp.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-destructive/10"
-                >
-                  <X className="h-3 w-3 text-destructive" />
-                </button>
+            >
+              {/* Compact format */}
+              {fmt === "compact" && (
+                <div className="flex items-center gap-2 px-2 py-1.5">
+                  {slot.slot_type === "ranked" && (
+                    <span className="text-[10px] font-black text-muted-foreground w-4 text-center">{idx + 1}</span>
+                  )}
+                  <div className="h-4 w-1 rounded-full shrink-0" style={{ background: `hsl(var(--pillar-${gradient}))` }} />
+                  <span className="text-xs font-medium flex-1 truncate">{card.title}</span>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <MaturitySelector value={resp.maturity} onChange={(v) => onUpdateResponse?.(resp.id, { maturity: v })} readOnly={readOnly} />
+                    <FormatSelector value={fmt} onChange={(f) => onUpdateResponse?.(resp.id, { format: f })} readOnly={readOnly} />
+                    {!readOnly && (
+                      <button onClick={() => onRemove(resp.id)} className="p-0.5 rounded hover:bg-destructive/10">
+                        <X className="h-3 w-3 text-destructive" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Normal format */}
+              {fmt === "normal" && (
+                <div className="flex items-center gap-2 p-2">
+                  {slot.slot_type === "ranked" && (
+                    <span className="text-xs font-black text-muted-foreground w-5 text-center">{idx + 1}</span>
+                  )}
+                  <div className="h-6 w-1.5 rounded-full shrink-0" style={{ background: `hsl(var(--pillar-${gradient}))` }} />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium truncate block">{card.title}</span>
+                    {card.subtitle && <span className="text-[10px] text-muted-foreground truncate block">{card.subtitle}</span>}
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <MaturitySelector value={resp.maturity} onChange={(v) => onUpdateResponse?.(resp.id, { maturity: v })} readOnly={readOnly} />
+                    <FormatSelector value={fmt} onChange={(f) => onUpdateResponse?.(resp.id, { format: f })} readOnly={readOnly} />
+                    {!readOnly && (
+                      <button onClick={() => onRemove(resp.id)} className="p-0.5 rounded-lg hover:bg-destructive/10">
+                        <X className="h-3 w-3 text-destructive" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Expanded format */}
+              {fmt === "expanded" && (
+                <div className="p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    {slot.slot_type === "ranked" && (
+                      <span className="text-xs font-black text-muted-foreground w-5 text-center">{idx + 1}</span>
+                    )}
+                    <div className="h-7 w-1.5 rounded-full shrink-0" style={{ background: `hsl(var(--pillar-${gradient}))` }} />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium block">{card.title}</span>
+                      {card.subtitle && <span className="text-[10px] text-muted-foreground block">{card.subtitle}</span>}
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MaturitySelector value={resp.maturity} onChange={(v) => onUpdateResponse?.(resp.id, { maturity: v })} readOnly={readOnly} />
+                      <FormatSelector value={fmt} onChange={(f) => onUpdateResponse?.(resp.id, { format: f })} readOnly={readOnly} />
+                      {!readOnly && (
+                        <button onClick={() => onRemove(resp.id)} className="p-0.5 rounded-lg hover:bg-destructive/10">
+                          <X className="h-3 w-3 text-destructive" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {(card.objective || card.definition) && (
+                    <p className="text-[10px] text-muted-foreground/70 line-clamp-3 pl-7 mt-1">{card.objective || card.definition}</p>
+                  )}
+                </div>
               )}
             </motion.div>
           );

@@ -1,8 +1,11 @@
+import { useCallback } from "react";
 import { motion } from "framer-motion";
 import type { ChallengeSubject, ChallengeSlot, ChallengeResponse } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import { DropSlot } from "./DropSlot";
+import { StagingZone, type StagingItem } from "./StagingZone";
 import { cn } from "@/lib/utils";
+import type { CardFormat } from "./FormatSelector";
 
 interface SubjectCanvasProps {
   subject: ChallengeSubject;
@@ -12,6 +15,12 @@ interface SubjectCanvasProps {
   pillars: DbPillar[];
   onDrop: (slotId: string, cardId: string) => void;
   onRemove: (responseId: string) => void;
+  onUpdateResponse?: (responseId: string, updates: { format?: string; maturity?: number; rank?: number }) => void;
+  // Staging
+  stagingItems?: StagingItem[];
+  onStage?: (cardId: string) => void;
+  onUnstage?: (itemId: string) => void;
+  onStagingFormatChange?: (itemId: string, format: CardFormat) => void;
   readOnly?: boolean;
 }
 
@@ -27,12 +36,29 @@ const TYPE_COLORS: Record<string, string> = {
   context: "bg-primary/10 text-primary",
 };
 
-export function SubjectCanvas({ subject, slots, responses, cards, pillars, onDrop, onRemove, readOnly }: SubjectCanvasProps) {
+export function SubjectCanvas({
+  subject, slots, responses, cards, pillars,
+  onDrop, onRemove, onUpdateResponse,
+  stagingItems = [], onStage, onUnstage, onStagingFormatChange,
+  readOnly,
+}: SubjectCanvasProps) {
   const subjectSlots = slots.filter(s => s.subject_id === subject.id);
   const subjectResponses = responses.filter(r => r.subject_id === subject.id);
+  const subjectStaging = stagingItems.filter(i => i.subject_id === subject.id);
   const filledCount = new Set(subjectResponses.map(r => r.slot_id)).size;
   const requiredCount = subjectSlots.filter(s => s.required).length;
   const requiredFilled = subjectSlots.filter(s => s.required && subjectResponses.some(r => r.slot_id === s.id)).length;
+
+  const handleStageDrop = useCallback((cardId: string) => {
+    onStage?.(cardId);
+  }, [onStage]);
+
+  const handleSlotDrop = useCallback((slotId: string, cardId: string) => {
+    // If card comes from staging, remove it from staging
+    const stagingItem = subjectStaging.find(i => i.card_id === cardId);
+    if (stagingItem) onUnstage?.(stagingItem.id);
+    onDrop(slotId, cardId);
+  }, [onDrop, onUnstage, subjectStaging]);
 
   return (
     <motion.div
@@ -57,6 +83,21 @@ export function SubjectCanvas({ subject, slots, responses, cards, pillars, onDro
         )}
       </div>
 
+      {/* Staging zone */}
+      {onStage && (
+        <div className="px-6 pt-4">
+          <StagingZone
+            items={subjectStaging}
+            cards={cards}
+            pillars={pillars}
+            onDropFromSidebar={handleStageDrop}
+            onRemove={(id) => onUnstage?.(id)}
+            onFormatChange={(id, fmt) => onStagingFormatChange?.(id, fmt)}
+            readOnly={readOnly}
+          />
+        </div>
+      )}
+
       {/* Slots grid */}
       <div className="flex-1 overflow-auto p-6">
         <div className={cn(
@@ -73,8 +114,9 @@ export function SubjectCanvas({ subject, slots, responses, cards, pillars, onDro
               responses={subjectResponses}
               cards={cards}
               pillars={pillars}
-              onDrop={onDrop}
+              onDrop={handleSlotDrop}
               onRemove={onRemove}
+              onUpdateResponse={onUpdateResponse}
               readOnly={readOnly}
             />
           ))}
