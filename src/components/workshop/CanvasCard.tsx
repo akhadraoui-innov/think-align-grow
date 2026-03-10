@@ -94,7 +94,7 @@ export function CanvasCard({
           )}
           style={{
             width: `${width}px`, left: item.x, top: item.y, zIndex: item.z_index,
-            background: `linear-gradient(145deg, ${pillarColor}, ${pillarColor}dd)`,
+            background: `linear-gradient(145deg, hsl(${pillarColorVar}), hsl(${pillarColorVar} / 0.85))`,
           }}
           onPointerDown={onPointerDown}
         >
