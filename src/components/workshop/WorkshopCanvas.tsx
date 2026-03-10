@@ -129,32 +129,31 @@ export function WorkshopCanvas({
     return sorted;
   }, [items]);
 
-  // Wheel: scroll = pan, Ctrl+scroll = zoom
+  // Wheel: scroll = pan, Ctrl+scroll = zoom (rAF throttled)
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
+    const vp = viewportRef.current;
     if (e.ctrlKey || e.metaKey) {
-      // Zoom
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
       const delta = -e.deltaY * 0.001;
-      const newScale = Math.max(0.25, Math.min(2, viewport.scale + delta));
-      const scaleRatio = newScale / viewport.scale;
-      onViewportChange({
-        x: mouseX - (mouseX - viewport.x) * scaleRatio,
-        y: mouseY - (mouseY - viewport.y) * scaleRatio,
+      const newScale = Math.max(0.25, Math.min(2, vp.scale + delta));
+      const scaleRatio = newScale / vp.scale;
+      scheduleViewportUpdate({
+        x: mouseX - (mouseX - vp.x) * scaleRatio,
+        y: mouseY - (mouseY - vp.y) * scaleRatio,
         scale: newScale,
       });
     } else {
-      // Pan
-      onViewportChange({
-        ...viewport,
-        x: viewport.x - e.deltaX,
-        y: viewport.y - e.deltaY,
+      scheduleViewportUpdate({
+        ...vp,
+        x: vp.x - e.deltaX,
+        y: vp.y - e.deltaY,
       });
     }
-  }, [viewport, onViewportChange]);
+  }, [scheduleViewportUpdate]);
 
   // Prevent default wheel on the container to avoid page scroll
   useEffect(() => {
