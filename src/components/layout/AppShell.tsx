@@ -17,6 +17,7 @@ export function AppShell({ children }: AppShellProps) {
 
   const isLandingPage = location.pathname === "/";
   const isAuthPage = location.pathname === "/auth" || location.pathname === "/reset-password";
+  const isWorkshopRoom = location.pathname.startsWith("/workshop/") && location.pathname !== "/workshop";
 
   // Cmd+K shortcut
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
