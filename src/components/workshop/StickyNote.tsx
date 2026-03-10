@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Trash2, Check, Minimize2, Maximize2, Circle, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CanvasItem } from "@/hooks/useCanvasItems";
@@ -18,11 +17,6 @@ const STICKY_SIZES = {
   medium: { width: 180, minHeight: 140, font: "text-sm", padding: "p-3" },
   large: { width: 260, minHeight: 200, font: "text-base", padding: "p-4" },
 };
-
-const STICKY_SHAPES = [
-  { id: "square", label: "Carré", icon: Square },
-  { id: "round", label: "Rond", icon: Circle },
-];
 
 interface StickyNoteProps {
   item: CanvasItem;
@@ -73,13 +67,12 @@ export function StickyNote({
     onUpdateContent({ sticky_shape: isRound ? "square" : "round" });
   };
 
-  // For round shape, use equal width/height
   const dimension = isRound ? Math.max(sizeConfig.width, sizeConfig.minHeight) : sizeConfig.width;
 
   return (
-    <motion.div
+    <div
       className={cn(
-        "absolute shadow-md cursor-grab active:cursor-grabbing select-none",
+        "absolute shadow-md cursor-grab active:cursor-grabbing select-none animate-canvas-in",
         colorConfig.bg,
         isRound ? "rounded-full" : "rounded-lg",
         isSelected && "ring-2 ring-foreground/20",
@@ -96,9 +89,6 @@ export function StickyNote({
       }}
       onPointerDown={onPointerDown}
       onDoubleClick={handleDoubleClick}
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
       {/* Folded corner (only square) */}
       {!isRound && (
@@ -143,10 +133,9 @@ export function StickyNote({
 
       {/* Toolbar */}
       {isSelected && !isEditing && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 rounded-lg bg-background shadow-lg border border-border whitespace-nowrap"
+        <div
+          className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 rounded-lg bg-background shadow-lg border border-border whitespace-nowrap animate-canvas-in"
+          style={{ zIndex: (item.z_index || 0) + 1 }}
         >
           {STICKY_COLORS.map(color => (
             <button
@@ -167,8 +156,8 @@ export function StickyNote({
           <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-1 rounded hover:bg-destructive/10 text-destructive">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 }
