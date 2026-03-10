@@ -251,38 +251,8 @@ export default function WorkshopRoom() {
     );
   }
 
-  // Completed state
-  if (workshop.status === "completed") {
-    return (
-      <PageTransition>
-        <div className="min-h-screen flex flex-col items-center justify-center px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-md w-full rounded-2xl bg-foreground p-8 text-center relative overflow-hidden"
-          >
-            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-20 blur-2xl" style={{ background: "hsl(var(--primary))" }} />
-            <div className="relative">
-              <h2 className="font-display font-black text-2xl uppercase tracking-tight text-background mb-2">
-                Workshop Terminé ! 🎉
-              </h2>
-              <p className="text-sm text-background/50 mb-4">
-                {participants.length} participants — {items.filter(i => i.type === "card").length} cartes posées
-              </p>
-              <Button
-                onClick={() => navigate("/workshop")}
-                variant="outline"
-                className="rounded-xl font-bold uppercase tracking-wider bg-background text-foreground"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Retour
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </PageTransition>
-    );
-  }
+  const isCompleted = workshop.status === "completed";
+  const isReadOnly = isCompleted && !editMode;
 
   // Active/Paused — Full Canvas Mode
   return (
