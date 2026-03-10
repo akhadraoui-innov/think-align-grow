@@ -124,6 +124,20 @@ export default function Workshop() {
               <div className="text-[10px] text-muted-foreground mt-0.5">Code à 6 caractères</div>
             </div>
           </button>
+
+          <button
+            onClick={() => setChallengeOpen(true)}
+            className="group relative rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-5 text-left hover:border-pillar-finance/30 hover:bg-card transition-all"
+          >
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-pillar-finance/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative">
+              <div className="h-10 w-10 rounded-xl bg-pillar-finance/10 flex items-center justify-center mb-3">
+                <LayoutGrid className="h-5 w-5 text-pillar-finance" />
+              </div>
+              <div className="font-display font-black text-sm uppercase tracking-tight">Challenge</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">Diagnostic stratégique</div>
+            </div>
+          </button>
         </motion.div>
 
         {/* My Workshops */}
