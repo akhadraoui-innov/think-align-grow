@@ -66,8 +66,8 @@ export function GameCard({
               </span>
               {!readOnly && onRemove && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                  className="p-0.5 rounded hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRemove(); }}
+                  className="p-0.5 rounded hover:bg-destructive/10 opacity-0 group-hover/card:opacity-100 transition-opacity"
                 >
                   <X className="h-3 w-3 text-destructive" />
                 </button>
