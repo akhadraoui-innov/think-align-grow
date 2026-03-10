@@ -39,6 +39,7 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
 
     // If it's a reorder event, ignore at slot level (handled by card-level)
@@ -47,6 +48,9 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
 
     const cardId = e.dataTransfer.getData("card-id");
     if (!cardId) return;
+
+    // If dragged from a slot (source-response-id), it's a move — but DropSlot is list view,
+    // so just place the card (source removal handled by caller if needed)
     onDrop(slot.id, cardId);
   }, [slot.id, onDrop]);
 

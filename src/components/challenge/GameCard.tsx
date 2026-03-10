@@ -33,7 +33,7 @@ export function GameCard({
 
   return (
     <div
-      className="perspective-1000 w-44 h-60 shrink-0"
+      className="perspective-1000 w-44 h-60 shrink-0 group/card"
       draggable={draggable && !readOnly}
       onDragStart={onDragStart}
     >
@@ -66,8 +66,8 @@ export function GameCard({
               </span>
               {!readOnly && onRemove && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                  className="p-0.5 rounded hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRemove(); }}
+                  className="p-0.5 rounded hover:bg-destructive/10 opacity-0 group-hover/card:opacity-100 transition-opacity"
                 >
                   <X className="h-3 w-3 text-destructive" />
                 </button>
