@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle } from "lucide-react";
+import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle, Pencil, Save, Lock } from "lucide-react";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useWorkshopRoom } from "@/hooks/useWorkshop";
 import { useCards, usePillars } from "@/hooks/useToolkitData";
@@ -53,6 +53,7 @@ export default function WorkshopRoom() {
   // Canvas state
   const [viewport, setViewport] = useState({ x: 100, y: 80, scale: 1 });
   const [mode, setMode] = useState<string>("select");
+  const [editMode, setEditMode] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [arrowStart, setArrowStart] = useState<string | null>(null);
   const [selectedIconName, setSelectedIconName] = useState("Star");
@@ -250,46 +251,53 @@ export default function WorkshopRoom() {
     );
   }
 
-  // Completed state
-  if (workshop.status === "completed") {
-    return (
-      <PageTransition>
-        <div className="min-h-screen flex flex-col items-center justify-center px-5">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-md w-full rounded-2xl bg-foreground p-8 text-center relative overflow-hidden"
-          >
-            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-20 blur-2xl" style={{ background: "hsl(var(--primary))" }} />
-            <div className="relative">
-              <h2 className="font-display font-black text-2xl uppercase tracking-tight text-background mb-2">
-                Workshop Terminé ! 🎉
-              </h2>
-              <p className="text-sm text-background/50 mb-4">
-                {participants.length} participants — {items.filter(i => i.type === "card").length} cartes posées
-              </p>
-              <Button
-                onClick={() => navigate("/workshop")}
-                variant="outline"
-                className="rounded-xl font-bold uppercase tracking-wider bg-background text-foreground"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Retour
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </PageTransition>
-    );
-  }
+  const isCompleted = workshop.status === "completed";
+  const isReadOnly = isCompleted && !editMode;
 
-  // Active/Paused — Full Canvas Mode
+  // Active/Paused/Completed — Full Canvas Mode
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
+      {/* Read-only banner for completed workshops */}
+      {isCompleted && (
+        <div className={`flex items-center justify-center gap-3 px-4 py-2 text-xs font-bold uppercase tracking-widest ${isReadOnly ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>
+          {isReadOnly ? (
+            <>
+              <Lock className="h-3.5 w-3.5" />
+              <span>Mode lecture seule — Workshop terminé</span>
+              {isHost && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-4 rounded-xl font-bold uppercase tracking-wider text-xs h-7"
+                  onClick={() => setEditMode(true)}
+                >
+                  <Pencil className="h-3 w-3 mr-1.5" />
+                  Modifier
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Pencil className="h-3.5 w-3.5" />
+              <span>Mode édition</span>
+              <Button
+                variant="default"
+                size="sm"
+                className="ml-4 rounded-xl font-bold uppercase tracking-wider text-xs h-7"
+                onClick={() => { setEditMode(false); toast.success("Modifications enregistrées"); }}
+              >
+                <Save className="h-3 w-3 mr-1.5" />
+                Enregistrer
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Toolbar */}
       <WorkshopToolbar
-        mode={mode}
-        onModeChange={setMode}
+        mode={isReadOnly ? "select" : mode}
+        onModeChange={isReadOnly ? () => {} : setMode}
         viewport={viewport}
         onViewportChange={setViewport}
         workshopStatus={workshop.status}
@@ -307,12 +315,13 @@ export default function WorkshopRoom() {
         onStickyShapeChange={setStickyShape}
         groupShape={groupShape}
         onGroupShapeChange={setGroupShape}
+        readOnly={isReadOnly}
       />
 
       {/* Main area */}
-      <div className="flex-1 flex relative mt-[60px]">
-        {/* Card Sidebar */}
-        {allCards && pillars && (
+      <div className={`flex-1 flex relative ${isCompleted ? 'mt-[92px]' : 'mt-[60px]'}`}>
+        {/* Card Sidebar — hidden in read-only */}
+        {!isReadOnly && allCards && pillars && (
           <CardSidebar
             cards={allCards}
             pillars={pillars}
@@ -327,21 +336,21 @@ export default function WorkshopRoom() {
             items={items}
             cards={allCards || []}
             pillars={pillars || []}
-            selectedItemId={selectedItemId}
-            mode={mode}
-            arrowStart={arrowStart}
-            onSelectItem={handleSelectItem}
-            onUpdatePosition={updatePosition}
-            onUpdateContent={updateContent}
-            onUpdateSize={updateSize}
-            onUpdateColor={updateColor}
-            onBringToFront={bringToFront}
-            onDeleteItem={deleteItem}
-            onAddSticky={handleAddSticky}
-            onAddGroup={handleAddGroup}
-            onAddIcon={handleAddIcon}
-            onAddText={handleAddText}
-            onArrowClick={handleArrowClick}
+            selectedItemId={isReadOnly ? null : selectedItemId}
+            mode={isReadOnly ? "select" : mode}
+            arrowStart={isReadOnly ? null : arrowStart}
+            onSelectItem={isReadOnly ? () => {} : handleSelectItem}
+            onUpdatePosition={isReadOnly ? () => {} : updatePosition}
+            onUpdateContent={isReadOnly ? () => {} : updateContent}
+            onUpdateSize={isReadOnly ? () => {} : updateSize}
+            onUpdateColor={isReadOnly ? () => {} : updateColor}
+            onBringToFront={isReadOnly ? () => {} : bringToFront}
+            onDeleteItem={isReadOnly ? () => {} : deleteItem}
+            onAddSticky={isReadOnly ? () => {} : handleAddSticky}
+            onAddGroup={isReadOnly ? () => {} : handleAddGroup}
+            onAddIcon={isReadOnly ? () => {} : handleAddIcon}
+            onAddText={isReadOnly ? () => {} : handleAddText}
+            onArrowClick={isReadOnly ? () => {} : handleArrowClick}
             viewport={viewport}
             onViewportChange={setViewport}
             profiles={profiles}

@@ -32,6 +32,7 @@ interface WorkshopToolbarProps {
   onStickyShapeChange: (shape: string) => void;
   groupShape: string;
   onGroupShapeChange: (shape: string) => void;
+  readOnly?: boolean;
 }
 
 const TOOLS = [
@@ -66,6 +67,7 @@ export function WorkshopToolbar({
   selectedIconName, onSelectIcon,
   stickyShape, onStickyShapeChange,
   groupShape, onGroupShapeChange,
+  readOnly,
 }: WorkshopToolbarProps) {
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [iconSearch, setIconSearch] = useState("");
@@ -107,6 +109,7 @@ export function WorkshopToolbar({
       </div>
 
       {/* Center: Tools */}
+      {!readOnly && (
       <div className="relative flex items-center gap-1 p-1 rounded-xl bg-secondary/50">
         {TOOLS.map(tool => {
           const hasSubMenu = tool.id === "sticky" || tool.id === "group" || tool.id === "icon";
@@ -195,6 +198,7 @@ export function WorkshopToolbar({
           )}
         </AnimatePresence>
       </div>
+      )}
 
       {/* Right */}
       <div className="flex items-center gap-3">
