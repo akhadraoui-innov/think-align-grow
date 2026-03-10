@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState, useEffect } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
-import { ChevronUp, ChevronDown } from "lucide-react";
 import type { ChallengeSubject, ChallengeSlot, ChallengeResponse } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import { BoardZone } from "./BoardZone";
