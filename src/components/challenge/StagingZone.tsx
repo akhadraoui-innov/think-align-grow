@@ -57,7 +57,10 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
+    // Don't accept drags that come from a slot (source-response-id) — those should go to other slots only
+    if (e.dataTransfer.getData("source-response-id")) return;
     if (e.dataTransfer.types.includes("reorder-id")) return;
     const cardId = e.dataTransfer.getData("card-id");
     if (cardId) onDropFromSidebar(cardId);
