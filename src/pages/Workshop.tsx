@@ -270,6 +270,54 @@ export default function Workshop() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Challenge Dialog */}
+        <Dialog open={challengeOpen} onOpenChange={setChallengeOpen}>
+          <DialogContent className="rounded-2xl border-border/50 bg-card backdrop-blur-xl">
+            <DialogHeader>
+              <DialogTitle className="font-display font-black uppercase tracking-tight">Lancer un Challenge</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">
+                Créez un workshop avec un challenge intégré. Les participants placeront des cartes sur des emplacements stratégiques.
+              </p>
+              {challengeTemplates && challengeTemplates.length > 0 ? (
+                <div className="space-y-2">
+                  {challengeTemplates.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={async () => {
+                        const w = await create(t.name);
+                        setChallengeOpen(false);
+                      }}
+                      disabled={creating}
+                      className="w-full text-left rounded-xl border border-border p-4 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-pillar-finance/10 flex items-center justify-center shrink-0">
+                          <LayoutGrid className="h-5 w-5 text-pillar-finance" />
+                        </div>
+                        <div>
+                          <div className="font-display font-bold text-sm">{t.name}</div>
+                          {t.description && (
+                            <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{t.description}</div>
+                          )}
+                          {t.difficulty && (
+                            <Badge variant="outline" className="mt-1 text-[10px]">{t.difficulty}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground text-sm">
+                  Aucun template de challenge disponible.
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </PageTransition>
   );
