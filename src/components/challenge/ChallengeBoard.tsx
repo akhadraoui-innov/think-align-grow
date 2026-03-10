@@ -154,6 +154,6 @@ export function ChallengeBoard({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

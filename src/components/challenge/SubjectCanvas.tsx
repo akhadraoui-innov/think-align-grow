@@ -159,6 +159,6 @@ export function SubjectCanvas({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
