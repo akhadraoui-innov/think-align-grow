@@ -62,7 +62,7 @@ export function SubjectCanvas({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col h-full min-h-0"
+      className="flex flex-col flex-1 min-h-0 overflow-hidden"
     >
       {/* Subject header */}
       <div className="px-6 py-5 border-b border-border shrink-0">
@@ -82,7 +82,7 @@ export function SubjectCanvas({
       </div>
 
       {/* Slots grid */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 min-h-0">
         <div className={cn(
           "grid gap-4",
           subjectSlots.length <= 3 ? "grid-cols-1 sm:grid-cols-3" :
