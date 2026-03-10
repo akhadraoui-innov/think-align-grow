@@ -5,6 +5,7 @@ import {
   ZoomIn, ZoomOut, Play, Pause, Check, 
   Users, ArrowLeft, Type, Smile, ChevronDown,
   Circle, Triangle, Hexagon, Diamond, RectangleHorizontal,
+  Maximize, Grid3X3,
   icons
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,9 @@ interface WorkshopToolbarProps {
   groupShape: string;
   onGroupShapeChange: (shape: string) => void;
   readOnly?: boolean;
+  snapToGrid?: boolean;
+  onSnapToggle?: () => void;
+  onFitToContent?: () => void;
 }
 
 const TOOLS = [
@@ -68,6 +72,7 @@ export function WorkshopToolbar({
   stickyShape, onStickyShapeChange,
   groupShape, onGroupShapeChange,
   readOnly,
+  snapToGrid, onSnapToggle, onFitToContent,
 }: WorkshopToolbarProps) {
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [iconSearch, setIconSearch] = useState("");
@@ -96,7 +101,7 @@ export function WorkshopToolbar({
   };
 
   return (
-    <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between gap-4 px-4 py-3 bg-background/80 backdrop-blur-sm border-b border-border">
+    <div className="relative z-50 flex items-center justify-between gap-4 px-4 py-3 bg-background/80 backdrop-blur-sm border-b border-border shrink-0">
       {/* Left */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onBack} className="rounded-xl">
@@ -134,6 +139,20 @@ export function WorkshopToolbar({
 
         <div className="w-px h-6 bg-border mx-1" />
 
+        {/* Snap-to-grid toggle */}
+        <button
+          onClick={onSnapToggle}
+          className={cn(
+            "p-2.5 rounded-lg transition-colors",
+            snapToGrid ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+          )}
+          title={snapToGrid ? "Désactiver l'aimantation" : "Activer l'aimantation"}
+        >
+          <Grid3X3 className="h-4 w-4" />
+        </button>
+
+        <div className="w-px h-6 bg-border mx-1" />
+
         <button onClick={() => handleZoom(-0.1)} className="p-2.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Zoom -">
           <ZoomOut className="h-4 w-4" />
         </button>
@@ -142,6 +161,15 @@ export function WorkshopToolbar({
         </button>
         <button onClick={() => handleZoom(0.1)} className="p-2.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Zoom +">
           <ZoomIn className="h-4 w-4" />
+        </button>
+
+        {/* Fit-to-content */}
+        <button
+          onClick={onFitToContent}
+          className="p-2.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+          title="Ajuster la vue au contenu"
+        >
+          <Maximize className="h-4 w-4" />
         </button>
 
         {/* Sticky shape sub-menu */}

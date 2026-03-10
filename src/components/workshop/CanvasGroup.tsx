@@ -84,9 +84,12 @@ export function CanvasGroup({
     if (title !== item.content?.title) onUpdateContent({ title });
   };
 
+  const resizeHandleRef = useRef<HTMLDivElement>(null);
+
   const handleResizeStart = (e: React.PointerEvent) => {
     e.stopPropagation();
     resizeRef.current = { startX: e.clientX, startY: e.clientY, startW: finalWidth, startH: finalHeight };
+    // Capture on the handle element to keep receiving events even when cursor leaves it
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
   const handleResizeMove = (e: React.PointerEvent) => {
@@ -227,11 +230,11 @@ export function CanvasGroup({
       {/* Resize handle */}
       {isSelected && (
         <div
+          ref={resizeHandleRef}
           className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-center justify-center z-10"
           onPointerDown={handleResizeStart}
           onPointerMove={handleResizeMove}
           onPointerUp={handleResizeEnd}
-          onPointerLeave={handleResizeEnd}
         >
           <GripHorizontal className="h-4 w-4 text-muted-foreground rotate-45" />
         </div>
