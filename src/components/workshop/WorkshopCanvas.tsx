@@ -261,6 +261,9 @@ export function WorkshopCanvas({
   }, [isPanning, panStart, scheduleViewportUpdate, draggingItem, dragOffset, onUpdatePosition, snapToGrid, onBringToFront]);
 
   const handlePointerUp = useCallback(() => {
+    // If drag intent was never captured, it was a click — let it pass through
+    dragIntentRef.current = null;
+
     if (draggingItem) {
       const draggedItem = items.find(i => i.id === draggingItem);
       if (draggedItem && draggedItem.type !== "group" && draggedItem.type !== "arrow") {
