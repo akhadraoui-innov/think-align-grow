@@ -131,9 +131,9 @@ const PILLAR_GRADIENT_MAP: Record<string, string> = {
   innovation: "innovation",
   finance: "finance",
   indicators: "marketing",
-  building: "primary",
+  building: "building",
   managing: "team",
-  gouvernance: "accent",
+  gouvernance: "gouvernance",
   profitability: "finance",
   fundraising: "impact",
 };
