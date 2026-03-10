@@ -70,70 +70,80 @@ export function StickyNote({
   const dimension = isRound ? Math.max(sizeConfig.width, sizeConfig.minHeight) : sizeConfig.width;
 
   return (
+    // Wrapper: position + z-index, no overflow clipping so toolbar is visible
     <div
-      className={cn(
-        "absolute shadow-md cursor-grab active:cursor-grabbing select-none animate-canvas-in",
-        colorConfig.bg,
-        isRound ? "rounded-full" : "rounded-lg",
-        isSelected && "ring-2 ring-foreground/20",
-        isDragging && "shadow-elevated opacity-90"
-      )}
+      className="absolute select-none"
       style={{
         left: item.x,
         top: item.y,
         width: isRound ? dimension : sizeConfig.width,
-        height: isRound ? dimension : undefined,
-        minHeight: isRound ? undefined : sizeConfig.minHeight,
-        zIndex: item.z_index,
-        transform: isRound ? undefined : `rotate(${((item.z_index % 5) - 2) * 1.5}deg)`,
+        zIndex: isDragging ? 9999 : item.z_index,
       }}
       onPointerDown={onPointerDown}
       onDoubleClick={handleDoubleClick}
     >
-      {/* Folded corner (only square) */}
-      {!isRound && (
-        <div className="absolute top-0 right-0 w-6 h-6" style={{ background: "linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.05) 50%)" }} />
-      )}
-
-      <div className={cn(
-        sizeConfig.padding,
-        isRound && "flex flex-col items-center justify-center h-full text-center overflow-hidden"
-      )}
-      style={isRound ? { maxHeight: dimension, borderRadius: "9999px" } : undefined}
+      {/* Visual shape: clipped for round */}
+      <div
+        className={cn(
+          "shadow-md cursor-grab active:cursor-grabbing animate-canvas-in transition-transform duration-150",
+          colorConfig.bg,
+          isRound ? "rounded-full overflow-hidden" : "rounded-lg",
+          isSelected && "ring-2 ring-foreground/20",
+          isDragging && "shadow-2xl opacity-80 scale-[1.04]"
+        )}
+        style={{
+          width: isRound ? dimension : sizeConfig.width,
+          height: isRound ? dimension : undefined,
+          minHeight: isRound ? undefined : sizeConfig.minHeight,
+          transform: isRound ? undefined : `rotate(${((item.z_index % 5) - 2) * 1.5}deg)`,
+        }}
       >
-        {isEditing ? (
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            className={cn(
-              "w-full bg-transparent resize-none outline-none font-body leading-relaxed",
-              isRound ? "min-h-[40px] text-center" : "min-h-[60px]",
-              sizeConfig.font, colorConfig.text
-            )}
-            placeholder="Éditer..."
-          />
-        ) : (
-          <p className={cn(
-            "font-body leading-relaxed whitespace-pre-wrap",
-            isRound ? "min-h-[40px]" : "min-h-[60px]",
-            sizeConfig.font, colorConfig.text,
-            !text && "opacity-50"
-          )}>
-            {text || "Double-cliquez..."}
-          </p>
+        {/* Folded corner (only square) */}
+        {!isRound && (
+          <div className="absolute top-0 right-0 w-6 h-6" style={{ background: "linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.05) 50%)" }} />
         )}
 
-        {stickySize !== "small" && !isRound && (
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-black/10">
-            <span className={cn("text-[10px] font-medium", colorConfig.text)}>{creatorName}</span>
-          </div>
-        )}
+        <div
+          className={cn(
+            sizeConfig.padding,
+            isRound && "flex flex-col items-center justify-center h-full text-center overflow-hidden"
+          )}
+          style={isRound ? { maxHeight: dimension } : undefined}
+        >
+          {isEditing ? (
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+              className={cn(
+                "w-full bg-transparent resize-none outline-none font-body leading-relaxed",
+                isRound ? "min-h-[40px] text-center" : "min-h-[60px]",
+                sizeConfig.font, colorConfig.text
+              )}
+              placeholder="Éditer..."
+            />
+          ) : (
+            <p className={cn(
+              "font-body leading-relaxed whitespace-pre-wrap",
+              isRound ? "min-h-[40px]" : "min-h-[60px]",
+              sizeConfig.font, colorConfig.text,
+              !text && "opacity-50"
+            )}>
+              {text || "Double-cliquez..."}
+            </p>
+          )}
+
+          {stickySize !== "small" && !isRound && (
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-black/10">
+              <span className={cn("text-[10px] font-medium", colorConfig.text)}>{creatorName}</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Toolbar */}
+      {/* Toolbar — outside the clipped shape */}
       {isSelected && !isEditing && (
         <div
           className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 rounded-lg bg-background shadow-lg border border-border whitespace-nowrap animate-canvas-in"
