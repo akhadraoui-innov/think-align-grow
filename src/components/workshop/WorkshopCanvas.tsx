@@ -358,7 +358,7 @@ export function WorkshopCanvas({
         data-canvas="true"
       >
         {/* Arrows SVG layer */}
-        <svg className="absolute top-0 left-0 pointer-events-none" style={{ width: "10000px", height: "10000px", overflow: "visible", left: "-5000px", top: "-5000px" }}>
+        <svg className="absolute pointer-events-none" style={{ width: "1px", height: "1px", overflow: "visible", left: 0, top: 0 }}>
           {arrows.map(arrow => {
             const fromItem = items.find(i => i.id === arrow.from_item_id);
             const toItem = items.find(i => i.id === arrow.to_item_id);
