@@ -30,7 +30,7 @@ type ViewMode = "list" | "board";
 
 export function ChallengeView({ template, workshopId, cards, pillars, isHost, readOnly }: ChallengeViewProps) {
   const { subjects, slots, loading } = useChallengeStructure(template.id);
-  const { responses, placeCard, removeCard, updateResponse } = useChallengeResponses(workshopId);
+  const { responses, placeCard, removeCard, moveToSlot, updateResponse } = useChallengeResponses(workshopId);
   const { data: analysis, refetch: refetchAnalysis } = useChallengeAnalysis(workshopId);
   const { items: stagingItems, stageCard, unstageCard, updateStagingFormat } = useChallengeStaging(workshopId);
   const [currentIndex, setCurrentIndex] = useState(0);
