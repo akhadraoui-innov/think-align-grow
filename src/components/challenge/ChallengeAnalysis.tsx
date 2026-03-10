@@ -35,7 +35,7 @@ export function ChallengeAnalysisView({ analysis }: ChallengeAnalysisProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col h-full overflow-auto p-6 space-y-8"
+      className="flex flex-col flex-1 min-h-0 overflow-y-auto p-6 space-y-8"
     >
       {/* Global maturity */}
       {data.global_maturity !== undefined && (
