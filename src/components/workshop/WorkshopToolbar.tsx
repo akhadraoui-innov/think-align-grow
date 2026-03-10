@@ -67,6 +67,7 @@ export function WorkshopToolbar({
   selectedIconName, onSelectIcon,
   stickyShape, onStickyShapeChange,
   groupShape, onGroupShapeChange,
+  readOnly,
 }: WorkshopToolbarProps) {
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [iconSearch, setIconSearch] = useState("");
