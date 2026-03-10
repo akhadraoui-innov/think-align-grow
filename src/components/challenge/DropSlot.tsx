@@ -29,10 +29,12 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    // If this is a reorder drag, don't show the slot-level highlight
-    if (e.dataTransfer.types.includes("reorder-id")) return;
     e.dataTransfer.dropEffect = "move";
-    setIsDragOver(true);
+    // Don't highlight zone for internal reorder
+    const sourceSlotId = e.dataTransfer.types.includes("source-slot-id");
+    if (!sourceSlotId) {
+      setIsDragOver(true);
+    }
   }, []);
 
   const handleDragLeave = useCallback(() => setIsDragOver(false), []);
@@ -42,15 +44,15 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
     e.stopPropagation();
     setIsDragOver(false);
 
-    // If it's a reorder event, ignore at slot level (handled by card-level)
-    const reorderId = e.dataTransfer.getData("reorder-id");
-    if (reorderId) return;
-
     const cardId = e.dataTransfer.getData("card-id");
     if (!cardId) return;
 
-    // If dragged from a slot (source-response-id), it's a move — but DropSlot is list view,
-    // so just place the card (source removal handled by caller if needed)
+    const sourceSlotId = e.dataTransfer.getData("source-slot-id");
+
+    // Same slot → reorder handled at card level
+    if (sourceSlotId === slot.id) return;
+
+    // Different slot or sidebar → place card
     onDrop(slot.id, cardId);
   }, [slot.id, onDrop]);
 
@@ -164,11 +166,18 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
       exit={{ opacity: 0, scale: 0.8 }}
       draggable={!readOnly && slot.slot_type === "ranked"}
       onDragStart={(e: any) => {
-        e.dataTransfer?.setData("reorder-id", resp.id);
-        if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+        if (!e.dataTransfer) return;
+        e.dataTransfer.setData("card-id", card.id);
+        e.dataTransfer.setData("source-response-id", resp.id);
+        e.dataTransfer.setData("source-slot-id", slot.id);
+        e.dataTransfer.effectAllowed = "move";
       }}
       onDragOver={(e: any) => {
-        if (e.dataTransfer?.types.includes("reorder-id")) {
+        if (e.dataTransfer?.types.includes("source-slot-id")) {
+          const srcSlotId = e.dataTransfer.getData("source-slot-id");
+          // Only accept reorder from same slot
+          // Note: getData may not work in dragOver due to browser security,
+          // so we accept all and filter in onDrop
           e.preventDefault();
           e.stopPropagation();
           onReorderHover(idx);
@@ -176,11 +185,12 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
       }}
       onDragLeave={() => onReorderHover(null)}
       onDrop={(e: any) => {
-        const dragId = e.dataTransfer?.getData("reorder-id");
-        if (dragId) {
+        const srcSlotId = e.dataTransfer?.getData("source-slot-id");
+        const dragRespId = e.dataTransfer?.getData("source-response-id");
+        if (srcSlotId === slot.id && dragRespId) {
           e.preventDefault();
           e.stopPropagation();
-          onReorder(dragId, idx);
+          onReorder(dragRespId, idx);
         }
       }}
       className={cn(
@@ -207,7 +217,11 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
             <MaturitySelector value={resp.maturity} onChange={(v) => onUpdateResponse?.(resp.id, { maturity: v })} readOnly={readOnly} compact />
             <FormatSelector value={fmt} onChange={(f) => onUpdateResponse?.(resp.id, { format: f })} readOnly={readOnly} />
             {!readOnly && (
-              <button onClick={(e) => { e.stopPropagation(); onRemove(resp.id); }} className="p-0.5 rounded hover:bg-destructive/10">
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onRemove(resp.id); }}
+                className="p-0.5 rounded hover:bg-destructive/10"
+              >
                 <X className="h-3 w-3 text-destructive" />
               </button>
             )}
@@ -229,7 +243,11 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
             </div>
             <div className="flex items-center gap-1 shrink-0">
               {!readOnly && (
-                <button onClick={(e) => { e.stopPropagation(); onRemove(resp.id); }} className="p-0.5 rounded-lg hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); onRemove(resp.id); }}
+                  className="p-0.5 rounded-lg hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
                   <X className="h-3 w-3 text-destructive" />
                 </button>
               )}
@@ -267,7 +285,11 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
             </div>
             <div className="flex items-center gap-1 shrink-0">
               {!readOnly && (
-                <button onClick={(e) => { e.stopPropagation(); onRemove(resp.id); }} className="p-0.5 rounded-lg hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); onRemove(resp.id); }}
+                  className="p-0.5 rounded-lg hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
                   <X className="h-3 w-3 text-destructive" />
                 </button>
               )}
