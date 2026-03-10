@@ -194,13 +194,13 @@ export function WorkshopCanvas({
       const originY = ref.midY - rect.top;
       const panDx = midX - ref.midX;
       const panDy = midY - ref.midY;
-      onViewportChange({
+      scheduleViewportUpdate({
         x: originX - (originX - ref.vp.x) * ratio + panDx,
         y: originY - (originY - ref.vp.y) * ratio + panDy,
         scale: newScale,
       });
     }
-  }, [onViewportChange]);
+  }, [scheduleViewportUpdate]);
 
   const handleTouchEnd = useCallback(() => {
     touchRef.current = null;
