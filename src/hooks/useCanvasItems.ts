@@ -30,6 +30,12 @@ export function useCanvasItems(workshopId: string | undefined) {
   const [items, setItems] = useState<CanvasItem[]>([]);
   const [loading, setLoading] = useState(true);
   const debounceTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const itemsRef = useRef<CanvasItem[]>([]);
+
+  // Keep itemsRef in sync
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   // Fetch initial items
   useEffect(() => {
