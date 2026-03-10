@@ -51,7 +51,6 @@ export function ChallengeBoard({
   }, [onStage]);
 
   const handleSlotDrop = useCallback((slotId: string, cardId: string) => {
-    // Remove from staging if it was there
     const stagingItem = subjectStaging.find(i => i.card_id === cardId);
     if (stagingItem) onUnstage?.(stagingItem.id);
     onDrop(slotId, cardId);
@@ -61,7 +60,7 @@ export function ChallengeBoard({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col h-full min-h-0"
+      className="flex flex-col flex-1 min-h-0 overflow-hidden"
     >
       {/* Subject header */}
       <div className="px-6 py-4 border-b border-border shrink-0">
@@ -77,7 +76,7 @@ export function ChallengeBoard({
       </div>
 
       {/* Board — zones displayed as a spatial grid */}
-      <div className="flex-1 overflow-auto p-6 min-h-0">
+      <div className="flex-1 overflow-y-auto p-6 min-h-0">
         <div className={cn(
           "grid gap-5",
           subjectSlots.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :

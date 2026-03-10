@@ -19,6 +19,7 @@ interface BoardZoneProps {
 
 export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, onMoveToSlot, onUpdateResponse, readOnly }: BoardZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [reorderDropIdx, setReorderDropIdx] = useState<number | null>(null);
 
   const slotResponses = responses
     .filter(r => r.slot_id === slot.id)
@@ -26,21 +27,28 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    // If this is an internal reorder, don't show the zone-level highlight
+    if (e.dataTransfer.types.includes("reorder-response-id")) return;
     e.dataTransfer.dropEffect = "move";
     setIsDragOver(true);
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // Only handle leave if we're actually leaving the zone, not entering a child
     const relatedTarget = e.relatedTarget as Node;
     if (e.currentTarget.contains(relatedTarget)) return;
     setIsDragOver(false);
+    setReorderDropIdx(null);
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
+    setReorderDropIdx(null);
+
+    // If it's a reorder event within this slot, handle reorder
+    const reorderId = e.dataTransfer.getData("reorder-response-id");
+    if (reorderId) return; // handled by individual card drop targets
 
     const cardId = e.dataTransfer.getData("card-id");
     if (!cardId) return;
@@ -52,21 +60,28 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
     // If dragged from another slot (has source-response-id), it's a MOVE
     const sourceResponseId = e.dataTransfer.getData("source-response-id");
     if (sourceResponseId) {
-      // Use onMoveToSlot if available (removes source + adds to target atomically)
       if (onMoveToSlot) {
         onMoveToSlot(sourceResponseId, slot.id, cardId);
         return;
       }
-      // Fallback: remove source, then add
       onRemove(sourceResponseId);
     }
 
-    // If dragged from staging, remove staging item
-    const stagingId = e.dataTransfer.getData("staging-id");
-    // Note: staging removal is handled by the parent via onDrop chain
-
     onDrop(slot.id, cardId);
   }, [slot.id, onDrop, onRemove, onMoveToSlot, slotResponses]);
+
+  const handleReorder = useCallback((dragResponseId: string, dropIdx: number) => {
+    if (!onUpdateResponse) return;
+    const dragIdx = slotResponses.findIndex(r => r.id === dragResponseId);
+    if (dragIdx < 0 || dragIdx === dropIdx) return;
+    const reordered = [...slotResponses];
+    const [moved] = reordered.splice(dragIdx, 1);
+    reordered.splice(dropIdx, 0, moved);
+    reordered.forEach((r, i) => {
+      onUpdateResponse(r.id, { rank: i });
+    });
+    setReorderDropIdx(null);
+  }, [slotResponses, onUpdateResponse]);
 
   return (
     <div
@@ -100,7 +115,30 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
             if (!card) return null;
 
             return (
-              <div key={resp.id} className="relative">
+              <div
+                key={resp.id}
+                className={cn(
+                  "relative",
+                  reorderDropIdx === idx && "ring-2 ring-primary/50 rounded-2xl"
+                )}
+                onDragOver={(e) => {
+                  // Only accept reorder drags (within the same slot)
+                  if (e.dataTransfer.types.includes("reorder-response-id")) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setReorderDropIdx(idx);
+                  }
+                }}
+                onDragLeave={() => setReorderDropIdx(null)}
+                onDrop={(e) => {
+                  const dragId = e.dataTransfer.getData("reorder-response-id");
+                  if (dragId) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleReorder(dragId, idx);
+                  }
+                }}
+              >
                 {slot.slot_type === "ranked" && (
                   <div className="absolute -top-2 -left-2 z-10 h-5 w-5 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-black">
                     {idx + 1}
@@ -117,6 +155,8 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
                   onDragStart={(e) => {
                     e.dataTransfer.setData("card-id", card.id);
                     e.dataTransfer.setData("source-response-id", resp.id);
+                    // Also set reorder data so same-slot drops are treated as reorder
+                    e.dataTransfer.setData("reorder-response-id", resp.id);
                     e.dataTransfer.effectAllowed = "move";
                   }}
                 />
