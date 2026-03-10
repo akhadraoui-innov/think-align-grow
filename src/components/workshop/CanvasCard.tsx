@@ -164,9 +164,9 @@ export function CanvasCard({
   }
 
   // ═══════════════════════════════════════════
-  // LIGHT MODE — compact colored card
+  // SECTION MODE — compact colored card
   // ═══════════════════════════════════════════
-  if (displayMode === "light") {
+  if (displayMode === "section") {
     return (
       <>
         <div
