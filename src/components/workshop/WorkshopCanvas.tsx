@@ -226,16 +226,39 @@ export function WorkshopCanvas({
   }, [mode, viewport, onAddSticky, onAddGroup, onAddIcon, onAddText, onSelectItem]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    // Check drag intent threshold before starting item drag
+    if (dragIntentRef.current && !dragIntentRef.current.captured) {
+      const di = dragIntentRef.current;
+      const dist = Math.hypot(e.clientX - di.startX, e.clientY - di.startY);
+      if (dist > 5) {
+        // Threshold exceeded — start actual drag
+        di.captured = true;
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+          const vp = viewportRef.current;
+          const canvasX = (di.startX - rect.left - vp.x) / vp.scale;
+          const canvasY = (di.startY - rect.top - vp.y) / vp.scale;
+          setDragOffset({ x: canvasX - di.item.x, y: canvasY - di.item.y });
+          setDraggingItem(di.itemId);
+          onBringToFront(di.itemId);
+          containerRef.current?.setPointerCapture(di.pointerId);
+        }
+      }
+      return;
+    }
+
     if (isPanning) {
-      onViewportChange({ ...viewport, x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+      const vp = viewportRef.current;
+      scheduleViewportUpdate({ ...vp, x: e.clientX - panStart.x, y: e.clientY - panStart.y });
     } else if (draggingItem) {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const canvasX = (e.clientX - rect.left - viewport.x) / viewport.scale - dragOffset.x;
-      const canvasY = (e.clientY - rect.top - viewport.y) / viewport.scale - dragOffset.y;
+      const vp = viewportRef.current;
+      const canvasX = (e.clientX - rect.left - vp.x) / vp.scale - dragOffset.x;
+      const canvasY = (e.clientY - rect.top - vp.y) / vp.scale - dragOffset.y;
       onUpdatePosition(draggingItem, snapValue(canvasX, snapToGrid), snapValue(canvasY, snapToGrid));
     }
-  }, [isPanning, panStart, viewport, onViewportChange, draggingItem, dragOffset, onUpdatePosition, snapToGrid]);
+  }, [isPanning, panStart, scheduleViewportUpdate, draggingItem, dragOffset, onUpdatePosition, snapToGrid, onBringToFront]);
 
   const handlePointerUp = useCallback(() => {
     if (draggingItem) {
