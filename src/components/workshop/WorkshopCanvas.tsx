@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CanvasItem } from "@/hooks/useCanvasItems";
 import { CanvasCard } from "./CanvasCard";
@@ -32,6 +32,14 @@ interface WorkshopCanvasProps {
   viewport: { x: number; y: number; scale: number };
   onViewportChange: (vp: { x: number; y: number; scale: number }) => void;
   profiles: Record<string, { display_name: string; avatar_url: string | null }>;
+  snapToGrid?: boolean;
+  onFitToContent?: () => void;
+}
+
+const GRID_SIZE = 20;
+
+function snapValue(v: number, snap: boolean): number {
+  return snap ? Math.round(v / GRID_SIZE) * GRID_SIZE : v;
 }
 
 export function WorkshopCanvas({
@@ -41,6 +49,7 @@ export function WorkshopCanvas({
   onBringToFront, onDeleteItem,
   onAddSticky, onAddGroup, onAddIcon, onAddText,
   onArrowClick, viewport, onViewportChange, profiles,
+  snapToGrid = false,
 }: WorkshopCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPanning, setIsPanning] = useState(false);
@@ -48,12 +57,34 @@ export function WorkshopCanvas({
   const [draggingItem, setDraggingItem] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
+  // Touch state for pinch-zoom
+  const touchRef = useRef<{ dist: number; midX: number; midY: number; vp: typeof viewport } | null>(null);
+
+  // Keyboard shortcuts: Delete/Backspace to delete, Escape to deselect
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't capture if user is typing in an input
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement).isContentEditable) return;
+
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedItemId) {
+        e.preventDefault();
+        onDeleteItem(selectedItemId);
+        onSelectItem(null);
+      }
+      if (e.key === "Escape" && selectedItemId) {
+        onSelectItem(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedItemId, onDeleteItem, onSelectItem]);
+
   // Compute which items are inside which groups
   const groupChildCounts = useMemo(() => {
     const groups = items.filter(i => i.type === "group");
     const nonGroups = items.filter(i => i.type !== "group" && i.type !== "arrow");
     const counts: Record<string, number> = {};
-    
     groups.forEach(g => {
       const gw = g.width || 300;
       const gh = g.height || 200;
@@ -68,10 +99,8 @@ export function WorkshopCanvas({
     return counts;
   }, [items]);
 
-  // Ensure groups render below items by adjusting z-index sorting
   const sortedItems = useMemo(() => {
     const sorted = [...items].sort((a, b) => {
-      // Groups always render below non-groups at same z level
       if (a.type === "group" && b.type !== "group" && b.type !== "arrow") return -1;
       if (b.type === "group" && a.type !== "group" && a.type !== "arrow") return 1;
       return a.z_index - b.z_index;
@@ -79,9 +108,11 @@ export function WorkshopCanvas({
     return sorted;
   }, [items]);
 
+  // Wheel: scroll = pan, Ctrl+scroll = zoom
   const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
     if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
+      // Zoom
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
       const mouseX = e.clientX - rect.left;
@@ -94,8 +125,66 @@ export function WorkshopCanvas({
         y: mouseY - (mouseY - viewport.y) * scaleRatio,
         scale: newScale,
       });
+    } else {
+      // Pan
+      onViewportChange({
+        ...viewport,
+        x: viewport.x - e.deltaX,
+        y: viewport.y - e.deltaY,
+      });
     }
   }, [viewport, onViewportChange]);
+
+  // Prevent default wheel on the container to avoid page scroll
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const prevent = (e: WheelEvent) => e.preventDefault();
+    el.addEventListener("wheel", prevent, { passive: false });
+    return () => el.removeEventListener("wheel", prevent);
+  }, []);
+
+  // Touch handlers for pinch-zoom and 2-finger pan
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+      touchRef.current = { dist, midX, midY, vp: { ...viewport } };
+    }
+  }, [viewport]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && touchRef.current) {
+      e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+      const ref = touchRef.current;
+      const scaleRatio = dist / ref.dist;
+      const newScale = Math.max(0.25, Math.min(2, ref.vp.scale * scaleRatio));
+      const ratio = newScale / ref.vp.scale;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const originX = ref.midX - rect.left;
+      const originY = ref.midY - rect.top;
+      const panDx = midX - ref.midX;
+      const panDy = midY - ref.midY;
+      onViewportChange({
+        x: originX - (originX - ref.vp.x) * ratio + panDx,
+        y: originY - (originY - ref.vp.y) * ratio + panDy,
+        scale: newScale,
+      });
+    }
+  }, [onViewportChange]);
+
+  const handleTouchEnd = useCallback(() => {
+    touchRef.current = null;
+  }, []);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (e.target === containerRef.current || (e.target as HTMLElement).dataset.canvas === "true") {
@@ -112,7 +201,7 @@ export function WorkshopCanvas({
       setIsPanning(true);
       setPanStart({ x: e.clientX - viewport.x, y: e.clientY - viewport.y });
       onSelectItem(null);
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      containerRef.current?.setPointerCapture(e.pointerId);
     }
   }, [mode, viewport, onAddSticky, onAddGroup, onAddIcon, onAddText, onSelectItem]);
 
@@ -124,12 +213,11 @@ export function WorkshopCanvas({
       if (!rect) return;
       const canvasX = (e.clientX - rect.left - viewport.x) / viewport.scale - dragOffset.x;
       const canvasY = (e.clientY - rect.top - viewport.y) / viewport.scale - dragOffset.y;
-      onUpdatePosition(draggingItem, canvasX, canvasY);
+      onUpdatePosition(draggingItem, snapValue(canvasX, snapToGrid), snapValue(canvasY, snapToGrid));
     }
-  }, [isPanning, panStart, viewport, onViewportChange, draggingItem, dragOffset, onUpdatePosition]);
+  }, [isPanning, panStart, viewport, onViewportChange, draggingItem, dragOffset, onUpdatePosition, snapToGrid]);
 
   const handlePointerUp = useCallback(() => {
-    // When dropping an item, check if it's over a group
     if (draggingItem) {
       const draggedItem = items.find(i => i.id === draggingItem);
       if (draggedItem && draggedItem.type !== "group" && draggedItem.type !== "arrow") {
@@ -137,7 +225,7 @@ export function WorkshopCanvas({
         for (const g of groups) {
           const gw = g.width || 300;
           const gh = g.height || 200;
-          if (draggedItem.x >= g.x && draggedItem.y >= g.y && 
+          if (draggedItem.x >= g.x && draggedItem.y >= g.y &&
               draggedItem.x <= g.x + gw && draggedItem.y <= g.y + gh) {
             onUpdateContent(draggingItem, { parent_group_id: g.id });
             break;
@@ -149,6 +237,7 @@ export function WorkshopCanvas({
     setDraggingItem(null);
   }, [draggingItem, items, onUpdateContent]);
 
+  // Fix #2: capture on containerRef instead of e.target
   const handleItemDragStart = useCallback((itemId: string, e: React.PointerEvent, item: CanvasItem) => {
     if (mode === "arrow") { onArrowClick(itemId); return; }
     const rect = containerRef.current?.getBoundingClientRect();
@@ -159,7 +248,7 @@ export function WorkshopCanvas({
     setDraggingItem(itemId);
     onBringToFront(itemId);
     onSelectItem(itemId);
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    containerRef.current?.setPointerCapture(e.pointerId);
   }, [mode, viewport, onBringToFront, onSelectItem, onArrowClick]);
 
   const getCardData = (cardId: string | null) => cardId ? cards.find(c => c.id === cardId) || null : null;
@@ -174,12 +263,15 @@ export function WorkshopCanvas({
     <div
       ref={containerRef}
       className="relative w-full h-full overflow-hidden bg-muted/30"
-      style={{ cursor: cursorStyle }}
+      style={{ cursor: cursorStyle, touchAction: "none" }}
       onWheel={handleWheel}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       data-canvas="true"
     >
       {/* Grid */}
@@ -187,7 +279,7 @@ export function WorkshopCanvas({
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: `radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)`,
-          backgroundSize: `${20 * viewport.scale}px ${20 * viewport.scale}px`,
+          backgroundSize: `${GRID_SIZE * viewport.scale}px ${GRID_SIZE * viewport.scale}px`,
           backgroundPosition: `${viewport.x}px ${viewport.y}px`,
           opacity: 0.5,
         }}
@@ -199,8 +291,8 @@ export function WorkshopCanvas({
         style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})` }}
         data-canvas="true"
       >
-        {/* Arrows */}
-        <svg className="absolute top-0 left-0 pointer-events-none" style={{ width: "10000px", height: "10000px", overflow: "visible" }}>
+        {/* Arrows — Fix #10: width/height 0 with overflow visible */}
+        <svg className="absolute top-0 left-0 pointer-events-none" style={{ width: 0, height: 0, overflow: "visible" }}>
           {arrows.map(arrow => {
             const fromItem = items.find(i => i.id === arrow.from_item_id);
             const toItem = items.find(i => i.id === arrow.to_item_id);
@@ -318,11 +410,7 @@ export function WorkshopCanvas({
           return null;
         })}
 
-        {arrowStart && mode === "arrow" && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-foreground text-background px-4 py-2 rounded-full text-sm font-bold z-50 pointer-events-none">
-            Cliquez sur un autre élément pour créer la flèche
-          </div>
-        )}
+        {/* Fix #1: Arrow indicator removed from here — it's already in WorkshopRoom */}
       </div>
     </div>
   );

@@ -61,6 +61,7 @@ export default function WorkshopRoom() {
   const [groupShape, setGroupShape] = useState("rectangle");
   const [showDiscussion, setShowDiscussion] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [snapToGrid, setSnapToGrid] = useState(false);
 
   // Comments for selected item
   const { comments, loading: commentsLoading, addComment, deleteComment } = useCanvasComments(id, selectedItemId);
@@ -68,7 +69,6 @@ export default function WorkshopRoom() {
   // Profiles cache
   const [profiles, setProfiles] = useState<Record<string, { display_name: string; avatar_url: string | null }>>({});
 
-  // Load participant profiles
   useEffect(() => {
     if (!participants.length) return;
     const map: Record<string, { display_name: string; avatar_url: string | null }> = {};
@@ -78,14 +78,12 @@ export default function WorkshopRoom() {
     setProfiles(map);
   }, [participants]);
 
-  // Redirect invalid id
   useEffect(() => {
     if (id === ":id") {
       navigate("/workshop", { replace: true });
     }
   }, [id, navigate]);
 
-  // Get title for selected item
   const selectedItemTitle = useMemo(() => {
     if (!selectedItemId) return undefined;
     const item = items.find(i => i.id === selectedItemId);
@@ -103,7 +101,6 @@ export default function WorkshopRoom() {
   const handleAddCard = useCallback(async (cardId: string) => {
     const centerX = (-viewport.x + 400) / viewport.scale;
     const centerY = (-viewport.y + 300) / viewport.scale;
-    // Offset slightly random to avoid stacking
     const offsetX = Math.random() * 60 - 30;
     const offsetY = Math.random() * 60 - 30;
     await addItem("card", centerX + offsetX, centerY + offsetY, { card_id: cardId });
@@ -152,6 +149,34 @@ export default function WorkshopRoom() {
     }
   }, []);
 
+  // Fit-to-content: calculate bounding box of all items and adjust viewport
+  const handleFitToContent = useCallback(() => {
+    const nonArrows = items.filter(i => i.type !== "arrow");
+    if (nonArrows.length === 0) {
+      setViewport({ x: 100, y: 80, scale: 1 });
+      return;
+    }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nonArrows.forEach(item => {
+      const w = item.width || 240;
+      const h = item.height || 160;
+      minX = Math.min(minX, item.x);
+      minY = Math.min(minY, item.y);
+      maxX = Math.max(maxX, item.x + w);
+      maxY = Math.max(maxY, item.y + h);
+    });
+    const container = document.querySelector("[data-canvas='true']")?.parentElement;
+    const cw = container?.clientWidth || 800;
+    const ch = container?.clientHeight || 600;
+    const padding = 60;
+    const contentW = maxX - minX + padding * 2;
+    const contentH = maxY - minY + padding * 2;
+    const scale = Math.max(0.25, Math.min(1.5, Math.min(cw / contentW, ch / contentH)));
+    const cx = (cw - contentW * scale) / 2 - minX * scale + padding * scale;
+    const cy = (ch - contentH * scale) / 2 - minY * scale + padding * scale;
+    setViewport({ x: cx, y: cy, scale });
+  }, [items]);
+
   const copyCode = () => {
     if (!workshop) return;
     navigator.clipboard.writeText(workshop.code);
@@ -160,7 +185,6 @@ export default function WorkshopRoom() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Loading state
   if (workshopLoading) {
     return (
       <PageTransition>
@@ -171,7 +195,6 @@ export default function WorkshopRoom() {
     );
   }
 
-  // Not found
   if (!workshop) {
     return (
       <PageTransition>
@@ -186,7 +209,6 @@ export default function WorkshopRoom() {
     );
   }
 
-  // Lobby state
   if (workshop.status === "lobby") {
     return (
       <PageTransition>
@@ -210,8 +232,6 @@ export default function WorkshopRoom() {
               {copied ? <Check className="h-5 w-5 text-pillar-finance" /> : <Copy className="h-5 w-5 text-muted-foreground" />}
               {workshop.code}
             </button>
-
-            {/* Participants */}
             <div className="mt-8 mb-6">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
@@ -220,10 +240,7 @@ export default function WorkshopRoom() {
               </div>
               <div className="flex flex-wrap justify-center gap-2">
                 {participants.map(p => (
-                  <div
-                    key={p.id}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border"
-                  >
+                  <div key={p.id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card border border-border">
                     <div className={`h-2 w-2 rounded-full ${p.is_connected ? "bg-pillar-finance" : "bg-muted"}`} />
                     <span className="text-xs font-bold">{p.display_name}</span>
                     {p.role === "host" && <Crown className="h-3 w-3 text-primary" />}
@@ -231,19 +248,12 @@ export default function WorkshopRoom() {
                 ))}
               </div>
             </div>
-
             {isHost ? (
-              <Button
-                onClick={startWorkshop}
-                className="font-black uppercase tracking-wider rounded-xl"
-                disabled={participants.length < 1}
-              >
+              <Button onClick={startWorkshop} className="font-black uppercase tracking-wider rounded-xl" disabled={participants.length < 1}>
                 Démarrer le workshop
               </Button>
             ) : (
-              <p className="text-xs text-muted-foreground italic">
-                L'animateur va bientôt démarrer la session...
-              </p>
+              <p className="text-xs text-muted-foreground italic">L'animateur va bientôt démarrer la session...</p>
             )}
           </motion.div>
         </div>
@@ -254,23 +264,17 @@ export default function WorkshopRoom() {
   const isCompleted = workshop.status === "completed";
   const isReadOnly = isCompleted && !editMode;
 
-  // Active/Paused/Completed — Full Canvas Mode
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
       {/* Read-only banner for completed workshops */}
       {isCompleted && (
-        <div className={`flex items-center justify-center gap-3 px-4 py-2 text-xs font-bold uppercase tracking-widest ${isReadOnly ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>
+        <div className={`flex items-center justify-center gap-3 px-4 py-2 text-xs font-bold uppercase tracking-widest shrink-0 ${isReadOnly ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>
           {isReadOnly ? (
             <>
               <Lock className="h-3.5 w-3.5" />
               <span>Mode lecture seule — Workshop terminé</span>
               {isHost && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="ml-4 rounded-xl font-bold uppercase tracking-wider text-xs h-7"
-                  onClick={() => setEditMode(true)}
-                >
+                <Button variant="outline" size="sm" className="ml-4 rounded-xl font-bold uppercase tracking-wider text-xs h-7" onClick={() => setEditMode(true)}>
                   <Pencil className="h-3 w-3 mr-1.5" />
                   Modifier
                 </Button>
@@ -280,12 +284,7 @@ export default function WorkshopRoom() {
             <>
               <Pencil className="h-3.5 w-3.5" />
               <span>Mode édition</span>
-              <Button
-                variant="default"
-                size="sm"
-                className="ml-4 rounded-xl font-bold uppercase tracking-wider text-xs h-7"
-                onClick={() => { setEditMode(false); toast.success("Modifications enregistrées"); }}
-              >
+              <Button variant="default" size="sm" className="ml-4 rounded-xl font-bold uppercase tracking-wider text-xs h-7" onClick={() => { setEditMode(false); toast.success("Modifications enregistrées"); }}>
                 <Save className="h-3 w-3 mr-1.5" />
                 Enregistrer
               </Button>
@@ -294,7 +293,7 @@ export default function WorkshopRoom() {
         </div>
       )}
 
-      {/* Toolbar */}
+      {/* Toolbar — now in flex flow, no absolute/mt needed */}
       <WorkshopToolbar
         mode={isReadOnly ? "select" : mode}
         onModeChange={isReadOnly ? () => {} : setMode}
@@ -316,18 +315,16 @@ export default function WorkshopRoom() {
         groupShape={groupShape}
         onGroupShapeChange={setGroupShape}
         readOnly={isReadOnly}
+        snapToGrid={snapToGrid}
+        onSnapToggle={() => setSnapToGrid(!snapToGrid)}
+        onFitToContent={handleFitToContent}
       />
 
-      {/* Main area */}
-      <div className={`flex-1 flex relative ${isCompleted ? 'mt-[92px]' : 'mt-[60px]'}`}>
+      {/* Main area — flex-1, no margin-top */}
+      <div className="flex-1 flex relative min-h-0">
         {/* Card Sidebar — hidden in read-only */}
         {!isReadOnly && allCards && pillars && (
-          <CardSidebar
-            cards={allCards}
-            pillars={pillars}
-            onAddCard={handleAddCard}
-            isMobile={isMobile}
-          />
+          <CardSidebar cards={allCards} pillars={pillars} onAddCard={handleAddCard} isMobile={isMobile} />
         )}
 
         {/* Canvas */}
@@ -354,9 +351,9 @@ export default function WorkshopRoom() {
             viewport={viewport}
             onViewportChange={setViewport}
             profiles={profiles}
+            snapToGrid={snapToGrid}
           />
 
-          {/* Stats */}
           <CanvasStats
             items={items}
             pillars={pillars || []}
@@ -364,7 +361,6 @@ export default function WorkshopRoom() {
             participantCount={participants.length}
           />
 
-          {/* Discussion toggle */}
           {selectedItemId && (
             <motion.button
               initial={{ scale: 0 }}
@@ -376,7 +372,6 @@ export default function WorkshopRoom() {
             </motion.button>
           )}
 
-          {/* Discussion panel */}
           <DiscussionPanel
             isOpen={showDiscussion && !!selectedItemId}
             onClose={() => setShowDiscussion(false)}
