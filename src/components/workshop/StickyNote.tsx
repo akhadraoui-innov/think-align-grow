@@ -97,8 +97,10 @@ export function StickyNote({
 
       <div className={cn(
         sizeConfig.padding,
-        isRound && "flex flex-col items-center justify-center h-full text-center"
-      )}>
+        isRound && "flex flex-col items-center justify-center h-full text-center overflow-hidden"
+      )}
+      style={isRound ? { maxHeight: dimension, borderRadius: "9999px" } : undefined}
+      >
         {isEditing ? (
           <textarea
             ref={textareaRef}
