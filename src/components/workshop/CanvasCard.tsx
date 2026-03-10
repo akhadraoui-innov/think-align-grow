@@ -257,7 +257,7 @@ export function CanvasCard({
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-black uppercase tracking-widest rounded-full text-[9px] px-2 py-0.5"
-                style={{ background: `${pillarColor}15`, color: pillarColor }}>
+                style={{ background: `hsl(${pillarColorVar} / 0.08)`, color: pillarColor }}>
                 {pillar?.name || "Pilier"}
               </span>
               <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
