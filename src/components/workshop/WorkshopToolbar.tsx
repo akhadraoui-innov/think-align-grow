@@ -5,7 +5,7 @@ import {
   ZoomIn, ZoomOut, Play, Pause, Check, 
   Users, ArrowLeft, Type, Smile, ChevronDown,
   Circle, Triangle, Hexagon, Diamond, RectangleHorizontal,
-  Maximize, Grid3X3,
+  Maximize, Grid3X3, Pencil, Save, Lock,
   icons
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,8 @@ interface WorkshopToolbarProps {
   snapToGrid?: boolean;
   onSnapToggle?: () => void;
   onFitToContent?: () => void;
+  editMode?: boolean;
+  onEditModeChange?: (editMode: boolean) => void;
 }
 
 const TOOLS = [
@@ -73,6 +75,7 @@ export function WorkshopToolbar({
   groupShape, onGroupShapeChange,
   readOnly,
   snapToGrid, onSnapToggle, onFitToContent,
+  editMode, onEditModeChange,
 }: WorkshopToolbarProps) {
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [iconSearch, setIconSearch] = useState("");
@@ -230,6 +233,31 @@ export function WorkshopToolbar({
 
       {/* Right */}
       <div className="flex items-center gap-3">
+        {/* Edit mode controls for completed workshops */}
+        {workshopStatus === "completed" && (
+          readOnly ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Lock className="h-3.5 w-3.5" />
+              <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Lecture seule</span>
+              {isHost && (
+                <Button variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs h-7 ml-1" onClick={() => onEditModeChange?.(true)}>
+                  <Pencil className="h-3 w-3 mr-1.5" />
+                  Modifier
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-primary">
+              <Pencil className="h-3.5 w-3.5" />
+              <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Édition</span>
+              <Button variant="default" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs h-7 ml-1" onClick={() => onEditModeChange?.(false)}>
+                <Save className="h-3 w-3 mr-1.5" />
+                Enregistrer
+              </Button>
+            </div>
+          )
+        )}
+
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-secondary/50">
           <Users className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs font-bold">{participants.length}</span>

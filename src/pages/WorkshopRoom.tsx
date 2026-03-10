@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle, Pencil, Save, Lock } from "lucide-react";
+import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle } from "lucide-react";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useWorkshopRoom } from "@/hooks/useWorkshop";
 import { useCards, usePillars } from "@/hooks/useToolkitData";
@@ -266,34 +266,7 @@ export default function WorkshopRoom() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* Read-only banner for completed workshops */}
-      {isCompleted && (
-        <div className={`flex items-center justify-center gap-3 px-4 py-2 text-xs font-bold uppercase tracking-widest shrink-0 ${isReadOnly ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>
-          {isReadOnly ? (
-            <>
-              <Lock className="h-3.5 w-3.5" />
-              <span>Mode lecture seule — Workshop terminé</span>
-              {isHost && (
-                <Button variant="outline" size="sm" className="ml-4 rounded-xl font-bold uppercase tracking-wider text-xs h-7" onClick={() => setEditMode(true)}>
-                  <Pencil className="h-3 w-3 mr-1.5" />
-                  Modifier
-                </Button>
-              )}
-            </>
-          ) : (
-            <>
-              <Pencil className="h-3.5 w-3.5" />
-              <span>Mode édition</span>
-              <Button variant="default" size="sm" className="ml-4 rounded-xl font-bold uppercase tracking-wider text-xs h-7" onClick={() => { setEditMode(false); toast.success("Modifications enregistrées"); }}>
-                <Save className="h-3 w-3 mr-1.5" />
-                Enregistrer
-              </Button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Toolbar — now in flex flow, no absolute/mt needed */}
+      {/* Toolbar — single row, includes edit/read-only controls */}
       <WorkshopToolbar
         mode={isReadOnly ? "select" : mode}
         onModeChange={isReadOnly ? () => {} : setMode}
@@ -318,6 +291,8 @@ export default function WorkshopRoom() {
         snapToGrid={snapToGrid}
         onSnapToggle={() => setSnapToGrid(!snapToGrid)}
         onFitToContent={handleFitToContent}
+        editMode={editMode}
+        onEditModeChange={(em) => { setEditMode(em); if (!em) toast.success("Modifications enregistrées"); }}
       />
 
       {/* Main area — flex-1, no margin-top */}
