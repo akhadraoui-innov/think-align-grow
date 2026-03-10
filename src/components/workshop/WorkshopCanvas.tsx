@@ -484,6 +484,30 @@ export function WorkshopCanvas({
           );
         })}
 
+        {/* Arrow toolbar — rendered AFTER items so it appears on top */}
+        {arrows.map(arrow => {
+          if (selectedItemId !== arrow.id) return null;
+          const fromItem = items.find(i => i.id === arrow.from_item_id);
+          const toItem = items.find(i => i.id === arrow.to_item_id);
+          if (!fromItem || !toItem) return null;
+          const fromAnchor = (arrow.content?.from_anchor as AnchorPosition) || "bottom";
+          const toAnchor = (arrow.content?.to_anchor as AnchorPosition) || "top";
+          const from = getAnchorCoords(fromItem, fromAnchor);
+          const to = getAnchorCoords(toItem, toAnchor);
+          const midX = (from.x + to.x) / 2;
+          const midY = (from.y + to.y) / 2;
+          return (
+            <ArrowToolbar
+              key={`toolbar-${arrow.id}`}
+              item={arrow}
+              onUpdateContent={(content) => onUpdateContent(arrow.id, content)}
+              onDelete={() => onDeleteItem(arrow.id)}
+              position={{ x: midX, y: midY }}
+              scale={viewport.scale}
+            />
+          );
+        })}
+
         {/* Fix #1: Arrow indicator removed from here — it's already in WorkshopRoom */}
       </div>
     </div>
