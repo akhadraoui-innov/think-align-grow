@@ -1,10 +1,11 @@
 import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Sparkles, Loader2, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, Loader2, CheckCircle2, List, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SubjectCanvas } from "./SubjectCanvas";
+import { ChallengeBoard } from "./ChallengeBoard";
 import { ChallengeAnalysisView } from "./ChallengeAnalysis";
 import {
   useChallengeStructure,
@@ -25,6 +26,8 @@ interface ChallengeViewProps {
   readOnly?: boolean;
 }
 
+type ViewMode = "list" | "board";
+
 export function ChallengeView({ template, workshopId, cards, pillars, isHost, readOnly }: ChallengeViewProps) {
   const { subjects, slots, loading } = useChallengeStructure(template.id);
   const { responses, placeCard, removeCard, updateResponse } = useChallengeResponses(workshopId);
@@ -33,6 +36,7 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const placedCardIds = useMemo(() => new Set(responses.map(r => r.card_id)), [responses]);
 
@@ -90,6 +94,22 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
 
   const currentSubject = subjects[currentIndex];
 
+  const canvasProps = {
+    subject: currentSubject!,
+    slots,
+    responses,
+    cards,
+    pillars,
+    onDrop: handleDrop,
+    onRemove: removeCard,
+    onUpdateResponse: updateResponse,
+    stagingItems,
+    onStage: handleStage,
+    onUnstage: unstageCard,
+    onStagingFormatChange: updateStagingFormat,
+    readOnly,
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Stepper */}
@@ -121,6 +141,30 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {/* View toggle */}
+          <div className="flex items-center rounded-lg bg-secondary/50 p-0.5">
+            <button
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "p-1.5 rounded-md transition-colors",
+                viewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Vue liste"
+            >
+              <List className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode("board")}
+              className={cn(
+                "p-1.5 rounded-md transition-colors",
+                viewMode === "board" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Vue plateau"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
           <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl" disabled={currentIndex === 0} onClick={() => setCurrentIndex(i => i - 1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -143,25 +187,14 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
         </div>
       </div>
 
-      {/* Current subject canvas */}
+      {/* Current subject view */}
       <AnimatePresence mode="wait">
         {currentSubject && (
-          <SubjectCanvas
-            key={currentSubject.id}
-            subject={currentSubject}
-            slots={slots}
-            responses={responses}
-            cards={cards}
-            pillars={pillars}
-            onDrop={handleDrop}
-            onRemove={removeCard}
-            onUpdateResponse={updateResponse}
-            stagingItems={stagingItems}
-            onStage={handleStage}
-            onUnstage={unstageCard}
-            onStagingFormatChange={updateStagingFormat}
-            readOnly={readOnly}
-          />
+          viewMode === "list" ? (
+            <SubjectCanvas key={`list-${currentSubject.id}`} {...canvasProps} />
+          ) : (
+            <ChallengeBoard key={`board-${currentSubject.id}`} {...canvasProps} />
+          )
         )}
       </AnimatePresence>
     </div>
