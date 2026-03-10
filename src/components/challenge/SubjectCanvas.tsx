@@ -123,7 +123,7 @@ export function SubjectCanvas({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </motion.div>
   );
 }

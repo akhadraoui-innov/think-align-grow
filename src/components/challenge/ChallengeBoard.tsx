@@ -118,7 +118,7 @@ export function ChallengeBoard({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </motion.div>
   );
 }
