@@ -43,8 +43,9 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
   const handleDrop = useCallback((slotId: string, cardId: string) => {
     const subject = subjects[currentIndex];
     if (!subject) return;
-    placeCard(slotId, subject.id, cardId);
-  }, [subjects, currentIndex, placeCard]);
+    const slot = slots.find(s => s.id === slotId);
+    placeCard(slotId, subject.id, cardId, slot?.slot_type || "single");
+  }, [subjects, currentIndex, placeCard, slots]);
 
   const handleStage = useCallback((cardId: string) => {
     const subject = subjects[currentIndex];
