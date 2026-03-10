@@ -224,6 +224,8 @@ export function WorkshopCanvas({
       if (mode === "icon") { onAddIcon(canvasX, canvasY); return; }
       if (mode === "text") { onAddText(canvasX, canvasY); return; }
 
+      isPanningRef.current = true;
+      panStartRef.current = { x: e.clientX - viewport.x, y: e.clientY - viewport.y };
       setIsPanning(true);
       setPanStart({ x: e.clientX - viewport.x, y: e.clientY - viewport.y });
       onSelectItem(null);
@@ -237,41 +239,53 @@ export function WorkshopCanvas({
       const di = dragIntentRef.current;
       const dist = Math.hypot(e.clientX - di.startX, e.clientY - di.startY);
       if (dist > 5) {
-        // Threshold exceeded — start actual drag
+        // Threshold exceeded — start actual drag immediately via refs
         di.captured = true;
         const rect = containerRef.current?.getBoundingClientRect();
         if (rect) {
           const vp = viewportRef.current;
           const canvasX = (di.startX - rect.left - vp.x) / vp.scale;
           const canvasY = (di.startY - rect.top - vp.y) / vp.scale;
-          setDragOffset({ x: canvasX - di.item.x, y: canvasY - di.item.y });
+          const offset = { x: canvasX - di.item.x, y: canvasY - di.item.y };
+          dragOffsetRef.current = offset;
+          draggingRef.current = di.itemId;
+          setDragOffset(offset);
           setDraggingItem(di.itemId);
           onBringToFront(di.itemId);
           containerRef.current?.setPointerCapture(di.pointerId);
+
+          // Immediately update position on threshold frame (no lost frame)
+          const newX = (e.clientX - rect.left - vp.x) / vp.scale - offset.x;
+          const newY = (e.clientY - rect.top - vp.y) / vp.scale - offset.y;
+          onUpdatePosition(di.itemId, snapValue(newX, snapToGrid), snapValue(newY, snapToGrid));
         }
       }
       return;
     }
 
-    if (isPanning) {
+    // Use refs for immediate reads (avoids React batching lag)
+    if (isPanningRef.current) {
       const vp = viewportRef.current;
-      scheduleViewportUpdate({ ...vp, x: e.clientX - panStart.x, y: e.clientY - panStart.y });
-    } else if (draggingItem) {
+      const ps = panStartRef.current;
+      scheduleViewportUpdate({ ...vp, x: e.clientX - ps.x, y: e.clientY - ps.y });
+    } else if (draggingRef.current) {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
       const vp = viewportRef.current;
-      const canvasX = (e.clientX - rect.left - vp.x) / vp.scale - dragOffset.x;
-      const canvasY = (e.clientY - rect.top - vp.y) / vp.scale - dragOffset.y;
-      onUpdatePosition(draggingItem, snapValue(canvasX, snapToGrid), snapValue(canvasY, snapToGrid));
+      const off = dragOffsetRef.current;
+      const canvasX = (e.clientX - rect.left - vp.x) / vp.scale - off.x;
+      const canvasY = (e.clientY - rect.top - vp.y) / vp.scale - off.y;
+      onUpdatePosition(draggingRef.current, snapValue(canvasX, snapToGrid), snapValue(canvasY, snapToGrid));
     }
-  }, [isPanning, panStart, scheduleViewportUpdate, draggingItem, dragOffset, onUpdatePosition, snapToGrid, onBringToFront]);
+  }, [scheduleViewportUpdate, onUpdatePosition, snapToGrid, onBringToFront]);
 
   const handlePointerUp = useCallback(() => {
     // If drag intent was never captured, it was a click — let it pass through
     dragIntentRef.current = null;
 
-    if (draggingItem) {
-      const draggedItem = items.find(i => i.id === draggingItem);
+    const currentDragging = draggingRef.current;
+    if (currentDragging) {
+      const draggedItem = items.find(i => i.id === currentDragging);
       if (draggedItem && draggedItem.type !== "group" && draggedItem.type !== "arrow") {
         const groups = items.filter(i => i.type === "group");
         for (const g of groups) {
@@ -279,15 +293,19 @@ export function WorkshopCanvas({
           const gh = g.height || 200;
           if (draggedItem.x >= g.x && draggedItem.y >= g.y &&
               draggedItem.x <= g.x + gw && draggedItem.y <= g.y + gh) {
-            onUpdateContent(draggingItem, { parent_group_id: g.id });
+            onUpdateContent(currentDragging, { parent_group_id: g.id });
             break;
           }
         }
       }
     }
+    isPanningRef.current = false;
+    panStartRef.current = { x: 0, y: 0 };
+    draggingRef.current = null;
+    dragOffsetRef.current = { x: 0, y: 0 };
     setIsPanning(false);
     setDraggingItem(null);
-  }, [draggingItem, items, onUpdateContent]);
+  }, [items, onUpdateContent]);
 
   // Drag threshold: register intent on pointerdown, actual drag starts on move > 5px
   const handleItemDragStart = useCallback((itemId: string, e: React.PointerEvent, item: CanvasItem) => {
