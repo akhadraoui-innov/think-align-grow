@@ -1,75 +1,53 @@
 
 
-## Audit Front-End du Workshop Canvas
+## Diagnostic : Pourquoi les fleches sont invisibles
 
-Apres analyse complete de toutes les couches (WorkshopCanvas, WorkshopToolbar, CanvasCard, StickyNote, CanvasGroup, CanvasIcon, CanvasText, DiscussionPanel, CanvasStats, WorkshopRoom), voici les problemes identifies et le plan de correction.
+**Cause racine identifiee** : Le conteneur SVG des fleches utilise `width: "100%"` et `height: "100%"`, mais son parent (`div.absolute.origin-top-left`) n'a **aucune dimension explicite**. Resultat : le SVG fait 0x0 pixels. La propriete CSS `overflow: visible` n'est pas fiable sur les elements SVG dans tous les navigateurs.
 
----
+Les fleches existent bien en base de donnees (5 fleches trouvees). Le probleme est purement un probleme de rendu SVG.
 
-### Bugs critiques
+## Correction
 
-**1. Indicateur fleche duplique et casse**
-- `WorkshopCanvas.tsx` ligne 321 : un `<div className="fixed ...">` est rendu DANS le conteneur transforme (`translate + scale`). CSS `fixed` ne fonctionne pas dans un parent avec `transform` → l'indicateur est mal positionne ou invisible.
-- Le meme indicateur existe deja dans `WorkshopRoom.tsx` ligne 396. Le doublon dans WorkshopCanvas doit etre supprime.
+**Fichier** : `src/components/workshop/WorkshopCanvas.tsx` (ligne 362)
 
-**2. Perte de capture pointer sur les elements enfants**
-- `handleItemDragStart` fait `(e.target as HTMLElement).setPointerCapture(e.pointerId)` — si l'utilisateur clique sur un element enfant (texte, icone, badge), la capture est mise sur cet enfant et non sur le conteneur. Quand le pointer bouge hors de ce petit element, le drag cesse brusquement.
-- Fix : capturer sur `containerRef.current` au lieu de `e.target`.
+Remplacer le SVG actuel :
+```html
+<svg className="absolute pointer-events-none" 
+     style={{ left: 0, top: 0, width: "100%", height: "100%", overflow: "visible" }}>
+```
 
-**3. Resize des groupes perd les events**
-- Le resize handler dans `CanvasGroup` ecoute `onPointerMove/Up` sur le handle lui-meme (div 24x24px). Si le curseur sort de ce petit element pendant le resize, les events sont perdus.
-- Fix : le resize doit aussi utiliser `setPointerCapture` sur le handle pour garantir le tracking.
+Par un SVG qui utilise les **attributs SVG natifs** au lieu de CSS, avec des dimensions geantes pour couvrir tout le canvas :
+```html
+<svg 
+  className="absolute pointer-events-none"
+  style={{ left: "-5000px", top: "-5000px" }}
+  width="10000"
+  height="10000"
+  overflow="visible"
+>
+```
 
-**4. Margin-top hardcodee pour le canvas**
-- `WorkshopRoom.tsx` ligne 322 : `mt-[60px]` ou `mt-[92px]` selon le statut. Tout changement de hauteur de toolbar ou banniere casse le layout.
-- Fix : utiliser un layout flex naturel sans margin-top fixe (la toolbar doit etre dans le flux flex, pas absolute).
+Et ajuster les coordonnees des fleches en ajoutant +5000 a chaque point (fromX, fromY, toX, toY) pour compenser l'offset.
 
----
+**Alternative plus simple et robuste** : ne pas deplacer le SVG, garder `left: 0, top: 0` et utiliser les attributs SVG `width="1" height="1" overflow="visible"` (attributs HTML/SVG, pas des proprietes CSS) :
 
-### Ameliorations UX majeures
+```html
+<svg 
+  className="absolute pointer-events-none"
+  style={{ left: 0, top: 0 }}
+  width="1" 
+  height="1" 
+  overflow="visible"
+>
+```
 
-**5. Zoom au scroll (sans Ctrl)**
-- Actuellement le scroll sans Ctrl ne fait rien. Sur un canvas infini, le scroll devrait panner le canvas (standard Figma/Miro).
-- Ajouter : scroll = pan, Ctrl+scroll = zoom.
+La difference cle : `overflow="visible"` en tant qu'**attribut SVG** (pas `style={{ overflow: "visible" }}` qui est du CSS). L'attribut SVG `overflow` est garanti de fonctionner sur tous les navigateurs pour les elements SVG.
 
-**6. Pinch-to-zoom / Touch**
-- Aucun support tactile pour le zoom ou le pan a deux doigts. Sur tablette/mobile le canvas est inutilisable.
-- Ajouter la gestion des `touchstart/touchmove` pour pinch-zoom et pan 2 doigts.
+Les coordonnees des fleches sont en espace canvas (ex: x=300, y=400), elles seront dessinees a ces positions exactes par rapport au coin (0,0) du SVG, qui est aligne avec le coin du conteneur de transformation — donc parfaitement aligne avec les items du canvas.
 
-**7. Raccourcis clavier**
-- Pas de `Delete`/`Backspace` pour supprimer l'element selectionne
-- Pas de `Escape` pour deselectionner
-- Ajouter ces raccourcis dans WorkshopCanvas via `useEffect` + `keydown`.
+### Fichiers modifies
 
-**8. Snap-to-grid optionnel**
-- Ajouter un snap magnetique lors du drag (arrondir x/y au multiple de 20px le plus proche quand actif).
-- Toggle dans la toolbar.
-
-**9. Fit-to-content / Reset view**
-- Le bouton "%" reset a `{x:0, y:0, scale:1}` ce qui ne correspond pas forcement au contenu.
-- Ajouter un bouton "Fit" qui calcule le bounding box de tous les items et ajuste viewport pour tout afficher.
-
----
-
-### Corrections mineures
-
-**10. SVG arrows container trop grand**
-- `width: 10000px, height: 10000px` est excessif. Utiliser `width: 0, height: 0` avec `overflow: visible` suffit.
-
-**11. Performance du drag**
-- Le debounce DB est a 300ms mais le state local est mis a jour a chaque pointermove. C'est correct, mais `onUpdatePosition` dans `useCanvasItems` declenche un re-render de la liste entiere. Pas critique pour < 100 items.
-
----
-
-### Plan d'implementation
-
-| Fichier | Modifications |
+| Fichier | Modification |
 |---|---|
-| `WorkshopCanvas.tsx` | Supprimer indicateur fleche duplique, fix pointer capture sur containerRef, ajouter scroll=pan, pinch-zoom, keydown (Delete/Escape), snap-to-grid, fit-to-content |
-| `WorkshopRoom.tsx` | Retirer mt-[60px]/mt-[92px], rendre toolbar dans le flux flex (retirer position absolute), ajouter snap toggle dans toolbar state |
-| `WorkshopToolbar.tsx` | Retirer `absolute top-0`, rendre en flux flex, ajouter bouton Fit + toggle Snap |
-| `CanvasGroup.tsx` | Fix resize avec setPointerCapture sur le handle |
-| `CanvasArrow.tsx` | SVG container : passer a width/height 0 |
-
-Environ 7 fichiers touches, principalement WorkshopCanvas et WorkshopRoom.
+| `WorkshopCanvas.tsx` | SVG : attribut `overflow="visible"` + `width="1" height="1"` au lieu de CSS |
 
