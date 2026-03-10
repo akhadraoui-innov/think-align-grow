@@ -70,6 +70,222 @@ export type Database = {
           },
         ]
       }
+      challenge_analyses: {
+        Row: {
+          analysis: Json
+          created_at: string
+          id: string
+          template_id: string
+          workshop_id: string
+        }
+        Insert: {
+          analysis?: Json
+          created_at?: string
+          id?: string
+          template_id: string
+          workshop_id: string
+        }
+        Update: {
+          analysis?: Json
+          created_at?: string
+          id?: string
+          template_id?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_analyses_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_analyses_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_responses: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          slot_id: string
+          subject_id: string
+          user_id: string
+          workshop_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          slot_id: string
+          subject_id: string
+          user_id: string
+          workshop_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          slot_id?: string
+          subject_id?: string
+          user_id?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_responses_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_responses_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_responses_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_responses_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_slots: {
+        Row: {
+          hint: string | null
+          id: string
+          label: string
+          required: boolean
+          slot_type: Database["public"]["Enums"]["challenge_slot_type"]
+          sort_order: number
+          subject_id: string
+        }
+        Insert: {
+          hint?: string | null
+          id?: string
+          label: string
+          required?: boolean
+          slot_type?: Database["public"]["Enums"]["challenge_slot_type"]
+          sort_order?: number
+          subject_id: string
+        }
+        Update: {
+          hint?: string | null
+          id?: string
+          label?: string
+          required?: boolean
+          slot_type?: Database["public"]["Enums"]["challenge_slot_type"]
+          sort_order?: number
+          subject_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_slots_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_subjects: {
+        Row: {
+          description: string | null
+          id: string
+          sort_order: number
+          template_id: string
+          title: string
+          type: Database["public"]["Enums"]["challenge_subject_type"]
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          sort_order?: number
+          template_id: string
+          title: string
+          type?: Database["public"]["Enums"]["challenge_subject_type"]
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          sort_order?: number
+          template_id?: string
+          title?: string
+          type?: Database["public"]["Enums"]["challenge_subject_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_subjects_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          difficulty: string | null
+          id: string
+          name: string
+          pillar_id: string | null
+          toolkit_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          name: string
+          pillar_id?: string | null
+          toolkit_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          name?: string
+          pillar_id?: string | null
+          toolkit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_templates_pillar_id_fkey"
+            columns: ["pillar_id"]
+            isOneToOne: false
+            referencedRelation: "pillars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_templates_toolkit_id_fkey"
+            columns: ["toolkit_id"]
+            isOneToOne: false
+            referencedRelation: "toolkits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_transactions: {
         Row: {
           amount: number
@@ -922,6 +1138,8 @@ export type Database = {
       app_role: "owner" | "admin" | "member"
       canvas_item_type: "card" | "sticky" | "group" | "arrow" | "icon" | "text"
       card_phase: "foundations" | "model" | "growth" | "execution"
+      challenge_slot_type: "single" | "multi" | "ranked"
+      challenge_subject_type: "question" | "challenge" | "context"
       deliverable_type: "swot" | "bmc" | "pitch_deck" | "action_plan"
       toolkit_status: "draft" | "published" | "archived"
       workshop_status: "lobby" | "active" | "paused" | "completed"
@@ -1055,6 +1273,8 @@ export const Constants = {
       app_role: ["owner", "admin", "member"],
       canvas_item_type: ["card", "sticky", "group", "arrow", "icon", "text"],
       card_phase: ["foundations", "model", "growth", "execution"],
+      challenge_slot_type: ["single", "multi", "ranked"],
+      challenge_subject_type: ["question", "challenge", "context"],
       deliverable_type: ["swot", "bmc", "pitch_deck", "action_plan"],
       toolkit_status: ["draft", "published", "archived"],
       workshop_status: ["lobby", "active", "paused", "completed"],
