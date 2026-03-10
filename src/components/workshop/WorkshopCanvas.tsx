@@ -490,8 +490,7 @@ export function WorkshopCanvas({
 
         {/* Anchor handles overlay in arrow mode */}
         {mode === "arrow" && nonArrows.filter(i => i.type !== "group").map(item => {
-          const itemW = item.width || (item.type === "sticky" ? 180 : item.type === "icon" ? 48 : 240);
-          const itemH = item.height || (item.type === "sticky" ? 140 : item.type === "icon" ? 48 : 120);
+          const { w: itemW, h: itemH } = getItemDimensions(item);
           return (
             <div
               key={`anchors-${item.id}`}
