@@ -5,7 +5,7 @@ import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import { DropSlot } from "./DropSlot";
 import { StagingZone, type StagingItem } from "./StagingZone";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import type { CardFormat } from "./FormatSelector";
 
 interface SubjectCanvasProps {
@@ -83,7 +83,7 @@ export function SubjectCanvas({
       </div>
 
       {/* Slots grid — scrollable via ScrollArea */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
         <div className="p-6">
           <div className={cn(
             "grid gap-4",
@@ -123,7 +123,7 @@ export function SubjectCanvas({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </motion.div>
   );
 }
