@@ -29,6 +29,7 @@ const navItems = [
 const workshopItems = [
   { path: "/workshop", icon: List, label: "Mes workshops", exact: true },
   { path: "/workshop?action=create", icon: Plus, label: "Nouveau workshop", exact: true },
+  { path: "/workshop?action=challenge", icon: LayoutGrid, label: "Challenge", exact: true },
 ];
 
 interface AppSidebarProps {
