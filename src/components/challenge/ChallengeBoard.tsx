@@ -62,7 +62,7 @@ export function ChallengeBoard({
       className="flex flex-col h-full"
     >
       {/* Subject header */}
-      <div className="px-6 py-4 border-b border-border">
+      <div className="px-6 py-4 border-b border-border shrink-0">
         <div className="flex items-center gap-3 mb-1">
           <span className={cn("text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg", TYPE_COLORS[subject.type])}>
             {TYPE_LABELS[subject.type]}
@@ -73,21 +73,6 @@ export function ChallengeBoard({
           <p className="text-sm text-muted-foreground mt-1">{subject.description}</p>
         )}
       </div>
-
-      {/* Staging */}
-      {onStage && (
-        <div className="px-6 pt-4">
-          <StagingZone
-            items={subjectStaging}
-            cards={cards}
-            pillars={pillars}
-            onDropFromSidebar={handleStageDrop}
-            onRemove={(id) => onUnstage?.(id)}
-            onFormatChange={(id, fmt) => onStagingFormatChange?.(id, fmt)}
-            readOnly={readOnly}
-          />
-        </div>
-      )}
 
       {/* Board — zones displayed as a spatial grid */}
       <div className="flex-1 overflow-auto p-6">
@@ -112,6 +97,22 @@ export function ChallengeBoard({
             />
           ))}
         </div>
+
+        {/* Staging at bottom with GameCards */}
+        {onStage && (
+          <div className="mt-6">
+            <StagingZone
+              items={subjectStaging}
+              cards={cards}
+              pillars={pillars}
+              onDropFromSidebar={handleStageDrop}
+              onRemove={(id) => onUnstage?.(id)}
+              onFormatChange={(id, fmt) => onStagingFormatChange?.(id, fmt)}
+              readOnly={readOnly}
+              viewMode="board"
+            />
+          </div>
+        )}
       </div>
     </motion.div>
   );

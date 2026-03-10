@@ -25,6 +25,7 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    if (e.dataTransfer.types.includes("reorder-id")) return;
     e.dataTransfer.dropEffect = "move";
     setIsDragOver(true);
   }, []);
@@ -34,6 +35,7 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
+    if (e.dataTransfer.types.includes("reorder-id")) return;
     const cardId = e.dataTransfer.getData("card-id");
     if (!cardId) return;
     onDrop(slot.id, cardId);
@@ -58,7 +60,7 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
         </span>
         {slot.required && <span className="text-destructive ml-1 text-xs">*</span>}
         <span className="ml-2 text-[9px] text-muted-foreground/50">
-          {slot.slot_type === "ranked" ? "classé" : "multi"}
+          {slot.slot_type === "ranked" ? "classé" : slot.slot_type === "single" ? "1 carte" : "multi"}
         </span>
       </div>
 

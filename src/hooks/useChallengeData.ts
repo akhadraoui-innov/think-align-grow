@@ -157,15 +157,26 @@ export function useChallengeResponses(workshopId: string | undefined) {
     return () => { supabase.removeChannel(channel); };
   }, [workshopId]);
 
-  const placeCard = useCallback(async (slotId: string, subjectId: string, cardId: string) => {
+  const placeCard = useCallback(async (slotId: string, subjectId: string, cardId: string, slotType: string = "single") => {
     if (!workshopId || !user) return;
-    // Remove existing response for this slot by this user
-    await supabase
-      .from("challenge_responses")
-      .delete()
-      .eq("workshop_id", workshopId)
-      .eq("slot_id", slotId)
-      .eq("user_id", user.id);
+
+    // For single slots, remove existing response first
+    if (slotType === "single") {
+      await supabase
+        .from("challenge_responses")
+        .delete()
+        .eq("workshop_id", workshopId)
+        .eq("slot_id", slotId)
+        .eq("user_id", user.id);
+    } else {
+      // For multi/ranked: check if this card is already in this slot
+      const alreadyPlaced = responses.find(r => r.slot_id === slotId && r.card_id === cardId);
+      if (alreadyPlaced) return; // Don't duplicate
+    }
+
+    // Calculate rank for multi/ranked slots
+    const existingInSlot = responses.filter(r => r.slot_id === slotId);
+    const maxRank = existingInSlot.length > 0 ? Math.max(...existingInSlot.map(r => r.rank)) : -1;
 
     const { error } = await supabase
       .from("challenge_responses")
@@ -175,9 +186,10 @@ export function useChallengeResponses(workshopId: string | undefined) {
         slot_id: slotId,
         card_id: cardId,
         user_id: user.id,
+        rank: maxRank + 1,
       });
     if (error) toast.error("Erreur lors du placement de la carte");
-  }, [workshopId, user]);
+  }, [workshopId, user, responses]);
 
   const removeCard = useCallback(async (responseId: string) => {
     const { error } = await supabase

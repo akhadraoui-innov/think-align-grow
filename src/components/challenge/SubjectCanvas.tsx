@@ -16,7 +16,6 @@ interface SubjectCanvasProps {
   onDrop: (slotId: string, cardId: string) => void;
   onRemove: (responseId: string) => void;
   onUpdateResponse?: (responseId: string, updates: { format?: string; maturity?: number; rank?: number }) => void;
-  // Staging
   stagingItems?: StagingItem[];
   onStage?: (cardId: string) => void;
   onUnstage?: (itemId: string) => void;
@@ -54,7 +53,6 @@ export function SubjectCanvas({
   }, [onStage]);
 
   const handleSlotDrop = useCallback((slotId: string, cardId: string) => {
-    // If card comes from staging, remove it from staging
     const stagingItem = subjectStaging.find(i => i.card_id === cardId);
     if (stagingItem) onUnstage?.(stagingItem.id);
     onDrop(slotId, cardId);
@@ -67,7 +65,7 @@ export function SubjectCanvas({
       className="flex flex-col h-full"
     >
       {/* Subject header */}
-      <div className="px-6 py-5 border-b border-border">
+      <div className="px-6 py-5 border-b border-border shrink-0">
         <div className="flex items-center gap-3 mb-2">
           <span className={cn("text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg", TYPE_COLORS[subject.type])}>
             {TYPE_LABELS[subject.type]}
@@ -82,21 +80,6 @@ export function SubjectCanvas({
           <p className="text-sm text-muted-foreground mt-1">{subject.description}</p>
         )}
       </div>
-
-      {/* Staging zone */}
-      {onStage && (
-        <div className="px-6 pt-4">
-          <StagingZone
-            items={subjectStaging}
-            cards={cards}
-            pillars={pillars}
-            onDropFromSidebar={handleStageDrop}
-            onRemove={(id) => onUnstage?.(id)}
-            onFormatChange={(id, fmt) => onStagingFormatChange?.(id, fmt)}
-            readOnly={readOnly}
-          />
-        </div>
-      )}
 
       {/* Slots grid */}
       <div className="flex-1 overflow-auto p-6">
@@ -121,6 +104,22 @@ export function SubjectCanvas({
             />
           ))}
         </div>
+
+        {/* Staging zone — at bottom */}
+        {onStage && (
+          <div className="mt-6">
+            <StagingZone
+              items={subjectStaging}
+              cards={cards}
+              pillars={pillars}
+              onDropFromSidebar={handleStageDrop}
+              onRemove={(id) => onUnstage?.(id)}
+              onFormatChange={(id, fmt) => onStagingFormatChange?.(id, fmt)}
+              readOnly={readOnly}
+              viewMode="list"
+            />
+          </div>
+        )}
       </div>
     </motion.div>
   );
