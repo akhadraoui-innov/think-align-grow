@@ -95,6 +95,10 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
 
   const currentSubject = subjects[currentIndex];
 
+  const handleMoveToSlot = useCallback((sourceResponseId: string, targetSlotId: string, cardId: string) => {
+    moveToSlot(sourceResponseId, targetSlotId, cardId);
+  }, [moveToSlot]);
+
   const canvasProps = {
     subject: currentSubject!,
     slots,
@@ -103,6 +107,7 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
     pillars,
     onDrop: handleDrop,
     onRemove: removeCard,
+    onMoveToSlot: handleMoveToSlot,
     onUpdateResponse: updateResponse,
     stagingItems,
     onStage: handleStage,
