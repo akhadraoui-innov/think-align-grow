@@ -243,7 +243,7 @@ export function CanvasCard({
         className={cn(
           "absolute rounded-2xl bg-card border-2 select-none flex flex-col group transition-colors animate-canvas-in",
           isSelected ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-foreground/20",
-          isDragging ? "shadow-elevated opacity-90 cursor-grabbing" : "cursor-grab"
+          isDragging ? "shadow-2xl opacity-80 cursor-grabbing scale-[1.04]" : "cursor-grab"
         )}
         style={{ width: `${width}px`, left: item.x, top: item.y, zIndex: item.z_index }}
         onPointerDown={onPointerDown}
