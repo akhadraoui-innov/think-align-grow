@@ -45,7 +45,8 @@ export function ArrowToolbar({ item, onUpdateContent, onDelete, position, scale 
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="absolute z-50 flex items-center gap-2 p-2 rounded-xl bg-background shadow-lg border border-border"
+      className="absolute flex items-center gap-2 p-2 rounded-xl bg-background shadow-lg border border-border"
+      data-arrow-toolbar="true"
       style={{
         left: position.x,
         top: position.y - 56,
