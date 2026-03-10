@@ -5,6 +5,7 @@ import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import { BoardZone } from "./BoardZone";
 import { StagingZone, type StagingItem } from "./StagingZone";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CardFormat } from "./FormatSelector";
 
 interface ChallengeBoardProps {
@@ -60,7 +61,7 @@ export function ChallengeBoard({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col h-full overflow-hidden"
+      style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}
     >
       {/* Subject header */}
       <div className="px-6 py-4 border-b border-border shrink-0">
@@ -75,47 +76,49 @@ export function ChallengeBoard({
         )}
       </div>
 
-      {/* Board — zones displayed as a spatial grid */}
-      <div className="flex-1 overflow-y-auto p-6 min-h-0">
-        <div className={cn(
-          "grid gap-5",
-          subjectSlots.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
-          subjectSlots.length <= 3 ? "grid-cols-1 sm:grid-cols-3" :
-          subjectSlots.length <= 4 ? "grid-cols-1 sm:grid-cols-2" :
-          "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-        )}>
-          {subjectSlots.map(slot => (
-            <BoardZone
-              key={slot.id}
-              slot={slot}
-              responses={subjectResponses}
-              cards={cards}
-              pillars={pillars}
-              onDrop={handleSlotDrop}
-              onRemove={onRemove}
-              onMoveToSlot={onMoveToSlot}
-              onUpdateResponse={onUpdateResponse}
-              readOnly={readOnly}
-            />
-          ))}
-        </div>
-
-        {/* Staging at bottom with GameCards */}
-        {onStage && (
-          <div className="mt-6">
-            <StagingZone
-              items={subjectStaging}
-              cards={cards}
-              pillars={pillars}
-              onDropFromSidebar={handleStageDrop}
-              onRemove={(id) => onUnstage?.(id)}
-              onFormatChange={(id, fmt) => onStagingFormatChange?.(id, fmt)}
-              readOnly={readOnly}
-              viewMode="board"
-            />
+      {/* Board — scrollable via ScrollArea */}
+      <ScrollArea className="flex-1">
+        <div className="p-6">
+          <div className={cn(
+            "grid gap-5",
+            subjectSlots.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
+            subjectSlots.length <= 3 ? "grid-cols-1 sm:grid-cols-3" :
+            subjectSlots.length <= 4 ? "grid-cols-1 sm:grid-cols-2" :
+            "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          )}>
+            {subjectSlots.map(slot => (
+              <BoardZone
+                key={slot.id}
+                slot={slot}
+                responses={subjectResponses}
+                cards={cards}
+                pillars={pillars}
+                onDrop={handleSlotDrop}
+                onRemove={onRemove}
+                onMoveToSlot={onMoveToSlot}
+                onUpdateResponse={onUpdateResponse}
+                readOnly={readOnly}
+              />
+            ))}
           </div>
-        )}
-      </div>
+
+          {/* Staging at bottom with GameCards */}
+          {onStage && (
+            <div className="mt-6">
+              <StagingZone
+                items={subjectStaging}
+                cards={cards}
+                pillars={pillars}
+                onDropFromSidebar={handleStageDrop}
+                onRemove={(id) => onUnstage?.(id)}
+                onFormatChange={(id, fmt) => onStagingFormatChange?.(id, fmt)}
+                readOnly={readOnly}
+                viewMode="board"
+              />
+            </div>
+          )}
+        </div>
+      </ScrollArea>
     </motion.div>
   );
 }
