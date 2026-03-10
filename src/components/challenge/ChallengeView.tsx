@@ -120,7 +120,8 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
     <div className="flex-1 flex flex-col min-h-0">
       {/* Stepper */}
       <div className="px-4 py-3 border-b border-border flex items-center gap-2 shrink-0">
-        <div className="flex items-center gap-1 flex-1 overflow-x-auto">
+        {/* Subject tabs — hidden scrollbar */}
+        <div className="flex items-center gap-1 flex-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {subjects.map((subj, i) => {
             const subjSlots = slots.filter(s => s.subject_id === subj.id);
             const filled = new Set(responses.filter(r => r.subject_id === subj.id).map(r => r.slot_id)).size;
@@ -147,7 +148,14 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* View toggle */}
+          {/* Arrows first, then view toggle */}
+          <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl" disabled={currentIndex === 0} onClick={() => setCurrentIndex(i => i - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl" disabled={currentIndex === subjects.length - 1} onClick={() => setCurrentIndex(i => i + 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
           <div className="flex items-center rounded-lg bg-secondary/50 p-0.5">
             <button
               onClick={() => setViewMode("list")}
@@ -171,12 +179,6 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
             </button>
           </div>
 
-          <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl" disabled={currentIndex === 0} onClick={() => setCurrentIndex(i => i - 1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8 rounded-xl" disabled={currentIndex === subjects.length - 1} onClick={() => setCurrentIndex(i => i + 1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
           {isHost && (
             <>
               {analysis && (
