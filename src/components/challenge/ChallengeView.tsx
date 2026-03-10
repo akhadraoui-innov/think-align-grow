@@ -193,8 +193,8 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
         </div>
       </div>
 
-      {/* Current subject view — wrapper enforces height constraint for scroll */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      {/* Current subject view — relative container for absolute-positioned children */}
+      <div className="flex-1 relative min-h-0">
         <AnimatePresence mode="wait">
           {currentSubject && (
             viewMode === "list" ? (
