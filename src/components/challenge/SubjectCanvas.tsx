@@ -83,7 +83,7 @@ export function SubjectCanvas({
       </div>
 
       {/* Slots grid — scrollable via ScrollArea */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
         <div className="p-6">
           <div className={cn(
             "grid gap-4",
