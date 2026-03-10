@@ -67,6 +67,15 @@ export default function WorkshopRoom() {
   const [showDiscussion, setShowDiscussion] = useState(false);
   const [copied, setCopied] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(false);
+  const [workshopMode, setWorkshopMode] = useState<"canvas" | "challenge">("canvas");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+
+  // Auto-select first template when available
+  useEffect(() => {
+    if (challengeTemplates && challengeTemplates.length > 0 && !selectedTemplateId) {
+      setSelectedTemplateId(challengeTemplates[0].id);
+    }
+  }, [challengeTemplates, selectedTemplateId]);
 
   // Comments for selected item
   const { comments, loading: commentsLoading, addComment, deleteComment } = useCanvasComments(id, selectedItemId);
