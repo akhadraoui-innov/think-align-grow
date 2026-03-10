@@ -5,7 +5,7 @@ import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import { BoardZone } from "./BoardZone";
 import { StagingZone, type StagingItem } from "./StagingZone";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import type { CardFormat } from "./FormatSelector";
 
 interface ChallengeBoardProps {
