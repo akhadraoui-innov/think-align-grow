@@ -1,5 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import type { ChallengeSubject, ChallengeSlot, ChallengeResponse } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import { BoardZone } from "./BoardZone";
@@ -46,6 +47,26 @@ export function ChallengeBoard({
   const subjectResponses = responses.filter(r => r.subject_id === subject.id);
   const subjectStaging = stagingItems.filter(i => i.subject_id === subject.id);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollUp(el.scrollTop > 10);
+    setCanScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 10);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    checkScroll();
+    const observer = new ResizeObserver(checkScroll);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [checkScroll]);
+
   const handleStageDrop = useCallback((cardId: string) => {
     onStage?.(cardId);
   }, [onStage]);
@@ -76,7 +97,8 @@ export function ChallengeBoard({
       </div>
 
       {/* Board — zones displayed as a spatial grid */}
-      <div className="flex-1 overflow-y-auto p-6 min-h-0">
+      <div className="relative flex-1 min-h-0">
+        <div ref={scrollRef} onScroll={checkScroll} className="absolute inset-0 overflow-y-auto p-6">
         <div className={cn(
           "grid gap-5",
           subjectSlots.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
@@ -113,6 +135,29 @@ export function ChallengeBoard({
               readOnly={readOnly}
               viewMode="board"
             />
+          </div>
+        )}
+        </div>
+
+        {/* Floating scroll buttons */}
+        {(canScrollUp || canScrollDown) && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
+            {canScrollUp && (
+              <button
+                onClick={() => scrollRef.current?.scrollBy({ top: -300, behavior: 'smooth' })}
+                className="h-8 w-8 rounded-full bg-background/80 backdrop-blur border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </button>
+            )}
+            {canScrollDown && (
+              <button
+                onClick={() => scrollRef.current?.scrollBy({ top: 300, behavior: 'smooth' })}
+                className="h-8 w-8 rounded-full bg-background/80 backdrop-blur border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            )}
           </div>
         )}
       </div>
