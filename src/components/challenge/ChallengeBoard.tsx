@@ -47,6 +47,26 @@ export function ChallengeBoard({
   const subjectResponses = responses.filter(r => r.subject_id === subject.id);
   const subjectStaging = stagingItems.filter(i => i.subject_id === subject.id);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollUp(el.scrollTop > 10);
+    setCanScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 10);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    checkScroll();
+    const observer = new ResizeObserver(checkScroll);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [checkScroll]);
+
   const handleStageDrop = useCallback((cardId: string) => {
     onStage?.(cardId);
   }, [onStage]);

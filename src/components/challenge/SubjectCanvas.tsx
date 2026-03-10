@@ -49,6 +49,26 @@ export function SubjectCanvas({
   const requiredCount = subjectSlots.filter(s => s.required).length;
   const requiredFilled = subjectSlots.filter(s => s.required && subjectResponses.some(r => r.slot_id === s.id)).length;
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollUp(el.scrollTop > 10);
+    setCanScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 10);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    checkScroll();
+    const observer = new ResizeObserver(checkScroll);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [checkScroll]);
+
   const handleStageDrop = useCallback((cardId: string) => {
     onStage?.(cardId);
   }, [onStage]);
