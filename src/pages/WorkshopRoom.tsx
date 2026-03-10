@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle, LayoutGrid, Pencil } from "lucide-react";
+import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle, LayoutGrid, Pencil, Play, Pause, Users, Lock, Save } from "lucide-react";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useWorkshopRoom } from "@/hooks/useWorkshop";
 import { useCards, usePillars, useToolkit } from "@/hooks/useToolkitData";
@@ -70,10 +70,11 @@ export default function WorkshopRoom() {
   const [workshopMode, setWorkshopMode] = useState<"canvas" | "challenge">("canvas");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
-  // Auto-select first template when available
+  // Auto-select first template & force challenge mode when templates exist
   useEffect(() => {
-    if (challengeTemplates && challengeTemplates.length > 0 && !selectedTemplateId) {
-      setSelectedTemplateId(challengeTemplates[0].id);
+    if (challengeTemplates && challengeTemplates.length > 0) {
+      if (!selectedTemplateId) setSelectedTemplateId(challengeTemplates[0].id);
+      setWorkshopMode("challenge");
     }
   }, [challengeTemplates, selectedTemplateId]);
 
@@ -289,67 +290,95 @@ export default function WorkshopRoom() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* Toolbar — single row, includes edit/read-only controls */}
-      <WorkshopToolbar
-        mode={isReadOnly ? "select" : mode}
-        onModeChange={isReadOnly ? () => {} : setMode}
-        viewport={viewport}
-        onViewportChange={setViewport}
-        workshopStatus={workshop.status}
-        isHost={isHost}
-        participants={participants}
-        onStart={startWorkshop}
-        onPause={pauseWorkshop}
-        onResume={resumeWorkshop}
-        onComplete={completeWorkshop}
-        onBack={() => navigate("/workshop")}
-        workshopName={workshop.name}
-        selectedIconName={selectedIconName}
-        onSelectIcon={setSelectedIconName}
-        stickyShape={stickyShape}
-        onStickyShapeChange={setStickyShape}
-        groupShape={groupShape}
-        onGroupShapeChange={setGroupShape}
-        readOnly={isReadOnly}
-        snapToGrid={snapToGrid}
-        onSnapToggle={() => setSnapToGrid(!snapToGrid)}
-        onFitToContent={handleFitToContent}
-        editMode={editMode}
-        onEditModeChange={(em) => { setEditMode(em); if (!em) toast.success("Modifications enregistrées"); }}
-      />
+      {/* Minimal header */}
+      <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-background/80 backdrop-blur-sm border-b border-border shrink-0">
+        {/* Left: back + name + status */}
+        <div className="flex items-center gap-3 min-w-0">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/workshop")} className="rounded-xl shrink-0">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-0">
+            <h1 className="font-display font-bold text-sm uppercase tracking-tight truncate">{workshop.name}</h1>
+            <StatusBadge status={workshop.status} />
+          </div>
+        </div>
 
-      {/* Mode toggle bar (canvas / challenge) */}
-      {challengeTemplates && challengeTemplates.length > 0 && !isReadOnly && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-card shrink-0">
-          <button
-            onClick={() => setWorkshopMode("canvas")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-              workshopMode === "canvas" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-            }`}
-          >
-            <Pencil className="h-3 w-3" /> Canvas libre
-          </button>
-          <button
-            onClick={() => setWorkshopMode("challenge")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-              workshopMode === "challenge" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-            }`}
-          >
-            <LayoutGrid className="h-3 w-3" /> Challenge
-          </button>
-          {workshopMode === "challenge" && challengeTemplates.length > 1 && (
-            <select
-              value={selectedTemplateId || ""}
-              onChange={e => setSelectedTemplateId(e.target.value)}
-              className="ml-2 text-xs rounded-lg border border-border bg-background px-2 py-1.5"
-            >
-              {challengeTemplates.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+        {/* Right: participants + host controls + edit mode */}
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Edit mode controls for completed workshops */}
+          {isCompleted && (
+            isReadOnly ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Lock className="h-3.5 w-3.5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Lecture seule</span>
+                {isHost && (
+                  <Button variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs h-7 ml-1" onClick={() => setEditMode(true)}>
+                    <Pencil className="h-3 w-3 mr-1.5" />Modifier
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-primary">
+                <Pencil className="h-3.5 w-3.5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Édition</span>
+                <Button variant="default" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs h-7 ml-1" onClick={() => { setEditMode(false); toast.success("Modifications enregistrées"); }}>
+                  <Save className="h-3 w-3 mr-1.5" />Enregistrer
+                </Button>
+              </div>
+            )
+          )}
+
+          {/* Participants */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-secondary/50">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-bold">{participants.length}</span>
+            <div className="flex -space-x-2">
+              {participants.slice(0, 4).map(p => (
+                <div
+                  key={p.id}
+                  className={`h-6 w-6 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold uppercase ${
+                    p.role === "host" ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"
+                  }`}
+                  title={p.display_name}
+                >
+                  {p.display_name.charAt(0)}
+                </div>
               ))}
-            </select>
+              {participants.length > 4 && (
+                <div className="h-6 w-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-bold">
+                  +{participants.length - 4}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Host controls */}
+          {isHost && !isCompleted && (
+            <div className="flex items-center gap-2">
+              {workshop.status === "active" && (
+                <>
+                  <Button onClick={pauseWorkshop} variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                    <Pause className="h-3.5 w-3.5 mr-1.5" />Pause
+                  </Button>
+                  <Button onClick={completeWorkshop} variant="destructive" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                    <Check className="h-3.5 w-3.5 mr-1.5" />Terminer
+                  </Button>
+                </>
+              )}
+              {workshop.status === "paused" && (
+                <>
+                  <Button onClick={resumeWorkshop} size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                    <Play className="h-3.5 w-3.5 mr-1.5" />Reprendre
+                  </Button>
+                  <Button onClick={completeWorkshop} variant="destructive" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                    Terminer
+                  </Button>
+                </>
+              )}
+            </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Main area — flex-1, no margin-top */}
       <div className="flex-1 flex relative min-h-0">
@@ -437,5 +466,21 @@ export default function WorkshopRoom() {
         </div>
       )}
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; class: string }> = {
+    lobby: { label: "En attente", class: "bg-muted text-muted-foreground" },
+    active: { label: "En cours", class: "bg-pillar-finance/15 text-pillar-finance" },
+    paused: { label: "Pause", class: "bg-pillar-business/15 text-pillar-business" },
+    completed: { label: "Terminé", class: "bg-primary/15 text-primary" },
+  };
+  const s = map[status] || map.lobby;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${s.class}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+      {s.label}
+    </span>
   );
 }
