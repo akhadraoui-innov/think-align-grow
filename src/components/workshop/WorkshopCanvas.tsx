@@ -8,7 +8,7 @@ import { CanvasArrow } from "./CanvasArrow";
 import { ArrowToolbar } from "./ArrowToolbar";
 import { CanvasIcon } from "./CanvasIcon";
 import { CanvasText } from "./CanvasText";
-import { AnchorHandles, getAnchorCoords, type AnchorPosition } from "./AnchorHandles";
+import { AnchorHandles, getAnchorCoords, getItemDimensions, type AnchorPosition } from "./AnchorHandles";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 
 interface WorkshopCanvasProps {
@@ -414,8 +414,7 @@ export function WorkshopCanvas({
           const isDragging = draggingItem === item.id;
           const profile = profiles[item.created_by];
           const showAnchors = mode === "arrow" && item.type !== "group";
-          const itemW = item.width || (item.type === "sticky" ? 180 : item.type === "icon" ? 48 : 240);
-          const itemH = item.height || (item.type === "sticky" ? 140 : item.type === "icon" ? 48 : 120);
+          const { w: itemW, h: itemH } = getItemDimensions(item);
 
           if (item.type === "card") {
             const card = getCardData(item.card_id);
@@ -490,8 +489,7 @@ export function WorkshopCanvas({
 
         {/* Anchor handles overlay in arrow mode */}
         {mode === "arrow" && nonArrows.filter(i => i.type !== "group").map(item => {
-          const itemW = item.width || (item.type === "sticky" ? 180 : item.type === "icon" ? 48 : 240);
-          const itemH = item.height || (item.type === "sticky" ? 140 : item.type === "icon" ? 48 : 120);
+          const { w: itemW, h: itemH } = getItemDimensions(item);
           return (
             <div
               key={`anchors-${item.id}`}
