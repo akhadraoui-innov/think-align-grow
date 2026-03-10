@@ -109,6 +109,7 @@ export function WorkshopToolbar({
       </div>
 
       {/* Center: Tools */}
+      {!readOnly && (
       <div className="relative flex items-center gap-1 p-1 rounded-xl bg-secondary/50">
         {TOOLS.map(tool => {
           const hasSubMenu = tool.id === "sticky" || tool.id === "group" || tool.id === "icon";
