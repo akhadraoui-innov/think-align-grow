@@ -128,20 +128,29 @@ export default function WorkshopRoom() {
     setMode("select");
   }, [addItem]);
 
-  const handleArrowClick = useCallback(async (itemId: string) => {
+  const handleArrowClick = useCallback(async (itemId: string, anchor?: string) => {
     if (!arrowStart) {
       setArrowStart(itemId);
+      setArrowStartAnchor(anchor || "bottom");
       return;
     }
     if (arrowStart === itemId) {
       setArrowStart(null);
+      setArrowStartAnchor(null);
       return;
     }
-    await createArrow(arrowStart, itemId);
+    const arrow = await createArrow(arrowStart, itemId);
+    if (arrow) {
+      await updateContent(arrow.id, {
+        from_anchor: arrowStartAnchor || "bottom",
+        to_anchor: anchor || "top",
+      });
+    }
     setArrowStart(null);
+    setArrowStartAnchor(null);
     setMode("select");
     toast.success("Flèche créée");
-  }, [arrowStart, createArrow]);
+  }, [arrowStart, arrowStartAnchor, createArrow, updateContent]);
 
   const handleSelectItem = useCallback((itemId: string | null) => {
     setSelectedItemId(itemId);
