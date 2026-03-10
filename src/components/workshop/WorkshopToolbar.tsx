@@ -198,6 +198,7 @@ export function WorkshopToolbar({
           )}
         </AnimatePresence>
       </div>
+      )}
 
       {/* Right */}
       <div className="flex items-center gap-3">
