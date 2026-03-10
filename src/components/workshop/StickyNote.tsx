@@ -4,12 +4,12 @@ import { cn } from "@/lib/utils";
 import { CanvasItem } from "@/hooks/useCanvasItems";
 
 const STICKY_COLORS = [
-  { name: "yellow", bg: "bg-yellow-200", text: "text-yellow-900" },
-  { name: "pink", bg: "bg-pink-200", text: "text-pink-900" },
-  { name: "green", bg: "bg-green-200", text: "text-green-900" },
-  { name: "blue", bg: "bg-blue-200", text: "text-blue-900" },
-  { name: "purple", bg: "bg-purple-200", text: "text-purple-900" },
-  { name: "orange", bg: "bg-orange-200", text: "text-orange-900" },
+  { name: "yellow", bg: "bg-yellow-400", text: "text-yellow-950" },
+  { name: "pink", bg: "bg-pink-400", text: "text-pink-950" },
+  { name: "green", bg: "bg-green-400", text: "text-green-950" },
+  { name: "blue", bg: "bg-blue-400", text: "text-blue-950" },
+  { name: "purple", bg: "bg-purple-400", text: "text-purple-950" },
+  { name: "orange", bg: "bg-orange-400", text: "text-orange-950" },
 ];
 
 const STICKY_SIZES = {
