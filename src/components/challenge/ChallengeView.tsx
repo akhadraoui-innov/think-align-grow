@@ -53,6 +53,10 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
     stageCard(subject.id, cardId);
   }, [subjects, currentIndex, stageCard]);
 
+  const handleMoveToSlot = useCallback((sourceResponseId: string, targetSlotId: string, cardId: string) => {
+    moveToSlot(sourceResponseId, targetSlotId, cardId);
+  }, [moveToSlot]);
+
   const handleAnalyze = useCallback(async () => {
     setAnalyzing(true);
     try {
@@ -94,10 +98,6 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
   }
 
   const currentSubject = subjects[currentIndex];
-
-  const handleMoveToSlot = useCallback((sourceResponseId: string, targetSlotId: string, cardId: string) => {
-    moveToSlot(sourceResponseId, targetSlotId, cardId);
-  }, [moveToSlot]);
 
   const canvasProps = {
     subject: currentSubject!,
