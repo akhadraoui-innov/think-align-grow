@@ -1,75 +1,85 @@
 
 
-## Audit Front-End du Workshop Canvas
+## Diagnostic : pourquoi ça échoue depuis 5 tentatives
 
-Apres analyse complete de toutes les couches (WorkshopCanvas, WorkshopToolbar, CanvasCard, StickyNote, CanvasGroup, CanvasIcon, CanvasText, DiscussionPanel, CanvasStats, WorkshopRoom), voici les problemes identifies et le plan de correction.
+### Cause racine 1 — Le scroll est cassé par AnimatePresence
 
----
+Le problème fondamental que toutes les tentatives ont manqué :
 
-### Bugs critiques
+```text
+ChallengeView (flex-1 flex flex-col min-h-0)
+  └─ <AnimatePresence mode="wait">        ← PAS de flex-1, PAS de min-h-0
+       └─ <ChallengeBoard>               ← flex-1 ne sert à RIEN
+            └─ overflow-y-auto            ← jamais contraint en hauteur
+```
 
-**1. Indicateur fleche duplique et casse**
-- `WorkshopCanvas.tsx` ligne 321 : un `<div className="fixed ...">` est rendu DANS le conteneur transforme (`translate + scale`). CSS `fixed` ne fonctionne pas dans un parent avec `transform` → l'indicateur est mal positionne ou invisible.
-- Le meme indicateur existe deja dans `WorkshopRoom.tsx` ligne 396. Le doublon dans WorkshopCanvas doit etre supprime.
+`AnimatePresence` de framer-motion **ne transmet pas les propriétés flex** à ses enfants. Il crée un conteneur intermédiaire invisible. Résultat : `flex-1` sur `ChallengeBoard`/`SubjectCanvas` ne s'applique jamais car leur parent n'est pas un flex container avec hauteur contrainte. Le contenu prend sa hauteur naturelle (infinie) et `overflow-y-auto` ne déclenche jamais de scroll.
 
-**2. Perte de capture pointer sur les elements enfants**
-- `handleItemDragStart` fait `(e.target as HTMLElement).setPointerCapture(e.pointerId)` — si l'utilisateur clique sur un element enfant (texte, icone, badge), la capture est mise sur cet enfant et non sur le conteneur. Quand le pointer bouge hors de ce petit element, le drag cesse brusquement.
-- Fix : capturer sur `containerRef.current` au lieu de `e.target`.
+**Fix** : Envelopper le contenu de `AnimatePresence` dans un `div` avec `className="flex-1 flex flex-col min-h-0 overflow-hidden"`.
 
-**3. Resize des groupes perd les events**
-- Le resize handler dans `CanvasGroup` ecoute `onPointerMove/Up` sur le handle lui-meme (div 24x24px). Si le curseur sort de ce petit element pendant le resize, les events sont perdus.
-- Fix : le resize doit aussi utiliser `setPointerCapture` sur le handle pour garantir le tracking.
+### Cause racine 2 — Les données de drag sont contradictoires
 
-**4. Margin-top hardcodee pour le canvas**
-- `WorkshopRoom.tsx` ligne 322 : `mt-[60px]` ou `mt-[92px]` selon le statut. Tout changement de hauteur de toolbar ou banniere casse le layout.
-- Fix : utiliser un layout flex naturel sans margin-top fixe (la toolbar doit etre dans le flux flex, pas absolute).
+Dans `BoardZone`, chaque carte envoie **3 types** de données drag simultanément (lignes 156-160) :
+- `card-id` → traité comme "nouvelle carte depuis la sidebar"
+- `source-response-id` → traité comme "déplacement entre slots"
+- `reorder-response-id` → traité comme "réordonnancement interne"
 
----
+Quand on dépose une carte sur le fond de la zone (pas sur une autre carte), le handler du slot (`handleDrop` ligne 43) voit `reorder-response-id` et fait `return` (ligne 51). MAIS il voit aussi `source-response-id`, ce qui déclenche `onMoveToSlot` → la carte est supprimée puis recréée au même endroit = duplication apparente ou perte.
 
-### Ameliorations UX majeures
+**Fix** : Séparer strictement les types de drag. Un drag interne au slot ne doit définir QUE `reorder-response-id`. Un drag entre slots ne doit définir QUE `card-id` + `source-response-id`.
 
-**5. Zoom au scroll (sans Ctrl)**
-- Actuellement le scroll sans Ctrl ne fait rien. Sur un canvas infini, le scroll devrait panner le canvas (standard Figma/Miro).
-- Ajouter : scroll = pan, Ctrl+scroll = zoom.
+### Cause racine 3 — Le reorder dans DropSlot (vue Liste) utilise un type différent
 
-**6. Pinch-to-zoom / Touch**
-- Aucun support tactile pour le zoom ou le pan a deux doigts. Sur tablette/mobile le canvas est inutilisable.
-- Ajouter la gestion des `touchstart/touchmove` pour pinch-zoom et pan 2 doigts.
+`DropSlot` utilise `reorder-id` (lignes 167, 171, 179) tandis que `BoardZone` utilise `reorder-response-id`. Incohérence qui empêche de détecter correctement le type de drag.
 
-**7. Raccourcis clavier**
-- Pas de `Delete`/`Backspace` pour supprimer l'element selectionne
-- Pas de `Escape` pour deselectionner
-- Ajouter ces raccourcis dans WorkshopCanvas via `useEffect` + `keydown`.
+### Plan de correction définitif
 
-**8. Snap-to-grid optionnel**
-- Ajouter un snap magnetique lors du drag (arrondir x/y au multiple de 20px le plus proche quand actif).
-- Toggle dans la toolbar.
+#### 1. Fix scroll — `ChallengeView.tsx` (lignes 196-205)
 
-**9. Fit-to-content / Reset view**
-- Le bouton "%" reset a `{x:0, y:0, scale:1}` ce qui ne correspond pas forcement au contenu.
-- Ajouter un bouton "Fit" qui calcule le bounding box de tous les items et ajuste viewport pour tout afficher.
+Remplacer le `AnimatePresence` nu par un wrapper flex :
 
----
+```tsx
+<div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+  <AnimatePresence mode="wait">
+    {currentSubject && (
+      viewMode === "list" ? (
+        <SubjectCanvas key={...} {...canvasProps} />
+      ) : (
+        <ChallengeBoard key={...} {...canvasProps} />
+      )
+    )}
+  </AnimatePresence>
+</div>
+```
 
-### Corrections mineures
+Et dans `ChallengeBoard`/`SubjectCanvas`, le `motion.div` racine doit utiliser `className="flex flex-col h-full"` (pas `flex-1` car le parent fixe déjà la taille).
 
-**10. SVG arrows container trop grand**
-- `width: 10000px, height: 10000px` est excessif. Utiliser `width: 0, height: 0` avec `overflow: visible` suffit.
+#### 2. Fix drag — `BoardZone.tsx`
 
-**11. Performance du drag**
-- Le debounce DB est a 300ms mais le state local est mis a jour a chaque pointermove. C'est correct, mais `onUpdatePosition` dans `useCanvasItems` declenche un re-render de la liste entiere. Pas critique pour < 100 items.
+**onDragStart** des cartes placées dans un slot :
+- Définir UNIQUEMENT `reorder-response-id` (PAS `card-id` ni `source-response-id`)
+- Ajouter un second handler pour le drag **hors du slot** : on gère ça dans `handleDrop` du slot parent en vérifiant si le drag vient du même slot ou d'un autre
 
----
+Concrètement :
+- `onDragStart` met `reorder-response-id` = resp.id ET `card-id` = card.id ET `source-slot-id` = slot.id
+- `handleDrop` vérifie : si `source-slot-id === slot.id` → c'est un reorder, sinon c'est un move
 
-### Plan d'implementation
+#### 3. Fix reorder — `DropSlot.tsx`
 
-| Fichier | Modifications |
+Même logique : utiliser `source-slot-id` pour distinguer reorder vs move, au lieu de types différents (`reorder-id` vs `card-id`).
+
+#### 4. Fix suppression — `GameCard.tsx`
+
+La suppression fonctionne déjà dans le code (le `handleRemoveClick` fait `stopPropagation`), mais le `draggable` sur le div parent intercepte le mousedown. Ajouter `onPointerDown={(e) => e.stopPropagation()}` sur le bouton X.
+
+### Fichiers impactés
+
+| Fichier | Modification |
 |---|---|
-| `WorkshopCanvas.tsx` | Supprimer indicateur fleche duplique, fix pointer capture sur containerRef, ajouter scroll=pan, pinch-zoom, keydown (Delete/Escape), snap-to-grid, fit-to-content |
-| `WorkshopRoom.tsx` | Retirer mt-[60px]/mt-[92px], rendre toolbar dans le flux flex (retirer position absolute), ajouter snap toggle dans toolbar state |
-| `WorkshopToolbar.tsx` | Retirer `absolute top-0`, rendre en flux flex, ajouter bouton Fit + toggle Snap |
-| `CanvasGroup.tsx` | Fix resize avec setPointerCapture sur le handle |
-| `CanvasArrow.tsx` | SVG container : passer a width/height 0 |
-
-Environ 7 fichiers touches, principalement WorkshopCanvas et WorkshopRoom.
+| `ChallengeView.tsx` | Wrapper flex autour de AnimatePresence |
+| `ChallengeBoard.tsx` | `h-full` au lieu de `flex-1` sur motion.div racine |
+| `SubjectCanvas.tsx` | Idem |
+| `BoardZone.tsx` | Refonte complète du système de drag : `source-slot-id` pour distinguer reorder vs move |
+| `DropSlot.tsx` | Même refonte drag avec `source-slot-id` |
+| `GameCard.tsx` | `onPointerDown` stopPropagation sur le bouton X |
 
