@@ -97,7 +97,8 @@ export function ChallengeBoard({
       </div>
 
       {/* Board — zones displayed as a spatial grid */}
-      <div className="flex-1 overflow-y-auto p-6 min-h-0">
+      <div className="relative flex-1 min-h-0">
+        <div ref={scrollRef} onScroll={checkScroll} className="absolute inset-0 overflow-y-auto p-6">
         <div className={cn(
           "grid gap-5",
           subjectSlots.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
