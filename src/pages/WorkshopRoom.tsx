@@ -358,62 +358,75 @@ export default function WorkshopRoom() {
           <CardSidebar cards={allCards} pillars={pillars} onAddCard={handleAddCard} isMobile={isMobile} />
         )}
 
-        {/* Canvas */}
+        {/* Content area */}
         <div className="flex-1 relative">
-          <WorkshopCanvas
-            items={items}
-            cards={allCards || []}
-            pillars={pillars || []}
-            selectedItemId={isReadOnly ? null : selectedItemId}
-            mode={isReadOnly ? "select" : mode}
-            arrowStart={isReadOnly ? null : arrowStart}
-            onSelectItem={isReadOnly ? () => {} : handleSelectItem}
-            onUpdatePosition={isReadOnly ? () => {} : updatePosition}
-            onUpdateContent={isReadOnly ? () => {} : updateContent}
-            onUpdateSize={isReadOnly ? () => {} : updateSize}
-            onUpdateColor={isReadOnly ? () => {} : updateColor}
-            onBringToFront={isReadOnly ? () => {} : bringToFront}
-            onDeleteItem={isReadOnly ? () => {} : deleteItem}
-            onAddSticky={isReadOnly ? () => {} : handleAddSticky}
-            onAddGroup={isReadOnly ? () => {} : handleAddGroup}
-            onAddIcon={isReadOnly ? () => {} : handleAddIcon}
-            onAddText={isReadOnly ? () => {} : handleAddText}
-            onArrowClick={isReadOnly ? () => {} : handleArrowClick}
-            viewport={viewport}
-            onViewportChange={setViewport}
-            profiles={profiles}
-            snapToGrid={snapToGrid}
-          />
+          {workshopMode === "challenge" && selectedTemplateId && challengeTemplates ? (
+            <ChallengeView
+              template={challengeTemplates.find(t => t.id === selectedTemplateId)!}
+              workshopId={id!}
+              cards={allCards || []}
+              pillars={pillars || []}
+              isHost={isHost}
+              readOnly={isReadOnly}
+            />
+          ) : (
+            <>
+              <WorkshopCanvas
+                items={items}
+                cards={allCards || []}
+                pillars={pillars || []}
+                selectedItemId={isReadOnly ? null : selectedItemId}
+                mode={isReadOnly ? "select" : mode}
+                arrowStart={isReadOnly ? null : arrowStart}
+                onSelectItem={isReadOnly ? () => {} : handleSelectItem}
+                onUpdatePosition={isReadOnly ? () => {} : updatePosition}
+                onUpdateContent={isReadOnly ? () => {} : updateContent}
+                onUpdateSize={isReadOnly ? () => {} : updateSize}
+                onUpdateColor={isReadOnly ? () => {} : updateColor}
+                onBringToFront={isReadOnly ? () => {} : bringToFront}
+                onDeleteItem={isReadOnly ? () => {} : deleteItem}
+                onAddSticky={isReadOnly ? () => {} : handleAddSticky}
+                onAddGroup={isReadOnly ? () => {} : handleAddGroup}
+                onAddIcon={isReadOnly ? () => {} : handleAddIcon}
+                onAddText={isReadOnly ? () => {} : handleAddText}
+                onArrowClick={isReadOnly ? () => {} : handleArrowClick}
+                viewport={viewport}
+                onViewportChange={setViewport}
+                profiles={profiles}
+                snapToGrid={snapToGrid}
+              />
 
-          <CanvasStats
-            items={items}
-            pillars={pillars || []}
-            cards={(allCards || []).map(c => ({ id: c.id, pillar_id: c.pillar_id }))}
-            participantCount={participants.length}
-          />
+              <CanvasStats
+                items={items}
+                pillars={pillars || []}
+                cards={(allCards || []).map(c => ({ id: c.id, pillar_id: c.pillar_id }))}
+                participantCount={participants.length}
+              />
 
-          {selectedItemId && (
-            <motion.button
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute bottom-4 right-4 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-              onClick={() => setShowDiscussion(!showDiscussion)}
-            >
-              <MessageCircle className="h-5 w-5" />
-            </motion.button>
+              {selectedItemId && (
+                <motion.button
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute bottom-4 right-4 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                  onClick={() => setShowDiscussion(!showDiscussion)}
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </motion.button>
+              )}
+
+              <DiscussionPanel
+                isOpen={showDiscussion && !!selectedItemId}
+                onClose={() => setShowDiscussion(false)}
+                comments={comments}
+                loading={commentsLoading}
+                onAddComment={addComment}
+                onDeleteComment={deleteComment}
+                currentUserId={user?.id}
+                profiles={profiles}
+                selectedItemTitle={selectedItemTitle}
+              />
+            </>
           )}
-
-          <DiscussionPanel
-            isOpen={showDiscussion && !!selectedItemId}
-            onClose={() => setShowDiscussion(false)}
-            comments={comments}
-            loading={commentsLoading}
-            onAddComment={addComment}
-            onDeleteComment={deleteComment}
-            currentUserId={user?.id}
-            profiles={profiles}
-            selectedItemTitle={selectedItemTitle}
-          />
         </div>
       </div>
 
