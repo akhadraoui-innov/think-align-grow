@@ -25,7 +25,6 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    if (e.dataTransfer.types.includes("reorder-id")) return;
     e.dataTransfer.dropEffect = "move";
     setIsDragOver(true);
   }, []);
@@ -34,12 +33,31 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
-    if (e.dataTransfer.types.includes("reorder-id")) return;
+
     const cardId = e.dataTransfer.getData("card-id");
     if (!cardId) return;
+
+    // If dragged from another slot, remove the source response first
+    const sourceResponseId = e.dataTransfer.getData("source-response-id");
+    if (sourceResponseId) {
+      // Check if it's the same slot (reorder) — skip for now, just move
+      const isFromThisSlot = slotResponses.some(r => r.id === sourceResponseId);
+      if (isFromThisSlot) {
+        // Same slot reorder — don't duplicate, just ignore for now
+        return;
+      }
+      // Cross-slot move: remove from source
+      onRemove(sourceResponseId);
+    }
+
+    // Check if card is already in this slot
+    const alreadyHere = slotResponses.some(r => r.card_id === cardId);
+    if (alreadyHere) return;
+
     onDrop(slot.id, cardId);
-  }, [slot.id, onDrop]);
+  }, [slot.id, onDrop, onRemove, slotResponses]);
 
   return (
     <div
@@ -89,6 +107,8 @@ export function BoardZone({ slot, responses, cards, pillars, onDrop, onRemove, o
                   draggable={!readOnly}
                   onDragStart={(e) => {
                     e.dataTransfer.setData("card-id", card.id);
+                    e.dataTransfer.setData("source-response-id", resp.id);
+                    e.dataTransfer.effectAllowed = "move";
                   }}
                 />
               </div>

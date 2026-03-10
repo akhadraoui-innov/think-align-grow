@@ -59,7 +59,7 @@ export function ChallengeBoard({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col h-full"
+      className="flex flex-col h-full min-h-0"
     >
       {/* Subject header */}
       <div className="px-6 py-4 border-b border-border shrink-0">
