@@ -359,7 +359,7 @@ export default function WorkshopRoom() {
         )}
 
         {/* Content area */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative overflow-hidden min-h-0">
           {workshopMode === "challenge" && selectedTemplateId && challengeTemplates ? (
             <ChallengeView
               template={challengeTemplates.find(t => t.id === selectedTemplateId)!}

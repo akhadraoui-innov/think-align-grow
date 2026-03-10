@@ -21,6 +21,7 @@ interface DropSlotProps {
 
 export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, onUpdateResponse, readOnly }: DropSlotProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [reorderDropIdx, setReorderDropIdx] = useState<number | null>(null);
 
   const slotResponses = responses
     .filter(r => r.slot_id === slot.id)
@@ -28,6 +29,8 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    // If this is a reorder drag, don't show the slot-level highlight
+    if (e.dataTransfer.types.includes("reorder-id")) return;
     e.dataTransfer.dropEffect = "move";
     setIsDragOver(true);
   }, []);
@@ -37,19 +40,27 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
+
+    // If it's a reorder event, ignore at slot level (handled by card-level)
+    const reorderId = e.dataTransfer.getData("reorder-id");
+    if (reorderId) return;
+
     const cardId = e.dataTransfer.getData("card-id");
     if (!cardId) return;
     onDrop(slot.id, cardId);
   }, [slot.id, onDrop]);
 
-  const handleReorder = useCallback((dragIdx: number, dropIdx: number) => {
-    if (dragIdx === dropIdx || !onUpdateResponse) return;
+  const handleReorder = useCallback((dragId: string, dropIdx: number) => {
+    if (!onUpdateResponse) return;
+    const dragIdx = slotResponses.findIndex(r => r.id === dragId);
+    if (dragIdx < 0 || dragIdx === dropIdx) return;
     const reordered = [...slotResponses];
     const [moved] = reordered.splice(dragIdx, 1);
     reordered.splice(dropIdx, 0, moved);
     reordered.forEach((r, i) => {
       onUpdateResponse(r.id, { rank: i });
     });
+    setReorderDropIdx(null);
   }, [slotResponses, onUpdateResponse]);
 
   return (
@@ -71,7 +82,7 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
         </span>
         {slot.required && <span className="text-destructive ml-1 text-xs">*</span>}
         <span className="ml-2 text-[10px] text-muted-foreground/70">
-          ({slot.slot_type === "ranked" ? "ordre important" : "plusieurs cartes"})
+          ({slot.slot_type === "ranked" ? "ordre important" : slot.slot_type === "single" ? "1 carte" : "plusieurs cartes"})
         </span>
       </div>
 
@@ -93,6 +104,8 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
             onRemove={onRemove}
             onUpdateResponse={onUpdateResponse}
             onReorder={handleReorder}
+            isReorderTarget={reorderDropIdx === idx}
+            onReorderHover={(targetIdx) => setReorderDropIdx(targetIdx)}
             readOnly={readOnly}
           />
         ))}
@@ -125,11 +138,13 @@ interface SlotCardProps {
   pillars: DbPillar[];
   onRemove: (id: string) => void;
   onUpdateResponse?: (id: string, updates: { format?: string; maturity?: number; rank?: number }) => void;
-  onReorder: (from: number, to: number) => void;
+  onReorder: (dragId: string, dropIdx: number) => void;
+  isReorderTarget: boolean;
+  onReorderHover: (idx: number | null) => void;
   readOnly?: boolean;
 }
 
-function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse, onReorder, readOnly }: SlotCardProps) {
+function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse, onReorder, isReorderTarget, onReorderHover, readOnly }: SlotCardProps) {
   const card = cards.find(c => c.id === resp.card_id);
   const pillar = card ? pillars.find(p => p.id === card.pillar_id) : null;
   const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
@@ -145,24 +160,29 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
       exit={{ opacity: 0, scale: 0.8 }}
       draggable={!readOnly && slot.slot_type === "ranked"}
       onDragStart={(e: any) => {
-        e.dataTransfer?.setData("reorder-idx", String(idx));
-      }}
-      onDrop={(e: any) => {
-        const dragIdx = parseInt(e.dataTransfer?.getData("reorder-idx") || "-1");
-        if (dragIdx >= 0) {
-          e.preventDefault();
-          e.stopPropagation();
-          onReorder(dragIdx, idx);
-        }
+        e.dataTransfer?.setData("reorder-id", resp.id);
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
       }}
       onDragOver={(e: any) => {
-        if (e.dataTransfer?.types.includes("reorder-idx")) {
+        if (e.dataTransfer?.types.includes("reorder-id")) {
           e.preventDefault();
+          e.stopPropagation();
+          onReorderHover(idx);
+        }
+      }}
+      onDragLeave={() => onReorderHover(null)}
+      onDrop={(e: any) => {
+        const dragId = e.dataTransfer?.getData("reorder-id");
+        if (dragId) {
+          e.preventDefault();
+          e.stopPropagation();
+          onReorder(dragId, idx);
         }
       }}
       className={cn(
         "rounded-xl bg-card border border-border mb-1 group",
-        !readOnly && slot.slot_type === "ranked" && "cursor-grab active:cursor-grabbing"
+        !readOnly && slot.slot_type === "ranked" && "cursor-grab active:cursor-grabbing",
+        isReorderTarget && "ring-2 ring-primary/50"
       )}
     >
       {/* Compact format */}
@@ -173,7 +193,6 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
           )}
           <div className="h-4 w-1 rounded-full shrink-0" style={{ background: `hsl(var(--pillar-${gradient}))` }} />
           <span className="text-xs font-medium flex-1 truncate">{card.title}</span>
-          {/* Pillar badge */}
           <span
             className="text-[8px] font-bold uppercase px-1 py-0.5 rounded shrink-0"
             style={{ background: `hsl(var(--pillar-${gradient}) / 0.1)`, color: `hsl(var(--pillar-${gradient}))` }}
@@ -184,7 +203,7 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
             <MaturitySelector value={resp.maturity} onChange={(v) => onUpdateResponse?.(resp.id, { maturity: v })} readOnly={readOnly} compact />
             <FormatSelector value={fmt} onChange={(f) => onUpdateResponse?.(resp.id, { format: f })} readOnly={readOnly} />
             {!readOnly && (
-              <button onClick={() => onRemove(resp.id)} className="p-0.5 rounded hover:bg-destructive/10">
+              <button onClick={(e) => { e.stopPropagation(); onRemove(resp.id); }} className="p-0.5 rounded hover:bg-destructive/10">
                 <X className="h-3 w-3 text-destructive" />
               </button>
             )}
@@ -206,14 +225,13 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
             </div>
             <div className="flex items-center gap-1 shrink-0">
               {!readOnly && (
-                <button onClick={() => onRemove(resp.id)} className="p-0.5 rounded-lg hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={(e) => { e.stopPropagation(); onRemove(resp.id); }} className="p-0.5 rounded-lg hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity">
                   <X className="h-3 w-3 text-destructive" />
                 </button>
               )}
               <FormatSelector value={fmt} onChange={(f) => onUpdateResponse?.(resp.id, { format: f })} readOnly={readOnly} />
             </div>
           </div>
-          {/* Pillar + Phase badges & maturity */}
           <div className="flex items-center gap-1.5 mt-1.5 pl-7">
             <span
               className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-md"
@@ -245,14 +263,13 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
             </div>
             <div className="flex items-center gap-1 shrink-0">
               {!readOnly && (
-                <button onClick={() => onRemove(resp.id)} className="p-0.5 rounded-lg hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={(e) => { e.stopPropagation(); onRemove(resp.id); }} className="p-0.5 rounded-lg hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity">
                   <X className="h-3 w-3 text-destructive" />
                 </button>
               )}
               <FormatSelector value={fmt} onChange={(f) => onUpdateResponse?.(resp.id, { format: f })} readOnly={readOnly} />
             </div>
           </div>
-          {/* Badges row */}
           <div className="flex items-center gap-1.5 pl-7 mb-2">
             <span
               className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-md"
@@ -267,7 +284,6 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
           {(card.objective || card.definition) && (
             <p className="text-[10px] text-muted-foreground/70 line-clamp-3 pl-7">{card.objective || card.definition}</p>
           )}
-          {/* Maturity selector - visible */}
           <div className="pl-7 mt-2">
             <MaturitySelector value={resp.maturity} onChange={(v) => onUpdateResponse?.(resp.id, { maturity: v })} readOnly={readOnly} />
           </div>

@@ -1,55 +1,75 @@
 
 
-## Corrections et améliorations du Challenge Canvas
+## Audit Front-End du Workshop Canvas
 
-### Problèmes identifiés
+Apres analyse complete de toutes les couches (WorkshopCanvas, WorkshopToolbar, CanvasCard, StickyNote, CanvasGroup, CanvasIcon, CanvasText, DiscussionPanel, CanvasStats, WorkshopRoom), voici les problemes identifies et le plan de correction.
 
-1. **Scroll cassé** : Le conteneur `flex-1 relative` dans `WorkshopRoom` n'a pas `overflow-auto` ni `min-h-0`, et les vues internes (`SubjectCanvas`, `ChallengeBoard`) utilisent `h-full` sans que la chaîne flex soit complète.
+---
 
-2. **Duplication de cartes** : `placeCard` dans `useChallengeData.ts` supprime toutes les réponses du même slot+user avant d'insérer, ce qui empêche les slots multi-cartes. Il ne devrait supprimer que pour les slots "single".
+### Bugs critiques
 
-3. **Suppression cassée** : `removeCard` fonctionne par `id` mais le drag-reorder dans `DropSlot` propage l'événement drop au parent, ce qui re-déclenche `onDrop` et recrée la carte — le `stopPropagation` manque sur certains chemins.
+**1. Indicateur fleche duplique et casse**
+- `WorkshopCanvas.tsx` ligne 321 : un `<div className="fixed ...">` est rendu DANS le conteneur transforme (`translate + scale`). CSS `fixed` ne fonctionne pas dans un parent avec `transform` → l'indicateur est mal positionne ou invisible.
+- Le meme indicateur existe deja dans `WorkshopRoom.tsx` ligne 396. Le doublon dans WorkshopCanvas doit etre supprime.
 
-4. **Reorder dans DropSlot** : Le reorder par drag natif HTML entre en conflit avec le drop principal du slot (les deux écoutent `onDrop`). Il faut distinguer clairement les deux types de drop via les dataTransfer types.
+**2. Perte de capture pointer sur les elements enfants**
+- `handleItemDragStart` fait `(e.target as HTMLElement).setPointerCapture(e.pointerId)` — si l'utilisateur clique sur un element enfant (texte, icone, badge), la capture est mise sur cet enfant et non sur le conteneur. Quand le pointer bouge hors de ce petit element, le drag cesse brusquement.
+- Fix : capturer sur `containerRef.current` au lieu de `e.target`.
 
-5. **Zone de tri** : Pas de classement possible, trop petite, pas de GameCards en mode board.
+**3. Resize des groupes perd les events**
+- Le resize handler dans `CanvasGroup` ecoute `onPointerMove/Up` sur le handle lui-meme (div 24x24px). Si le curseur sort de ce petit element pendant le resize, les events sont perdus.
+- Fix : le resize doit aussi utiliser `setPointerCapture` sur le handle pour garantir le tracking.
 
-### Plan de corrections
+**4. Margin-top hardcodee pour le canvas**
+- `WorkshopRoom.tsx` ligne 322 : `mt-[60px]` ou `mt-[92px]` selon le statut. Tout changement de hauteur de toolbar ou banniere casse le layout.
+- Fix : utiliser un layout flex naturel sans margin-top fixe (la toolbar doit etre dans le flux flex, pas absolute).
 
-#### 1. Fix scroll — `WorkshopRoom.tsx` + vues
-- Ajouter `overflow-hidden min-h-0` sur le conteneur `flex-1 relative` (ligne 362)
-- Les vues `SubjectCanvas` et `ChallengeBoard` gardent `overflow-auto` sur leur zone de contenu
+---
 
-#### 2. Fix placeCard — `useChallengeData.ts`
-- Passer `slotType` en paramètre de `placeCard`
-- Ne supprimer les réponses existantes QUE si `slotType === 'single'`
-- Pour multi/ranked : insérer directement avec `rank = max(existingRanks) + 1`
+### Ameliorations UX majeures
 
-#### 3. Fix suppression et reorder — `DropSlot.tsx`
-- Dans `handleDrop` : vérifier si `e.dataTransfer` contient `reorder-idx` → si oui, traiter comme reorder et `stopPropagation` ; sinon traiter comme nouveau drop de carte
-- Fusionner la logique drop/reorder dans un seul handler sur le conteneur pour éviter les conflits
-- Le `SlotCard` ne doit plus avoir son propre `onDrop` — le reorder est géré au niveau du slot par la position de drop
+**5. Zoom au scroll (sans Ctrl)**
+- Actuellement le scroll sans Ctrl ne fait rien. Sur un canvas infini, le scroll devrait panner le canvas (standard Figma/Miro).
+- Ajouter : scroll = pan, Ctrl+scroll = zoom.
 
-#### 4. Staging Zone améliorée — `StagingZone.tsx`
-- Déplacer en **bas** des deux vues (après les slots/zones, pas avant)
-- Agrandir : `min-h-[160px]` au lieu de `80px`
-- Afficher les `GameCard` en mode board (passer un prop `viewMode`)
-- Ajouter tri automatique par pilier (grouper les cartes par pillar_id)
-- Permettre le drag-reorder entre cartes dans la zone de tri
+**6. Pinch-to-zoom / Touch**
+- Aucun support tactile pour le zoom ou le pan a deux doigts. Sur tablette/mobile le canvas est inutilisable.
+- Ajouter la gestion des `touchstart/touchmove` pour pinch-zoom et pan 2 doigts.
 
-#### 5. Staging en bas — `SubjectCanvas.tsx` + `ChallengeBoard.tsx`
-- Déplacer le bloc `<StagingZone>` après la grille de slots au lieu d'avant
-- Passer `viewMode` pour adapter le rendu (compact en liste, GameCards en board)
+**7. Raccourcis clavier**
+- Pas de `Delete`/`Backspace` pour supprimer l'element selectionne
+- Pas de `Escape` pour deselectionner
+- Ajouter ces raccourcis dans WorkshopCanvas via `useEffect` + `keydown`.
 
-### Fichiers impactés
+**8. Snap-to-grid optionnel**
+- Ajouter un snap magnetique lors du drag (arrondir x/y au multiple de 20px le plus proche quand actif).
+- Toggle dans la toolbar.
 
-| Fichier | Changement |
+**9. Fit-to-content / Reset view**
+- Le bouton "%" reset a `{x:0, y:0, scale:1}` ce qui ne correspond pas forcement au contenu.
+- Ajouter un bouton "Fit" qui calcule le bounding box de tous les items et ajuste viewport pour tout afficher.
+
+---
+
+### Corrections mineures
+
+**10. SVG arrows container trop grand**
+- `width: 10000px, height: 10000px` est excessif. Utiliser `width: 0, height: 0` avec `overflow: visible` suffit.
+
+**11. Performance du drag**
+- Le debounce DB est a 300ms mais le state local est mis a jour a chaque pointermove. C'est correct, mais `onUpdatePosition` dans `useCanvasItems` declenche un re-render de la liste entiere. Pas critique pour < 100 items.
+
+---
+
+### Plan d'implementation
+
+| Fichier | Modifications |
 |---|---|
-| `src/pages/WorkshopRoom.tsx` | `overflow-hidden min-h-0` sur conteneur |
-| `src/hooks/useChallengeData.ts` | Fix `placeCard` pour multi-cartes, passer slot_type |
-| `src/components/challenge/DropSlot.tsx` | Fusionner drop/reorder, fix suppression, stopPropagation |
-| `src/components/challenge/StagingZone.tsx` | Plus grande, tri par pilier, support GameCard, reorder |
-| `src/components/challenge/SubjectCanvas.tsx` | Staging en bas |
-| `src/components/challenge/ChallengeBoard.tsx` | Staging en bas avec GameCards |
-| `src/components/challenge/ChallengeView.tsx` | Passer viewMode au staging |
+| `WorkshopCanvas.tsx` | Supprimer indicateur fleche duplique, fix pointer capture sur containerRef, ajouter scroll=pan, pinch-zoom, keydown (Delete/Escape), snap-to-grid, fit-to-content |
+| `WorkshopRoom.tsx` | Retirer mt-[60px]/mt-[92px], rendre toolbar dans le flux flex (retirer position absolute), ajouter snap toggle dans toolbar state |
+| `WorkshopToolbar.tsx` | Retirer `absolute top-0`, rendre en flux flex, ajouter bouton Fit + toggle Snap |
+| `CanvasGroup.tsx` | Fix resize avec setPointerCapture sur le handle |
+| `CanvasArrow.tsx` | SVG container : passer a width/height 0 |
+
+Environ 7 fichiers touches, principalement WorkshopCanvas et WorkshopRoom.
 
