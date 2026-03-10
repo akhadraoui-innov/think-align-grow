@@ -119,7 +119,6 @@ export function useChallengeStructure(templateId: string | undefined) {
 
 export function useChallengeResponses(workshopId: string | undefined) {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [responses, setResponses] = useState<ChallengeResponse[]>([]);
 
   // Fetch
@@ -192,12 +191,58 @@ export function useChallengeResponses(workshopId: string | undefined) {
   }, [workshopId, user, responses]);
 
   const removeCard = useCallback(async (responseId: string) => {
+    // Optimistic removal from local state
+    setResponses(prev => prev.filter(r => r.id !== responseId));
     const { error } = await supabase
       .from("challenge_responses")
       .delete()
       .eq("id", responseId);
-    if (error) toast.error("Erreur lors du retrait de la carte");
-  }, []);
+    if (error) {
+      toast.error("Erreur lors du retrait de la carte");
+      // Re-fetch on error to restore state
+      if (workshopId) {
+        const { data } = await supabase.from("challenge_responses").select("*").eq("workshop_id", workshopId);
+        if (data) setResponses(data as ChallengeResponse[]);
+      }
+    }
+  }, [workshopId]);
+
+  const moveToSlot = useCallback(async (sourceResponseId: string, targetSlotId: string, cardId: string) => {
+    if (!workshopId || !user) return;
+
+    // Find the source response to get subject_id
+    const sourceResp = responses.find(r => r.id === sourceResponseId);
+    if (!sourceResp) return;
+
+    // Optimistic: remove source from local state
+    setResponses(prev => prev.filter(r => r.id !== sourceResponseId));
+
+    // Delete source
+    await supabase
+      .from("challenge_responses")
+      .delete()
+      .eq("id", sourceResponseId);
+
+    // Calculate rank for target slot
+    const existingInTarget = responses.filter(r => r.slot_id === targetSlotId);
+    const maxRank = existingInTarget.length > 0 ? Math.max(...existingInTarget.map(r => r.rank)) : -1;
+
+    // Insert in target
+    const { error } = await supabase
+      .from("challenge_responses")
+      .insert({
+        workshop_id: workshopId,
+        subject_id: sourceResp.subject_id,
+        slot_id: targetSlotId,
+        card_id: cardId,
+        user_id: user.id,
+        rank: maxRank + 1,
+        maturity: sourceResp.maturity,
+        format: sourceResp.format,
+      });
+
+    if (error) toast.error("Erreur lors du déplacement de la carte");
+  }, [workshopId, user, responses]);
 
   const updateResponse = useCallback(async (responseId: string, updates: { format?: string; maturity?: number; rank?: number }) => {
     const { error } = await supabase
@@ -207,7 +252,7 @@ export function useChallengeResponses(workshopId: string | undefined) {
     if (error) toast.error("Erreur lors de la mise à jour");
   }, []);
 
-  return { responses, placeCard, removeCard, updateResponse };
+  return { responses, placeCard, removeCard, moveToSlot, updateResponse };
 }
 
 export function useChallengeAnalysis(workshopId: string | undefined) {

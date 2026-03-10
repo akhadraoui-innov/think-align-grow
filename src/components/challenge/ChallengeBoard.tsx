@@ -15,6 +15,7 @@ interface ChallengeBoardProps {
   pillars: DbPillar[];
   onDrop: (slotId: string, cardId: string) => void;
   onRemove: (responseId: string) => void;
+  onMoveToSlot?: (sourceResponseId: string, targetSlotId: string, cardId: string) => void;
   onUpdateResponse?: (responseId: string, updates: { format?: string; maturity?: number; rank?: number }) => void;
   stagingItems?: StagingItem[];
   onStage?: (cardId: string) => void;
@@ -37,7 +38,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 export function ChallengeBoard({
   subject, slots, responses, cards, pillars,
-  onDrop, onRemove, onUpdateResponse,
+  onDrop, onRemove, onMoveToSlot, onUpdateResponse,
   stagingItems = [], onStage, onUnstage, onStagingFormatChange,
   readOnly,
 }: ChallengeBoardProps) {
@@ -50,6 +51,7 @@ export function ChallengeBoard({
   }, [onStage]);
 
   const handleSlotDrop = useCallback((slotId: string, cardId: string) => {
+    // Remove from staging if it was there
     const stagingItem = subjectStaging.find(i => i.card_id === cardId);
     if (stagingItem) onUnstage?.(stagingItem.id);
     onDrop(slotId, cardId);
@@ -75,7 +77,7 @@ export function ChallengeBoard({
       </div>
 
       {/* Board — zones displayed as a spatial grid */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-6 min-h-0">
         <div className={cn(
           "grid gap-5",
           subjectSlots.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
@@ -92,6 +94,7 @@ export function ChallengeBoard({
               pillars={pillars}
               onDrop={handleSlotDrop}
               onRemove={onRemove}
+              onMoveToSlot={onMoveToSlot}
               onUpdateResponse={onUpdateResponse}
               readOnly={readOnly}
             />

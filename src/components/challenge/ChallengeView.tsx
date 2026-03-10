@@ -30,7 +30,7 @@ type ViewMode = "list" | "board";
 
 export function ChallengeView({ template, workshopId, cards, pillars, isHost, readOnly }: ChallengeViewProps) {
   const { subjects, slots, loading } = useChallengeStructure(template.id);
-  const { responses, placeCard, removeCard, updateResponse } = useChallengeResponses(workshopId);
+  const { responses, placeCard, removeCard, moveToSlot, updateResponse } = useChallengeResponses(workshopId);
   const { data: analysis, refetch: refetchAnalysis } = useChallengeAnalysis(workshopId);
   const { items: stagingItems, stageCard, unstageCard, updateStagingFormat } = useChallengeStaging(workshopId);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -52,6 +52,10 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
     if (!subject) return;
     stageCard(subject.id, cardId);
   }, [subjects, currentIndex, stageCard]);
+
+  const handleMoveToSlot = useCallback((sourceResponseId: string, targetSlotId: string, cardId: string) => {
+    moveToSlot(sourceResponseId, targetSlotId, cardId);
+  }, [moveToSlot]);
 
   const handleAnalyze = useCallback(async () => {
     setAnalyzing(true);
@@ -103,6 +107,7 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
     pillars,
     onDrop: handleDrop,
     onRemove: removeCard,
+    onMoveToSlot: handleMoveToSlot,
     onUpdateResponse: updateResponse,
     stagingItems,
     onStage: handleStage,

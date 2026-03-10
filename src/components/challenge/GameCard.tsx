@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
@@ -28,14 +28,39 @@ export function GameCard({
   onDragStart,
 }: GameCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const isDraggingRef = useRef(false);
   const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
   const phaseLabel = PHASE_LABELS[card.phase] || card.phase;
 
+  const handleDragStart = (e: React.DragEvent) => {
+    isDraggingRef.current = true;
+    onDragStart?.(e);
+  };
+
+  const handleDragEnd = () => {
+    // Reset after a short delay to avoid click-after-drag
+    setTimeout(() => { isDraggingRef.current = false; }, 100);
+  };
+
+  const handleCardClick = () => {
+    // Don't flip if we just finished dragging
+    if (isDraggingRef.current) return;
+    setIsFlipped(!isFlipped);
+  };
+
+  const handleRemoveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onRemove?.();
+  };
+
   return (
     <div
-      className="perspective-1000 w-44 h-60 shrink-0 group/card"
+      className="w-44 h-60 shrink-0"
+      style={{ perspective: "1000px" }}
       draggable={draggable && !readOnly}
-      onDragStart={onDragStart}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <motion.div
         className={cn(
@@ -45,7 +70,7 @@ export function GameCard({
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.45, type: "spring", stiffness: 220, damping: 28 }}
         style={{ transformStyle: "preserve-3d" }}
-        onClick={() => setIsFlipped(!isFlipped)}
+        onClick={handleCardClick}
       >
         {/* Front */}
         <div
@@ -66,10 +91,11 @@ export function GameCard({
               </span>
               {!readOnly && onRemove && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRemove(); }}
-                  className="p-0.5 rounded hover:bg-destructive/10 opacity-0 group-hover/card:opacity-100 transition-opacity"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={handleRemoveClick}
+                  className="p-1 rounded-md hover:bg-destructive/20 transition-colors z-10 relative"
                 >
-                  <X className="h-3 w-3 text-destructive" />
+                  <X className="h-3.5 w-3.5 text-destructive" />
                 </button>
               )}
             </div>
