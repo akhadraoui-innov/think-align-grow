@@ -3,12 +3,13 @@ import { motion } from "framer-motion";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle } from "lucide-react";
+import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle, LayoutGrid, Pencil } from "lucide-react";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useWorkshopRoom } from "@/hooks/useWorkshop";
-import { useCards, usePillars } from "@/hooks/useToolkitData";
+import { useCards, usePillars, useToolkit } from "@/hooks/useToolkitData";
 import { useCanvasItems } from "@/hooks/useCanvasItems";
 import { useCanvasComments } from "@/hooks/useCanvasComments";
+import { useChallengeTemplates } from "@/hooks/useChallengeData";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkshopCanvas } from "@/components/workshop/WorkshopCanvas";
@@ -16,6 +17,7 @@ import { WorkshopToolbar } from "@/components/workshop/WorkshopToolbar";
 import { CardSidebar } from "@/components/workshop/CardSidebar";
 import { DiscussionPanel } from "@/components/workshop/DiscussionPanel";
 import { CanvasStats } from "@/components/workshop/CanvasStats";
+import { ChallengeView } from "@/components/challenge/ChallengeView";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function WorkshopRoom() {
@@ -37,6 +39,8 @@ export default function WorkshopRoom() {
 
   const { data: allCards } = useCards();
   const { data: pillars } = usePillars();
+  const { data: toolkit } = useToolkit();
+  const { data: challengeTemplates } = useChallengeTemplates(toolkit?.id);
   const {
     items,
     loading: canvasLoading,
@@ -63,6 +67,15 @@ export default function WorkshopRoom() {
   const [showDiscussion, setShowDiscussion] = useState(false);
   const [copied, setCopied] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(false);
+  const [workshopMode, setWorkshopMode] = useState<"canvas" | "challenge">("canvas");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+
+  // Auto-select first template when available
+  useEffect(() => {
+    if (challengeTemplates && challengeTemplates.length > 0 && !selectedTemplateId) {
+      setSelectedTemplateId(challengeTemplates[0].id);
+    }
+  }, [challengeTemplates, selectedTemplateId]);
 
   // Comments for selected item
   const { comments, loading: commentsLoading, addComment, deleteComment } = useCanvasComments(id, selectedItemId);
@@ -305,69 +318,115 @@ export default function WorkshopRoom() {
         onEditModeChange={(em) => { setEditMode(em); if (!em) toast.success("Modifications enregistrées"); }}
       />
 
+      {/* Mode toggle bar (canvas / challenge) */}
+      {challengeTemplates && challengeTemplates.length > 0 && !isReadOnly && (
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-card shrink-0">
+          <button
+            onClick={() => setWorkshopMode("canvas")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              workshopMode === "canvas" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+            }`}
+          >
+            <Pencil className="h-3 w-3" /> Canvas libre
+          </button>
+          <button
+            onClick={() => setWorkshopMode("challenge")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+              workshopMode === "challenge" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+            }`}
+          >
+            <LayoutGrid className="h-3 w-3" /> Challenge
+          </button>
+          {workshopMode === "challenge" && challengeTemplates.length > 1 && (
+            <select
+              value={selectedTemplateId || ""}
+              onChange={e => setSelectedTemplateId(e.target.value)}
+              className="ml-2 text-xs rounded-lg border border-border bg-background px-2 py-1.5"
+            >
+              {challengeTemplates.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
       {/* Main area — flex-1, no margin-top */}
       <div className="flex-1 flex relative min-h-0">
-        {/* Card Sidebar — hidden in read-only */}
+        {/* Card Sidebar — always visible when not read-only */}
         {!isReadOnly && allCards && pillars && (
           <CardSidebar cards={allCards} pillars={pillars} onAddCard={handleAddCard} isMobile={isMobile} />
         )}
 
-        {/* Canvas */}
+        {/* Content area */}
         <div className="flex-1 relative">
-          <WorkshopCanvas
-            items={items}
-            cards={allCards || []}
-            pillars={pillars || []}
-            selectedItemId={isReadOnly ? null : selectedItemId}
-            mode={isReadOnly ? "select" : mode}
-            arrowStart={isReadOnly ? null : arrowStart}
-            onSelectItem={isReadOnly ? () => {} : handleSelectItem}
-            onUpdatePosition={isReadOnly ? () => {} : updatePosition}
-            onUpdateContent={isReadOnly ? () => {} : updateContent}
-            onUpdateSize={isReadOnly ? () => {} : updateSize}
-            onUpdateColor={isReadOnly ? () => {} : updateColor}
-            onBringToFront={isReadOnly ? () => {} : bringToFront}
-            onDeleteItem={isReadOnly ? () => {} : deleteItem}
-            onAddSticky={isReadOnly ? () => {} : handleAddSticky}
-            onAddGroup={isReadOnly ? () => {} : handleAddGroup}
-            onAddIcon={isReadOnly ? () => {} : handleAddIcon}
-            onAddText={isReadOnly ? () => {} : handleAddText}
-            onArrowClick={isReadOnly ? () => {} : handleArrowClick}
-            viewport={viewport}
-            onViewportChange={setViewport}
-            profiles={profiles}
-            snapToGrid={snapToGrid}
-          />
+          {workshopMode === "challenge" && selectedTemplateId && challengeTemplates ? (
+            <ChallengeView
+              template={challengeTemplates.find(t => t.id === selectedTemplateId)!}
+              workshopId={id!}
+              cards={allCards || []}
+              pillars={pillars || []}
+              isHost={isHost}
+              readOnly={isReadOnly}
+            />
+          ) : (
+            <>
+              <WorkshopCanvas
+                items={items}
+                cards={allCards || []}
+                pillars={pillars || []}
+                selectedItemId={isReadOnly ? null : selectedItemId}
+                mode={isReadOnly ? "select" : mode}
+                arrowStart={isReadOnly ? null : arrowStart}
+                onSelectItem={isReadOnly ? () => {} : handleSelectItem}
+                onUpdatePosition={isReadOnly ? () => {} : updatePosition}
+                onUpdateContent={isReadOnly ? () => {} : updateContent}
+                onUpdateSize={isReadOnly ? () => {} : updateSize}
+                onUpdateColor={isReadOnly ? () => {} : updateColor}
+                onBringToFront={isReadOnly ? () => {} : bringToFront}
+                onDeleteItem={isReadOnly ? () => {} : deleteItem}
+                onAddSticky={isReadOnly ? () => {} : handleAddSticky}
+                onAddGroup={isReadOnly ? () => {} : handleAddGroup}
+                onAddIcon={isReadOnly ? () => {} : handleAddIcon}
+                onAddText={isReadOnly ? () => {} : handleAddText}
+                onArrowClick={isReadOnly ? () => {} : handleArrowClick}
+                viewport={viewport}
+                onViewportChange={setViewport}
+                profiles={profiles}
+                snapToGrid={snapToGrid}
+              />
 
-          <CanvasStats
-            items={items}
-            pillars={pillars || []}
-            cards={(allCards || []).map(c => ({ id: c.id, pillar_id: c.pillar_id }))}
-            participantCount={participants.length}
-          />
+              <CanvasStats
+                items={items}
+                pillars={pillars || []}
+                cards={(allCards || []).map(c => ({ id: c.id, pillar_id: c.pillar_id }))}
+                participantCount={participants.length}
+              />
 
-          {selectedItemId && (
-            <motion.button
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute bottom-4 right-4 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-              onClick={() => setShowDiscussion(!showDiscussion)}
-            >
-              <MessageCircle className="h-5 w-5" />
-            </motion.button>
+              {selectedItemId && (
+                <motion.button
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute bottom-4 right-4 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                  onClick={() => setShowDiscussion(!showDiscussion)}
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </motion.button>
+              )}
+
+              <DiscussionPanel
+                isOpen={showDiscussion && !!selectedItemId}
+                onClose={() => setShowDiscussion(false)}
+                comments={comments}
+                loading={commentsLoading}
+                onAddComment={addComment}
+                onDeleteComment={deleteComment}
+                currentUserId={user?.id}
+                profiles={profiles}
+                selectedItemTitle={selectedItemTitle}
+              />
+            </>
           )}
-
-          <DiscussionPanel
-            isOpen={showDiscussion && !!selectedItemId}
-            onClose={() => setShowDiscussion(false)}
-            comments={comments}
-            loading={commentsLoading}
-            onAddComment={addComment}
-            onDeleteComment={deleteComment}
-            currentUserId={user?.id}
-            profiles={profiles}
-            selectedItemTitle={selectedItemTitle}
-          />
         </div>
       </div>
 

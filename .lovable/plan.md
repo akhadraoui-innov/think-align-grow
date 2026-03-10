@@ -1,100 +1,75 @@
 
 
-## Nouveau module : Challenge Canvas (Drag & Drop stratégique)
+## Audit Front-End du Workshop Canvas
 
-### Concept
+Apres analyse complete de toutes les couches (WorkshopCanvas, WorkshopToolbar, CanvasCard, StickyNote, CanvasGroup, CanvasIcon, CanvasText, DiscussionPanel, CanvasStats, WorkshopRoom), voici les problemes identifies et le plan de correction.
 
-Un mode structuré dans le Workshop où les participants répondent à des problématiques en plaçant des cartes du toolkit sur des emplacements prédéfinis. L'IA analyse ensuite les réponses pour évaluer la maturité et proposer des réflexions.
+---
 
-### Architecture base de données
+### Bugs critiques
 
-```text
-challenge_templates          challenge_subjects           challenge_slots
-┌──────────────────┐        ┌──────────────────┐        ┌──────────────────┐
-│ id               │───┐    │ id               │───┐    │ id               │
-│ name             │   │    │ template_id (FK) │   │    │ subject_id (FK)  │
-│ description      │   └───>│ title            │   └───>│ label            │
-│ pillar_id (null) │        │ description      │        │ slot_type        │
-│ toolkit_id       │        │ type (question/   │        │ hint             │
-│ difficulty       │        │  challenge/context)│       │ sort_order       │
-│ created_at       │        │ sort_order       │        │ required         │
-└──────────────────┘        └──────────────────┘        └──────────────────┘
+**1. Indicateur fleche duplique et casse**
+- `WorkshopCanvas.tsx` ligne 321 : un `<div className="fixed ...">` est rendu DANS le conteneur transforme (`translate + scale`). CSS `fixed` ne fonctionne pas dans un parent avec `transform` → l'indicateur est mal positionne ou invisible.
+- Le meme indicateur existe deja dans `WorkshopRoom.tsx` ligne 396. Le doublon dans WorkshopCanvas doit etre supprime.
 
-challenge_responses (per workshop session)
-┌──────────────────┐
-│ id               │
-│ workshop_id      │
-│ subject_id       │
-│ slot_id          │
-│ card_id          │
-│ user_id          │
-│ created_at       │
-└──────────────────┘
+**2. Perte de capture pointer sur les elements enfants**
+- `handleItemDragStart` fait `(e.target as HTMLElement).setPointerCapture(e.pointerId)` — si l'utilisateur clique sur un element enfant (texte, icone, badge), la capture est mise sur cet enfant et non sur le conteneur. Quand le pointer bouge hors de ce petit element, le drag cesse brusquement.
+- Fix : capturer sur `containerRef.current` au lieu de `e.target`.
 
-challenge_analyses (AI results)
-┌──────────────────┐
-│ id               │
-│ workshop_id      │
-│ template_id      │
-│ analysis (jsonb) │  ← per-subject + global maturity scores, interpretations
-│ created_at       │
-└──────────────────┘
-```
+**3. Resize des groupes perd les events**
+- Le resize handler dans `CanvasGroup` ecoute `onPointerMove/Up` sur le handle lui-meme (div 24x24px). Si le curseur sort de ce petit element pendant le resize, les events sont perdus.
+- Fix : le resize doit aussi utiliser `setPointerCapture` sur le handle pour garantir le tracking.
 
-- `pillar_id` nullable : si renseigné, le template est lié à un deck spécifique ; sinon il est générique (toutes les cartes)
-- `slot_type` : "single" (1 carte), "multi" (plusieurs cartes), "ranked" (ordre important)
-- RLS : participants du workshop peuvent lire/écrire les responses, host peut tout gérer
+**4. Margin-top hardcodee pour le canvas**
+- `WorkshopRoom.tsx` ligne 322 : `mt-[60px]` ou `mt-[92px]` selon le statut. Tout changement de hauteur de toolbar ou banniere casse le layout.
+- Fix : utiliser un layout flex naturel sans margin-top fixe (la toolbar doit etre dans le flux flex, pas absolute).
 
-### UI — Composants
+---
 
-| Composant | Rôle |
+### Ameliorations UX majeures
+
+**5. Zoom au scroll (sans Ctrl)**
+- Actuellement le scroll sans Ctrl ne fait rien. Sur un canvas infini, le scroll devrait panner le canvas (standard Figma/Miro).
+- Ajouter : scroll = pan, Ctrl+scroll = zoom.
+
+**6. Pinch-to-zoom / Touch**
+- Aucun support tactile pour le zoom ou le pan a deux doigts. Sur tablette/mobile le canvas est inutilisable.
+- Ajouter la gestion des `touchstart/touchmove` pour pinch-zoom et pan 2 doigts.
+
+**7. Raccourcis clavier**
+- Pas de `Delete`/`Backspace` pour supprimer l'element selectionne
+- Pas de `Escape` pour deselectionner
+- Ajouter ces raccourcis dans WorkshopCanvas via `useEffect` + `keydown`.
+
+**8. Snap-to-grid optionnel**
+- Ajouter un snap magnetique lors du drag (arrondir x/y au multiple de 20px le plus proche quand actif).
+- Toggle dans la toolbar.
+
+**9. Fit-to-content / Reset view**
+- Le bouton "%" reset a `{x:0, y:0, scale:1}` ce qui ne correspond pas forcement au contenu.
+- Ajouter un bouton "Fit" qui calcule le bounding box de tous les items et ajuste viewport pour tout afficher.
+
+---
+
+### Corrections mineures
+
+**10. SVG arrows container trop grand**
+- `width: 10000px, height: 10000px` est excessif. Utiliser `width: 0, height: 0` avec `overflow: visible` suffit.
+
+**11. Performance du drag**
+- Le debounce DB est a 300ms mais le state local est mis a jour a chaque pointermove. C'est correct, mais `onUpdatePosition` dans `useCanvasItems` declenche un re-render de la liste entiere. Pas critique pour < 100 items.
+
+---
+
+### Plan d'implementation
+
+| Fichier | Modifications |
 |---|---|
-| `ChallengeView.tsx` | Page principale : navigation entre sujets (tabs/stepper), bouton "Analyser" |
-| `SubjectCanvas.tsx` | Affiche une problématique + ses emplacements en grille adaptative |
-| `DropSlot.tsx` | Zone de drop avec label, hint, type visuel (border dashed, couleur pilier) |
-| `DraggableCard.tsx` | Wrapper autour des cartes existantes avec drag handle (HTML5 DnD ou pointer events) |
-| `ChallengeAnalysis.tsx` | Affichage des résultats IA : radar par sujet, score maturité, réflexions |
+| `WorkshopCanvas.tsx` | Supprimer indicateur fleche duplique, fix pointer capture sur containerRef, ajouter scroll=pan, pinch-zoom, keydown (Delete/Escape), snap-to-grid, fit-to-content |
+| `WorkshopRoom.tsx` | Retirer mt-[60px]/mt-[92px], rendre toolbar dans le flux flex (retirer position absolute), ajouter snap toggle dans toolbar state |
+| `WorkshopToolbar.tsx` | Retirer `absolute top-0`, rendre en flux flex, ajouter bouton Fit + toggle Snap |
+| `CanvasGroup.tsx` | Fix resize avec setPointerCapture sur le handle |
+| `CanvasArrow.tsx` | SVG container : passer a width/height 0 |
 
-### Flux utilisateur
-
-1. L'hôte choisit un template de challenge lors de la création/dans le workshop actif
-2. Les participants voient le premier sujet avec ses emplacements vides
-3. Ils drag des cartes depuis la sidebar (identique) vers les emplacements
-4. Les cartes hors emplacements restent sur le canvas mais ne comptent pas
-5. Navigation entre sujets via tabs ou stepper
-6. L'hôte clique "Analyser" → appel edge function IA
-7. L'IA retourne : interprétation par sujet, maturité (1-5) par sujet et globale, réflexions
-
-### Edge function `analyze-challenge`
-
-- Reçoit workshop_id + template_id
-- Récupère toutes les responses (quelles cartes dans quels slots)
-- Construit un prompt avec le contexte des sujets, slots, et cartes placées
-- Appelle Lovable AI (gemini-2.5-pro pour la qualité d'analyse)
-- Utilise tool calling pour extraire : `{ subjects: [{ title, maturity, interpretation, reflections }], global_maturity, summary }`
-- Stocke dans `challenge_analyses`
-
-### Template initial complet
-
-Après le développement, création d'un template "Diagnostic Stratégique" avec 5 sujets :
-1. **Vision & Positionnement** — "Comment structurez-vous votre vision ?" (4 slots)
-2. **Modèle économique** — "Quels leviers financiers activez-vous ?" (5 slots)
-3. **Exécution & Opérations** — "Comment pilotez-vous l'exécution ?" (4 slots)
-4. **Croissance** — "Quels moteurs de croissance privilégiez-vous ?" (6 slots)
-5. **Gouvernance & Équipe** — "Comment structurez-vous la prise de décision ?" (3 slots)
-
-### Fichiers à créer/modifier
-
-| Fichier | Action |
-|---|---|
-| Migration SQL | 5 tables + RLS + realtime |
-| `src/pages/WorkshopRoom.tsx` | Ajouter toggle canvas libre / challenge mode |
-| `src/components/challenge/ChallengeView.tsx` | Nouveau |
-| `src/components/challenge/SubjectCanvas.tsx` | Nouveau |
-| `src/components/challenge/DropSlot.tsx` | Nouveau |
-| `src/components/challenge/DraggableCard.tsx` | Nouveau |
-| `src/components/challenge/ChallengeAnalysis.tsx` | Nouveau |
-| `src/hooks/useChallengeData.ts` | Fetch templates, subjects, slots, responses |
-| `supabase/functions/analyze-challenge/index.ts` | Edge function IA |
-| Seed data migration | Template "Diagnostic Stratégique" |
+Environ 7 fichiers touches, principalement WorkshopCanvas et WorkshopRoom.
 
