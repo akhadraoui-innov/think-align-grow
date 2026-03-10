@@ -41,7 +41,7 @@ export function CanvasCard({
   const displayMode = item.content?.display_mode || "preview";
   const maturityLevel = item.content?.maturity_level || 0;
 
-  const setDisplayMode = (mode: "light" | "preview" | "full" | "gamified") => {
+  const setDisplayMode = (mode: "section" | "preview" | "full" | "gamified") => {
     onUpdateContent({ display_mode: mode });
   };
   const setMaturityLevel = (level: number) => {
@@ -51,7 +51,7 @@ export function CanvasCard({
   const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
   const pillarColor = `hsl(var(--pillar-${gradient}))`;
 
-  const width = displayMode === "light" ? 220 : displayMode === "full" ? 420 : displayMode === "gamified" ? 240 : 280;
+  const width = displayMode === "section" ? 220 : displayMode === "full" ? 420 : displayMode === "gamified" ? 240 : 280;
 
   const MaturitySelector = () => {
     const labels = ["Découverte", "En cours", "Maîtrisé"];
@@ -114,7 +114,7 @@ export function CanvasCard({
             </button>
             <button onClick={(e) => {
               e.stopPropagation();
-              const modes: Array<"light" | "preview" | "full" | "gamified"> = ["light", "preview", "full", "gamified"];
+              const modes: Array<"section" | "preview" | "full" | "gamified"> = ["section", "preview", "full", "gamified"];
               setDisplayMode(modes[(modes.indexOf(displayMode as any) + 1) % modes.length]);
             }}
               className="p-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white/80 hover:bg-white/30 hover:text-white transition-colors">
@@ -164,9 +164,9 @@ export function CanvasCard({
   }
 
   // ═══════════════════════════════════════════
-  // LIGHT MODE — compact colored card
+  // SECTION MODE — compact colored card
   // ═══════════════════════════════════════════
-  if (displayMode === "light") {
+  if (displayMode === "section") {
     return (
       <>
         <div
@@ -197,8 +197,8 @@ export function CanvasCard({
                 </button>
                 <button onClick={(e) => {
                   e.stopPropagation();
-                  const modes: Array<"light" | "preview" | "full" | "gamified"> = ["light", "preview", "full", "gamified"];
-                  setDisplayMode(modes[(modes.indexOf("light") + 1) % modes.length]);
+                  const modes: Array<"section" | "preview" | "full" | "gamified"> = ["section", "preview", "full", "gamified"];
+                  setDisplayMode(modes[(modes.indexOf("section") + 1) % modes.length]);
                 }}
                   className="p-1 rounded hover:bg-white/20 text-white/70 hover:text-white transition-colors">
                   <Columns className="h-3 w-3" />
@@ -273,7 +273,7 @@ export function CanvasCard({
               </button>
               <button onClick={(e) => {
                 e.stopPropagation();
-                const modes: Array<"light" | "preview" | "full" | "gamified"> = ["light", "preview", "full", "gamified"];
+                const modes: Array<"section" | "preview" | "full" | "gamified"> = ["section", "preview", "full", "gamified"];
                 setDisplayMode(modes[(modes.indexOf(displayMode as any) + 1) % modes.length]);
               }}
                 className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Changer l'affichage">
