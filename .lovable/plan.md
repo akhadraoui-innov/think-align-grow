@@ -1,75 +1,111 @@
 
 
-## Audit Front-End du Workshop Canvas
+## Corrections finales — 3 bugs + 1 feature
 
-Apres analyse complete de toutes les couches (WorkshopCanvas, WorkshopToolbar, CanvasCard, StickyNote, CanvasGroup, CanvasIcon, CanvasText, DiscussionPanel, CanvasStats, WorkshopRoom), voici les problemes identifies et le plan de correction.
+### Bug 1 : Post-it rond → carré après édition — CAUSE RACINE
 
----
+Dans `useCanvasItems.ts` ligne 150-158, `updateContent` a un **bug de race condition** :
 
-### Bugs critiques
+```typescript
+let mergedContent = content;  // = { text: "hello" }
+setItems(prev => prev.map(item => {
+  if (item.id === itemId) {
+    mergedContent = { ...item.content, ...content }; // merge avec sticky_shape
+    return { ...item, content: mergedContent };
+  }
+  return item;
+}));
+// React 18 auto-batching : le callback ci-dessus peut NE PAS avoir exécuté ici
+await supabase.update({ content: mergedContent }); // envoie { text: "hello" } SANS sticky_shape !
+```
 
-**1. Indicateur fleche duplique et casse**
-- `WorkshopCanvas.tsx` ligne 321 : un `<div className="fixed ...">` est rendu DANS le conteneur transforme (`translate + scale`). CSS `fixed` ne fonctionne pas dans un parent avec `transform` → l'indicateur est mal positionne ou invisible.
-- Le meme indicateur existe deja dans `WorkshopRoom.tsx` ligne 396. Le doublon dans WorkshopCanvas doit etre supprime.
+Le `mergedContent` est assigné dans le callback de `setItems`, mais React 18 peut batcher cet update. Résultat : la DB reçoit `{ text: "hello" }` sans `sticky_shape: "round"`, le realtime renvoie cette donnée, et le post-it redevient carré (default = `"square"`).
 
-**2. Perte de capture pointer sur les elements enfants**
-- `handleItemDragStart` fait `(e.target as HTMLElement).setPointerCapture(e.pointerId)` — si l'utilisateur clique sur un element enfant (texte, icone, badge), la capture est mise sur cet enfant et non sur le conteneur. Quand le pointer bouge hors de ce petit element, le drag cesse brusquement.
-- Fix : capturer sur `containerRef.current` au lieu de `e.target`.
+**Fix** : Utiliser un `itemsRef` pour lire les items de façon synchrone, calculer le merge AVANT `setItems`, puis envoyer le résultat correct à la DB.
 
-**3. Resize des groupes perd les events**
-- Le resize handler dans `CanvasGroup` ecoute `onPointerMove/Up` sur le handle lui-meme (div 24x24px). Si le curseur sort de ce petit element pendant le resize, les events sont perdus.
-- Fix : le resize doit aussi utiliser `setPointerCapture` sur le handle pour garantir le tracking.
-
-**4. Margin-top hardcodee pour le canvas**
-- `WorkshopRoom.tsx` ligne 322 : `mt-[60px]` ou `mt-[92px]` selon le statut. Tout changement de hauteur de toolbar ou banniere casse le layout.
-- Fix : utiliser un layout flex naturel sans margin-top fixe (la toolbar doit etre dans le flux flex, pas absolute).
-
----
-
-### Ameliorations UX majeures
-
-**5. Zoom au scroll (sans Ctrl)**
-- Actuellement le scroll sans Ctrl ne fait rien. Sur un canvas infini, le scroll devrait panner le canvas (standard Figma/Miro).
-- Ajouter : scroll = pan, Ctrl+scroll = zoom.
-
-**6. Pinch-to-zoom / Touch**
-- Aucun support tactile pour le zoom ou le pan a deux doigts. Sur tablette/mobile le canvas est inutilisable.
-- Ajouter la gestion des `touchstart/touchmove` pour pinch-zoom et pan 2 doigts.
-
-**7. Raccourcis clavier**
-- Pas de `Delete`/`Backspace` pour supprimer l'element selectionne
-- Pas de `Escape` pour deselectionner
-- Ajouter ces raccourcis dans WorkshopCanvas via `useEffect` + `keydown`.
-
-**8. Snap-to-grid optionnel**
-- Ajouter un snap magnetique lors du drag (arrondir x/y au multiple de 20px le plus proche quand actif).
-- Toggle dans la toolbar.
-
-**9. Fit-to-content / Reset view**
-- Le bouton "%" reset a `{x:0, y:0, scale:1}` ce qui ne correspond pas forcement au contenu.
-- Ajouter un bouton "Fit" qui calcule le bounding box de tous les items et ajuste viewport pour tout afficher.
+#### `useCanvasItems.ts`
+- Ajouter `const itemsRef = useRef(items)` + sync via `useEffect`
+- Refactorer `updateContent` :
+```typescript
+const updateContent = useCallback(async (itemId, content) => {
+  const current = itemsRef.current.find(i => i.id === itemId);
+  const merged = current ? { ...current.content, ...content } : content;
+  setItems(prev => prev.map(item => 
+    item.id === itemId ? { ...item, content: merged } : item
+  ));
+  await supabase.from("workshop_canvas_items").update({ content: merged }).eq("id", itemId);
+}, []);
+```
 
 ---
 
-### Corrections mineures
+### Bug 2 : Couleurs des post-its trop pastel
 
-**10. SVG arrows container trop grand**
-- `width: 10000px, height: 10000px` est excessif. Utiliser `width: 0, height: 0` avec `overflow: visible` suffit.
+L'utilisateur veut des couleurs primaires/vives. Passer de `*-200` à `*-400`.
 
-**11. Performance du drag**
-- Le debounce DB est a 300ms mais le state local est mis a jour a chaque pointermove. C'est correct, mais `onUpdatePosition` dans `useCanvasItems` declenche un re-render de la liste entiere. Pas critique pour < 100 items.
+#### `StickyNote.tsx`
+```text
+yellow-200 → yellow-300    pink-200 → pink-300
+green-200 → green-300      blue-200 → blue-300
+purple-200 → purple-300    orange-200 → orange-300
+```
+
+Les couleurs de texte `*-900` restent inchangées pour le contraste.
 
 ---
 
-### Plan d'implementation
+### Bug 3 : Flèches invisibles
 
-| Fichier | Modifications |
+Le SVG utilise `style={{ width: "1px", height: "1px", overflow: "visible" }}`. Le CSS `overflow: visible` n'est pas garanti sur SVG. Il faut utiliser l'**attribut SVG** `overflow="visible"` directement.
+
+#### `WorkshopCanvas.tsx`
+```html
+<svg 
+  overflow="visible"           ← attribut SVG natif
+  style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}
+  width="0" height="0"         ← attributs SVG, pas CSS
+>
+```
+
+---
+
+### Feature : Points d'ancrage des flèches (style PowerPoint)
+
+Permettre de choisir d'où part et arrive la flèche sur chaque élément.
+
+#### Concept
+4 points d'ancrage par élément : `top`, `right`, `bottom`, `left`. Quand le mode flèche est actif, les 4 points apparaissent au survol/clic de chaque élément. L'utilisateur clique un point sur la source, puis un point sur la cible.
+
+#### `CanvasArrow.tsx`
+- Ajouter les props `fromAnchor` et `toAnchor` (optionnels, défaut calculé automatiquement)
+
+#### `WorkshopCanvas.tsx`
+- Fonction `getAnchorPosition(item, anchor)` qui calcule les coordonnées pixel :
+  - `top` → `(x + w/2, y)`
+  - `right` → `(x + w, y + h/2)`
+  - `bottom` → `(x + w/2, y + h)`
+  - `left` → `(x, y + h/2)`
+- Remplacer les calculs hardcodés `fromItem.x + width/2, fromItem.y + 60` par `getAnchorPosition`
+- Afficher les anchor handles (petits cercles) sur les items quand `mode === "arrow"`
+- Stocker `from_anchor` et `to_anchor` dans `arrow.content`
+
+#### `ArrowToolbar.tsx`
+- Ajouter des boutons pour changer `from_anchor` / `to_anchor` après création
+
+#### Nouveau composant : `AnchorHandles.tsx`
+- 4 petits cercles positionnés sur les bords de l'élément
+- Visibles uniquement en mode flèche
+- Au clic, déclenchent `onArrowClick` avec l'info d'ancrage
+
+---
+
+### Plan d'implémentation
+
+| Fichier | Modification |
 |---|---|
-| `WorkshopCanvas.tsx` | Supprimer indicateur fleche duplique, fix pointer capture sur containerRef, ajouter scroll=pan, pinch-zoom, keydown (Delete/Escape), snap-to-grid, fit-to-content |
-| `WorkshopRoom.tsx` | Retirer mt-[60px]/mt-[92px], rendre toolbar dans le flux flex (retirer position absolute), ajouter snap toggle dans toolbar state |
-| `WorkshopToolbar.tsx` | Retirer `absolute top-0`, rendre en flux flex, ajouter bouton Fit + toggle Snap |
-| `CanvasGroup.tsx` | Fix resize avec setPointerCapture sur le handle |
-| `CanvasArrow.tsx` | SVG container : passer a width/height 0 |
-
-Environ 7 fichiers touches, principalement WorkshopCanvas et WorkshopRoom.
+| `useCanvasItems.ts` | Ajouter `itemsRef`, corriger `updateContent` pour merge synchrone |
+| `StickyNote.tsx` | Couleurs `*-200` → `*-300` |
+| `WorkshopCanvas.tsx` | SVG `overflow="visible"` attribut natif + `getAnchorPosition` + anchor handles en mode flèche |
+| `CanvasArrow.tsx` | Props `fromAnchor`/`toAnchor` |
+| `ArrowToolbar.tsx` | Boutons changement d'ancrage |
 
