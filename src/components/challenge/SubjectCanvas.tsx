@@ -79,11 +79,7 @@ export function SubjectCanvas({
   }, [onDrop, onUnstage, subjectStaging]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col h-full overflow-hidden"
-    >
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Subject header */}
       <div className="px-6 py-5 border-b border-border shrink-0">
         <div className="flex items-center gap-3 mb-2">
