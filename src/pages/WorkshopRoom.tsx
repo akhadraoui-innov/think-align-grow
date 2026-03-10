@@ -265,7 +265,7 @@ export default function WorkshopRoom() {
   const isReadOnly = isCompleted && !editMode;
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Read-only banner for completed workshops */}
       {isCompleted && (
         <div className={`flex items-center justify-center gap-3 px-4 py-2 text-xs font-bold uppercase tracking-widest shrink-0 ${isReadOnly ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>
