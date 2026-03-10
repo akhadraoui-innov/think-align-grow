@@ -70,10 +70,11 @@ export default function WorkshopRoom() {
   const [workshopMode, setWorkshopMode] = useState<"canvas" | "challenge">("canvas");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
-  // Auto-select first template when available
+  // Auto-select first template & force challenge mode when templates exist
   useEffect(() => {
-    if (challengeTemplates && challengeTemplates.length > 0 && !selectedTemplateId) {
-      setSelectedTemplateId(challengeTemplates[0].id);
+    if (challengeTemplates && challengeTemplates.length > 0) {
+      if (!selectedTemplateId) setSelectedTemplateId(challengeTemplates[0].id);
+      setWorkshopMode("challenge");
     }
   }, [challengeTemplates, selectedTemplateId]);
 
