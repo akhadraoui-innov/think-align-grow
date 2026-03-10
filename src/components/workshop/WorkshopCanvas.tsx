@@ -57,6 +57,12 @@ export function WorkshopCanvas({
   const [draggingItem, setDraggingItem] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
+  // Synchronous refs to avoid React batching delays during drag
+  const draggingRef = useRef<string | null>(null);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
+
   // Drag threshold: don't capture pointer until user moves > 5px
   const dragIntentRef = useRef<{
     itemId: string; item: CanvasItem; startX: number; startY: number;
