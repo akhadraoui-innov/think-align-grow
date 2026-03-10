@@ -97,8 +97,7 @@ export function ChallengeBoard({
       </div>
 
       {/* Board — zones displayed as a spatial grid */}
-      <div className="relative flex-1 min-h-0">
-        <div ref={scrollRef} onScroll={checkScroll} className="absolute inset-0 overflow-y-auto p-6">
+      <div className="relative flex-1 overflow-y-auto min-h-0 p-6" ref={scrollRef} onScroll={checkScroll}>
         <div className={cn(
           "grid gap-5",
           subjectSlots.length <= 2 ? "grid-cols-1 sm:grid-cols-2" :
@@ -137,11 +136,10 @@ export function ChallengeBoard({
             />
           </div>
         )}
-        </div>
 
         {/* Floating scroll buttons */}
         {(canScrollUp || canScrollDown) && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
+          <div className="sticky bottom-4 float-right flex flex-col gap-2 z-10 mr-1">
             {canScrollUp && (
               <button
                 onClick={() => scrollRef.current?.scrollBy({ top: -300, behavior: 'smooth' })}
