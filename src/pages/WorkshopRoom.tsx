@@ -254,13 +254,50 @@ export default function WorkshopRoom() {
   const isCompleted = workshop.status === "completed";
   const isReadOnly = isCompleted && !editMode;
 
-  // Active/Paused — Full Canvas Mode
+  // Active/Paused/Completed — Full Canvas Mode
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
+      {/* Read-only banner for completed workshops */}
+      {isCompleted && (
+        <div className={`flex items-center justify-center gap-3 px-4 py-2 text-xs font-bold uppercase tracking-widest ${isReadOnly ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>
+          {isReadOnly ? (
+            <>
+              <Lock className="h-3.5 w-3.5" />
+              <span>Mode lecture seule — Workshop terminé</span>
+              {isHost && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-4 rounded-xl font-bold uppercase tracking-wider text-xs h-7"
+                  onClick={() => setEditMode(true)}
+                >
+                  <Pencil className="h-3 w-3 mr-1.5" />
+                  Modifier
+                </Button>
+              )}
+            </>
+          ) : (
+            <>
+              <Pencil className="h-3.5 w-3.5" />
+              <span>Mode édition</span>
+              <Button
+                variant="default"
+                size="sm"
+                className="ml-4 rounded-xl font-bold uppercase tracking-wider text-xs h-7"
+                onClick={() => { setEditMode(false); toast.success("Modifications enregistrées"); }}
+              >
+                <Save className="h-3 w-3 mr-1.5" />
+                Enregistrer
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Toolbar */}
       <WorkshopToolbar
-        mode={mode}
-        onModeChange={setMode}
+        mode={isReadOnly ? "select" : mode}
+        onModeChange={isReadOnly ? () => {} : setMode}
         viewport={viewport}
         onViewportChange={setViewport}
         workshopStatus={workshop.status}
@@ -278,12 +315,13 @@ export default function WorkshopRoom() {
         onStickyShapeChange={setStickyShape}
         groupShape={groupShape}
         onGroupShapeChange={setGroupShape}
+        readOnly={isReadOnly}
       />
 
       {/* Main area */}
-      <div className="flex-1 flex relative mt-[60px]">
-        {/* Card Sidebar */}
-        {allCards && pillars && (
+      <div className={`flex-1 flex relative ${isCompleted ? 'mt-[92px]' : 'mt-[60px]'}`}>
+        {/* Card Sidebar — hidden in read-only */}
+        {!isReadOnly && allCards && pillars && (
           <CardSidebar
             cards={allCards}
             pillars={pillars}
