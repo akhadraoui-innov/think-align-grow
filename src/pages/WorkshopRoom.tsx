@@ -3,12 +3,13 @@ import { motion } from "framer-motion";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle } from "lucide-react";
+import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle, LayoutGrid, Pencil } from "lucide-react";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useWorkshopRoom } from "@/hooks/useWorkshop";
-import { useCards, usePillars } from "@/hooks/useToolkitData";
+import { useCards, usePillars, useToolkit } from "@/hooks/useToolkitData";
 import { useCanvasItems } from "@/hooks/useCanvasItems";
 import { useCanvasComments } from "@/hooks/useCanvasComments";
+import { useChallengeTemplates } from "@/hooks/useChallengeData";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkshopCanvas } from "@/components/workshop/WorkshopCanvas";
@@ -16,6 +17,7 @@ import { WorkshopToolbar } from "@/components/workshop/WorkshopToolbar";
 import { CardSidebar } from "@/components/workshop/CardSidebar";
 import { DiscussionPanel } from "@/components/workshop/DiscussionPanel";
 import { CanvasStats } from "@/components/workshop/CanvasStats";
+import { ChallengeView } from "@/components/challenge/ChallengeView";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function WorkshopRoom() {
