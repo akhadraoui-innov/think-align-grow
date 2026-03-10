@@ -29,7 +29,7 @@ interface WorkshopCanvasProps {
   onAddGroup: (x: number, y: number) => void;
   onAddIcon: (x: number, y: number) => void;
   onAddText: (x: number, y: number) => void;
-  onArrowClick: (itemId: string) => void;
+  onArrowClick: (itemId: string, anchor?: AnchorPosition) => void;
   viewport: { x: number; y: number; scale: number };
   onViewportChange: (vp: { x: number; y: number; scale: number }) => void;
   profiles: Record<string, { display_name: string; avatar_url: string | null }>;
