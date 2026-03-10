@@ -196,13 +196,17 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
       </div>
 
       {/* Current subject view — wrapper enforces height constraint for scroll */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <AnimatePresence mode="wait">
           {currentSubject && (
             viewMode === "list" ? (
-              <SubjectCanvas key={`list-${currentSubject.id}`} {...canvasProps} />
+              <motion.div key={`list-${currentSubject.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
+                <SubjectCanvas {...canvasProps} />
+              </motion.div>
             ) : (
-              <ChallengeBoard key={`board-${currentSubject.id}`} {...canvasProps} />
+              <motion.div key={`board-${currentSubject.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full">
+                <ChallengeBoard {...canvasProps} />
+              </motion.div>
             )
           )}
         </AnimatePresence>
