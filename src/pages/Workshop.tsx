@@ -29,9 +29,12 @@ export default function Workshop() {
   const [joinOpen, setJoinOpen] = useState(false);
   const [workshopName, setWorkshopName] = useState("");
   const [joinCode, setJoinCode] = useState("");
+  const [challengeOpen, setChallengeOpen] = useState(false);
   const { create, loading: creating } = useCreateWorkshop();
   const { join, loading: joining } = useJoinWorkshop();
   const { workshops, loading: loadingList } = useMyWorkshops();
+  const { data: toolkit } = useToolkit();
+  const { data: challengeTemplates } = useChallengeTemplates(toolkit?.id);
 
   // Handle ?action=create from sidebar
   useEffect(() => {
