@@ -283,19 +283,15 @@ export function WorkshopCanvas({
     setDraggingItem(null);
   }, [draggingItem, items, onUpdateContent]);
 
-  // Fix #2: capture on containerRef instead of e.target
+  // Drag threshold: register intent on pointerdown, actual drag starts on move > 5px
   const handleItemDragStart = useCallback((itemId: string, e: React.PointerEvent, item: CanvasItem) => {
     if (mode === "arrow") { onArrowClick(itemId); return; }
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const canvasX = (e.clientX - rect.left - viewport.x) / viewport.scale;
-    const canvasY = (e.clientY - rect.top - viewport.y) / viewport.scale;
-    setDragOffset({ x: canvasX - item.x, y: canvasY - item.y });
-    setDraggingItem(itemId);
-    onBringToFront(itemId);
     onSelectItem(itemId);
-    containerRef.current?.setPointerCapture(e.pointerId);
-  }, [mode, viewport, onBringToFront, onSelectItem, onArrowClick]);
+    dragIntentRef.current = {
+      itemId, item, startX: e.clientX, startY: e.clientY,
+      pointerId: e.pointerId, captured: false,
+    };
+  }, [mode, onSelectItem, onArrowClick]);
 
   const getCardData = (cardId: string | null) => cardId ? cards.find(c => c.id === cardId) || null : null;
   const getPillarData = (pillarId: string) => pillars.find(p => p.id === pillarId) || null;
