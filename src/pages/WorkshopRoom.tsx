@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle } from "lucide-react";
+import { ArrowLeft, Wifi, Copy, Check, Crown, MessageCircle, Pencil, Save, Lock } from "lucide-react";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useWorkshopRoom } from "@/hooks/useWorkshop";
 import { useCards, usePillars } from "@/hooks/useToolkitData";
