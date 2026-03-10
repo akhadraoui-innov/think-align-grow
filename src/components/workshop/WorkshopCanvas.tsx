@@ -8,7 +8,7 @@ import { CanvasArrow } from "./CanvasArrow";
 import { ArrowToolbar } from "./ArrowToolbar";
 import { CanvasIcon } from "./CanvasIcon";
 import { CanvasText } from "./CanvasText";
-import { AnchorHandles, getAnchorCoords, type AnchorPosition } from "./AnchorHandles";
+import { AnchorHandles, getAnchorCoords, getItemDimensions, type AnchorPosition } from "./AnchorHandles";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 
 interface WorkshopCanvasProps {
