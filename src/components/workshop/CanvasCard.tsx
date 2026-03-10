@@ -41,7 +41,7 @@ export function CanvasCard({
   const displayMode = item.content?.display_mode || "preview";
   const maturityLevel = item.content?.maturity_level || 0;
 
-  const setDisplayMode = (mode: "light" | "preview" | "full" | "gamified") => {
+  const setDisplayMode = (mode: "section" | "preview" | "full" | "gamified") => {
     onUpdateContent({ display_mode: mode });
   };
   const setMaturityLevel = (level: number) => {
