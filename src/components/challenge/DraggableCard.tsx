@@ -12,7 +12,7 @@ interface DraggableCardProps {
 }
 
 export function DraggableCard({ card, pillar, isPlaced, format = "normal" }: DraggableCardProps) {
-  const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
+  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
 
   const handleDragStart = useCallback((e: React.DragEvent) => {
     e.dataTransfer.setData("card-id", card.id);

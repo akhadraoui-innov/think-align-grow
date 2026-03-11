@@ -21,7 +21,7 @@ interface CardContextSheetProps {
 }
 
 export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onUpdateContent }: CardContextSheetProps) {
-  const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
+  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
   const pillarColor = `hsl(var(--pillar-${gradient}))`;
 
   const notes = item.content?.custom_notes || "";

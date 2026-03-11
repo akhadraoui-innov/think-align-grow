@@ -62,7 +62,7 @@ export function CardSidebar({ cards, pillars, onAddCard, isMobile }: CardSidebar
               {pillars.map(pillar => {
                 const pillarCards = cards.filter(c => c.pillar_id === pillar.id);
                 const isExpanded = expandedPillar === pillar.id;
-                const gradient = getPillarGradient(pillar.slug);
+                const gradient = getPillarGradient(pillar.slug, pillar.color);
 
                 return (
                   <div key={pillar.id}>
@@ -118,7 +118,7 @@ export function CardSidebar({ cards, pillars, onAddCard, isMobile }: CardSidebar
 }
 
 function CardItem({ card, pillar, onAdd }: { card: DbCard; pillar: DbPillar | undefined; onAdd: () => void }) {
-  const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
+  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
   const pillarColor = `hsl(var(--pillar-${gradient}))`;
 
   return (

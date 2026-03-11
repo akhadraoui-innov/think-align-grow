@@ -153,7 +153,7 @@ interface SlotCardProps {
 function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse, onReorder, isReorderTarget, onReorderHover, readOnly }: SlotCardProps) {
   const card = cards.find(c => c.id === resp.card_id);
   const pillar = card ? pillars.find(p => p.id === card.pillar_id) : null;
-  const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
+  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
   const fmt = (resp.format || "normal") as CardFormat;
   const phaseLabel = card ? (PHASE_LABELS[card.phase] || card.phase) : "";
 

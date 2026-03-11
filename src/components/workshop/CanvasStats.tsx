@@ -55,7 +55,7 @@ export function CanvasStats({ items, pillars, cards, participantCount }: CanvasS
       {pillarCounts.length > 0 && (
         <div className="flex items-center gap-1 px-3 py-2 rounded-xl bg-background/90 backdrop-blur-sm border border-border shadow-lg">
           {pillarCounts.slice(0, 5).map(({ pillar, count }) => {
-            const gradient = getPillarGradient(pillar.slug);
+            const gradient = getPillarGradient(pillar.slug, pillar.color);
             return (
               <div 
                 key={pillar.id}
