@@ -21,6 +21,7 @@ interface ChallengeBoardProps {
   onStage?: (cardId: string) => void;
   onUnstage?: (itemId: string) => void;
   onStagingFormatChange?: (itemId: string, format: CardFormat) => void;
+  onReorderStaging?: (draggedId: string, targetId: string) => void;
   readOnly?: boolean;
 }
 
@@ -39,7 +40,7 @@ const TYPE_COLORS: Record<string, string> = {
 export function ChallengeBoard({
   subject, slots, responses, cards, pillars,
   onDrop, onRemove, onMoveToSlot, onUpdateResponse,
-  stagingItems = [], onStage, onUnstage, onStagingFormatChange,
+  stagingItems = [], onStage, onUnstage, onStagingFormatChange, onReorderStaging,
   readOnly,
 }: ChallengeBoardProps) {
   const subjectSlots = slots.filter(s => s.subject_id === subject.id);
@@ -126,6 +127,7 @@ export function ChallengeBoard({
               onDropFromSidebar={handleStageDrop}
               onRemove={(id) => onUnstage?.(id)}
               onFormatChange={(id, fmt) => onStagingFormatChange?.(id, fmt)}
+              onReorder={onReorderStaging}
               readOnly={readOnly}
               viewMode="board"
             />

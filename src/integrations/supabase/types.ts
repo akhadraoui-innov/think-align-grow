@@ -370,6 +370,7 @@ export type Database = {
           created_at: string
           format: string
           id: string
+          sort_order: number
           subject_id: string
           user_id: string
           workshop_id: string
@@ -379,6 +380,7 @@ export type Database = {
           created_at?: string
           format?: string
           id?: string
+          sort_order?: number
           subject_id: string
           user_id: string
           workshop_id: string
@@ -388,6 +390,7 @@ export type Database = {
           created_at?: string
           format?: string
           id?: string
+          sort_order?: number
           subject_id?: string
           user_id?: string
           workshop_id?: string

@@ -1,9 +1,9 @@
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Package } from "lucide-react";
+import { X, Package, GripVertical } from "lucide-react";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
-import { getPillarCssColor, getPillarCssColorAlpha } from "@/hooks/useToolkitData";
+import { getPillarCssColor } from "@/hooks/useToolkitData";
 import { FormatSelector, type CardFormat } from "./FormatSelector";
 import { GameCard } from "./GameCard";
 
@@ -11,6 +11,7 @@ export interface StagingItem {
   id: string;
   card_id: string;
   format: string;
+  sort_order?: number;
   subject_id?: string;
   [key: string]: any;
 }
@@ -22,26 +23,19 @@ interface StagingZoneProps {
   onDropFromSidebar: (cardId: string) => void;
   onRemove: (itemId: string) => void;
   onFormatChange: (itemId: string, format: CardFormat) => void;
+  onReorder?: (draggedId: string, targetId: string) => void;
   readOnly?: boolean;
   viewMode?: "list" | "board";
 }
 
-export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove, onFormatChange, readOnly, viewMode = "list" }: StagingZoneProps) {
+export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove, onFormatChange, onReorder, readOnly, viewMode = "list" }: StagingZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [reorderTargetId, setReorderTargetId] = useState<string | null>(null);
+  const [reorderDragId, setReorderDragId] = useState<string | null>(null);
+  const dragCounterRef = useRef(0);
 
-  const groupedItems = useMemo(() => {
-    const groups: Record<string, { pillar: DbPillar | null; items: StagingItem[] }> = {};
-    items.forEach(item => {
-      const card = cards.find(c => c.id === item.card_id);
-      const pillarId = card?.pillar_id || "unknown";
-      if (!groups[pillarId]) {
-        const pillar = card ? pillars.find(p => p.id === card.pillar_id) || null : null;
-        groups[pillarId] = { pillar, items: [] };
-      }
-      groups[pillarId].items.push(item);
-    });
-    return Object.values(groups).sort((a, b) => (a.pillar?.name || "").localeCompare(b.pillar?.name || ""));
-  }, [items, cards, pillars]);
+  // Sort items by sort_order for flat display
+  const sortedItems = [...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -61,6 +55,40 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
     const cardId = e.dataTransfer.getData("card-id");
     if (cardId) onDropFromSidebar(cardId);
   }, [onDropFromSidebar]);
+
+  // Reorder handlers per item
+  const handleItemDragStart = useCallback((e: React.DragEvent, itemId: string) => {
+    e.dataTransfer.setData("reorder-id", itemId);
+    e.dataTransfer.effectAllowed = "move";
+    setReorderDragId(itemId);
+  }, []);
+
+  const handleItemDragOver = useCallback((e: React.DragEvent, itemId: string) => {
+    e.preventDefault();
+    if (!e.dataTransfer.types.includes("reorder-id")) return;
+    e.dataTransfer.dropEffect = "move";
+    setReorderTargetId(itemId);
+  }, []);
+
+  const handleItemDragLeave = useCallback(() => {
+    setReorderTargetId(null);
+  }, []);
+
+  const handleItemDrop = useCallback((e: React.DragEvent, targetItemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const draggedId = e.dataTransfer.getData("reorder-id");
+    setReorderTargetId(null);
+    setReorderDragId(null);
+    if (draggedId && draggedId !== targetItemId && onReorder) {
+      onReorder(draggedId, targetItemId);
+    }
+  }, [onReorder]);
+
+  const handleItemDragEnd = useCallback(() => {
+    setReorderTargetId(null);
+    setReorderDragId(null);
+  }, []);
 
   const isBoard = viewMode === "board";
 
@@ -89,96 +117,88 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
         </div>
       )}
 
-      <div className={cn("flex flex-col gap-3", isBoard && "gap-4")}>
+      <div className={cn("flex flex-wrap gap-2", isBoard && "gap-3")}>
         <AnimatePresence mode="popLayout">
-          {groupedItems.map(({ pillar, items: groupItems }) => {
+          {sortedItems.map((item) => {
+            const card = cards.find(c => c.id === item.card_id);
+            if (!card) return null;
+            const pillar = pillars.find(p => p.id === card.pillar_id) || null;
             const color = getPillarCssColor(pillar?.slug || "", pillar?.color);
-            const colorAlpha = (a: number) => getPillarCssColorAlpha(pillar?.slug || "", pillar?.color, a);
+            const isDropTarget = reorderTargetId === item.id && reorderDragId !== item.id;
+            const isDragging = reorderDragId === item.id;
+
+            if (isBoard) {
+              return (
+                <motion.div
+                  key={item.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: isDragging ? 0.4 : 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className={cn(
+                    "relative transition-all",
+                    isDropTarget && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-2xl"
+                  )}
+                  draggable={!readOnly}
+                  onDragStart={(e: any) => handleItemDragStart(e, item.id)}
+                  onDragOver={(e: any) => handleItemDragOver(e, item.id)}
+                  onDragLeave={handleItemDragLeave}
+                  onDrop={(e: any) => handleItemDrop(e, item.id)}
+                  onDragEnd={handleItemDragEnd}
+                >
+                  <GameCard
+                    card={card}
+                    pillar={pillar || undefined}
+                    onRemove={readOnly ? undefined : () => onRemove(item.id)}
+                    readOnly={readOnly}
+                    draggable={false}
+                  />
+                </motion.div>
+              );
+            }
+
             return (
-              <div key={pillar?.id || "unknown"}>
-                {items.length > 1 && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-2 w-2 rounded-full" style={{ background: color }} />
-                    <span
-                      className="text-[9px] font-bold uppercase tracking-widest"
-                      style={{ color }}
+              <motion.div
+                key={item.id}
+                layout
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: isDragging ? 0.4 : 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                draggable={!readOnly}
+                onDragStart={(e: any) => handleItemDragStart(e, item.id)}
+                onDragOver={(e: any) => handleItemDragOver(e, item.id)}
+                onDragLeave={handleItemDragLeave}
+                onDrop={(e: any) => handleItemDrop(e, item.id)}
+                onDragEnd={handleItemDragEnd}
+                className={cn(
+                  "flex items-center gap-1.5 p-2 rounded-xl bg-card border border-border group transition-all",
+                  !readOnly && "cursor-grab active:cursor-grabbing",
+                  isDropTarget && "ring-2 ring-primary ring-offset-1 ring-offset-background",
+                )}
+              >
+                {!readOnly && (
+                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                )}
+                <div
+                  className="h-5 w-1 rounded-full shrink-0"
+                  style={{ background: color }}
+                />
+                <span className="text-xs font-medium truncate max-w-[120px]">{card.title}</span>
+                {!readOnly && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <FormatSelector
+                      value={item.format as CardFormat}
+                      onChange={(f) => onFormatChange(item.id, f)}
+                    />
+                    <button
+                      onClick={() => onRemove(item.id)}
+                      className="p-0.5 rounded hover:bg-destructive/10"
                     >
-                      {pillar?.name || "Autre"}
-                    </span>
+                      <X className="h-3 w-3 text-destructive" />
+                    </button>
                   </div>
                 )}
-
-                <div className={cn("flex flex-wrap gap-2", isBoard && "gap-3")}>
-                  {groupItems.map((item) => {
-                    const card = cards.find(c => c.id === item.card_id);
-                    if (!card) return null;
-
-                    if (isBoard) {
-                      return (
-                        <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="relative"
-                        >
-                          <GameCard
-                            card={card}
-                            pillar={pillar || undefined}
-                            onRemove={readOnly ? undefined : () => onRemove(item.id)}
-                            readOnly={readOnly}
-                            draggable={!readOnly}
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData("card-id", card.id);
-                              e.dataTransfer.setData("staging-id", item.id);
-                              e.dataTransfer.effectAllowed = "move";
-                            }}
-                          />
-                        </motion.div>
-                      );
-                    }
-
-                    return (
-                      <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        draggable={!readOnly}
-                        onDragStart={(e: any) => {
-                          e.dataTransfer?.setData("card-id", card.id);
-                          e.dataTransfer?.setData("staging-id", item.id);
-                          if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-                        }}
-                        className={cn(
-                          "flex items-center gap-2 p-2 rounded-xl bg-card border border-border group",
-                          !readOnly && "cursor-grab active:cursor-grabbing"
-                        )}
-                      >
-                        <div
-                          className="h-5 w-1 rounded-full shrink-0"
-                          style={{ background: color }}
-                        />
-                        <span className="text-xs font-medium truncate max-w-[120px]">{card.title}</span>
-                        {!readOnly && (
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <FormatSelector
-                              value={item.format as CardFormat}
-                              onChange={(f) => onFormatChange(item.id, f)}
-                            />
-                            <button
-                              onClick={() => onRemove(item.id)}
-                              className="p-0.5 rounded hover:bg-destructive/10"
-                            >
-                              <X className="h-3 w-3 text-destructive" />
-                            </button>
-                          </div>
-                        )}
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </div>
+              </motion.div>
             );
           })}
         </AnimatePresence>
