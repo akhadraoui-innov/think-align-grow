@@ -107,7 +107,8 @@ export function useJoinWorkshop() {
         is_connected: true,
       }, { onConflict: "workshop_id,user_id" });
 
-      navigate(`/workshop/${workshop.id}`);
+      const isChallenge = (workshop.config as any)?.type === "challenge";
+      navigate(isChallenge ? `/challenge/${workshop.id}` : `/workshop/${workshop.id}`);
     } catch (e: any) {
       toast.error(e.message || "Impossible de rejoindre");
     } finally {

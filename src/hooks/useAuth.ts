@@ -49,5 +49,9 @@ export function useAuth() {
     await supabase.auth.signOut();
   }
 
-  return { user, session, profile, loading, signOut };
+  async function refreshProfile() {
+    if (user) await fetchProfile(user.id);
+  }
+
+  return { user, session, profile, loading, signOut, refreshProfile };
 }

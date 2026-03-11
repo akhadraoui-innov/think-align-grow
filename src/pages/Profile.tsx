@@ -62,7 +62,7 @@ function GuestProfile() {
 }
 
 function AuthenticatedProfile() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const { balance } = useCredits();
   const { memberships } = useActiveOrg();
   const [editOpen, setEditOpen] = useState(false);

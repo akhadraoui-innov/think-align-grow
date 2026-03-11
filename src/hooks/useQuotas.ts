@@ -60,10 +60,7 @@ export function useQuotas(): QuotaResult {
         .select("id", { count: "exact", head: true })
         .eq("organization_id", activeOrgId!)
         .neq("status", "completed")
-        .not("config", "is", null);
-      // We count challenges via config->type = challenge
-      // Simplified: count all workshops with config.type = challenge
-      // Since Supabase doesn't easily filter JSONB, we use a broader count
+        .eq("config->>type", "challenge");
 
       return {
         workshops: workshopCount ?? 0,

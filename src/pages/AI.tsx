@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, MessageSquare, FileText, Compass, Zap, ChevronRight, ArrowLeft, AlertCircle } from "lucide-react";
+import { Sparkles, MessageSquare, FileText, Compass, Zap, ChevronRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GradientIcon } from "@/components/ui/GradientIcon";
 import { MeshGradient } from "@/components/ui/PatternBackground";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { ChatInterface } from "@/components/ai/ChatInterface";
+import { ReflectionTool } from "@/components/ai/ReflectionTool";
+import { DeliverablesTool } from "@/components/ai/DeliverablesTool";
 import { useCredits } from "@/hooks/useCredits";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const aiTools = [
@@ -18,8 +21,13 @@ const aiTools = [
 export default function AI() {
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const { balance, isLoading: creditsLoading, hasCredits } = useCredits();
+  const { user } = useAuth();
 
   const handleToolLaunch = (toolId: string, credits: number) => {
+    if (!user) {
+      toast.error("Connectez-vous pour utiliser les outils IA");
+      return;
+    }
     if (!hasCredits(credits)) {
       toast.error(`Crédits insuffisants (${balance} disponibles, ${credits} requis)`);
       return;
@@ -32,11 +40,8 @@ export default function AI() {
       <PageTransition>
         <div className="flex flex-col h-screen bg-background">
           <div className="px-6 pt-10 pb-3 border-b border-border">
-            <button
-              onClick={() => setActiveTool(null)}
-              className="flex items-center gap-2 text-sm text-muted-foreground mb-3 hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" /> Retour
+            <button onClick={() => setActiveTool(null)} className="flex items-center gap-2 text-sm text-muted-foreground mb-3 hover:text-foreground transition-colors">
+              <Compass className="h-4 w-4" /> Retour
             </button>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -62,24 +67,12 @@ export default function AI() {
     );
   }
 
-  if (activeTool === "reflection" || activeTool === "livrables") {
-    const tool = aiTools.find(t => t.id === activeTool)!;
-    return (
-      <PageTransition>
-        <div className="min-h-screen bg-background pb-24">
-          <div className="px-6 pt-10 pb-4">
-            <button
-              onClick={() => setActiveTool(null)}
-              className="flex items-center gap-2 text-sm text-muted-foreground mb-3 hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" /> Retour
-            </button>
-            <h1 className="font-display text-2xl font-bold uppercase tracking-tight mb-2">{tool.title}</h1>
-            <p className="text-sm text-muted-foreground">Fonctionnalité en cours de développement — Sprint 9</p>
-          </div>
-        </div>
-      </PageTransition>
-    );
+  if (activeTool === "reflection") {
+    return <ReflectionTool onBack={() => setActiveTool(null)} creditCost={2} />;
+  }
+
+  if (activeTool === "livrables") {
+    return <DeliverablesTool onBack={() => setActiveTool(null)} creditCost={5} />;
   }
 
   return (
@@ -98,28 +91,21 @@ export default function AI() {
 
         {/* Credits */}
         <div className="px-6 mb-6">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="rounded-2xl bg-gradient-to-r from-pillar-impact/20 to-pillar-business/20 p-4 border border-pillar-impact/20"
-          >
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
+            className="rounded-2xl bg-gradient-to-r from-pillar-impact/20 to-pillar-business/20 p-4 border border-pillar-impact/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pillar-impact/20">
                   <Zap className="h-5 w-5 text-pillar-impact" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold">
-                    {creditsLoading ? "..." : `${balance} crédit${balance !== 1 ? "s" : ""}`}
-                  </p>
+                  <p className="text-sm font-bold">{creditsLoading ? "..." : `${balance} crédit${balance !== 1 ? "s" : ""}`}</p>
                   <p className="text-xs text-muted-foreground">Solde disponible</p>
                 </div>
               </div>
               {balance === 0 && !creditsLoading && (
                 <div className="flex items-center gap-1 text-xs text-destructive">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  Épuisé
+                  <AlertCircle className="h-3.5 w-3.5" /> Épuisé
                 </div>
               )}
             </div>
@@ -131,14 +117,9 @@ export default function AI() {
           {aiTools.map((tool, i) => {
             const canAfford = hasCredits(tool.credits);
             return (
-              <motion.div
-                key={tool.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.08 }}
+              <motion.div key={tool.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.08 }}
                 onClick={() => handleToolLaunch(tool.id, tool.credits)}
-                className={`rounded-3xl bg-card border border-border p-5 cursor-pointer hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 relative overflow-hidden group active:scale-[0.98] ${!canAfford ? "opacity-60" : ""}`}
-              >
+                className={`rounded-3xl bg-card border border-border p-5 cursor-pointer hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 relative overflow-hidden group active:scale-[0.98] ${!canAfford ? "opacity-60" : ""}`}>
                 <MeshGradient className="opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative flex items-start gap-4">
                   <GradientIcon icon={tool.icon} gradient={tool.gradient} size="sm" />
@@ -162,13 +143,9 @@ export default function AI() {
 
         {/* Chat preview */}
         <div className="px-6 mt-8">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
             onClick={() => handleToolLaunch("coach", 1)}
-            className="rounded-3xl bg-secondary/60 border border-border p-5 cursor-pointer hover:border-primary/20 transition-all active:scale-[0.99]"
-          >
+            className="rounded-3xl bg-secondary/60 border border-border p-5 cursor-pointer hover:border-primary/20 transition-all active:scale-[0.99]">
             <h3 className="font-display font-bold text-sm uppercase tracking-wide mb-4">Aperçu Coach IA</h3>
             <div className="space-y-3">
               <div className="flex justify-end">
