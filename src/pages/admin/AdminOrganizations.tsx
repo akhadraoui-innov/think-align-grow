@@ -46,7 +46,12 @@ export default function AdminOrganizations() {
             {row.name[0]?.toUpperCase()}
           </div>
           <div>
-            <p className="font-medium text-foreground">{row.name}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-medium text-foreground">{row.name}</p>
+              {(row as any).is_platform_owner && (
+                <Badge variant="outline" className="text-[9px] bg-red-500/10 text-red-600 border-red-500/30">SaaS</Badge>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">{row.slug}</p>
           </div>
         </div>

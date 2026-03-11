@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -72,6 +74,7 @@ interface Organization {
   addresses?: Address[] | null;
   contacts?: Contact[] | null;
   notes?: string | null;
+  is_platform_owner?: boolean;
 }
 
 interface Props {
@@ -92,6 +95,7 @@ const emptyContact = (): Contact => ({ name: "", role: "", email: "", phone: "",
 export function OrgInfoTab({ organization, stats }: Props) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const permissions = usePermissions();
   const [saving, setSaving] = useState(false);
   const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
 
@@ -225,6 +229,9 @@ export function OrgInfoTab({ organization, stats }: Props) {
             <p className="text-lg font-bold text-foreground">{form.name}</p>
             <p className="text-sm text-muted-foreground">/{form.slug}</p>
             {form.sector && <Badge variant="secondary" className="text-[10px]">{form.sector}</Badge>}
+            {(organization as any).is_platform_owner && (
+              <Badge className="text-[10px] bg-red-500/10 text-red-600 border-red-500/30" variant="outline">🏢 Éditeur SaaS</Badge>
+            )}
           </div>
           <div className="ml-auto hidden md:flex flex-col gap-1">
             <div className="rounded-lg px-4 py-2 text-sm font-medium text-white" style={{ backgroundColor: form.primary_color }}>Bouton primaire</div>
@@ -275,6 +282,29 @@ export function OrgInfoTab({ organization, stats }: Props) {
             </Select>
           </div>
         </div>
+        {permissions.canEditPlatformOwner && (
+          <div className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/30 p-4 mt-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">🏢 Organisation éditrice SaaS</p>
+              <p className="text-xs text-muted-foreground">Marque cette organisation comme l'éditeur et exploitant de la plateforme Hack & Show (Growthinnov)</p>
+            </div>
+            <Switch
+              checked={!!(organization as any).is_platform_owner}
+              onCheckedChange={async (checked) => {
+                const { error } = await supabase
+                  .from("organizations")
+                  .update({ is_platform_owner: checked } as any)
+                  .eq("id", organization.id);
+                if (error) {
+                  toast({ title: "Erreur", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: checked ? "Marquée comme éditeur SaaS" : "Flag éditeur retiré" });
+                  qc.invalidateQueries({ queryKey: ["admin-organization", organization.id] });
+                }
+              }}
+            />
+          </div>
+        )}
       </Section>
 
       {/* ---- Coordonnées ---- */}

@@ -625,6 +625,7 @@ export type Database = {
           email: string | null
           group_name: string | null
           id: string
+          is_platform_owner: boolean
           logo_url: string | null
           name: string
           notes: string | null
@@ -645,6 +646,7 @@ export type Database = {
           email?: string | null
           group_name?: string | null
           id?: string
+          is_platform_owner?: boolean
           logo_url?: string | null
           name: string
           notes?: string | null
@@ -665,6 +667,7 @@ export type Database = {
           email?: string | null
           group_name?: string | null
           id?: string
+          is_platform_owner?: boolean
           logo_url?: string | null
           name?: string
           notes?: string | null
