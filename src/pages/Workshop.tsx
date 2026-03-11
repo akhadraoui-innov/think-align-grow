@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, LogIn, Users, Zap, ArrowRight, Crown, Clock, UserCheck } from "lucide-react";
+import { Plus, LogIn, Users, Zap, ArrowRight, Crown, Clock, UserCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +10,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCreateWorkshop, useJoinWorkshop, useMyWorkshops } from "@/hooks/useWorkshop";
 import { useActiveOrg } from "@/contexts/OrgContext";
+import { useCredits } from "@/hooks/useCredits";
+import { useSpendCredits } from "@/hooks/useSpendCredits";
+import { useQuotas } from "@/hooks/useQuotas";
+import { useToolkit } from "@/hooks/useToolkitData";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   lobby: { label: "Lobby", className: "bg-blue-500/15 text-blue-400 border-blue-500/20" },
@@ -32,6 +37,11 @@ export default function Workshop() {
   const { create, loading: creating } = useCreateWorkshop();
   const { join, loading: joining } = useJoinWorkshop();
   const { workshops, loading: loadingList } = useMyWorkshops();
+  const { balance, hasCredits } = useCredits();
+  const spendCredits = useSpendCredits();
+  const { canCreateWorkshop } = useQuotas();
+  const { data: toolkit } = useToolkit();
+  const workshopCost = toolkit?.credit_cost_workshop ?? 0;
 
   // Handle ?action=create from sidebar
   useEffect(() => {
@@ -208,9 +218,31 @@ export default function Workshop() {
                   autoFocus
                 />
               </div>
+              {workshopCost > 0 && (
+                <div className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs ${hasCredits(workshopCost) ? "bg-secondary border border-border text-muted-foreground" : "bg-destructive/10 border border-destructive/20 text-destructive"}`}>
+                  <Zap className="h-3.5 w-3.5" />
+                  <span>{workshopCost} crédit{workshopCost > 1 ? "s" : ""} requis (solde: {balance})</span>
+                </div>
+              )}
+              {!canCreateWorkshop && (
+                <div className="flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <span>Quota de workshops atteint pour votre abonnement</span>
+                </div>
+              )}
               <Button
-                onClick={() => { create(workshopName, {}, activeOrgId); setCreateOpen(false); }}
-                disabled={!workshopName.trim() || creating}
+                onClick={async () => {
+                  if (workshopCost > 0) {
+                    try {
+                      await spendCredits.mutateAsync({ amount: workshopCost, description: "Création workshop" });
+                    } catch {
+                      return;
+                    }
+                  }
+                  create(workshopName, {}, activeOrgId);
+                  setCreateOpen(false);
+                }}
+                disabled={!workshopName.trim() || creating || (workshopCost > 0 && !hasCredits(workshopCost)) || !canCreateWorkshop}
                 className="w-full font-black uppercase tracking-wider rounded-xl h-11"
               >
                 {creating ? "Création..." : "Lancer le workshop"}

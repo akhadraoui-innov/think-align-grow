@@ -163,3 +163,26 @@ Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `cu
 ### Liaison Workshop → Organisation
 - ✅ `useCreateWorkshop` accepte un `organizationId` optionnel
 - ✅ `Workshop.tsx` passe l'org active du contexte à la création
+
+## Sprint 8 — COMPLÉTÉ ✅
+
+### Activation des crédits côté utilisateur
+- ✅ Fonction DB `spend_credits` atomique (SECURITY DEFINER, row lock, vérification solde)
+- ✅ Hook `useSpendCredits` pour débit sécurisé via RPC
+- ✅ Hook `useCredits` simplifié (lecture seule, invalidation via spend)
+
+### Débit réel sur les actions
+- ✅ **Coach IA** : 1 crédit par message, appel réel à l'IA via edge function `ai-coach` (Gemini 2.5 Flash)
+- ✅ **Création Workshop** : débit de `toolkit.credit_cost_workshop` crédits avant création
+- ✅ **Création Challenge** : débit de `toolkit.credit_cost_challenge` crédits avant lancement
+
+### Enforcement des quotas d'abonnement
+- ✅ Hook `useQuotas` : lecture quotas depuis `subscription_plans.quotas` via `organization_subscriptions`
+- ✅ Vérification `max_workshops` et `max_challenges` vs usage réel
+- ✅ Blocage UI avec messages explicites quand quota atteint
+
+### UX crédits
+- ✅ Page IA : solde réel affiché, outils grisés si crédits insuffisants
+- ✅ Chat IA : alerte inline crédits insuffisants, input désactivé
+- ✅ Workshop/Challenge : coût affiché dans la dialog de création, bouton désactivé si insuffisant
+- ✅ Edge function `ai-coach` déployée avec prompt coach stratégique

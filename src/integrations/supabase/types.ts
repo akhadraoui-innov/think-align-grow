@@ -1694,6 +1694,10 @@ export type Database = {
         Args: { _user_id: string; _workshop_id: string }
         Returns: boolean
       }
+      spend_credits: {
+        Args: { _amount: number; _description: string; _user_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role:
