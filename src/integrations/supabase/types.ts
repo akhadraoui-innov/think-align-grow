@@ -735,10 +735,24 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
+          department: string | null
           display_name: string | null
+          email: string | null
+          hierarchy_level: string | null
           id: string
+          interests: Json | null
+          job_title: string | null
           last_seen_at: string | null
+          linkedin_url: string | null
+          location: string | null
+          manager_name: string | null
+          manager_user_id: string | null
+          objectives: Json | null
+          phone: string | null
+          pole: string | null
+          service: string | null
           status: string
           updated_at: string
           user_id: string
@@ -746,10 +760,24 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          department?: string | null
           display_name?: string | null
+          email?: string | null
+          hierarchy_level?: string | null
           id?: string
+          interests?: Json | null
+          job_title?: string | null
           last_seen_at?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          manager_name?: string | null
+          manager_user_id?: string | null
+          objectives?: Json | null
+          phone?: string | null
+          pole?: string | null
+          service?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -757,10 +785,24 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          department?: string | null
           display_name?: string | null
+          email?: string | null
+          hierarchy_level?: string | null
           id?: string
+          interests?: Json | null
+          job_title?: string | null
           last_seen_at?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          manager_name?: string | null
+          manager_user_id?: string | null
+          objectives?: Json | null
+          phone?: string | null
+          pole?: string | null
+          service?: string | null
           status?: string
           updated_at?: string
           user_id?: string
