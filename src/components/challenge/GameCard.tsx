@@ -118,8 +118,8 @@ export function GameCard({
               <span
                 className="text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md"
                 style={{
-                  background: `hsl(var(--pillar-${gradient}) / 0.1)`,
-                  color: `hsl(var(--pillar-${gradient}))`,
+                  background: `${pillarColor}1a`,
+                  color: pillarColor,
                 }}
               >
                 {phaseLabel}
