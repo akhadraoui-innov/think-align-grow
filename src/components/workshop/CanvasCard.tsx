@@ -78,7 +78,7 @@ export function CanvasCard({
     );
   };
 
-  const pillarIconName = pillar ? getPillarIconName(pillar.slug) : "Circle";
+  const pillarIconName = pillar ? getPillarIconName(pillar.slug, pillar.icon_name) : "Circle";
 
   // ═══════════════════════════════════════════
   // GAMIFIED MODE — Full-color collectible card

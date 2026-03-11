@@ -97,7 +97,7 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
       <div className={cn("flex flex-col gap-3", isBoard && "gap-4")}>
         <AnimatePresence mode="popLayout">
           {groupedItems.map(({ pillar, items: groupItems }) => {
-            const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
+            const gradient = pillar ? getPillarGradient(pillar.slug, pillar?.color) : "primary";
             return (
               <motion.div
                 key={pillar?.id || "unknown"}

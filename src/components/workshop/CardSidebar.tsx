@@ -118,7 +118,7 @@ export function CardSidebar({ cards, pillars, onAddCard, isMobile }: CardSidebar
 }
 
 function CardItem({ card, pillar, onAdd }: { card: DbCard; pillar: DbPillar | undefined; onAdd: () => void }) {
-  const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
+  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
   const pillarColor = `hsl(var(--pillar-${gradient}))`;
 
   return (
