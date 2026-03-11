@@ -243,6 +243,8 @@ export function useAdminUserDetail(userId: string | undefined) {
     addRole,
     removeRole,
     adjustCredits,
+    addToOrganization,
+    removeFromOrganization,
     refetch: () => {
       profile.refetch();
       roles.refetch();
