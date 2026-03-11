@@ -20,7 +20,7 @@ interface DropSlotProps {
   readOnly?: boolean;
 }
 
-export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, onUpdateResponse, readOnly }: DropSlotProps) {
+export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, onMoveToSlot, onUpdateResponse, readOnly }: DropSlotProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [reorderDropIdx, setReorderDropIdx] = useState<number | null>(null);
 
