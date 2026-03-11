@@ -102,6 +102,14 @@ Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `cu
 - ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
 - ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
 
+## Sprint 4.2 — COMPLÉTÉ ✅
+
+### Nettoyage & dynamisation toolkit
+- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
+- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
+- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
+- ✅ Aucune migration DB nécessaire
+
 ## Sprint 5 — À FAIRE
 
 ### Facturation & abonnements
