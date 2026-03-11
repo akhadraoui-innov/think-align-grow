@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { GradientIcon } from "@/components/ui/GradientIcon";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Trash2, Loader2, ExternalLink } from "lucide-react";
+import { Plus, Trash2, Loader2, ExternalLink, Building2 } from "lucide-react";
 
 interface Props {
   orgToolkits: any[];
@@ -65,23 +66,37 @@ export function ToolkitOrgsTab({ orgToolkits, toolkitId, onUpdate }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
+        <Button size="sm" className="gap-2" onClick={() => setOpen(true)}>
+          <Plus className="h-4 w-4" /> Ajouter une organisation
+        </Button>
+
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Ajouter une organisation</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Donner accès au toolkit</DialogTitle></DialogHeader>
-            <div className="space-y-4 pt-2">
-              <Select value={selectedOrg} onValueChange={setSelectedOrg}>
-                <SelectTrigger><SelectValue placeholder="Choisir une organisation" /></SelectTrigger>
-                <SelectContent>
-                  {availableOrgs.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button onClick={handleAdd} disabled={adding || !selectedOrg} className="w-full">
-                {adding && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+          <DialogContent className="p-0 gap-0 rounded-2xl overflow-hidden border-border/50 shadow-[var(--shadow-elevated)] max-w-md">
+            <div className="bg-gradient-to-r from-primary/5 via-accent/5 to-transparent px-6 pt-6 pb-4">
+              <div className="flex items-center gap-3">
+                <GradientIcon icon={Building2} gradient="business" size="sm" />
+                <div>
+                  <h2 className="text-lg font-display font-bold text-foreground">Donner accès au toolkit</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Sélectionnez une organisation</p>
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Organisation</label>
+                <Select value={selectedOrg} onValueChange={setSelectedOrg}>
+                  <SelectTrigger><SelectValue placeholder="Choisir une organisation" /></SelectTrigger>
+                  <SelectContent>
+                    {availableOrgs.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-border/50 bg-muted/30 flex justify-end">
+              <Button onClick={handleAdd} disabled={adding || !selectedOrg} className="gap-1.5 min-w-[100px]">
+                {adding && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
                 Ajouter
               </Button>
             </div>

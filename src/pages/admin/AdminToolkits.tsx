@@ -4,16 +4,15 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { DataTable } from "@/components/admin/DataTable";
 import { useAdminToolkits } from "@/hooks/useAdminToolkits";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Sparkles, FileText, Eye, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { StepDialog, type StepDef } from "@/components/admin/StepDialog";
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
   draft: { label: "Brouillon", className: "bg-muted text-muted-foreground border-border" },
@@ -39,6 +38,90 @@ export default function AdminToolkits() {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }
   };
+
+  const statusInfo = STATUS_MAP[form.status] || STATUS_MAP.draft;
+
+  const steps: StepDef[] = [
+    {
+      title: "Identité",
+      description: "Nommez votre toolkit",
+      icon: Sparkles,
+      canProceed: !!form.name.trim() && !!form.slug.trim(),
+      content: (
+        <div className="space-y-4">
+          <div className="grid grid-cols-[60px_1fr] gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Emoji</label>
+              <Input value={form.icon_emoji} onChange={(e) => setForm((f) => ({ ...f, icon_emoji: e.target.value }))} className="text-center text-lg" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Nom *</label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") }))}
+                placeholder="Bootstrap in Business"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Slug *</label>
+            <Input value={form.slug} onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))} placeholder="bootstrap-in-business" />
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Détails",
+      description: "Description et statut",
+      icon: FileText,
+      content: (
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Description</label>
+            <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} className="resize-none" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Statut</label>
+            <Select value={form.status} onValueChange={(v: any) => setForm((f) => ({ ...f, status: v }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Brouillon</SelectItem>
+                <SelectItem value="published">Publié</SelectItem>
+                <SelectItem value="archived">Archivé</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Récapitulatif",
+      description: "Vérifiez avant de créer",
+      icon: Eye,
+      content: (
+        <div className="rounded-xl border border-border/50 bg-muted/30 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Toolkit</span>
+            <span className="text-sm font-medium text-foreground">{form.icon_emoji} {form.name || "—"}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Slug</span>
+            <span className="text-sm font-mono text-foreground">{form.slug || "—"}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Statut</span>
+            <Badge variant="outline" className={`text-xs ${statusInfo.className}`}>{statusInfo.label}</Badge>
+          </div>
+          {form.description && (
+            <div>
+              <span className="text-xs text-muted-foreground">Description</span>
+              <p className="text-sm text-foreground mt-1 line-clamp-3">{form.description}</p>
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   const columns = [
     {
@@ -108,58 +191,22 @@ export default function AdminToolkits() {
             searchPlaceholder="Rechercher un toolkit..."
             onRowClick={(row) => navigate(`/admin/toolkits/${row.id}`)}
             actions={
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Nouveau toolkit
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Créer un toolkit</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-2">
-                    <div className="grid grid-cols-[60px_1fr] gap-3">
-                      <div className="space-y-2">
-                        <Label>Emoji</Label>
-                        <Input value={form.icon_emoji} onChange={(e) => setForm((f) => ({ ...f, icon_emoji: e.target.value }))} className="text-center text-lg" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Nom</Label>
-                        <Input
-                          value={form.name}
-                          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") }))}
-                          placeholder="Bootstrap in Business"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Slug</Label>
-                      <Input value={form.slug} onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))} placeholder="bootstrap-in-business" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Description</Label>
-                      <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Statut</Label>
-                      <Select value={form.status} onValueChange={(v: any) => setForm((f) => ({ ...f, status: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="draft">Brouillon</SelectItem>
-                          <SelectItem value="published">Publié</SelectItem>
-                          <SelectItem value="archived">Archivé</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button onClick={handleCreate} disabled={create.isPending} className="w-full">
-                      {create.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                      Créer
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <>
+                <Button size="sm" className="gap-2" onClick={() => setOpen(true)}>
+                  <Plus className="h-4 w-4" />
+                  Nouveau toolkit
+                </Button>
+                <StepDialog
+                  open={open}
+                  onOpenChange={setOpen}
+                  steps={steps}
+                  onComplete={handleCreate}
+                  completing={create.isPending}
+                  title="Nouveau toolkit"
+                  icon={Package}
+                  completeLabel="Créer le toolkit"
+                />
+              </>
             }
           />
         )}

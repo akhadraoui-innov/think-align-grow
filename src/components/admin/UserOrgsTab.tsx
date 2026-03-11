@@ -4,13 +4,8 @@ import { Building2, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { GradientIcon } from "@/components/ui/GradientIcon";
 import {
   Select,
   SelectContent,
@@ -88,19 +83,24 @@ export function UserOrgsTab({ organizations, onAdd, onRemove }: Props) {
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Building2 className="h-4 w-4 text-primary" /> Organisations ({organizations.length})
           </h3>
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setOpen(true)}>
+            <Plus className="h-3.5 w-3.5" /> Ajouter
+          </Button>
+
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" variant="outline" className="gap-1.5 text-xs">
-                <Plus className="h-3.5 w-3.5" /> Ajouter
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Ajouter à une organisation</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Organisation</label>
+            <DialogContent className="p-0 gap-0 rounded-2xl overflow-hidden border-border/50 shadow-[var(--shadow-elevated)] max-w-md">
+              <div className="bg-gradient-to-r from-primary/5 via-accent/5 to-transparent px-6 pt-6 pb-4">
+                <div className="flex items-center gap-3">
+                  <GradientIcon icon={Building2} gradient="business" size="sm" />
+                  <div>
+                    <h2 className="text-lg font-display font-bold text-foreground">Ajouter à une organisation</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Associez cet utilisateur</p>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-4 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Organisation</label>
                   <Select value={selectedOrg} onValueChange={setSelectedOrg}>
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner une organisation…" />
@@ -116,8 +116,8 @@ export function UserOrgsTab({ organizations, onAdd, onRemove }: Props) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Rôle</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Rôle</label>
                   <Select value={selectedRole} onValueChange={setSelectedRole}>
                     <SelectTrigger>
                       <SelectValue />
@@ -129,7 +129,9 @@ export function UserOrgsTab({ organizations, onAdd, onRemove }: Props) {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={handleAdd} disabled={!selectedOrg || adding} className="w-full">
+              </div>
+              <div className="px-6 py-4 border-t border-border/50 bg-muted/30 flex justify-end">
+                <Button onClick={handleAdd} disabled={!selectedOrg || adding} className="gap-1.5 min-w-[100px]">
                   {adding ? "Ajout…" : "Ajouter"}
                 </Button>
               </div>

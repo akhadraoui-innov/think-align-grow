@@ -7,14 +7,13 @@ import { useAdminToolkits } from "@/hooks/useAdminToolkits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, Plus, Swords } from "lucide-react";
+import { Loader2, Plus, Swords, Sparkles, Settings, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { StepDialog, type StepDef } from "@/components/admin/StepDialog";
 
 const DIFFICULTY_MAP: Record<string, { label: string; className: string }> = {
   beginner: { label: "Débutant", className: "bg-pillar-finance/10 text-pillar-finance border-pillar-finance/30" },
@@ -51,6 +50,95 @@ export default function AdminDesignInnovation() {
       setCreating(false);
     }
   };
+
+  const selectedToolkit = toolkits.find((t) => t.id === form.toolkit_id);
+  const diffLabel = DIFFICULTY_MAP[form.difficulty]?.label || form.difficulty;
+
+  const steps: StepDef[] = [
+    {
+      title: "Identité",
+      description: "Nommez votre template de challenge",
+      icon: Sparkles,
+      canProceed: !!form.name.trim(),
+      content: (
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Nom *</label>
+            <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Ex: Diagnostic Business Model" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Description</label>
+            <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} placeholder="Description du template..." className="resize-none" />
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Configuration",
+      description: "Associez un toolkit et un niveau",
+      icon: Settings,
+      canProceed: !!form.toolkit_id,
+      content: (
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Toolkit *</label>
+            <Select value={form.toolkit_id} onValueChange={(v) => setForm((f) => ({ ...f, toolkit_id: v }))}>
+              <SelectTrigger><SelectValue placeholder="Choisir un toolkit..." /></SelectTrigger>
+              <SelectContent>
+                {toolkits.map((tk) => (
+                  <SelectItem key={tk.id} value={tk.id}>
+                    {tk.icon_emoji || "🚀"} {tk.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Difficulté</label>
+            <Select value={form.difficulty} onValueChange={(v) => setForm((f) => ({ ...f, difficulty: v }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="beginner">Débutant</SelectItem>
+                <SelectItem value="intermediate">Intermédiaire</SelectItem>
+                <SelectItem value="advanced">Avancé</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Récapitulatif",
+      description: "Vérifiez avant de créer",
+      icon: Eye,
+      content: (
+        <div className="rounded-xl border border-border/50 bg-muted/30 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Nom</span>
+            <span className="text-sm font-medium text-foreground">{form.name || "—"}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Toolkit</span>
+            <span className="text-sm font-medium text-foreground">
+              {selectedToolkit ? `${selectedToolkit.icon_emoji || "🚀"} ${selectedToolkit.name}` : "—"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Difficulté</span>
+            <Badge variant="outline" className={`text-[10px] ${DIFFICULTY_MAP[form.difficulty]?.className || ""}`}>
+              {diffLabel}
+            </Badge>
+          </div>
+          {form.description && (
+            <div>
+              <span className="text-xs text-muted-foreground">Description</span>
+              <p className="text-sm text-foreground mt-1 line-clamp-3">{form.description}</p>
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   const columns = [
     {
@@ -140,56 +228,21 @@ export default function AdminDesignInnovation() {
             searchPlaceholder="Rechercher un template..."
             onRowClick={(row) => navigate(`/admin/design-innovation/${row.id}`)}
             actions={
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="gap-2">
-                    <Plus className="h-4 w-4" /> Nouveau template
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Nouveau template de challenge</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Nom *</Label>
-                      <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Ex: Diagnostic Business Model" className="h-9" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Toolkit *</Label>
-                      <Select value={form.toolkit_id} onValueChange={(v) => setForm((f) => ({ ...f, toolkit_id: v }))}>
-                        <SelectTrigger className="h-9"><SelectValue placeholder="Choisir un toolkit..." /></SelectTrigger>
-                        <SelectContent>
-                          {toolkits.map((tk) => (
-                            <SelectItem key={tk.id} value={tk.id}>
-                              {tk.icon_emoji || "🚀"} {tk.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Difficulté</Label>
-                      <Select value={form.difficulty} onValueChange={(v) => setForm((f) => ({ ...f, difficulty: v }))}>
-                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="beginner">Débutant</SelectItem>
-                          <SelectItem value="intermediate">Intermédiaire</SelectItem>
-                          <SelectItem value="advanced">Avancé</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Description</Label>
-                      <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} placeholder="Description du template..." className="resize-none" />
-                    </div>
-                    <Button onClick={handleCreate} disabled={creating || !form.name || !form.toolkit_id} className="w-full gap-2">
-                      {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                      Créer le template
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <>
+                <Button size="sm" className="gap-2" onClick={() => setOpen(true)}>
+                  <Plus className="h-4 w-4" /> Nouveau template
+                </Button>
+                <StepDialog
+                  open={open}
+                  onOpenChange={setOpen}
+                  steps={steps}
+                  onComplete={handleCreate}
+                  completing={creating}
+                  title="Nouveau template"
+                  icon={Swords}
+                  completeLabel="Créer le template"
+                />
+              </>
             }
           />
         )}
