@@ -31,8 +31,8 @@ export function FlipCard({ card, pillarSlug = "business", pillarColor }: FlipCar
           className="absolute inset-0 rounded-3xl border border-border overflow-hidden p-5 flex flex-col justify-between"
           style={{
             backfaceVisibility: "hidden",
-            background: `linear-gradient(135deg, ${cssColor}33, ${cssColor}0d)`,
-            borderColor: `${cssColor}4d`,
+            background: `linear-gradient(135deg, ${cssColorAlpha(0.2)}, ${cssColorAlpha(0.05)})`,
+            borderColor: cssColorAlpha(0.3),
           }}
         >
           <div>
