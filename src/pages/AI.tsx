@@ -70,7 +70,7 @@ export default function AI() {
   }
 
   if (activeTool === "reflection") {
-    return <ReflectionTool onBack={() => setActiveTool(null)} creditCost={2} />;
+    return <ReflectionTool onBack={() => setActiveTool(null)} creditCost={2} organizationId={activeOrgId} />;
   }
 
   if (activeTool === "livrables") {
