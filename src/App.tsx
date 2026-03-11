@@ -21,6 +21,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrganizations from "./pages/admin/AdminOrganizations";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminToolkits from "./pages/admin/AdminToolkits";
+import AdminToolkitDetail from "./pages/admin/AdminToolkitDetail";
 import AdminWorkshops from "./pages/admin/AdminWorkshops";
 import AdminDesignInnovation from "./pages/admin/AdminDesignInnovation";
 import AdminBilling from "./pages/admin/AdminBilling";
