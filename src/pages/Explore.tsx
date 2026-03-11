@@ -41,7 +41,7 @@ export default function Explore() {
     if (selectedPillarId) result = result.filter(c => c.pillar_id === selectedPillarId);
     if (query) {
       const q = query.toLowerCase();
-      result = (allCards || []).filter(c =>
+      result = result.filter(c =>
         c.title.toLowerCase().includes(q) ||
         (c.definition || "").toLowerCase().includes(q)
       );
@@ -114,7 +114,7 @@ export default function Explore() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ delay: i * 0.03 }}
                 >
-                  <FlipCard card={card} pillarSlug={getPillarSlug(card.pillar_id)} />
+                  <FlipCard card={card} pillarSlug={getPillarSlug(card.pillar_id)} pillarColor={pillarMap[card.pillar_id]?.color} />
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -157,7 +157,7 @@ export default function Explore() {
             <p className="text-xs text-muted-foreground mb-2">{filteredCards.length} résultats</p>
             {filteredCards.map((card, i) => (
               <motion.div key={card.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                <FlipCard card={card} pillarSlug={getPillarSlug(card.pillar_id)} />
+                <FlipCard card={card} pillarSlug={getPillarSlug(card.pillar_id)} pillarColor={pillarMap[card.pillar_id]?.color} />
               </motion.div>
             ))}
           </div>

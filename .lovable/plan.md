@@ -1,107 +1,188 @@
+# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
+## Vision produit
 
-## Audit E2E complet — Hack & Show (Sprints 1-10)
+Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
 
----
+### L'organisation comme entité centrale
 
-### 1. Bugs actifs et regressions
+L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
 
-| # | Severite | Description | Fichier | Action |
-|---|----------|-------------|---------|--------|
-| 1 | **Haute** | `analyze-challenge` edge function n'est PAS dans `config.toml` → `verify_jwt` n'est pas configure → la fonction utilisera le JWT par defaut et peut echouer si appele sans token valide. De plus, elle n'utilise PAS le systeme de config IA parametrable (Sprint 10) — elle hardcode `LOVABLE_API_KEY` + gateway Lovable. | `supabase/config.toml`, `supabase/functions/analyze-challenge/index.ts` | Ajouter dans config.toml + refactorer avec le resolver AI config |
-| 2 | **Haute** | `ai-coach` n'est PAS dans `config.toml` non plus → meme probleme de JWT. Seuls `ai-reflection`, `ai-deliverables` et `import-toolkit-cards` sont declares. | `supabase/config.toml` | Ajouter `[functions.ai-coach]` et `[functions.analyze-challenge]` |
-| 3 | **Moyenne** | Console warning: `Badge` component cannot receive refs dans `AdminSettings.tsx` (ligne 281). Le `Badge` est utilise comme enfant direct de `TabsContent` qui tente de lui passer une ref. Warning React visible en prod. | `src/pages/admin/AdminSettings.tsx:281` | Wrapper le Badge dans un `<span>` ou utiliser `forwardRef` |
-| 4 | **Moyenne** | `Explore.tsx` — quand on recherche par query (ligne 44), le filtre s'applique sur `allCards` (ignorant `selectedPillarId`), mais `activePhase` s'applique ensuite sur ces resultats. Si l'utilisateur est dans un pilier, tape une recherche, les resultats montrent des cartes de TOUS les piliers mais filtrees par phase. Comportement incoherent. | `src/Explore.tsx:39-51` | Quand `query` est non-vide, appliquer aussi `selectedPillarId` si actif, ou explicitement reset le pilier |
-| 5 | **Moyenne** | `FlipCard.tsx` — la couleur du pilier est derivee du `slug` avec un map statique (`slugColors`), MAIS `CanvasCard.tsx` et `GameCard.tsx` utilisent `getPillarGradient()` qui priorise `pillar.color` depuis la DB. Si un admin change la couleur d'un pilier dans la DB, `FlipCard` dans Explore ne refletera PAS le changement — regression visuelle. | `src/components/ui/FlipCard.tsx` | Passer `pillar.color` a `FlipCard` et utiliser `getPillarGradient()` au lieu du map statique |
-| 6 | **Moyenne** | `OrgProvider` est place AVANT `BrowserRouter` dans `App.tsx` (ligne 75-78). `OrgProvider` utilise `useAuth` qui ne depend pas du router — OK. Mais si un composant descendant de `OrgProvider` (mais au-dessus de `BrowserRouter`) utilise `useNavigate`, crash garanti. Actuellement pas le cas, mais fragile. | `src/App.tsx:72-84` | Deplacer `OrgProvider` a l'interieur de `BrowserRouter` |
-| 7 | **Faible** | `useQuotas` workshop count (ligne 54-56) compte TOUS les workshops non-completed de l'org, y compris les challenges. Le `workshopCount` inclut donc les challenges. Seul `challengeCount` est filtre correctement. Le calcul de `canCreateWorkshop` devrait exclure les challenges du count workshops. | `src/hooks/useQuotas.ts:54-56` | Filtrer `.not("config->>type", "eq", "challenge")` pour le workshopCount |
-| 8 | **Faible** | `ChatInterface.tsx` ne gere pas le cas ou `user` est null — `useSpendCredits` va throw "Non authentifie". Le check `hasCredits()` passe car le solde est 0, mais l'erreur est generique. | `src/components/ai/ChatInterface.tsx` | La page AI gere deja ce cas (toast + return), OK au niveau UX |
-| 9 | **Info** | `ai-coach` utilise `google/gemini-2.5-flash` comme modele par defaut, tandis que `ai-reflection` et `ai-deliverables` utilisent `google/gemini-3-flash-preview`. Incoherence mineure dans les defaults. | Edge functions | Harmoniser |
+- **Identité & branding** : nom, slug, logo, couleur primaire
+- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
+- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
+- **Coordonnées** : email, téléphone, site web
+- **Adresses** : multi-adresses (siège, sites, bureaux)
+- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
+- **Notes internes** : champ libre pour l'équipe SaaS
+- **Membres** avec rôles (Owner, Admin, Member, Guest…)
+- **Équipes** internes
+- **Toolkits** assignés et activés
+- **Abonnement** avec plan et quotas
+- **Workshops** réalisés
+- **Journal d'activité** (audit trail)
 
----
+### Organisation plateforme : Growthinnov
 
-### 2. Integration Sprint 10 — Config IA
+**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
+1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
+2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
 
-| Composant | Statut | Detail |
-|-----------|--------|--------|
-| **Tables DB** (`ai_providers`, `ai_configurations`) | OK | Schema correct, RLS en place |
-| **Edge `ai-coach`** | OK | Resolver config dynamique integre |
-| **Edge `ai-reflection`** | OK | Resolver config dynamique integre |
-| **Edge `ai-deliverables`** | OK | Resolver config dynamique integre |
-| **Edge `analyze-challenge`** | **MANQUE** | Toujours hardcode sur Lovable gateway, pas de resolver |
-| **Admin Settings UI** | OK | 3 onglets (Config, Providers, Prompts defaut) fonctionnels |
-| **Org AI Config Tab** | OK | Toggle, CRUD, prompts par defaut collapsibles |
-| **AI.tsx** | OK | `activeOrgId` passe aux 3 composants |
-| **config.toml** | **INCOMPLET** | `ai-coach` et `analyze-challenge` manquants |
+Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
 
----
+Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
 
-### 3. Cartes — Couleurs et formats (regression identifiee)
+## Sprint 1 — COMPLÉTÉ ✅
 
-| Composant | Source couleur | Coherent ? |
-|-----------|---------------|------------|
-| `CanvasCard.tsx` (Workshop) | `getPillarGradient(slug, color)` → DB prioritaire | OK |
-| `GameCard.tsx` (Challenge) | `getPillarGradient(slug, color)` → DB prioritaire | OK |
-| `FlipCard.tsx` (Explore) | Map statique `slugColors` → ignore `pillar.color` DB | **REGRESSION** |
-| `StickyNote.tsx` | Couleurs propres (yellow, pink...) | OK (pas lie aux piliers) |
+### Migration SQL
+- ✅ Enum `app_role` étendu : +9 valeurs
+- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
 
-La regression `FlipCard` signifie que si un admin modifie la couleur d'un pilier via la DB ou l'admin UI, les cartes dans Explorer garderont l'ancienne couleur hardcodee.
+### Frontend Admin
+- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
+- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
 
----
+## Sprint 2 — COMPLÉTÉ ✅
 
-### 4. Securite et RLS
+### Dashboard avec données réelles
+- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
+- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
 
-| Point | Statut |
-|-------|--------|
-| `ai_configurations` et `ai_providers` — RLS `is_saas_team()` | OK |
-| API key stockee en clair dans `ai_configurations.api_key` | **Acceptable** (acces via service_role uniquement, jamais expose cote client) |
-| Edge functions accedent via `SUPABASE_SERVICE_ROLE_KEY` | OK |
-| Pas de fuite de cle API vers le client | OK — les composants front ne lisent jamais `api_key` |
-| `spend_credits` atomique avec `FOR UPDATE` | OK |
-| Pas d'injection SQL | OK — SDK parametrise |
+### Composant DataTable réutilisable
+- ✅ Recherche, tri par colonne, pagination, row click, slot actions
 
----
+### CRUD Organisations
+- ✅ useOrganizations + useOrganizationDetail hooks
+- ✅ Liste avec DataTable, recherche, tri, création via dialog
+- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
+- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
+- ✅ Route /admin/organizations/:id
+- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
 
-### 5. Logique metier
+## Sprint 3 — COMPLÉTÉ ✅
 
-| Flux | Statut | Note |
-|------|--------|------|
-| Credits: debit avant appel IA | OK | Si l'IA echoue, les credits sont quand meme debites — design decision acceptable |
-| Quotas: workshop vs challenge | **Bug #7** | Workshop count inclut les challenges |
-| Config IA: resolution org → global → fallback | OK | Teste dans les 3 edge functions |
-| Join workshop/challenge routing | OK | Fix Sprint 9 en place |
-| Profile update sans reload | OK | `refreshProfile()` en place |
+### Gestion des utilisateurs (AdminUsers)
+- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
+- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
+- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
+- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
+- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
+- ✅ UserCreditsTab : solde, lifetime, historique des transactions
+- ✅ UserWorkshopsTab : workshops hébergés et participations
+- ✅ UserChallengesTab : performances quiz et challenges
+- ✅ UserCardsTab : suivi des vues et favoris
+- ✅ UserActivityTab : journal d'audit utilisateur
 
----
+### Hook usePermissions
+- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
 
-### 6. Proposition de valeur et fonctionnalites
+### Hook useAdminUserDetail
+- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
 
-| Feature | Etat | Completude |
-|---------|------|------------|
-| Explorer (cartes, piliers, phases, recherche) | OK | Regression couleur FlipCard |
-| Quiz + Radar | OK | Scores persistes |
-| Coach IA | OK | Config parametrable |
-| Reflexion IA | OK | Config parametrable |
-| Livrables IA (SWOT, BMC, Pitch, Action Plan) | OK | Config parametrable |
-| Workshop Canvas | OK | Cartes, stickies, groupes, fleches, temps reel |
-| Challenge | OK sauf `analyze-challenge` | Non parametrable IA |
-| Admin Dashboard | OK | Stats, graphiques |
-| Admin Orgs (9 onglets dont IA) | OK | Complet |
-| Admin Users | OK | Detail utilisateur |
-| Admin Billing | OK | Plans, subs, credits |
-| Admin Logs | OK | Filtres, export CSV |
-| Admin Settings (Config IA) | OK | 3 onglets |
-| Prompts par defaut visibles | OK | Lecture seule + reference dans OrgAIConfigTab |
+### Migration SQL Sprint 3
+- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
 
----
+## Sprint 4 — COMPLÉTÉ ✅
 
-### 7. Corrections recommandees (priorite)
+### Gestion des Toolkits
+- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
+- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
+- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
+- ✅ Fiche AdminToolkitDetail avec 7 onglets :
+  - Infos : nom, slug, emoji, description, statut, métadonnées
+  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
+  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
+  - Challenges : templates avec sujets et slots imbriqués
+  - Game Plans : plans avec étapes ordonnées
+  - Quiz : questions par pilier avec compteur d'options
+  - Organisations : ajout/retrait d'accès toolkit pour les orgs
+- ✅ Route /admin/toolkits/:id
 
-1. **config.toml** : Ajouter `[functions.ai-coach]` et `[functions.analyze-challenge]` avec `verify_jwt = false`
-2. **analyze-challenge** : Integrer le resolver AI config (comme les 3 autres edge functions)
-3. **FlipCard.tsx** : Utiliser `getPillarGradient()` au lieu du map statique — passer `pillar` ou `pillar.color` en prop
-4. **AdminSettings.tsx** : Corriger le warning Badge/ref (wrapper dans `<span>`)
-5. **useQuotas.ts** : Exclure les challenges du workshop count
-6. **App.tsx** : Deplacer `OrgProvider` a l'interieur de `BrowserRouter`
-7. **Explore.tsx** : Harmoniser le comportement recherche + filtre pilier
+### Gestion des Workshops (vue admin)
+- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
+- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
 
+## Sprint 4.2 — COMPLÉTÉ ✅
+
+### Nettoyage & dynamisation toolkit
+- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
+- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
+- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
+- ✅ Aucune migration DB nécessaire
+
+## Sprint 5 — COMPLÉTÉ ✅
+
+### Facturation & Abonnements (AdminBilling)
+- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
+- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
+- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
+- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
+- ✅ Suppression plan avec confirmation AlertDialog
+- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
+
+### Logs d'audit (AdminLogs)
+- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
+- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
+- ✅ Pagination server-side (25/page) avec compteur total
+- ✅ Détail metadata : dialog avec JSON formaté
+- ✅ Styles cohérents avec le design system existant
+
+## Sprint 6 — COMPLÉTÉ ✅
+
+### Enrichissement logs
+- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
+- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
+- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
+
+### Dashboard billing avancé
+- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
+- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
+- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
+
+## Sprint 7 — COMPLÉTÉ ✅
+
+### Profil utilisateur authentifié
+- ✅ Page Profile détecte l'état de connexion (guest vs authentifié)
+- ✅ Vue authentifiée : avatar, display_name, job_title, department, email
+- ✅ Stats temps réel : XP, crédits, cartes vues, quiz complétés
+- ✅ Liste des organisations avec rôles
+- ✅ Dialog d'édition profil (display_name, job_title, department)
+- ✅ Bouton déconnexion
+
+### Contexte multi-tenant
+- ✅ `OrgProvider` context avec `useActiveOrg` hook
+- ✅ Composant `OrgSwitcher` dans la sidebar (dropdown si multi-org, badge si mono-org)
+- ✅ Persistance de l'org active dans localStorage
+- ✅ Intégration dans `AppSidebar` footer
+
+### Persistance quiz
+- ✅ `QuizEngine` sauvegarde les scores dans `quiz_results` à la complétion
+- ✅ `Lab.tsx` charge le dernier résultat quiz depuis la DB au montage
+- ✅ Hydratation automatique du RadarChart et des badges depuis les données persistées
+
+### Liaison Workshop → Organisation
+- ✅ `useCreateWorkshop` accepte un `organizationId` optionnel
+- ✅ `Workshop.tsx` passe l'org active du contexte à la création
+
+## Sprint 8 — COMPLÉTÉ ✅
+
+### Activation des crédits côté utilisateur
+- ✅ Fonction DB `spend_credits` atomique (SECURITY DEFINER, row lock, vérification solde)
+- ✅ Hook `useSpendCredits` pour débit sécurisé via RPC
+- ✅ Hook `useCredits` simplifié (lecture seule, invalidation via spend)
+
+### Débit réel sur les actions
+- ✅ **Coach IA** : 1 crédit par message, appel réel à l'IA via edge function `ai-coach` (Gemini 2.5 Flash)
+- ✅ **Création Workshop** : débit de `toolkit.credit_cost_workshop` crédits avant création
+- ✅ **Création Challenge** : débit de `toolkit.credit_cost_challenge` crédits avant lancement
+
+### Enforcement des quotas d'abonnement
+- ✅ Hook `useQuotas` : lecture quotas depuis `subscription_plans.quotas` via `organization_subscriptions`
+- ✅ Vérification `max_workshops` et `max_challenges` vs usage réel
+- ✅ Blocage UI avec messages explicites quand quota atteint
+
+### UX crédits
+- ✅ Page IA : solde réel affiché, outils grisés si crédits insuffisants
+- ✅ Chat IA : alerte inline crédits insuffisants, input désactivé
+- ✅ Workshop/Challenge : coût affiché dans la dialog de création, bouton désactivé si insuffisant
+- ✅ Edge function `ai-coach` déployée avec prompt coach stratégique

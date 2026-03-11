@@ -278,7 +278,7 @@ export default function AdminSettings() {
                   <div key={key} className="rounded-xl border border-border/50 bg-card p-5 space-y-3">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-bold">{label}</h3>
-                      <Badge variant="secondary" className="text-[10px]">Par défaut</Badge>
+                      <span><Badge variant="secondary" className="text-[10px]">Par défaut</Badge></span>
                     </div>
                     <Textarea
                       value={prompt}

@@ -53,7 +53,8 @@ export function useQuotas(): QuotaResult {
         .from("workshops")
         .select("id", { count: "exact", head: true })
         .eq("organization_id", activeOrgId!)
-        .neq("status", "completed");
+        .neq("status", "completed")
+        .not("config->>type", "eq", "challenge");
 
       const { count: challengeCount } = await supabase
         .from("workshops")

@@ -1,43 +1,17 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { DbCard } from "@/hooks/useToolkitData";
-import { PHASE_LABELS } from "@/hooks/useToolkitData";
-
-const slugColors: Record<string, string> = {
-  thinking: "from-pillar-thinking/20 to-pillar-thinking/5 border-pillar-thinking/30",
-  business: "from-pillar-business/20 to-pillar-business/5 border-pillar-business/30",
-  innovation: "from-pillar-innovation/20 to-pillar-innovation/5 border-pillar-innovation/30",
-  finance: "from-pillar-finance/20 to-pillar-finance/5 border-pillar-finance/30",
-  indicators: "from-pillar-marketing/20 to-pillar-marketing/5 border-pillar-marketing/30",
-  building: "from-pillar-operations/20 to-pillar-operations/5 border-pillar-operations/30",
-  managing: "from-pillar-team/20 to-pillar-team/5 border-pillar-team/30",
-  gouvernance: "from-pillar-legal/20 to-pillar-legal/5 border-pillar-legal/30",
-  profitability: "from-pillar-growth/20 to-pillar-growth/5 border-pillar-growth/30",
-  fundraising: "from-pillar-impact/20 to-pillar-impact/5 border-pillar-impact/30",
-};
-
-const slugTextColors: Record<string, string> = {
-  thinking: "text-pillar-thinking",
-  business: "text-pillar-business",
-  innovation: "text-pillar-innovation",
-  finance: "text-pillar-finance",
-  indicators: "text-pillar-marketing",
-  building: "text-pillar-operations",
-  managing: "text-pillar-team",
-  gouvernance: "text-pillar-legal",
-  profitability: "text-pillar-growth",
-  fundraising: "text-pillar-impact",
-};
+import { getPillarGradient, PHASE_LABELS } from "@/hooks/useToolkitData";
 
 interface FlipCardProps {
   card: DbCard;
   pillarSlug?: string;
+  pillarColor?: string | null;
 }
 
-export function FlipCard({ card, pillarSlug = "business" }: FlipCardProps) {
+export function FlipCard({ card, pillarSlug = "business", pillarColor }: FlipCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
-  const colorClass = slugColors[pillarSlug] || slugColors.business;
-  const textClass = slugTextColors[pillarSlug] || slugTextColors.business;
+  const gradient = getPillarGradient(pillarSlug, pillarColor);
 
   return (
     <div
@@ -52,11 +26,18 @@ export function FlipCard({ card, pillarSlug = "business" }: FlipCardProps) {
       >
         {/* Front */}
         <div
-          className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${colorClass} border p-5 flex flex-col justify-between`}
-          style={{ backfaceVisibility: "hidden" }}
+          className="absolute inset-0 rounded-3xl border border-border overflow-hidden p-5 flex flex-col justify-between"
+          style={{
+            backfaceVisibility: "hidden",
+            background: `linear-gradient(135deg, hsl(var(--pillar-${gradient}) / 0.2), hsl(var(--pillar-${gradient}) / 0.05))`,
+            borderColor: `hsl(var(--pillar-${gradient}) / 0.3)`,
+          }}
         >
           <div>
-            <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${textClass}`}>
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.15em]"
+              style={{ color: `hsl(var(--pillar-${gradient}))` }}
+            >
               {pillarSlug} · {PHASE_LABELS[card.phase] || card.phase}
             </span>
             <h3 className="font-display font-bold text-lg text-foreground uppercase tracking-wide mt-2">
@@ -69,17 +50,28 @@ export function FlipCard({ card, pillarSlug = "business" }: FlipCardProps) {
 
         {/* Back */}
         <div
-          className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${colorClass} border p-5 flex flex-col justify-between`}
-          style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+          className="absolute inset-0 rounded-3xl border border-border overflow-hidden p-5 flex flex-col justify-between"
+          style={{
+            backfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+            background: `linear-gradient(135deg, hsl(var(--pillar-${gradient}) / 0.2), hsl(var(--pillar-${gradient}) / 0.05))`,
+            borderColor: `hsl(var(--pillar-${gradient}) / 0.3)`,
+          }}
         >
           <div>
-            <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${textClass}`}>
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.15em]"
+              style={{ color: `hsl(var(--pillar-${gradient}))` }}
+            >
               Action
             </span>
             <p className="text-sm text-foreground mt-2 leading-relaxed">{card.action}</p>
           </div>
           <div>
-            <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${textClass}`}>
+            <span
+              className="text-[10px] font-bold uppercase tracking-[0.15em]"
+              style={{ color: `hsl(var(--pillar-${gradient}))` }}
+            >
               KPI
             </span>
             <p className="text-sm text-muted-foreground mt-1">{card.kpi}</p>
