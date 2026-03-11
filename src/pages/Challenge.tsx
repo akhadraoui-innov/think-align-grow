@@ -202,17 +202,36 @@ export default function Challenge() {
               <p className="text-sm text-muted-foreground">
                 Choisissez un template pour structurer votre diagnostic stratégique.
               </p>
+              {challengeCost > 0 && (
+                <div className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs ${hasCredits(challengeCost) ? "bg-secondary border border-border text-muted-foreground" : "bg-destructive/10 border border-destructive/20 text-destructive"}`}>
+                  <Zap className="h-3.5 w-3.5" />
+                  <span>{challengeCost} crédit{challengeCost > 1 ? "s" : ""} requis (solde: {balance})</span>
+                </div>
+              )}
+              {!canCreateChallenge && (
+                <div className="flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <span>Quota de challenges atteint pour votre abonnement</span>
+                </div>
+              )}
               {challengeTemplates && challengeTemplates.length > 0 ? (
                 <div className="space-y-2">
                   {challengeTemplates.map(t => (
                     <button
                       key={t.id}
                       onClick={async () => {
+                        if (challengeCost > 0) {
+                          try {
+                            await spendCredits.mutateAsync({ amount: challengeCost, description: `Challenge – ${t.name}` });
+                          } catch {
+                            return;
+                          }
+                        }
                         await create(t.name, { type: "challenge", template_id: t.id });
                         setCreateOpen(false);
                       }}
-                      disabled={creating}
-                      className="w-full text-left rounded-xl border border-border p-4 hover:border-pillar-finance/30 hover:bg-pillar-finance/5 transition-all"
+                      disabled={creating || (challengeCost > 0 && !hasCredits(challengeCost)) || !canCreateChallenge}
+                      className="w-full text-left rounded-xl border border-border p-4 hover:border-pillar-finance/30 hover:bg-pillar-finance/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-pillar-finance/10 flex items-center justify-center shrink-0">
