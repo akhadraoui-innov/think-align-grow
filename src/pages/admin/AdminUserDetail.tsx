@@ -44,6 +44,8 @@ export default function AdminUserDetail() {
     addRole,
     removeRole,
     adjustCredits,
+    addToOrganization,
+    removeFromOrganization,
   } = useAdminUserDetail(userId);
 
   if (isLoading) {
