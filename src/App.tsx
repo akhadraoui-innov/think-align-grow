@@ -27,6 +27,7 @@ import AdminBilling from "./pages/admin/AdminBilling";
 import AdminLogs from "./pages/admin/AdminLogs";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminOrganizationDetail from "./pages/admin/AdminOrganizationDetail";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
 
 const queryClient = new QueryClient();
 
