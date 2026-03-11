@@ -46,7 +46,7 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
               <span 
                 className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
                 style={{ 
-                  background: `${pillarColor}15`,
+                  background: pillarColorAlpha(0.08),
                   color: pillarColor,
                 }}
               >
