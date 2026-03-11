@@ -141,7 +141,7 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
                     isDropTarget && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-2xl"
                   )}
                   draggable={!readOnly}
-                  onDragStart={(e: any) => handleItemDragStart(e, item.id)}
+                  onDragStart={(e: any) => handleItemDragStart(e, item.id, item.card_id)}
                   onDragOver={(e: any) => handleItemDragOver(e, item.id)}
                   onDragLeave={handleItemDragLeave}
                   onDrop={(e: any) => handleItemDrop(e, item.id)}
