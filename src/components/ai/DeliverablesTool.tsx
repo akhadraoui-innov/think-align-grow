@@ -41,7 +41,7 @@ export function DeliverablesTool({ onBack, creditCost, organizationId }: Deliver
     try {
       await spendCredits.mutateAsync({ amount: creditCost, description: `Livrable – ${selectedType}` });
       const { data, error } = await supabase.functions.invoke("ai-deliverables", {
-        body: { type: selectedType, description },
+        body: { type: selectedType, description, organization_id: organizationId || undefined },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

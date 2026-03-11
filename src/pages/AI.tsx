@@ -74,7 +74,7 @@ export default function AI() {
   }
 
   if (activeTool === "livrables") {
-    return <DeliverablesTool onBack={() => setActiveTool(null)} creditCost={5} />;
+    return <DeliverablesTool onBack={() => setActiveTool(null)} creditCost={5} organizationId={activeOrgId} />;
   }
 
   return (

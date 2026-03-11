@@ -48,7 +48,7 @@ export function ReflectionTool({ onBack, creditCost, organizationId }: Reflectio
     try {
       await spendCredits.mutateAsync({ amount: creditCost, description: "Générateur de Réflexion" });
       const { data, error } = await supabase.functions.invoke("ai-reflection", {
-        body: { context, problem, objectives },
+        body: { context, problem, objectives, organization_id: organizationId || undefined },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

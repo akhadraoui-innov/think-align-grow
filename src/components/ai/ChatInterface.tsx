@@ -57,6 +57,7 @@ export function ChatInterface({ creditCost = 1, organizationId }: ChatInterfaceP
             content: m.text,
           })),
           userMessage: userText,
+          organization_id: organizationId || undefined,
         },
       });
 
