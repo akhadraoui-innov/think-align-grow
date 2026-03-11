@@ -229,6 +229,9 @@ export function OrgInfoTab({ organization, stats }: Props) {
             <p className="text-lg font-bold text-foreground">{form.name}</p>
             <p className="text-sm text-muted-foreground">/{form.slug}</p>
             {form.sector && <Badge variant="secondary" className="text-[10px]">{form.sector}</Badge>}
+            {(organization as any).is_platform_owner && (
+              <Badge className="text-[10px] bg-red-500/10 text-red-600 border-red-500/30" variant="outline">🏢 Éditeur SaaS</Badge>
+            )}
           </div>
           <div className="ml-auto hidden md:flex flex-col gap-1">
             <div className="rounded-lg px-4 py-2 text-sm font-medium text-white" style={{ backgroundColor: form.primary_color }}>Bouton primaire</div>
