@@ -9,7 +9,7 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCreateWorkshop, useJoinWorkshop, useMyWorkshops } from "@/hooks/useWorkshop";
-import { useToolkit } from "@/hooks/useToolkitData";
+import { formatDistanceToNow } from "date-fns";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
