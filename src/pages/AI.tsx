@@ -10,6 +10,7 @@ import { ReflectionTool } from "@/components/ai/ReflectionTool";
 import { DeliverablesTool } from "@/components/ai/DeliverablesTool";
 import { useCredits } from "@/hooks/useCredits";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveOrg } from "@/contexts/OrgContext";
 import { toast } from "sonner";
 
 const aiTools = [
