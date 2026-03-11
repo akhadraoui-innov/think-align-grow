@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { DbCard } from "@/hooks/useToolkitData";
-import { getPillarGradient, getPillarCssColor, PHASE_LABELS } from "@/hooks/useToolkitData";
+import { getPillarGradient, getPillarCssColor, getPillarCssColorAlpha, PHASE_LABELS } from "@/hooks/useToolkitData";
 
 interface FlipCardProps {
   card: DbCard;
