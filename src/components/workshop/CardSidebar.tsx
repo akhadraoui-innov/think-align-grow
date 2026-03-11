@@ -62,7 +62,7 @@ export function CardSidebar({ cards, pillars, onAddCard, isMobile }: CardSidebar
               {pillars.map(pillar => {
                 const pillarCards = cards.filter(c => c.pillar_id === pillar.id);
                 const isExpanded = expandedPillar === pillar.id;
-                const gradient = getPillarGradient(pillar.slug);
+                const gradient = getPillarGradient(pillar.slug, pillar.color);
 
                 return (
                   <div key={pillar.id}>
