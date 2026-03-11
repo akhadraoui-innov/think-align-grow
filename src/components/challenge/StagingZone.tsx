@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Package } from "lucide-react";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
-import { getPillarGradient } from "@/hooks/useToolkitData";
+import { getPillarCssColor, getPillarCssColorAlpha } from "@/hooks/useToolkitData";
 import { FormatSelector, type CardFormat } from "./FormatSelector";
 import { GameCard } from "./GameCard";
 
@@ -29,7 +29,6 @@ interface StagingZoneProps {
 export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove, onFormatChange, readOnly, viewMode = "list" }: StagingZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // Group items by pillar
   const groupedItems = useMemo(() => {
     const groups: Record<string, { pillar: DbPillar | null; items: StagingItem[] }> = {};
     items.forEach(item => {
@@ -41,13 +40,11 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
       }
       groups[pillarId].items.push(item);
     });
-    // Sort groups by pillar name
     return Object.values(groups).sort((a, b) => (a.pillar?.name || "").localeCompare(b.pillar?.name || ""));
   }, [items, cards, pillars]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    // Don't accept reorder drags from slots
     if (e.dataTransfer.types.includes("reorder-id")) return;
     e.dataTransfer.dropEffect = "move";
     setIsDragOver(true);
@@ -59,7 +56,6 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
-    // Don't accept drags that come from a slot (source-response-id) — those should go to other slots only
     if (e.dataTransfer.getData("source-response-id")) return;
     if (e.dataTransfer.types.includes("reorder-id")) return;
     const cardId = e.dataTransfer.getData("card-id");
@@ -93,32 +89,25 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
         </div>
       )}
 
-      {/* Grouped by pillar */}
       <div className={cn("flex flex-col gap-3", isBoard && "gap-4")}>
         <AnimatePresence mode="popLayout">
           {groupedItems.map(({ pillar, items: groupItems }) => {
-            const gradient = pillar ? getPillarGradient(pillar.slug, pillar?.color) : "primary";
+            const color = getPillarCssColor(pillar?.slug || "", pillar?.color);
+            const colorAlpha = (a: number) => getPillarCssColorAlpha(pillar?.slug || "", pillar?.color, a);
             return (
-              <motion.div
-                key={pillar?.id || "unknown"}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                {/* Pillar group header */}
+              <div key={pillar?.id || "unknown"}>
                 {items.length > 1 && (
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="h-2 w-2 rounded-full" style={{ background: `hsl(var(--pillar-${gradient}))` }} />
+                    <div className="h-2 w-2 rounded-full" style={{ background: color }} />
                     <span
                       className="text-[9px] font-bold uppercase tracking-widest"
-                      style={{ color: `hsl(var(--pillar-${gradient}))` }}
+                      style={{ color }}
                     >
                       {pillar?.name || "Autre"}
                     </span>
                   </div>
                 )}
 
-                {/* Cards in this group */}
                 <div className={cn("flex flex-wrap gap-2", isBoard && "gap-3")}>
                   {groupItems.map((item) => {
                     const card = cards.find(c => c.id === item.card_id);
@@ -148,7 +137,6 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
                       );
                     }
 
-                    // List mode: compact chips
                     return (
                       <motion.div
                         key={item.id}
@@ -168,7 +156,7 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
                       >
                         <div
                           className="h-5 w-1 rounded-full shrink-0"
-                          style={{ background: `hsl(var(--pillar-${gradient}))` }}
+                          style={{ background: color }}
                         />
                         <span className="text-xs font-medium truncate max-w-[120px]">{card.title}</span>
                         {!readOnly && (
@@ -189,7 +177,7 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
                     );
                   })}
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </AnimatePresence>

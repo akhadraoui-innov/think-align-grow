@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { ChallengeSlot, ChallengeResponse } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
-import { getPillarGradient, PHASE_LABELS } from "@/hooks/useToolkitData";
+import { getPillarCssColor, getPillarCssColorAlpha, PHASE_LABELS } from "@/hooks/useToolkitData";
 import { X, GripVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MaturitySelector } from "./MaturitySelector";
@@ -30,7 +30,6 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    // Don't highlight zone for internal reorder
     const sourceSlotId = e.dataTransfer.types.includes("source-slot-id");
     if (!sourceSlotId) {
       setIsDragOver(true);
@@ -48,11 +47,8 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
     if (!cardId) return;
 
     const sourceSlotId = e.dataTransfer.getData("source-slot-id");
-
-    // Same slot → reorder handled at card level
     if (sourceSlotId === slot.id) return;
 
-    // Different slot or sidebar → place card
     onDrop(slot.id, cardId);
   }, [slot.id, onDrop]);
 
@@ -81,7 +77,6 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
       onDragLeave={readOnly ? undefined : handleDragLeave}
       onDrop={readOnly ? undefined : handleDrop}
     >
-      {/* Label */}
       <div className="mb-2">
         <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
           {slot.label}
@@ -92,12 +87,10 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
         </span>
       </div>
 
-      {/* Hint */}
       {slot.hint && slotResponses.length === 0 && (
         <p className="text-xs text-muted-foreground/60 italic mb-2">{slot.hint}</p>
       )}
 
-      {/* Placed cards */}
       <AnimatePresence mode="popLayout">
         {slotResponses.map((resp, idx) => (
           <SlotCard
@@ -117,7 +110,6 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
         ))}
       </AnimatePresence>
 
-      {/* Empty state */}
       {slotResponses.length === 0 && !isDragOver && (
         <div className="flex items-center justify-center h-16 text-muted-foreground/40">
           <GripVertical className="h-5 w-5 mr-1" />
@@ -153,7 +145,8 @@ interface SlotCardProps {
 function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse, onReorder, isReorderTarget, onReorderHover, readOnly }: SlotCardProps) {
   const card = cards.find(c => c.id === resp.card_id);
   const pillar = card ? pillars.find(p => p.id === card.pillar_id) : null;
-  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
+  const pillarColor = getPillarCssColor(pillar?.slug || "", pillar?.color);
+  const pillarColorAlpha = (a: number) => getPillarCssColorAlpha(pillar?.slug || "", pillar?.color, a);
   const fmt = (resp.format || "normal") as CardFormat;
   const phaseLabel = card ? (PHASE_LABELS[card.phase] || card.phase) : "";
 
@@ -174,10 +167,6 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
       }}
       onDragOver={(e: any) => {
         if (e.dataTransfer?.types.includes("source-slot-id")) {
-          const srcSlotId = e.dataTransfer.getData("source-slot-id");
-          // Only accept reorder from same slot
-          // Note: getData may not work in dragOver due to browser security,
-          // so we accept all and filter in onDrop
           e.preventDefault();
           e.stopPropagation();
           onReorderHover(idx);
@@ -205,11 +194,11 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
           {slot.slot_type === "ranked" && (
             <span className="text-[10px] font-black text-muted-foreground w-4 text-center">{idx + 1}</span>
           )}
-          <div className="h-4 w-1 rounded-full shrink-0" style={{ background: `hsl(var(--pillar-${gradient}))` }} />
+          <div className="h-4 w-1 rounded-full shrink-0" style={{ background: pillarColor }} />
           <span className="text-xs font-medium flex-1 truncate">{card.title}</span>
           <span
             className="text-[8px] font-bold uppercase px-1 py-0.5 rounded shrink-0"
-            style={{ background: `hsl(var(--pillar-${gradient}) / 0.1)`, color: `hsl(var(--pillar-${gradient}))` }}
+            style={{ background: pillarColorAlpha(0.1), color: pillarColor }}
           >
             {pillar?.name}
           </span>
@@ -236,7 +225,7 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
             {slot.slot_type === "ranked" && (
               <span className="text-xs font-black text-muted-foreground w-5 text-center">{idx + 1}</span>
             )}
-            <div className="h-6 w-1.5 rounded-full shrink-0" style={{ background: `hsl(var(--pillar-${gradient}))` }} />
+            <div className="h-6 w-1.5 rounded-full shrink-0" style={{ background: pillarColor }} />
             <div className="flex-1 min-w-0">
               <span className="text-sm font-medium truncate block">{card.title}</span>
               {card.subtitle && <span className="text-[10px] text-muted-foreground truncate block">{card.subtitle}</span>}
@@ -257,7 +246,7 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
           <div className="flex items-center gap-1.5 mt-1.5 pl-7">
             <span
               className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-md"
-              style={{ background: `hsl(var(--pillar-${gradient}) / 0.1)`, color: `hsl(var(--pillar-${gradient}))` }}
+              style={{ background: pillarColorAlpha(0.1), color: pillarColor }}
             >
               {pillar?.name}
             </span>
@@ -278,7 +267,7 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
             {slot.slot_type === "ranked" && (
               <span className="text-xs font-black text-muted-foreground w-5 text-center">{idx + 1}</span>
             )}
-            <div className="h-7 w-1.5 rounded-full shrink-0" style={{ background: `hsl(var(--pillar-${gradient}))` }} />
+            <div className="h-7 w-1.5 rounded-full shrink-0" style={{ background: pillarColor }} />
             <div className="flex-1 min-w-0">
               <span className="text-sm font-medium block">{card.title}</span>
               {card.subtitle && <span className="text-[10px] text-muted-foreground block">{card.subtitle}</span>}
@@ -299,7 +288,7 @@ function SlotCard({ resp, idx, slot, cards, pillars, onRemove, onUpdateResponse,
           <div className="flex items-center gap-1.5 pl-7 mb-2">
             <span
               className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-md"
-              style={{ background: `hsl(var(--pillar-${gradient}) / 0.1)`, color: `hsl(var(--pillar-${gradient}))` }}
+              style={{ background: pillarColorAlpha(0.1), color: pillarColor }}
             >
               {pillar?.name}
             </span>

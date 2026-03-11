@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
-import { getPillarGradient } from "@/hooks/useToolkitData";
+import { getPillarCssColor } from "@/hooks/useToolkitData";
 import { cn } from "@/lib/utils";
 import type { CardFormat } from "./FormatSelector";
 
@@ -12,7 +12,7 @@ interface DraggableCardProps {
 }
 
 export function DraggableCard({ card, pillar, isPlaced, format = "normal" }: DraggableCardProps) {
-  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
+  const color = pillar ? getPillarCssColor(pillar.slug, pillar.color) : `hsl(var(--pillar-primary))`;
 
   const handleDragStart = useCallback((e: React.DragEvent) => {
     e.dataTransfer.setData("card-id", card.id);
@@ -32,7 +32,7 @@ export function DraggableCard({ card, pillar, isPlaced, format = "normal" }: Dra
       >
         <div
           className="h-4 w-1 rounded-full shrink-0"
-          style={{ background: `hsl(var(--pillar-${gradient}))` }}
+          style={{ background: color }}
         />
         <span className="text-xs font-medium truncate">{card.title}</span>
       </div>
@@ -53,7 +53,7 @@ export function DraggableCard({ card, pillar, isPlaced, format = "normal" }: Dra
         <div className="flex items-center gap-2">
           <div
             className="h-7 w-1.5 rounded-full shrink-0"
-            style={{ background: `hsl(var(--pillar-${gradient}))` }}
+            style={{ background: color }}
           />
           <div className="flex-1 min-w-0">
             <span className="text-sm font-medium block truncate">{card.title}</span>
@@ -84,7 +84,7 @@ export function DraggableCard({ card, pillar, isPlaced, format = "normal" }: Dra
     >
       <div
         className="h-7 w-1.5 rounded-full shrink-0"
-        style={{ background: `hsl(var(--pillar-${gradient}))` }}
+        style={{ background: color }}
       />
       <div className="flex-1 min-w-0">
         <span className="text-sm font-medium block truncate">{card.title}</span>
