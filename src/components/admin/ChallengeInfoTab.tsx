@@ -105,10 +105,10 @@ export function ChallengeInfoTab({ template, toolkits, pillars, onUpdate }: Prop
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Pilier (optionnel)</Label>
-              <Select value={form.pillar_id} onValueChange={(v) => set("pillar_id", v)}>
+              <Select value={form.pillar_id || "none"} onValueChange={(v) => set("pillar_id", v === "none" ? "" : v)}>
                 <SelectTrigger className="h-9"><SelectValue placeholder="Aucun" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun</SelectItem>
+                  <SelectItem value="none">Aucun</SelectItem>
                   {pillars.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
