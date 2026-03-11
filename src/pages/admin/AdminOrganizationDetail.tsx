@@ -111,7 +111,7 @@ export default function AdminOrganizationDetail() {
 
           <TabsContent value="info">
             <OrgInfoTab
-              organization={organization}
+              organization={organization as any}
               stats={{
                 memberCount: members.length,
                 teamCount: teams.length,

@@ -619,33 +619,74 @@ export type Database = {
       }
       organizations: {
         Row: {
+          addresses: Json | null
+          contacts: Json | null
           created_at: string
+          email: string | null
+          group_name: string | null
           id: string
           logo_url: string | null
           name: string
+          notes: string | null
+          parent_organization_id: string | null
+          phone: string | null
           primary_color: string | null
+          sector: string | null
+          siret: string | null
           slug: string
+          tva_number: string | null
           updated_at: string
+          website: string | null
         }
         Insert: {
+          addresses?: Json | null
+          contacts?: Json | null
           created_at?: string
+          email?: string | null
+          group_name?: string | null
           id?: string
           logo_url?: string | null
           name: string
+          notes?: string | null
+          parent_organization_id?: string | null
+          phone?: string | null
           primary_color?: string | null
+          sector?: string | null
+          siret?: string | null
           slug: string
+          tva_number?: string | null
           updated_at?: string
+          website?: string | null
         }
         Update: {
+          addresses?: Json | null
+          contacts?: Json | null
           created_at?: string
+          email?: string | null
+          group_name?: string | null
           id?: string
           logo_url?: string | null
           name?: string
+          notes?: string | null
+          parent_organization_id?: string | null
+          phone?: string | null
           primary_color?: string | null
+          sector?: string | null
+          siret?: string | null
           slug?: string
+          tva_number?: string | null
           updated_at?: string
+          website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_parent_organization_id_fkey"
+            columns: ["parent_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pillars: {
         Row: {
