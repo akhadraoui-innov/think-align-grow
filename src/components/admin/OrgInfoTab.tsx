@@ -282,6 +282,29 @@ export function OrgInfoTab({ organization, stats }: Props) {
             </Select>
           </div>
         </div>
+        {permissions.canEditPlatformOwner && (
+          <div className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/30 p-4 mt-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">🏢 Organisation éditrice SaaS</p>
+              <p className="text-xs text-muted-foreground">Marque cette organisation comme l'éditeur et exploitant de la plateforme Hack & Show (Growthinnov)</p>
+            </div>
+            <Switch
+              checked={!!(organization as any).is_platform_owner}
+              onCheckedChange={async (checked) => {
+                const { error } = await supabase
+                  .from("organizations")
+                  .update({ is_platform_owner: checked } as any)
+                  .eq("id", organization.id);
+                if (error) {
+                  toast({ title: "Erreur", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: checked ? "Marquée comme éditeur SaaS" : "Flag éditeur retiré" });
+                  qc.invalidateQueries({ queryKey: ["admin-organization", organization.id] });
+                }
+              }}
+            />
+          </div>
+        )}
       </Section>
 
       {/* ---- Coordonnées ---- */}
