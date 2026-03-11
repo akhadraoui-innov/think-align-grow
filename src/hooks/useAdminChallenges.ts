@@ -95,7 +95,7 @@ export function useAdminChallengeDetail(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("challenge_analyses")
-        .select("*, workshops(id, name, status, created_at, code)")
+        .select("*, workshops(id, name, status, created_at, code, organizations(id, name, logo_url))")
         .eq("template_id", id!)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -116,11 +116,36 @@ export function useAdminChallengeDetail(id: string | undefined) {
       if (!workshopIds.length) return [];
       const { data, error } = await supabase
         .from("workshops")
-        .select("*")
+        .select("*, organizations(id, name, logo_url)")
         .in("id", workshopIds)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  const sessionExtras = useQuery({
+    queryKey: ["admin-challenge-session-extras", id],
+    enabled: !!id && !!sessions.data?.length,
+    queryFn: async () => {
+      const workshopIds = sessions.data!.map((w) => w.id);
+
+      const [participantsRes, responsesRes] = await Promise.all([
+        supabase.from("workshop_participants").select("workshop_id").in("workshop_id", workshopIds),
+        supabase.from("challenge_responses").select("workshop_id").in("workshop_id", workshopIds),
+      ]);
+
+      const participantCounts: Record<string, number> = {};
+      for (const p of participantsRes.data || []) {
+        participantCounts[p.workshop_id] = (participantCounts[p.workshop_id] || 0) + 1;
+      }
+
+      const responseCounts: Record<string, number> = {};
+      for (const r of responsesRes.data || []) {
+        responseCounts[r.workshop_id] = (responseCounts[r.workshop_id] || 0) + 1;
+      }
+
+      return { participantCounts, responseCounts };
     },
   });
 
@@ -162,6 +187,8 @@ export function useAdminChallengeDetail(id: string | undefined) {
     sessions: sessions.data || [],
     toolkits: toolkits.data || [],
     pillars: pillarsByToolkit.data || [],
+    participantCounts: sessionExtras.data?.participantCounts || {},
+    responseCounts: sessionExtras.data?.responseCounts || {},
     isLoading: template.isLoading,
     invalidateAll,
   };
