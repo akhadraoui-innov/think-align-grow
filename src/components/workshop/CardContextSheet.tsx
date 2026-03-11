@@ -69,7 +69,7 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
           <div className="space-y-6 pb-12">
             {/* Objective */}
             {(card as any).objective && (
-              <div className="flex items-start gap-3 p-4 rounded-xl" style={{ background: `${pillarColor}06` }}>
+              <div className="flex items-start gap-3 p-4 rounded-xl" style={{ background: pillarColorAlpha(0.04) }}>
                 <Target className="h-5 w-5 shrink-0 mt-0.5" style={{ color: pillarColor }} />
                 <div>
                   <h4 className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: pillarColor }}>
