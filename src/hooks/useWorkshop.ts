@@ -211,6 +211,7 @@ export interface MyWorkshopItem {
   status: Workshop["status"];
   created_at: string;
   host_id: string;
+  config: any;
   role: string;
   participant_count: number;
 }
