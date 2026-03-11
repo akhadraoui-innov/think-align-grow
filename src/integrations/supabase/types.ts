@@ -1196,7 +1196,19 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "owner" | "admin" | "member"
+      app_role:
+        | "owner"
+        | "admin"
+        | "member"
+        | "super_admin"
+        | "customer_lead"
+        | "innovation_lead"
+        | "performance_lead"
+        | "product_actor"
+        | "lead"
+        | "facilitator"
+        | "manager"
+        | "guest"
       canvas_item_type: "card" | "sticky" | "group" | "arrow" | "icon" | "text"
       card_phase: "foundations" | "model" | "growth" | "execution"
       challenge_slot_type: "single" | "multi" | "ranked"
@@ -1331,7 +1343,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "admin", "member"],
+      app_role: [
+        "owner",
+        "admin",
+        "member",
+        "super_admin",
+        "customer_lead",
+        "innovation_lead",
+        "performance_lead",
+        "product_actor",
+        "lead",
+        "facilitator",
+        "manager",
+        "guest",
+      ],
       canvas_item_type: ["card", "sticky", "group", "arrow", "icon", "text"],
       card_phase: ["foundations", "model", "growth", "execution"],
       challenge_slot_type: ["single", "multi", "ranked"],
