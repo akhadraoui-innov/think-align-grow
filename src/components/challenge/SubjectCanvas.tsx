@@ -15,6 +15,7 @@ interface SubjectCanvasProps {
   pillars: DbPillar[];
   onDrop: (slotId: string, cardId: string) => void;
   onRemove: (responseId: string) => void;
+  onMoveToSlot?: (responseId: string, newSlotId: string, cardId: string) => void;
   onUpdateResponse?: (responseId: string, updates: { format?: string; maturity?: number; rank?: number }) => void;
   stagingItems?: StagingItem[];
   onStage?: (cardId: string) => void;
@@ -38,7 +39,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 export function SubjectCanvas({
   subject, slots, responses, cards, pillars,
-  onDrop, onRemove, onUpdateResponse,
+  onDrop, onRemove, onMoveToSlot, onUpdateResponse,
   stagingItems = [], onStage, onUnstage, onStagingFormatChange, onReorderStaging,
   readOnly,
 }: SubjectCanvasProps) {
@@ -116,6 +117,7 @@ export function SubjectCanvas({
               pillars={pillars}
               onDrop={handleSlotDrop}
               onRemove={onRemove}
+              onMoveToSlot={onMoveToSlot}
               onUpdateResponse={onUpdateResponse}
               readOnly={readOnly}
             />
