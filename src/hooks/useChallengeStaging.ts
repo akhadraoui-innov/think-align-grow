@@ -54,24 +54,33 @@ export function useChallengeStaging(workshopId: string | undefined) {
 
   const stageCard = useCallback(async (subjectId: string, cardId: string) => {
     if (!workshopId || !user) return;
+    // Local dedup check
+    if (items.some(i => i.card_id === cardId && i.subject_id === subjectId)) return;
     const { error } = await supabase
       .from("challenge_staging")
-      .insert({
+      .upsert({
         workshop_id: workshopId,
         subject_id: subjectId,
         card_id: cardId,
         user_id: user.id,
-      });
+      }, { onConflict: "workshop_id,subject_id,card_id,user_id" });
     if (error) toast.error("Erreur lors de l'ajout en zone de tri");
-  }, [workshopId, user]);
+  }, [workshopId, user, items]);
 
   const unstageCard = useCallback(async (itemId: string) => {
+    // Optimistic removal
+    const removed = items.find(i => i.id === itemId);
+    setItems(prev => prev.filter(i => i.id !== itemId));
     const { error } = await supabase
       .from("challenge_staging")
       .delete()
       .eq("id", itemId);
-    if (error) toast.error("Erreur lors du retrait de la zone de tri");
-  }, []);
+    if (error) {
+      // Rollback
+      if (removed) setItems(prev => [...prev, removed]);
+      toast.error("Erreur lors du retrait de la zone de tri");
+    }
+  }, [items]);
 
   const updateStagingFormat = useCallback(async (itemId: string, format: CardFormat) => {
     const { error } = await supabase
