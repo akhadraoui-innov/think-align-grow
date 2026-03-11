@@ -247,7 +247,7 @@ export function useMyWorkshops() {
 
       const { data: ws } = await supabase
         .from("workshops")
-        .select("id, name, code, status, created_at, host_id")
+        .select("id, name, code, status, created_at, host_id, config")
         .in("id", workshopIds)
         .order("created_at", { ascending: false });
 
