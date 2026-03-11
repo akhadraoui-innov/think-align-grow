@@ -1,79 +1,58 @@
-# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
-## Vision produit
 
-Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
+## Bilan des tests (Sprint 3)
 
-### L'organisation comme entité centrale
+Les erreurs console sont toutes liées a une extension navigateur (`chrome-extension://hoklmmgfnpapgjgcpechhaamimifchmp`) et non a l'application. L'app fonctionne correctement.
 
-L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
+**Ce qui est en place et fonctionnel :**
+- Fiche utilisateur avec 8 onglets (Infos, Roles, Organisations, Credits, Workshops, Challenges, Cartes, Activite)
+- UserInfoTab riche : identite, poste/organisation, hierarchie, manager, interets, objectifs, metadata
+- UserOrgsTab : ajout/retrait d'organisations avec dialog, selection de role, navigation vers fiche org
+- Hook useAdminUserDetail : 9 requetes paralleles + 6 mutations
+- Hook usePermissions : flags granulaires par role SaaS
+- RLS correctes sur toutes les tables
 
-- **Identité & branding** : nom, slug, logo, couleur primaire
-- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
-- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
-- **Coordonnées** : email, téléphone, site web
-- **Adresses** : multi-adresses (siège, sites, bureaux)
-- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
-- **Notes internes** : champ libre pour l'équipe SaaS
-- **Membres** avec rôles (Owner, Admin, Member, Guest…)
-- **Équipes** internes
-- **Toolkits** assignés et activés
-- **Abonnement** avec plan et quotas
-- **Workshops** réalisés
-- **Journal d'activité** (audit trail)
+## Plan Sprint 4 : Gestion des Toolkits + Workshops Admin
 
-### Organisation plateforme : Growthinnov
+### 1. Page AdminToolkits -- CRUD complet
+- Liste des toolkits avec DataTable (nom, slug, statut, nb piliers, nb cartes, date)
+- Creation/edition via Dialog (nom, slug, description, emoji, statut draft/published/archived)
+- Hook `useAdminToolkits` : liste + detail + mutations (create, update, delete)
 
-**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
-1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
-2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
+### 2. Fiche Toolkit detaillee (`/admin/toolkits/:id`)
+Avec onglets suivant le meme modele que les fiches Organisation et Utilisateur :
+- **Infos** : nom, slug, emoji, description, statut, metadata
+- **Piliers** : liste CRUD des piliers (nom, slug, couleur, icone, ordre). Ajout/edition inline
+- **Cartes** : liste des cartes groupees par pilier. CRUD (titre, sous-titre, phase, objectif, KPI, action, definition, icone, ordre)
+- **Challenges** : templates de challenge lies au toolkit, sujets et slots
+- **Game Plans** : plans de jeu lies au toolkit, etapes
+- **Quiz** : questions de quiz par pilier
+- **Organisations** : orgs ayant acces a ce toolkit (via organization_toolkits)
 
-Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
+### 3. Import de cartes (existant)
+- Reutiliser l'edge function `import-toolkit-cards` existante
+- Ajouter un bouton "Importer des cartes" dans l'onglet Cartes de la fiche toolkit
 
-Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
+### 4. Page AdminWorkshops -- Vue admin
+- Liste des workshops avec DataTable (nom, code, statut, host, organisation, nb participants, date)
+- Hook `useAdminWorkshops` : liste avec jointures profiles + organizations
+- Clic vers fiche workshop avec stats et participants (vue lecture admin)
 
-## Sprint 1 — COMPLÉTÉ ✅
+### 5. Mise a jour du PRD
+Sprint 3 marque COMPLETE. Sprint 4 detaille. Sprint 5 (Billing/Logs) mis a jour.
 
-### Migration SQL
-- ✅ Enum `app_role` étendu : +9 valeurs
-- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
+### Fichiers a creer/modifier
 
-### Frontend Admin
-- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
-- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
+| Action | Fichier |
+|--------|---------|
+| Creer | `src/hooks/useAdminToolkits.ts` |
+| Creer | `src/hooks/useAdminWorkshops.ts` |
+| Creer | `src/pages/admin/AdminToolkitDetail.tsx` |
+| Modifier | `src/pages/admin/AdminToolkits.tsx` |
+| Modifier | `src/pages/admin/AdminWorkshops.tsx` |
+| Modifier | `src/App.tsx` (route `/admin/toolkits/:id`) |
+| Modifier | `.lovable/plan.md` |
 
-## Sprint 2 — COMPLÉTÉ ✅
+### Pas de migration SQL necessaire
+Les tables `toolkits`, `pillars`, `cards`, `challenge_templates`, `challenge_subjects`, `challenge_slots`, `game_plans`, `game_plan_steps`, `quiz_questions`, `organization_toolkits`, `workshops` existent deja avec les RLS appropriees. L'equipe SaaS a deja les permissions ALL via `is_saas_team()`.
 
-### Dashboard avec données réelles
-- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
-- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
-
-### Composant DataTable réutilisable
-- ✅ Recherche, tri par colonne, pagination, row click, slot actions
-
-### CRUD Organisations
-- ✅ useOrganizations + useOrganizationDetail hooks
-- ✅ Liste avec DataTable, recherche, tri, création via dialog
-- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
-- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
-- ✅ Route /admin/organizations/:id
-- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
-
-## Sprint 3 — EN COURS 🚧
-
-### Gestion des utilisateurs (AdminUsers)
-- Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
-- Fiche utilisateur détaillée : profil, rôles, organisations, historique d'activité, crédits
-- Actions : changement de rôle, attribution/retrait de crédits, désactivation
-
-### Hook usePermissions
-- Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
-- Utilisé dans toute l'app pour conditionner les actions
-
-## Sprint 4 — À FAIRE
-- Gestion des Toolkits : CRUD complet, import de cartes, gestion des piliers
-- Gestion des Workshops : vue admin, modération, export des résultats
-
-## Sprint 5 — À FAIRE
-- Facturation & abonnements : plans, quotas, suivi de consommation
-- Logs & audit : historique complet, filtres, export
