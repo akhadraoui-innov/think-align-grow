@@ -40,7 +40,7 @@ export function useCreateWorkshop() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const create = async (name: string, config: any = {}) => {
+  const create = async (name: string, config: any = {}, organizationId?: string | null) => {
     if (!user) {
       toast.error("Connectez-vous pour créer un workshop");
       return;
@@ -48,9 +48,11 @@ export function useCreateWorkshop() {
     setLoading(true);
     try {
       const code = generateCode();
+      const insertData: any = { name, code, host_id: user.id, config };
+      if (organizationId) insertData.organization_id = organizationId;
       const { data: workshop, error } = await supabase
         .from("workshops")
-        .insert({ name, code, host_id: user.id, config })
+        .insert(insertData)
         .select()
         .single();
       if (error) throw error;
