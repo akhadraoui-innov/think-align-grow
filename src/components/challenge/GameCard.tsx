@@ -29,8 +29,11 @@ export function GameCard({
 }: GameCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const isDraggingRef = useRef(false);
-  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
-  const pillarColor = pillar ? getPillarCssColor(pillar.slug, pillar.color) : `hsl(var(--pillar-primary))`;
+  const slug = pillar?.slug || "";
+  const dbCol = pillar?.color || null;
+  const gradient = getPillarGradient(slug, dbCol);
+  const pillarColor = getPillarCssColor(slug, dbCol);
+  const pillarColorAlpha = (a: number) => getPillarCssColorAlpha(slug, dbCol, a);
   const phaseLabel = PHASE_LABELS[card.phase] || card.phase;
 
   const handleDragStart = (e: React.DragEvent) => {
