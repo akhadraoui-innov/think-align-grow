@@ -26,6 +26,7 @@ import AdminDesignInnovation from "./pages/admin/AdminDesignInnovation";
 import AdminBilling from "./pages/admin/AdminBilling";
 import AdminLogs from "./pages/admin/AdminLogs";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminOrganizationDetail from "./pages/admin/AdminOrganizationDetail";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ function AnimatedRoutes() {
           <Route path="/challenge/:id" element={<ChallengeRoom />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/organizations" element={<AdminOrganizations />} />
+          <Route path="/admin/organizations/:id" element={<AdminOrganizationDetail />} />
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/toolkits" element={<AdminToolkits />} />
           <Route path="/admin/workshops" element={<AdminWorkshops />} />
