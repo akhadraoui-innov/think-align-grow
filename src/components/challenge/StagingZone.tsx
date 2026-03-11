@@ -166,7 +166,7 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
                 animate={{ opacity: isDragging ? 0.4 : 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 draggable={!readOnly}
-                onDragStart={(e: any) => handleItemDragStart(e, item.id)}
+                onDragStart={(e: any) => handleItemDragStart(e, item.id, item.card_id)}
                 onDragOver={(e: any) => handleItemDragOver(e, item.id)}
                 onDragLeave={handleItemDragLeave}
                 onDrop={(e: any) => handleItemDrop(e, item.id)}
