@@ -1,140 +1,88 @@
-# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
-## Vision produit
 
-Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
+## Audit global — Hack & Show (Sprints 1-6)
 
-### L'organisation comme entité centrale
+### Back-office Admin : solide et complet
 
-L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
+| Module | Statut | Commentaire |
+|--------|--------|-------------|
+| Dashboard | OK | Stats live, graphiques, activite recente |
+| Organisations | OK | CRUD complet, 8 onglets, structure groupe/filiale |
+| Utilisateurs | OK | Fiche riche, roles, credits, activite |
+| Toolkits | OK | CRUD piliers/cartes/challenges/quiz, import CSV |
+| Workshops | OK | Liste admin avec jointures |
+| Billing | OK | Plans CRUD, abonnements, credits par org, graphiques |
+| Logs | OK | Filtres, pagination server-side, export CSV, display_name |
+| Design Innovation | Placeholder | "Sprint 8" |
+| Settings | Placeholder | "Sprint 10" |
 
-- **Identité & branding** : nom, slug, logo, couleur primaire
-- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
-- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
-- **Coordonnées** : email, téléphone, site web
-- **Adresses** : multi-adresses (siège, sites, bureaux)
-- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
-- **Notes internes** : champ libre pour l'équipe SaaS
-- **Membres** avec rôles (Owner, Admin, Member, Guest…)
-- **Équipes** internes
-- **Toolkits** assignés et activés
-- **Abonnement** avec plan et quotas
-- **Workshops** réalisés
-- **Journal d'activité** (audit trail)
+### Front-office utilisateur : lacunes majeures identifiees
 
-### Organisation plateforme : Growthinnov
+| Probleme | Impact | Severite |
+|----------|--------|----------|
+| **Page Profil statique** — affiche "Bienvenue / Se connecter" meme pour un user connecte. Aucune vue de son profil, pas d'edition. | L'utilisateur connecte ne peut ni voir ni modifier ses infos | Critique |
+| **Pas de contexte organisation** — aucun selecteur d'org cote user. Les workshops ne sont pas lies a une org a la creation. | Rupture du modele multi-tenant | Critique |
+| **Quiz non persistant** — les scores restent en `useState` local, perdus au refresh. `quiz_results` existe en DB mais n'est pas utilise dans Lab.tsx | Perte de progression utilisateur | Eleve |
+| **Credits non consommes** — le systeme de credits existe (DB + admin) mais aucune action utilisateur ne debite reellement de credits | Feature billing inactive | Eleve |
+| **Outils IA "Reflexion" et "Livrables"** — les boutons existent mais redirigent vers un ChatInterface generique sans prompt specifique | Promesse UX non tenue | Moyen |
+| **Pas de quota enforcement** — les quotas definis dans `subscription_plans.quotas` ne sont jamais verifies | Modele SaaS incomplet | Moyen |
 
-**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
-1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
-2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
+### Architecture : points forts
 
-Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
+- Hooks bien structures, separation nette admin/front
+- RLS exhaustives avec fonctions SECURITY DEFINER
+- Permissions granulaires via `usePermissions`
+- Toolkit 100% dynamique (DB-driven, plus de mock)
+- Design system coherent (typographie, couleurs, composants)
 
-Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
+---
 
-## Sprint 1 — COMPLÉTÉ ✅
+## Sprint 7 — Profil utilisateur & contexte multi-tenant
 
-### Migration SQL
-- ✅ Enum `app_role` étendu : +9 valeurs
-- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
+Le sprint le plus impactant est de combler le vide cote utilisateur connecte : profil fonctionnel, contexte organisation, persistance quiz.
 
-### Frontend Admin
-- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
-- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
+### 1. Page Profil authentifiee
 
-## Sprint 2 — COMPLÉTÉ ✅
+Transformer `Profile.tsx` pour detecter l'etat de connexion :
+- **Non connecte** : garder la vue actuelle (CTA login)
+- **Connecte** : afficher le vrai profil avec sections editables :
+  - Avatar + display_name + job_title + department
+  - Stats : XP, credits, cartes vues, quiz completes
+  - Organisations (liste avec roles)
+  - Bouton edition (dialog ou inline) → mutation `profiles` update
+  - Bouton deconnexion
 
-### Dashboard avec données réelles
-- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
-- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
+### 2. Selecteur d'organisation
 
-### Composant DataTable réutilisable
-- ✅ Recherche, tri par colonne, pagination, row click, slot actions
+- Composant `OrgSwitcher` dans la sidebar (sous le logo ou dans le footer)
+- Query `organization_members` filtre par `user_id` → liste des orgs
+- Stocker l'org active dans un React Context (`OrgProvider`)
+- Le contexte org sera utilise par Workshop/Challenge pour rattacher les sessions
 
-### CRUD Organisations
-- ✅ useOrganizations + useOrganizationDetail hooks
-- ✅ Liste avec DataTable, recherche, tri, création via dialog
-- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
-- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
-- ✅ Route /admin/organizations/:id
-- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
+### 3. Persistance des scores quiz
 
-## Sprint 3 — COMPLÉTÉ ✅
+- Dans `Lab.tsx` / `QuizEngine`, apres completion → upsert dans `quiz_results` (table existante)
+- Au chargement de Lab, fetcher le dernier `quiz_results` pour pre-remplir le RadarChart
+- Afficher "Votre dernier diagnostic" si des scores existent
 
-### Gestion des utilisateurs (AdminUsers)
-- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
-- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
-- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
-- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
-- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
-- ✅ UserCreditsTab : solde, lifetime, historique des transactions
-- ✅ UserWorkshopsTab : workshops hébergés et participations
-- ✅ UserChallengesTab : performances quiz et challenges
-- ✅ UserCardsTab : suivi des vues et favoris
-- ✅ UserActivityTab : journal d'audit utilisateur
+### 4. Liaison Workshop → Organisation
 
-### Hook usePermissions
-- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
+- A la creation d'un workshop, pre-remplir `organization_id` avec l'org active du contexte
+- Afficher le nom de l'org dans la liste "Mes workshops"
 
-### Hook useAdminUserDetail
-- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
+### Fichiers
 
-### Migration SQL Sprint 3
-- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
+| Action | Fichier |
+|--------|---------|
+| Rewrite | `src/pages/Profile.tsx` — vue authentifiee + edition |
+| Create | `src/contexts/OrgContext.tsx` — provider + hook `useActiveOrg` |
+| Create | `src/components/layout/OrgSwitcher.tsx` — selecteur d'org |
+| Edit | `src/components/layout/AppSidebar.tsx` — integrer OrgSwitcher |
+| Edit | `src/pages/Lab.tsx` — persistance quiz_results |
+| Edit | `src/components/game/QuizEngine.tsx` — save scores en DB |
+| Edit | `src/pages/Workshop.tsx` — passer org_id a la creation |
+| Edit | `src/App.tsx` — wrapper OrgProvider |
+| Update | `.lovable/plan.md` |
 
-## Sprint 4 — COMPLÉTÉ ✅
+Aucune migration DB necessaire — toutes les tables (`profiles`, `organization_members`, `quiz_results`, `workshops.organization_id`) existent deja.
 
-### Gestion des Toolkits
-- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
-- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
-- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
-- ✅ Fiche AdminToolkitDetail avec 7 onglets :
-  - Infos : nom, slug, emoji, description, statut, métadonnées
-  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
-  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
-  - Challenges : templates avec sujets et slots imbriqués
-  - Game Plans : plans avec étapes ordonnées
-  - Quiz : questions par pilier avec compteur d'options
-  - Organisations : ajout/retrait d'accès toolkit pour les orgs
-- ✅ Route /admin/toolkits/:id
-
-### Gestion des Workshops (vue admin)
-- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
-- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
-
-## Sprint 4.2 — COMPLÉTÉ ✅
-
-### Nettoyage & dynamisation toolkit
-- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
-- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
-- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
-- ✅ Aucune migration DB nécessaire
-
-## Sprint 5 — COMPLÉTÉ ✅
-
-### Facturation & Abonnements (AdminBilling)
-- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
-- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
-- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
-- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
-- ✅ Suppression plan avec confirmation AlertDialog
-- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
-
-### Logs d'audit (AdminLogs)
-- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
-- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
-- ✅ Pagination server-side (25/page) avec compteur total
-- ✅ Détail metadata : dialog avec JSON formaté
-- ✅ Styles cohérents avec le design system existant
-
-## Sprint 6 — COMPLÉTÉ ✅
-
-### Enrichissement logs
-- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
-- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
-- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
-
-### Dashboard billing avancé
-- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
-- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
-- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
