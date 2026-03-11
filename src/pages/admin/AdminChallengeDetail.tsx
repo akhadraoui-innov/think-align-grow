@@ -9,6 +9,7 @@ import { ChallengeInfoTab } from "@/components/admin/ChallengeInfoTab";
 import { ChallengeSubjectsTab } from "@/components/admin/ChallengeSubjectsTab";
 import { ChallengeSessionsTab } from "@/components/admin/ChallengeSessionsTab";
 import { ChallengeAnalysesTab } from "@/components/admin/ChallengeAnalysesTab";
+import { useMemo } from "react";
 
 const DIFFICULTY_MAP: Record<string, { label: string; className: string }> = {
   beginner: { label: "Débutant", className: "bg-pillar-finance/10 text-pillar-finance border-pillar-finance/30" },
@@ -19,7 +20,23 @@ const DIFFICULTY_MAP: Record<string, { label: string; className: string }> = {
 export default function AdminChallengeDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { template, subjects, analyses, sessions, toolkits, pillars, isLoading, invalidateAll } = useAdminChallengeDetail(id);
+  const { template, subjects, analyses, sessions, toolkits, pillars, participantCounts, responseCounts, isLoading, invalidateAll } = useAdminChallengeDetail(id);
+
+  // Build analyses map: workshop_id → { maturity }
+  const analysesMap = useMemo(() => {
+    const map: Record<string, { maturity: number | null }> = {};
+    for (const a of analyses) {
+      const analysis = typeof a.analysis === "object" ? a.analysis : {};
+      const maturity = (analysis as any)?.global_maturity ?? (analysis as any)?.maturity ?? null;
+      map[a.workshop_id] = { maturity };
+    }
+    return map;
+  }, [analyses]);
+
+  // Total slots count for completion calculation
+  const totalSlots = useMemo(() => {
+    return subjects.reduce((acc, s) => acc + ((s as any).challenge_slots?.length || 0), 0);
+  }, [subjects]);
 
   if (isLoading) {
     return <AdminShell><div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div></AdminShell>;
@@ -30,7 +47,6 @@ export default function AdminChallengeDetail() {
   }
 
   const d = DIFFICULTY_MAP[template.difficulty || "intermediate"] || DIFFICULTY_MAP.intermediate;
-  const slotsCount = subjects.reduce((acc, s) => acc + ((s as any).challenge_slots?.length || 0), 0);
 
   return (
     <AdminShell>
@@ -46,7 +62,7 @@ export default function AdminChallengeDetail() {
             <div>
               <h1 className="text-xl font-display font-bold text-foreground">{template.name}</h1>
               <p className="text-xs text-muted-foreground">
-                {(template as any).toolkits?.name || "—"} · {subjects.length} sujet{subjects.length > 1 ? "s" : ""} · {slotsCount} slot{slotsCount > 1 ? "s" : ""}
+                {(template as any).toolkits?.name || "—"} · {subjects.length} sujet{subjects.length > 1 ? "s" : ""} · {totalSlots} slot{totalSlots > 1 ? "s" : ""}
               </p>
             </div>
           </div>
@@ -68,7 +84,13 @@ export default function AdminChallengeDetail() {
             <ChallengeSubjectsTab subjects={subjects} templateId={template.id} onUpdate={invalidateAll} />
           </TabsContent>
           <TabsContent value="sessions">
-            <ChallengeSessionsTab sessions={sessions} />
+            <ChallengeSessionsTab
+              sessions={sessions}
+              participantCounts={participantCounts}
+              responseCounts={responseCounts}
+              analysesMap={analysesMap}
+              totalSlots={totalSlots}
+            />
           </TabsContent>
           <TabsContent value="analyses">
             <ChallengeAnalysesTab analyses={analyses} />
