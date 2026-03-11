@@ -81,7 +81,7 @@ export default function Explore() {
               <ArrowLeft className="h-4 w-4" /> Retour
             </button>
             <div className="flex items-center gap-3 mb-4">
-              <GradientIcon icon={Icon} gradient={getPillarGradient(selectedPillar.slug)} size="md" />
+              <GradientIcon icon={Icon} gradient={getPillarGradient(selectedPillar.slug, selectedPillar.color)} size="md" />
               <div>
                 <h1 className="font-display text-3xl font-bold uppercase tracking-tight">{selectedPillar.name}</h1>
                 <p className="text-sm text-muted-foreground">{filteredCards.length} cartes</p>
