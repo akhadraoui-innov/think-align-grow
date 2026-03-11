@@ -13,9 +13,10 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, Search, Filter, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Filter, Eye, Download } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
 
 const ACTION_COLORS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   created: "default",
@@ -28,21 +29,41 @@ export default function AdminLogs() {
   const {
     logs, totalCount, logsLoading,
     filters, setFilters, page, setPage, pageSize, totalPages, meta,
+    profileMap, exportCsv,
   } = useAdminLogs();
 
   const [detailLog, setDetailLog] = useState<any>(null);
+  const [exporting, setExporting] = useState(false);
 
   const updateFilter = (key: string, value: string) => {
     setFilters((f) => ({ ...f, [key]: value }));
     setPage(0);
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportCsv();
+      toast.success("Export CSV téléchargé");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Logs d'activité</h1>
-          <p className="text-sm text-muted-foreground mt-1">Journal d'audit de la plateforme — {totalCount} entrée{totalCount > 1 ? "s" : ""}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-display font-bold text-foreground">Logs d'activité</h1>
+            <p className="text-sm text-muted-foreground mt-1">Journal d'audit de la plateforme — {totalCount} entrée{totalCount > 1 ? "s" : ""}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+            <Download className="h-4 w-4 mr-1" />
+            {exporting ? "Export…" : "Exporter CSV"}
+          </Button>
         </div>
 
         {/* Filters */}
@@ -117,8 +138,8 @@ export default function AdminLogs() {
                   <TableCell className="py-2.5 text-xs text-muted-foreground tabular-nums">
                     {format(new Date(log.created_at), "dd/MM/yy HH:mm", { locale: fr })}
                   </TableCell>
-                  <TableCell className="py-2.5 text-sm text-muted-foreground font-mono text-xs">
-                    {log.user_id?.slice(0, 8)}…
+                  <TableCell className="py-2.5 text-sm text-foreground">
+                    {profileMap[log.user_id] ?? log.user_id?.slice(0, 8) + "…"}
                   </TableCell>
                   <TableCell className="py-2.5">
                     <Badge variant={ACTION_COLORS[log.action] ?? "secondary"} className="text-[10px]">{log.action}</Badge>

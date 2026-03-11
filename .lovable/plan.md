@@ -127,10 +127,14 @@ Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `cu
 - ✅ Détail metadata : dialog avec JSON formaté
 - ✅ Styles cohérents avec le design system existant
 
-## Sprint 6 — À FAIRE
+## Sprint 6 — COMPLÉTÉ ✅
 
-### Améliorations UX & fonctionnalités avancées
-- Enrichissement logs avec display_name (nécessite FK ou vue)
-- Export CSV des logs
-- Dashboard billing avec graphiques de consommation
-- Gestion des crédits par organisation
+### Enrichissement logs
+- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
+- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
+- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
+
+### Dashboard billing avancé
+- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
+- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
+- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`

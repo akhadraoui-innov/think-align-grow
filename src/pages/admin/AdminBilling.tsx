@@ -17,9 +17,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { Plus, Pencil, Trash2, CreditCard, Building2, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 const QUOTA_KEYS = [
   { key: "max_workshops_per_month", label: "Workshops / mois" },
@@ -42,6 +46,8 @@ export default function AdminBilling() {
     plans, plansLoading, createPlan, updatePlan, deletePlan,
     subscriptions, subscriptionsLoading, createSubscription, updateSubscription,
     creditStats, creditStatsLoading, orgs,
+    monthlyCredits, monthlyCreditsLoading,
+    orgCredits, orgCreditsLoading,
   } = useAdminBilling();
 
   // Plan dialog
@@ -189,10 +195,38 @@ export default function AdminBilling() {
           ))}
         </div>
 
+        {/* Monthly Credits Chart */}
+        <div className="rounded-xl border border-border/50 bg-card p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">Consommation de crédits (6 derniers mois)</h2>
+          {monthlyCreditsLoading ? (
+            <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">Chargement…</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={monthlyCredits} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: 12,
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="earned" name="Distribués" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="spent" name="Dépensés" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} opacity={0.7} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
         <Tabs defaultValue="plans" className="space-y-4">
           <TabsList>
             <TabsTrigger value="plans">Plans d'abonnement</TabsTrigger>
             <TabsTrigger value="subscriptions">Abonnements actifs</TabsTrigger>
+            <TabsTrigger value="org-credits">Crédits par organisation</TabsTrigger>
           </TabsList>
 
           <TabsContent value="plans">
@@ -213,6 +247,35 @@ export default function AdminBilling() {
               searchPlaceholder="Rechercher..."
               actions={<Button size="sm" onClick={() => openSubDialog()}><Plus className="h-4 w-4 mr-1" />Nouvel abonnement</Button>}
             />
+          </TabsContent>
+
+          <TabsContent value="org-credits">
+            <div className="rounded-xl border border-border/40 overflow-hidden shadow-sm">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40 border-b border-border/40">
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/80">Organisation</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/80 text-right">Distribués</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/80 text-right">Dépensés</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/80 text-right">Solde</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orgCreditsLoading ? (
+                    <TableRow><TableCell colSpan={4} className="text-center py-12 text-sm text-muted-foreground">Chargement…</TableCell></TableRow>
+                  ) : orgCredits.length === 0 ? (
+                    <TableRow><TableCell colSpan={4} className="text-center py-12 text-sm text-muted-foreground">Aucune donnée</TableCell></TableRow>
+                  ) : orgCredits.map((o) => (
+                    <TableRow key={o.id} className="border-b border-border/20 hover:bg-muted/20">
+                      <TableCell className="py-2.5 text-sm font-medium text-foreground">{o.name}</TableCell>
+                      <TableCell className="py-2.5 text-sm text-emerald-500 tabular-nums text-right">{o.earned.toLocaleString()}</TableCell>
+                      <TableCell className="py-2.5 text-sm text-orange-500 tabular-nums text-right">{o.spent.toLocaleString()}</TableCell>
+                      <TableCell className="py-2.5 text-sm font-semibold text-foreground tabular-nums text-right">{o.balance.toLocaleString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
