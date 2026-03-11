@@ -1,114 +1,88 @@
-# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
-## Vision produit
 
-Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
+## Sprint 4.1 : Enrichissement Toolkit, Piliers & Cartes
 
-### L'organisation comme entité centrale
+### Constat actuel
+- **ToolkitInfoTab** : seulement nom, slug, emoji, description, statut -- tres basique
+- **Piliers** : liste plate non editable (seulement ajout/suppression)
+- **Cartes** : tableau lecture seule, aucun clic pour editer
 
-L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
+### 1. Migration DB -- Nouveaux champs
 
-- **Identité & branding** : nom, slug, logo, couleur primaire
-- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
-- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
-- **Coordonnées** : email, téléphone, site web
-- **Adresses** : multi-adresses (siège, sites, bureaux)
-- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
-- **Notes internes** : champ libre pour l'équipe SaaS
-- **Membres** avec rôles (Owner, Admin, Member, Guest…)
-- **Équipes** internes
-- **Toolkits** assignés et activés
-- **Abonnement** avec plan et quotas
-- **Workshops** réalisés
-- **Journal d'activité** (audit trail)
+**Table `toolkits`** (13 nouvelles colonnes) :
+- `target_audience` text -- a qui ca s'adresse
+- `benefits` text -- ca apporte quoi  
+- `usage_mode` text -- mode d'utilisation
+- `content_description` text -- description du contenu
+- `credit_cost_workshop` integer default 0 -- cout en credits par workshop
+- `credit_cost_challenge` integer default 0 -- cout en credits par challenge
+- `price_info` jsonb default '{}' -- tarification (grille libre)
+- `terms` text -- conditions d'utilisation
+- `nomenclature` text -- nomenclature / classification
+- `tags` jsonb default '[]' -- tags/mots-cles
+- `difficulty_level` text -- niveau de difficulte
+- `estimated_duration` text -- duree estimee
+- `version` text default '1.0' -- version du toolkit
 
-### Organisation plateforme : Growthinnov
+**Table `pillars`** (5 nouvelles colonnes) :
+- `subtitle` text
+- `target_audience` text
+- `learning_outcomes` jsonb default '[]'
+- `weight` integer default 1 -- ponderation/valorisation
+- `status` text default 'active'
 
-**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
-1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
-2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
+**Table `cards`** (6 nouvelles colonnes) :
+- `qualification` text -- niveau de qualification
+- `valorization` integer default 0 -- points de valorisation
+- `difficulty` text -- facile/moyen/avance/expert
+- `duration_minutes` integer -- temps estime
+- `tags` jsonb default '[]'
+- `status` text default 'active'
 
-Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
+### 2. ToolkitInfoTab -- 4 sections
 
-Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
+**Section 1 : Identite** (existant enrichi)
+- Nom, Slug, Emoji, Statut, Version, Niveau de difficulte, Duree estimee, Tags
 
-## Sprint 1 — COMPLÉTÉ ✅
+**Section 2 : Description & Contenu**
+- Description generale (textarea)
+- A qui ca s'adresse (textarea)
+- Ca apporte quoi / Benefices (textarea)
+- Mode d'utilisation (textarea)
+- Description du contenu (textarea)
 
-### Migration SQL
-- ✅ Enum `app_role` étendu : +9 valeurs
-- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
+**Section 3 : Credits, Tarifs & Conditions**
+- Cout credits workshop, Cout credits challenge
+- Tarification (champs structures JSON)
+- Conditions d'utilisation (textarea)
+- Nomenclature (textarea)
 
-### Frontend Admin
-- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
-- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
+**Section 4 : Metadonnees** (existant)
 
-## Sprint 2 — COMPLÉTÉ ✅
+### 3. Piliers -- Expandable avec edition inline
 
-### Dashboard avec données réelles
-- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
-- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
+Chaque ligne du tableau de piliers devient cliquable (Collapsible). Au clic, un panneau s'ouvre avec :
+- Nom, Slug, Description, Sous-titre, Couleur, Icone, Ordre
+- Public cible, Acquis pedagogiques (tags), Ponderation, Statut
+- Bouton Enregistrer par pilier
 
-### Composant DataTable réutilisable
-- ✅ Recherche, tri par colonne, pagination, row click, slot actions
+### 4. Cartes -- Dialog d'edition complet
 
-### CRUD Organisations
-- ✅ useOrganizations + useOrganizationDetail hooks
-- ✅ Liste avec DataTable, recherche, tri, création via dialog
-- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
-- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
-- ✅ Route /admin/organizations/:id
-- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
+Chaque ligne de carte dans le tableau devient cliquable. Au clic, un `Dialog` s'ouvre avec tous les champs :
+- Titre, Sous-titre, Phase, Step name, Icone, Ordre
+- Objectif, KPI, Action, Definition
+- Qualification, Valorisation (points), Difficulte, Duree
+- Tags, Statut
+- Bouton Enregistrer + Supprimer
 
-## Sprint 3 — COMPLÉTÉ ✅
+### Fichiers a creer/modifier
 
-### Gestion des utilisateurs (AdminUsers)
-- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
-- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
-- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
-- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
-- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
-- ✅ UserCreditsTab : solde, lifetime, historique des transactions
-- ✅ UserWorkshopsTab : workshops hébergés et participations
-- ✅ UserChallengesTab : performances quiz et challenges
-- ✅ UserCardsTab : suivi des vues et favoris
-- ✅ UserActivityTab : journal d'audit utilisateur
+| Action | Fichier |
+|--------|---------|
+| Migration | `supabase/migrations/xxx_enrich_toolkit_pillars_cards.sql` |
+| Rewrite | `src/components/admin/ToolkitInfoTab.tsx` |
+| Rewrite | `src/components/admin/ToolkitPillarsTab.tsx` |
+| Rewrite | `src/components/admin/ToolkitCardsTab.tsx` |
 
-### Hook usePermissions
-- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
+Pas de nouveau fichier de page ni de route. Les composants existants sont enrichis en place.
 
-### Hook useAdminUserDetail
-- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
-
-### Migration SQL Sprint 3
-- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
-
-## Sprint 4 — COMPLÉTÉ ✅
-
-### Gestion des Toolkits
-- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
-- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
-- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
-- ✅ Fiche AdminToolkitDetail avec 7 onglets :
-  - Infos : nom, slug, emoji, description, statut, métadonnées
-  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
-  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
-  - Challenges : templates avec sujets et slots imbriqués
-  - Game Plans : plans avec étapes ordonnées
-  - Quiz : questions par pilier avec compteur d'options
-  - Organisations : ajout/retrait d'accès toolkit pour les orgs
-- ✅ Route /admin/toolkits/:id
-
-### Gestion des Workshops (vue admin)
-- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
-- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
-
-## Sprint 5 — À FAIRE
-
-### Facturation & abonnements
-- Gestion des plans d'abonnement (CRUD)
-- Attribution de plans aux organisations
-- Suivi de consommation (crédits, quotas)
-
-### Logs & audit
-- Page AdminLogs : historique complet des actions, filtres par type/utilisateur/organisation, export
-- Recherche avancée dans les logs
