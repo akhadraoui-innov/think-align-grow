@@ -86,7 +86,7 @@ export function GameCard({
             <div className="flex items-center justify-between mb-1">
               <span
                 className="text-[8px] font-black uppercase tracking-[0.15em] truncate"
-                style={{ color: `hsl(var(--pillar-${gradient}))` }}
+                style={{ color: pillarColor }}
               >
                 {pillar?.name || "Pilier"}
               </span>
