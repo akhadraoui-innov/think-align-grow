@@ -110,13 +110,27 @@ Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `cu
 - ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
 - ✅ Aucune migration DB nécessaire
 
-## Sprint 5 — À FAIRE
+## Sprint 5 — COMPLÉTÉ ✅
 
-### Facturation & abonnements
-- Gestion des plans d'abonnement (CRUD)
-- Attribution de plans aux organisations
-- Suivi de consommation (crédits, quotas)
+### Facturation & Abonnements (AdminBilling)
+- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
+- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
+- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
+- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
+- ✅ Suppression plan avec confirmation AlertDialog
+- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
 
-### Logs & audit
-- Page AdminLogs : historique complet des actions, filtres par type/utilisateur/organisation, export
-- Recherche avancée dans les logs
+### Logs d'audit (AdminLogs)
+- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
+- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
+- ✅ Pagination server-side (25/page) avec compteur total
+- ✅ Détail metadata : dialog avec JSON formaté
+- ✅ Styles cohérents avec le design system existant
+
+## Sprint 6 — À FAIRE
+
+### Améliorations UX & fonctionnalités avancées
+- Enrichissement logs avec display_name (nécessite FK ou vue)
+- Export CSV des logs
+- Dashboard billing avec graphiques de consommation
+- Gestion des crédits par organisation

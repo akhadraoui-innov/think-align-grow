@@ -117,8 +117,8 @@ export default function AdminLogs() {
                   <TableCell className="py-2.5 text-xs text-muted-foreground tabular-nums">
                     {format(new Date(log.created_at), "dd/MM/yy HH:mm", { locale: fr })}
                   </TableCell>
-                  <TableCell className="py-2.5 text-sm">
-                    {(log as any).profiles?.display_name ?? log.user_id?.slice(0, 8)}
+                  <TableCell className="py-2.5 text-sm text-muted-foreground font-mono text-xs">
+                    {log.user_id?.slice(0, 8)}…
                   </TableCell>
                   <TableCell className="py-2.5">
                     <Badge variant={ACTION_COLORS[log.action] ?? "secondary"} className="text-[10px]">{log.action}</Badge>
