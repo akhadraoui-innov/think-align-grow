@@ -236,6 +236,12 @@ export function WorkshopToolbar({
 
       {/* Right */}
       <div className="flex items-center gap-3">
+        {/* Challenge toggle button */}
+        {hasChallenge && (
+          <Button variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs" onClick={onOpenChallenge}>
+            <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />Challenge
+          </Button>
+        )}
         {/* Edit mode controls for completed workshops */}
         {workshopStatus === "completed" && (
           readOnly ? (
