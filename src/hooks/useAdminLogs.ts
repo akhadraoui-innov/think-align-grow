@@ -29,7 +29,7 @@ export function useAdminLogs() {
     queryFn: async () => {
       let query = supabase
         .from("activity_logs")
-        .select("*, profiles!activity_logs_user_id_fkey(display_name), organizations(name)", { count: "exact" })
+        .select("*, organizations(name)", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
