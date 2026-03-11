@@ -142,7 +142,7 @@ export function GameCard({
         >
           <div
             className="h-1 shrink-0"
-            style={{ background: `hsl(var(--pillar-${gradient}))` }}
+            style={{ background: pillarColor }}
           />
           <div className="flex-1 px-3 py-3 flex flex-col gap-3 overflow-auto">
             <div>
