@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.ai-deliverables]
 verify_jwt = false
+
+[functions.ai-coach]
+verify_jwt = false
+
+[functions.analyze-challenge]
+verify_jwt = false

@@ -6,18 +6,65 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function resolveAIConfig(organizationId?: string) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const sb = createClient(supabaseUrl, serviceRoleKey);
+
+  if (organizationId) {
+    const { data: orgConfig } = await sb
+      .from("ai_configurations")
+      .select("*, ai_providers(*)")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (orgConfig) return orgConfig;
+  }
+
+  const { data: globalConfig } = await sb
+    .from("ai_configurations")
+    .select("*, ai_providers(*)")
+    .is("organization_id", null)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (globalConfig) return globalConfig;
+
+  return null;
+}
+
+function buildFetchParams(config: any, model: string, maxTokens: number) {
+  const provider = config?.ai_providers;
+  const baseUrl = provider?.base_url || "https://ai.gateway.lovable.dev/v1";
+  const apiKey = config?.api_key || Deno.env.get("LOVABLE_API_KEY")!;
+  const authPrefix = provider?.auth_header_prefix || "Bearer";
+  const finalModel = config?.model_structured || model;
+  const finalMaxTokens = config?.max_tokens || maxTokens;
+
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+  if (authPrefix === "x-api-key") {
+    headers["x-api-key"] = apiKey;
+    headers["anthropic-version"] = "2023-06-01";
+  } else {
+    headers["Authorization"] = `${authPrefix} ${apiKey}`;
+  }
+
+  return { url: `${baseUrl}/chat/completions`, headers, model: finalModel, maxTokens: finalMaxTokens };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { workshop_id, template_id } = await req.json();
+    const { workshop_id, template_id, organization_id } = await req.json();
     if (!workshop_id || !template_id) throw new Error("Missing workshop_id or template_id");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
-
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Resolve AI config (org → global → fallback)
+    const config = await resolveAIConfig(organization_id);
 
     // Fetch template
     const { data: template } = await supabase
@@ -70,6 +117,9 @@ serve(async (req) => {
       return `### ${subj.title}\nType: ${subj.type}\nDescription: ${subj.description || "N/A"}\n${slotDetails}`;
     }).join("\n\n");
 
+    const defaultSystemPrompt = "Tu es un expert en diagnostic stratégique d'entreprise. Réponds en français.";
+    const systemPrompt = (config?.prompts as any)?.analyze_challenge || defaultSystemPrompt;
+
     const prompt = `Tu es un consultant en stratégie d'entreprise. Analyse les réponses d'un atelier de diagnostic stratégique.
 
 Template: "${template?.name}"
@@ -81,17 +131,17 @@ ${subjectDetails}
 
 Analyse chaque sujet en évaluant la maturité (1=débutant à 5=expert), interprète les choix de cartes, et propose des réflexions constructives. Calcule aussi un score global.`;
 
-    // Call AI with tool calling
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Call AI with tool calling using resolved config
+    const { url, headers, model, maxTokens } = buildFetchParams(config, "google/gemini-2.5-pro", 2000);
+
+    const aiResponse = await fetch(url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableKey}`,
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model,
+        max_tokens: maxTokens,
         messages: [
-          { role: "system", content: "Tu es un expert en diagnostic stratégique d'entreprise. Réponds en français." },
+          { role: "system", content: systemPrompt },
           { role: "user", content: prompt },
         ],
         tools: [

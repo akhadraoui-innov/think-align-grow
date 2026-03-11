@@ -157,7 +157,7 @@ export default function Explore() {
             <p className="text-xs text-muted-foreground mb-2">{filteredCards.length} résultats</p>
             {filteredCards.map((card, i) => (
               <motion.div key={card.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                <FlipCard card={card} pillarSlug={getPillarSlug(card.pillar_id)} />
+                <FlipCard card={card} pillarSlug={getPillarSlug(card.pillar_id)} pillarColor={pillarMap[card.pillar_id]?.color} />
               </motion.div>
             ))}
           </div>
