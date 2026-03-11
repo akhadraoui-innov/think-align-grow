@@ -10,6 +10,7 @@ import { ReflectionTool } from "@/components/ai/ReflectionTool";
 import { DeliverablesTool } from "@/components/ai/DeliverablesTool";
 import { useCredits } from "@/hooks/useCredits";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveOrg } from "@/contexts/OrgContext";
 import { toast } from "sonner";
 
 const aiTools = [
@@ -22,6 +23,7 @@ export default function AI() {
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const { balance, isLoading: creditsLoading, hasCredits } = useCredits();
   const { user } = useAuth();
+  const { activeOrgId } = useActiveOrg();
 
   const handleToolLaunch = (toolId: string, credits: number) => {
     if (!user) {
@@ -60,7 +62,7 @@ export default function AI() {
             </div>
           </div>
           <div className="flex-1 overflow-hidden pb-20">
-            <ChatInterface creditCost={1} />
+            <ChatInterface creditCost={1} organizationId={activeOrgId} />
           </div>
         </div>
       </PageTransition>
@@ -68,11 +70,11 @@ export default function AI() {
   }
 
   if (activeTool === "reflection") {
-    return <ReflectionTool onBack={() => setActiveTool(null)} creditCost={2} />;
+    return <ReflectionTool onBack={() => setActiveTool(null)} creditCost={2} organizationId={activeOrgId} />;
   }
 
   if (activeTool === "livrables") {
-    return <DeliverablesTool onBack={() => setActiveTool(null)} creditCost={5} />;
+    return <DeliverablesTool onBack={() => setActiveTool(null)} creditCost={5} organizationId={activeOrgId} />;
   }
 
   return (

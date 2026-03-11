@@ -13,9 +13,10 @@ interface Message {
 
 interface ChatInterfaceProps {
   creditCost?: number;
+  organizationId?: string | null;
 }
 
-export function ChatInterface({ creditCost = 1 }: ChatInterfaceProps) {
+export function ChatInterface({ creditCost = 1, organizationId }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     { id: "welcome", role: "ai", text: "Bienvenue ! Je suis votre coach stratégique IA. Décrivez-moi votre projet ou posez-moi une question sur la stratégie business. 🚀" },
   ]);
@@ -56,6 +57,7 @@ export function ChatInterface({ creditCost = 1 }: ChatInterfaceProps) {
             content: m.text,
           })),
           userMessage: userText,
+          organization_id: organizationId || undefined,
         },
       });
 

@@ -19,9 +19,10 @@ const DELIVERABLE_TYPES = [
 interface DeliverablesToolProps {
   onBack: () => void;
   creditCost: number;
+  organizationId?: string | null;
 }
 
-export function DeliverablesTool({ onBack, creditCost }: DeliverablesToolProps) {
+export function DeliverablesTool({ onBack, creditCost, organizationId }: DeliverablesToolProps) {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,7 +41,7 @@ export function DeliverablesTool({ onBack, creditCost }: DeliverablesToolProps) 
     try {
       await spendCredits.mutateAsync({ amount: creditCost, description: `Livrable – ${selectedType}` });
       const { data, error } = await supabase.functions.invoke("ai-deliverables", {
-        body: { type: selectedType, description },
+        body: { type: selectedType, description, organization_id: organizationId || undefined },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

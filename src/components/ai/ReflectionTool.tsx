@@ -20,9 +20,10 @@ interface ReflectionPlan {
 interface ReflectionToolProps {
   onBack: () => void;
   creditCost: number;
+  organizationId?: string | null;
 }
 
-export function ReflectionTool({ onBack, creditCost }: ReflectionToolProps) {
+export function ReflectionTool({ onBack, creditCost, organizationId }: ReflectionToolProps) {
   const [step, setStep] = useState(0);
   const [context, setContext] = useState("");
   const [problem, setProblem] = useState("");
@@ -47,7 +48,7 @@ export function ReflectionTool({ onBack, creditCost }: ReflectionToolProps) {
     try {
       await spendCredits.mutateAsync({ amount: creditCost, description: "Générateur de Réflexion" });
       const { data, error } = await supabase.functions.invoke("ai-reflection", {
-        body: { context, problem, objectives },
+        body: { context, problem, objectives, organization_id: organizationId || undefined },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

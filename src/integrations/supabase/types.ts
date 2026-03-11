@@ -55,6 +55,96 @@ export type Database = {
           },
         ]
       }
+      ai_configurations: {
+        Row: {
+          api_key: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          max_tokens: number
+          model_chat: string
+          model_structured: string
+          organization_id: string | null
+          prompts: Json
+          provider_id: string
+          temperature: number
+          updated_at: string
+        }
+        Insert: {
+          api_key?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_tokens?: number
+          model_chat?: string
+          model_structured?: string
+          organization_id?: string | null
+          prompts?: Json
+          provider_id: string
+          temperature?: number
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_tokens?: number
+          model_chat?: string
+          model_structured?: string
+          organization_id?: string | null
+          prompts?: Json
+          provider_id?: string
+          temperature?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_configurations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_configurations_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_providers: {
+        Row: {
+          auth_header_prefix: string
+          base_url: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          auth_header_prefix?: string
+          base_url: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          auth_header_prefix?: string
+          base_url?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       cards: {
         Row: {
           action: string | null
