@@ -35,14 +35,7 @@ interface AIConfig {
   is_active: boolean;
 }
 
-const PROMPT_KEYS = [
-  { key: "coach", label: "Coach IA" },
-  { key: "reflection", label: "Réflexion stratégique" },
-  { key: "deliverables_swot", label: "Livrable — SWOT" },
-  { key: "deliverables_bmc", label: "Livrable — BMC" },
-  { key: "deliverables_pitch_deck", label: "Livrable — Pitch Deck" },
-  { key: "deliverables_action_plan", label: "Livrable — Plan d'action" },
-];
+const PROMPT_KEYS = Object.entries(DEFAULT_PROMPTS).map(([key, { label }]) => ({ key, label }));
 
 export default function AdminSettings() {
   const [providers, setProviders] = useState<Provider[]>([]);
