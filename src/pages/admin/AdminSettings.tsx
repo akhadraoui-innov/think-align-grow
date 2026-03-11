@@ -8,9 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Bot, Server, Info } from "lucide-react";
+import { Loader2, Save, Bot, Server, Info, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { DEFAULT_PROMPTS } from "@/constants/defaultPrompts";
 
 interface Provider {
   id: string;
@@ -33,14 +35,7 @@ interface AIConfig {
   is_active: boolean;
 }
 
-const PROMPT_KEYS = [
-  { key: "coach", label: "Coach IA" },
-  { key: "reflection", label: "Réflexion stratégique" },
-  { key: "deliverables_swot", label: "Livrable — SWOT" },
-  { key: "deliverables_bmc", label: "Livrable — BMC" },
-  { key: "deliverables_pitch_deck", label: "Livrable — Pitch Deck" },
-  { key: "deliverables_action_plan", label: "Livrable — Plan d'action" },
-];
+const PROMPT_KEYS = Object.entries(DEFAULT_PROMPTS).map(([key, { label }]) => ({ key, label }));
 
 export default function AdminSettings() {
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -151,6 +146,9 @@ export default function AdminSettings() {
             <TabsTrigger value="providers" className="gap-1.5 text-xs">
               <Server className="h-3.5 w-3.5" /> Fournisseurs
             </TabsTrigger>
+            <TabsTrigger value="default-prompts" className="gap-1.5 text-xs">
+              <FileText className="h-3.5 w-3.5" /> Prompts par défaut
+            </TabsTrigger>
           </TabsList>
 
           {/* AI Config */}
@@ -259,6 +257,34 @@ export default function AdminSettings() {
                         {p.is_active ? "Actif" : "Inactif"}
                       </span>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Default Prompts */}
+          <TabsContent value="default-prompts">
+            <div className="space-y-6">
+              <div className="rounded-xl border border-border/50 bg-secondary/30 p-4 flex items-start gap-3">
+                <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  Ces prompts sont utilisés par défaut lorsqu'aucune surcharge n'est configurée (ni globale, ni par organisation). Ils sont codés dans les fonctions backend et ne sont pas modifiables ici — utilisez l'onglet <strong>Configuration IA</strong> pour les surcharger.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {Object.entries(DEFAULT_PROMPTS).map(([key, { label, prompt }]) => (
+                  <div key={key} className="rounded-xl border border-border/50 bg-card p-5 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold">{label}</h3>
+                      <Badge variant="secondary" className="text-[10px]">Par défaut</Badge>
+                    </div>
+                    <Textarea
+                      value={prompt}
+                      readOnly
+                      className="min-h-[100px] text-xs bg-muted/50 cursor-default resize-none"
+                    />
                   </div>
                 ))}
               </div>

@@ -7,8 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Info, Trash2 } from "lucide-react";
+import { Loader2, Save, Info, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { DEFAULT_PROMPTS } from "@/constants/defaultPrompts";
 
 interface OrgAIConfigTabProps {
   organizationId: string;
@@ -21,14 +23,7 @@ interface Provider {
   is_active: boolean;
 }
 
-const PROMPT_KEYS = [
-  { key: "coach", label: "Coach IA" },
-  { key: "reflection", label: "Réflexion stratégique" },
-  { key: "deliverables_swot", label: "Livrable — SWOT" },
-  { key: "deliverables_bmc", label: "Livrable — BMC" },
-  { key: "deliverables_pitch_deck", label: "Livrable — Pitch Deck" },
-  { key: "deliverables_action_plan", label: "Livrable — Plan d'action" },
-];
+const PROMPT_KEYS = Object.entries(DEFAULT_PROMPTS).map(([key, { label }]) => ({ key, label }));
 
 export function OrgAIConfigTab({ organizationId }: OrgAIConfigTabProps) {
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -210,6 +205,22 @@ export function OrgAIConfigTab({ organizationId }: OrgAIConfigTabProps) {
                   placeholder="Laisser vide pour le prompt par défaut"
                   className="min-h-[80px] text-xs"
                 />
+                {DEFAULT_PROMPTS[key] && (
+                  <Collapsible>
+                    <CollapsibleTrigger className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors group">
+                      <ChevronRight className="h-3 w-3 group-data-[state=open]:hidden" />
+                      <ChevronDown className="h-3 w-3 hidden group-data-[state=open]:block" />
+                      Voir le prompt par défaut
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <Textarea
+                        value={DEFAULT_PROMPTS[key].prompt}
+                        readOnly
+                        className="mt-1.5 min-h-[60px] text-[11px] bg-muted/50 cursor-default resize-none"
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
               </div>
             ))}
           </div>
