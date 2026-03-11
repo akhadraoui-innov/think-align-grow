@@ -153,6 +153,9 @@ export default function AdminSettings() {
             <TabsTrigger value="providers" className="gap-1.5 text-xs">
               <Server className="h-3.5 w-3.5" /> Fournisseurs
             </TabsTrigger>
+            <TabsTrigger value="default-prompts" className="gap-1.5 text-xs">
+              <FileText className="h-3.5 w-3.5" /> Prompts par défaut
+            </TabsTrigger>
           </TabsList>
 
           {/* AI Config */}
