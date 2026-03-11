@@ -25,6 +25,7 @@ import AdminToolkits from "./pages/admin/AdminToolkits";
 import AdminToolkitDetail from "./pages/admin/AdminToolkitDetail";
 import AdminWorkshops from "./pages/admin/AdminWorkshops";
 import AdminDesignInnovation from "./pages/admin/AdminDesignInnovation";
+import AdminChallengeDetail from "./pages/admin/AdminChallengeDetail";
 import AdminBilling from "./pages/admin/AdminBilling";
 import AdminLogs from "./pages/admin/AdminLogs";
 import AdminSettings from "./pages/admin/AdminSettings";
@@ -59,6 +60,7 @@ function AnimatedRoutes() {
           <Route path="/admin/toolkits/:id" element={<AdminToolkitDetail />} />
           <Route path="/admin/workshops" element={<AdminWorkshops />} />
           <Route path="/admin/design-innovation" element={<AdminDesignInnovation />} />
+          <Route path="/admin/design-innovation/:id" element={<AdminChallengeDetail />} />
           <Route path="/admin/billing" element={<AdminBilling />} />
           <Route path="/admin/logs" element={<AdminLogs />} />
           <Route path="/admin/settings" element={<AdminSettings />} />

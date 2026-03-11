@@ -1,83 +1,188 @@
+# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
+## Vision produit
 
-## Implémenter la page Admin "Design Innovation"
+Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
 
-La page `/admin/design-innovation` est actuellement un placeholder. Elle doit devenir une interface complète de gestion des challenge templates, calquée sur le modèle de `/admin/toolkits` (liste + fiche détail).
+### L'organisation comme entité centrale
 
-### Architecture
+L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
 
-```text
-/admin/design-innovation          → Liste de tous les challenge_templates (DataTable)
-/admin/design-innovation/:id      → Fiche détail d'un template (Tabs)
-```
+- **Identité & branding** : nom, slug, logo, couleur primaire
+- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
+- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
+- **Coordonnées** : email, téléphone, site web
+- **Adresses** : multi-adresses (siège, sites, bureaux)
+- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
+- **Notes internes** : champ libre pour l'équipe SaaS
+- **Membres** avec rôles (Owner, Admin, Member, Guest…)
+- **Équipes** internes
+- **Toolkits** assignés et activés
+- **Abonnement** avec plan et quotas
+- **Workshops** réalisés
+- **Journal d'activité** (audit trail)
 
-### Page liste — `AdminDesignInnovation.tsx`
+### Organisation plateforme : Growthinnov
 
-Refonte complète. Hook `useAdminChallenges` pour charger :
-- `challenge_templates` avec jointure `toolkits(name, icon_emoji)` et `challenge_subjects(id)`
-- Compteurs : sujets par template, slots par template, sessions (workshops ayant des `challenge_responses` liées)
+**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
+1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
+2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
 
-Colonnes DataTable :
-| Colonne | Source |
-|---------|--------|
-| Nom + description | `name`, `description` |
-| Toolkit | `toolkits.icon_emoji + toolkits.name` |
-| Difficulté | `difficulty` badge |
-| Sujets | count `challenge_subjects` |
-| Sessions | count workshops liés via `challenge_analyses` |
-| Créé le | `created_at` |
+Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
 
-Bouton "Nouveau template" via Dialog (nom, toolkit select, difficulté, description).
+Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
 
-Clic sur une ligne → `/admin/design-innovation/:id`.
+## Sprint 1 — COMPLÉTÉ ✅
 
-### Page détail — `AdminChallengeDetail.tsx`
+### Migration SQL
+- ✅ Enum `app_role` étendu : +9 valeurs
+- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
 
-Nouveau fichier. Structure en onglets comme `AdminToolkitDetail` :
+### Frontend Admin
+- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
+- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
 
-| Onglet | Contenu |
-|--------|---------|
-| **Infos** | Édition nom, description, difficulté, toolkit, pilier |
-| **Sujets & Slots** | Arbre hiérarchique : sujets → slots avec CRUD inline (ajouter/modifier/supprimer sujet, ajouter/modifier/supprimer slot) |
-| **Sessions** | Liste des workshops qui ont utilisé ce template, avec statut, date, nombre de réponses, lien vers analyse |
-| **Analyses** | Historique des `challenge_analyses` liées, avec maturité globale et résumé |
+## Sprint 2 — COMPLÉTÉ ✅
 
-### Hook — `useAdminChallenges.ts`
+### Dashboard avec données réelles
+- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
+- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
 
-Nouveau fichier :
-- `useAdminChallenges()` : liste tous les templates + compteurs
-- `useAdminChallengeDetail(id)` : template, sujets+slots, analyses, sessions (workshops via challenge_analyses)
-- Mutations : create/update/delete template, create/update/delete subject, create/update/delete slot
+### Composant DataTable réutilisable
+- ✅ Recherche, tri par colonne, pagination, row click, slot actions
 
-### Composants onglets
+### CRUD Organisations
+- ✅ useOrganizations + useOrganizationDetail hooks
+- ✅ Liste avec DataTable, recherche, tri, création via dialog
+- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
+- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
+- ✅ Route /admin/organizations/:id
+- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
 
-| Fichier | Rôle |
-|---------|------|
-| `ChallengeInfoTab.tsx` | Formulaire édition template |
-| `ChallengeSubjectsTab.tsx` | Gestion sujets + slots en arbre (réutilise le pattern de `ToolkitPillarsTab`) |
-| `ChallengeSessionsTab.tsx` | DataTable des workshops liés |
-| `ChallengeAnalysesTab.tsx` | Historique analyses avec preview maturité |
+## Sprint 3 — COMPLÉTÉ ✅
 
-### Routing
+### Gestion des utilisateurs (AdminUsers)
+- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
+- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
+- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
+- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
+- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
+- ✅ UserCreditsTab : solde, lifetime, historique des transactions
+- ✅ UserWorkshopsTab : workshops hébergés et participations
+- ✅ UserChallengesTab : performances quiz et challenges
+- ✅ UserCardsTab : suivi des vues et favoris
+- ✅ UserActivityTab : journal d'audit utilisateur
 
-Ajouter dans `App.tsx` :
-```
-/admin/design-innovation/:id → AdminChallengeDetail
-```
+### Hook usePermissions
+- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
 
-Mettre à jour `AdminShell.tsx` breadcrumb map pour inclure le pattern dynamique.
+### Hook useAdminUserDetail
+- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
 
-### Fichiers modifiés/créés
+### Migration SQL Sprint 3
+- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
 
-| Fichier | Action |
-|---------|--------|
-| `src/hooks/useAdminChallenges.ts` | Créer — hook complet (list, detail, mutations) |
-| `src/pages/admin/AdminDesignInnovation.tsx` | Refonte — liste DataTable |
-| `src/pages/admin/AdminChallengeDetail.tsx` | Créer — fiche détail avec 4 onglets |
-| `src/components/admin/ChallengeInfoTab.tsx` | Créer |
-| `src/components/admin/ChallengeSubjectsTab.tsx` | Créer |
-| `src/components/admin/ChallengeSessionsTab.tsx` | Créer |
-| `src/components/admin/ChallengeAnalysesTab.tsx` | Créer |
-| `src/App.tsx` | Ajouter route detail |
-| `src/components/admin/AdminShell.tsx` | Ajouter breadcrumb |
+## Sprint 4 — COMPLÉTÉ ✅
 
+### Gestion des Toolkits
+- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
+- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
+- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
+- ✅ Fiche AdminToolkitDetail avec 7 onglets :
+  - Infos : nom, slug, emoji, description, statut, métadonnées
+  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
+  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
+  - Challenges : templates avec sujets et slots imbriqués
+  - Game Plans : plans avec étapes ordonnées
+  - Quiz : questions par pilier avec compteur d'options
+  - Organisations : ajout/retrait d'accès toolkit pour les orgs
+- ✅ Route /admin/toolkits/:id
+
+### Gestion des Workshops (vue admin)
+- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
+- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
+
+## Sprint 4.2 — COMPLÉTÉ ✅
+
+### Nettoyage & dynamisation toolkit
+- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
+- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
+- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
+- ✅ Aucune migration DB nécessaire
+
+## Sprint 5 — COMPLÉTÉ ✅
+
+### Facturation & Abonnements (AdminBilling)
+- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
+- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
+- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
+- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
+- ✅ Suppression plan avec confirmation AlertDialog
+- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
+
+### Logs d'audit (AdminLogs)
+- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
+- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
+- ✅ Pagination server-side (25/page) avec compteur total
+- ✅ Détail metadata : dialog avec JSON formaté
+- ✅ Styles cohérents avec le design system existant
+
+## Sprint 6 — COMPLÉTÉ ✅
+
+### Enrichissement logs
+- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
+- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
+- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
+
+### Dashboard billing avancé
+- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
+- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
+- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
+
+## Sprint 7 — COMPLÉTÉ ✅
+
+### Profil utilisateur authentifié
+- ✅ Page Profile détecte l'état de connexion (guest vs authentifié)
+- ✅ Vue authentifiée : avatar, display_name, job_title, department, email
+- ✅ Stats temps réel : XP, crédits, cartes vues, quiz complétés
+- ✅ Liste des organisations avec rôles
+- ✅ Dialog d'édition profil (display_name, job_title, department)
+- ✅ Bouton déconnexion
+
+### Contexte multi-tenant
+- ✅ `OrgProvider` context avec `useActiveOrg` hook
+- ✅ Composant `OrgSwitcher` dans la sidebar (dropdown si multi-org, badge si mono-org)
+- ✅ Persistance de l'org active dans localStorage
+- ✅ Intégration dans `AppSidebar` footer
+
+### Persistance quiz
+- ✅ `QuizEngine` sauvegarde les scores dans `quiz_results` à la complétion
+- ✅ `Lab.tsx` charge le dernier résultat quiz depuis la DB au montage
+- ✅ Hydratation automatique du RadarChart et des badges depuis les données persistées
+
+### Liaison Workshop → Organisation
+- ✅ `useCreateWorkshop` accepte un `organizationId` optionnel
+- ✅ `Workshop.tsx` passe l'org active du contexte à la création
+
+## Sprint 8 — COMPLÉTÉ ✅
+
+### Activation des crédits côté utilisateur
+- ✅ Fonction DB `spend_credits` atomique (SECURITY DEFINER, row lock, vérification solde)
+- ✅ Hook `useSpendCredits` pour débit sécurisé via RPC
+- ✅ Hook `useCredits` simplifié (lecture seule, invalidation via spend)
+
+### Débit réel sur les actions
+- ✅ **Coach IA** : 1 crédit par message, appel réel à l'IA via edge function `ai-coach` (Gemini 2.5 Flash)
+- ✅ **Création Workshop** : débit de `toolkit.credit_cost_workshop` crédits avant création
+- ✅ **Création Challenge** : débit de `toolkit.credit_cost_challenge` crédits avant lancement
+
+### Enforcement des quotas d'abonnement
+- ✅ Hook `useQuotas` : lecture quotas depuis `subscription_plans.quotas` via `organization_subscriptions`
+- ✅ Vérification `max_workshops` et `max_challenges` vs usage réel
+- ✅ Blocage UI avec messages explicites quand quota atteint
+
+### UX crédits
+- ✅ Page IA : solde réel affiché, outils grisés si crédits insuffisants
+- ✅ Chat IA : alerte inline crédits insuffisants, input désactivé
+- ✅ Workshop/Challenge : coût affiché dans la dialog de création, bouton désactivé si insuffisant
+- ✅ Edge function `ai-coach` déployée avec prompt coach stratégique
