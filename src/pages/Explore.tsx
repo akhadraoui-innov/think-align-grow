@@ -221,7 +221,7 @@ export default function Explore() {
                       onClick={() => setSelectedPillarId(pillar.id)}
                       className="shrink-0 w-32 rounded-3xl bg-card border border-border p-4 text-left hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 active:scale-95 transition-all"
                     >
-                      <GradientIcon icon={Icon} gradient={getPillarGradient(pillar.slug)} size="sm" className="mb-2" />
+                      <GradientIcon icon={Icon} gradient={getPillarGradient(pillar.slug, pillar.color)} size="sm" className="mb-2" />
                       <h3 className="font-display font-bold text-xs text-foreground uppercase tracking-wide">{pillar.name}</h3>
                       <p className="text-[10px] text-muted-foreground mt-0.5">{getCardCount(pillar.id)} cartes</p>
                     </motion.button>
