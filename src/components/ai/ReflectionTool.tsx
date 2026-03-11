@@ -20,9 +20,10 @@ interface ReflectionPlan {
 interface ReflectionToolProps {
   onBack: () => void;
   creditCost: number;
+  organizationId?: string | null;
 }
 
-export function ReflectionTool({ onBack, creditCost }: ReflectionToolProps) {
+export function ReflectionTool({ onBack, creditCost, organizationId }: ReflectionToolProps) {
   const [step, setStep] = useState(0);
   const [context, setContext] = useState("");
   const [problem, setProblem] = useState("");
