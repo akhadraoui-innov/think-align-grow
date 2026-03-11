@@ -4,14 +4,31 @@ import { useOrganizationDetail } from "@/hooks/useOrganizations";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Users, Layers, CreditCard, BarChart3, Settings } from "lucide-react";
+import { ArrowLeft, Loader2, Users, Layers, CreditCard, BarChart3, Settings, UsersRound, Presentation, ScrollText } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { OrgInfoTab } from "@/components/admin/OrgInfoTab";
+import { OrgMembersTab } from "@/components/admin/OrgMembersTab";
+import { OrgTeamsTab } from "@/components/admin/OrgTeamsTab";
+import { OrgToolkitsTab } from "@/components/admin/OrgToolkitsTab";
+import { OrgSubscriptionTab } from "@/components/admin/OrgSubscriptionTab";
+import { OrgWorkshopsTab } from "@/components/admin/OrgWorkshopsTab";
+import { OrgUsageTab } from "@/components/admin/OrgUsageTab";
+import { OrgActivityTab } from "@/components/admin/OrgActivityTab";
 
 export default function AdminOrganizationDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { organization, members, toolkits, isLoading } = useOrganizationDetail(id);
+  const {
+    organization,
+    members,
+    toolkits,
+    teams,
+    subscription,
+    workshops,
+    activityLogs,
+    isLoading,
+  } = useOrganizationDetail(id);
 
   if (isLoading) {
     return (
@@ -51,7 +68,11 @@ export default function AdminOrganizationDetail() {
             </div>
             <div>
               <h1 className="text-xl font-display font-bold text-foreground">{organization.name}</h1>
-              <p className="text-xs text-muted-foreground">{organization.slug} · créée le {format(new Date(organization.created_at), "dd MMM yyyy", { locale: fr })}</p>
+              <p className="text-xs text-muted-foreground">
+                {organization.slug} · créée le {format(new Date(organization.created_at), "dd MMM yyyy", { locale: fr })}
+                {" · "}{members.length} membre{members.length > 1 ? "s" : ""}
+                {" · "}{workshops.length} workshop{workshops.length > 1 ? "s" : ""}
+              </p>
             </div>
           </div>
           <Badge variant="outline" className="ml-auto bg-pillar-finance/10 text-pillar-finance border-pillar-finance/30">
@@ -61,92 +82,68 @@ export default function AdminOrganizationDetail() {
 
         {/* Tabs */}
         <Tabs defaultValue="info" className="space-y-4">
-          <TabsList className="bg-muted/50">
-            <TabsTrigger value="info" className="gap-1.5"><Settings className="h-3.5 w-3.5" /> Infos</TabsTrigger>
-            <TabsTrigger value="members" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Membres ({members.length})</TabsTrigger>
-            <TabsTrigger value="toolkits" className="gap-1.5"><Layers className="h-3.5 w-3.5" /> Toolkits ({toolkits.length})</TabsTrigger>
-            <TabsTrigger value="billing" className="gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Abonnement</TabsTrigger>
-            <TabsTrigger value="usage" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> Usage</TabsTrigger>
+          <TabsList className="bg-muted/50 flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="info" className="gap-1.5 text-xs">
+              <Settings className="h-3.5 w-3.5" /> Infos
+            </TabsTrigger>
+            <TabsTrigger value="members" className="gap-1.5 text-xs">
+              <Users className="h-3.5 w-3.5" /> Membres ({members.length})
+            </TabsTrigger>
+            <TabsTrigger value="teams" className="gap-1.5 text-xs">
+              <UsersRound className="h-3.5 w-3.5" /> Équipes ({teams.length})
+            </TabsTrigger>
+            <TabsTrigger value="toolkits" className="gap-1.5 text-xs">
+              <Layers className="h-3.5 w-3.5" /> Toolkits ({toolkits.length})
+            </TabsTrigger>
+            <TabsTrigger value="subscription" className="gap-1.5 text-xs">
+              <CreditCard className="h-3.5 w-3.5" /> Abonnement
+            </TabsTrigger>
+            <TabsTrigger value="workshops" className="gap-1.5 text-xs">
+              <Presentation className="h-3.5 w-3.5" /> Workshops ({workshops.length})
+            </TabsTrigger>
+            <TabsTrigger value="usage" className="gap-1.5 text-xs">
+              <BarChart3 className="h-3.5 w-3.5" /> Usage
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="gap-1.5 text-xs">
+              <ScrollText className="h-3.5 w-3.5" /> Activité
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="info">
-            <div className="rounded-xl border border-border/50 bg-card p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Nom</p>
-                  <p className="font-medium text-foreground">{organization.name}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Slug</p>
-                  <p className="font-medium text-foreground">{organization.slug}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Couleur</p>
-                  <div className="flex items-center gap-2">
-                    <div className="h-5 w-5 rounded" style={{ backgroundColor: organization.primary_color || "#E8552D" }} />
-                    <span className="text-sm text-foreground">{organization.primary_color}</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Logo</p>
-                  <p className="text-sm text-muted-foreground">{organization.logo_url || "Aucun"}</p>
-                </div>
-              </div>
-            </div>
+            <OrgInfoTab organization={organization} />
           </TabsContent>
 
           <TabsContent value="members">
-            <div className="rounded-xl border border-border/50 bg-card p-6">
-              {members.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucun membre dans cette organisation.</p>
-              ) : (
-                <div className="space-y-3">
-                  {members.map((m) => (
-                    <div key={m.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{m.user_id.slice(0, 8)}...</p>
-                        <p className="text-xs text-muted-foreground">Depuis {format(new Date(m.created_at), "dd MMM yyyy", { locale: fr })}</p>
-                      </div>
-                      <Badge variant="outline" className="text-xs">{m.role}</Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <OrgMembersTab members={members} organizationId={organization.id} />
+          </TabsContent>
+
+          <TabsContent value="teams">
+            <OrgTeamsTab teams={teams} organizationId={organization.id} />
           </TabsContent>
 
           <TabsContent value="toolkits">
-            <div className="rounded-xl border border-border/50 bg-card p-6">
-              {toolkits.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucun toolkit assigné.</p>
-              ) : (
-                <div className="space-y-3">
-                  {toolkits.map((t: any) => (
-                    <div key={t.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{t.toolkits?.name || "Toolkit"}</p>
-                        <p className="text-xs text-muted-foreground">Max {t.max_members ?? "∞"} membres</p>
-                      </div>
-                      <Badge variant={t.is_active ? "default" : "secondary"} className="text-xs">
-                        {t.is_active ? "Actif" : "Inactif"}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <OrgToolkitsTab toolkits={toolkits} organizationId={organization.id} />
           </TabsContent>
 
-          <TabsContent value="billing">
-            <div className="rounded-xl border border-border/50 bg-card p-6">
-              <p className="text-sm text-muted-foreground">Gestion des abonnements — Sprint 9.</p>
-            </div>
+          <TabsContent value="subscription">
+            <OrgSubscriptionTab subscription={subscription} />
+          </TabsContent>
+
+          <TabsContent value="workshops">
+            <OrgWorkshopsTab workshops={workshops} />
           </TabsContent>
 
           <TabsContent value="usage">
-            <div className="rounded-xl border border-border/50 bg-card p-6">
-              <p className="text-sm text-muted-foreground">Statistiques d'usage — Sprint 9.</p>
-            </div>
+            <OrgUsageTab
+              memberCount={members.length}
+              workshopCount={workshops.length}
+              toolkitCount={toolkits.length}
+              subscription={subscription}
+            />
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <OrgActivityTab logs={activityLogs} />
           </TabsContent>
         </Tabs>
       </div>
