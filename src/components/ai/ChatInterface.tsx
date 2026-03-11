@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useCredits } from "@/hooks/useCredits";
+import { useSpendCredits } from "@/hooks/useSpendCredits";
 
 interface Message {
   id: string;
@@ -8,45 +11,69 @@ interface Message {
   text: string;
 }
 
-const aiResponses = [
-  "Intéressant ! Avez-vous validé votre **Problem-Solution Fit** ? Avant de structurer, il faut s'assurer que le problème est réel et douloureux.",
-  "Je vous suggère de commencer par les cartes du pilier **Thinking** — notamment *First Principles* et *Inversion*. Elles vous aideront à clarifier vos hypothèses.",
-  "Votre idée a du potentiel. Avez-vous déjà interviewé des clients potentiels ? La carte **Jobs To Be Done** pourrait structurer votre approche.",
-  "Pour un lancement rapide, je recommande le plan de jeu **Lancer sa Startup** : 15 cartes qui couvrent les fondations essentielles.",
-  "Bonne question ! Le **Business Model Canvas** est un excellent point de départ. Voulez-vous qu'on le remplisse ensemble ?",
-  "Pensez à tester votre pricing tôt. La carte **Unit Economics** vous aidera à valider la viabilité financière.",
-  "Avant de scaler, assurez-vous d'avoir un **Product-Market Fit** solide. Le Sean Ellis test (40%) est un bon indicateur.",
-  "Je vois que vous êtes en phase de croissance. Les cartes **Viral Loop** et **Network Effects** pourraient être vos meilleurs alliés.",
-];
+interface ChatInterfaceProps {
+  creditCost?: number;
+}
 
-export function ChatInterface() {
+export function ChatInterface({ creditCost = 1 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     { id: "welcome", role: "ai", text: "Bienvenue ! Je suis votre coach stratégique IA. Décrivez-moi votre projet ou posez-moi une question sur la stratégie business. 🚀" },
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const responseIndex = useRef(0);
+  const { balance, hasCredits } = useCredits();
+  const spendCredits = useSpendCredits();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isTyping]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || isTyping) return;
+
+    if (!hasCredits(creditCost)) return;
+
     const userMsg: Message = { id: `u-${Date.now()}`, role: "user", text: input };
     setMessages(prev => [...prev, userMsg]);
+    const userText = input;
     setInput("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      const aiText = aiResponses[responseIndex.current % aiResponses.length];
-      responseIndex.current++;
-      const aiMsg: Message = { id: `ai-${Date.now()}`, role: "ai", text: aiText };
-      setMessages(prev => [...prev, aiMsg]);
+    try {
+      // Spend credits first
+      await spendCredits.mutateAsync({
+        amount: creditCost,
+        description: `Coach IA – message`,
+      });
+
+      // Call AI via edge function or gateway
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await supabase.functions.invoke("ai-coach", {
+        body: {
+          messages: [...messages, userMsg].filter(m => m.id !== "welcome").map(m => ({
+            role: m.role === "ai" ? "assistant" : "user",
+            content: m.text,
+          })),
+          userMessage: userText,
+        },
+      });
+
+      const aiText = response.data?.reply || "Désolé, je n'ai pas pu générer une réponse. Réessayez.";
+      setMessages(prev => [...prev, { id: `ai-${Date.now()}`, role: "ai", text: aiText }]);
+    } catch (err: any) {
+      // If credit spend failed, show error but don't add AI message
+      if (err.message?.includes("Crédits insuffisants")) {
+        setMessages(prev => [...prev, { id: `err-${Date.now()}`, role: "ai", text: "⚠️ Crédits insuffisants pour cette action." }]);
+      } else {
+        setMessages(prev => [...prev, { id: `err-${Date.now()}`, role: "ai", text: "Désolé, une erreur est survenue. Réessayez." }]);
+      }
+    } finally {
       setIsTyping(false);
-    }, 1200 + Math.random() * 800);
+    }
   };
+
+  const insufficientCredits = !hasCredits(creditCost);
 
   return (
     <div className="flex flex-col h-full">
@@ -77,11 +104,7 @@ export function ChatInterface() {
         </AnimatePresence>
 
         {isTyping && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex justify-start"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
             <div className="rounded-2xl rounded-bl-md bg-card border border-border px-4 py-3 flex items-center gap-1.5">
               <div className="h-2 w-2 rounded-full bg-primary/50 animate-pulse" />
               <div className="h-2 w-2 rounded-full bg-primary/50 animate-pulse [animation-delay:150ms]" />
@@ -91,6 +114,16 @@ export function ChatInterface() {
         )}
       </div>
 
+      {/* Credit warning */}
+      {insufficientCredits && (
+        <div className="px-4 pb-2">
+          <div className="flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>Crédits insuffisants ({balance} restants, {creditCost} requis)</span>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="border-t border-border p-3">
         <div className="flex items-center gap-2">
@@ -99,12 +132,13 @@ export function ChatInterface() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Décrivez votre projet..."
-            className="flex-1 rounded-xl bg-secondary border border-border px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
+            placeholder={insufficientCredits ? "Crédits insuffisants..." : "Décrivez votre projet..."}
+            disabled={insufficientCredits}
+            className="flex-1 rounded-xl bg-secondary border border-border px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 disabled:opacity-50"
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isTyping || insufficientCredits}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-40 transition-opacity"
           >
             <Send className="h-4 w-4" />
