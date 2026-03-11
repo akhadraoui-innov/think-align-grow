@@ -177,7 +177,7 @@ function CardItem({ card, pillar, onAdd }: { card: DbCard; pillar: DbPillar | un
 
           {/* Action */}
           {card.action && (
-            <div className="rounded-lg p-2.5 mb-3" style={{ background: `${pillarColor}08`, borderLeft: `3px solid ${pillarColor}` }}>
+            <div className="rounded-lg p-2.5 mb-3" style={{ background: pillarColorAlpha(0.05), borderLeft: `3px solid ${pillarColor}` }}>
               <span className="text-[9px] font-black uppercase tracking-widest block mb-1" style={{ color: pillarColor }}>
                 {card.step_name || "Action"}
               </span>
