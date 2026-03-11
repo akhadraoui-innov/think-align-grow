@@ -72,7 +72,7 @@ export function CardSidebar({ cards, pillars, onAddCard, isMobile }: CardSidebar
                       className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors"
                     >
                       <div className="h-8 w-8 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0"
-                        style={{ background: `hsl(var(--pillar-${gradient}))` }}>
+                        style={{ background: sidebarPillarColor }}>
                         {pillar.name.charAt(0)}
                       </div>
                       <div className="flex-1 text-left min-w-0">
