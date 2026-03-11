@@ -42,9 +42,6 @@ export default function Workshop() {
     if (action === "create") {
       setCreateOpen(true);
       setSearchParams({}, { replace: true });
-    } else if (action === "challenge") {
-      setChallengeOpen(true);
-      setSearchParams({}, { replace: true });
     }
   }, [searchParams, user, setSearchParams]);
 
