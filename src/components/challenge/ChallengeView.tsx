@@ -131,6 +131,7 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
     onStage: handleStage,
     onUnstage: unstageCard,
     onStagingFormatChange: updateStagingFormat,
+    onReorderStaging: reorderItems,
     readOnly,
   };
 
