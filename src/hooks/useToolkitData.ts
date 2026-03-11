@@ -8,16 +8,29 @@ export type DbGamePlan = Tables<"game_plans">;
 export type DbGamePlanStep = Tables<"game_plan_steps">;
 export type DbQuizQuestion = Tables<"quiz_questions">;
 
-const TOOLKIT_SLUG = "bootstrap-in-business";
-
-export function useToolkit() {
+/**
+ * Fetch a toolkit by slug, or the first published toolkit if no slug provided.
+ */
+export function useToolkit(slug?: string) {
   return useQuery({
-    queryKey: ["toolkit", TOOLKIT_SLUG],
+    queryKey: ["toolkit", slug ?? "__first_published"],
     queryFn: async () => {
+      if (slug) {
+        const { data, error } = await supabase
+          .from("toolkits")
+          .select("*")
+          .eq("slug", slug)
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      }
+      // No slug → first published toolkit
       const { data, error } = await supabase
         .from("toolkits")
         .select("*")
-        .eq("slug", TOOLKIT_SLUG)
+        .eq("status", "published")
+        .order("created_at")
+        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -111,8 +124,10 @@ export function useGamePlanSteps(planId: string | null) {
   });
 }
 
-// Pillar metadata helpers
-const PILLAR_ICON_MAP: Record<string, string> = {
+// ----- Visual helpers -----
+// Fallback maps for legacy slugs; DB values (pillar.color, pillar.icon_name) take priority.
+
+const PILLAR_ICON_FALLBACK: Record<string, string> = {
   thinking: "Brain",
   business: "Briefcase",
   innovation: "Lightbulb",
@@ -125,7 +140,7 @@ const PILLAR_ICON_MAP: Record<string, string> = {
   fundraising: "Heart",
 };
 
-const PILLAR_GRADIENT_MAP: Record<string, string> = {
+const PILLAR_GRADIENT_FALLBACK: Record<string, string> = {
   thinking: "thinking",
   business: "business",
   innovation: "innovation",
@@ -138,15 +153,25 @@ const PILLAR_GRADIENT_MAP: Record<string, string> = {
   fundraising: "impact",
 };
 
-export function getPillarGradient(slug: string): string {
-  return PILLAR_GRADIENT_MAP[slug] || "primary";
+/**
+ * Returns a gradient token for a pillar.
+ * Prefers pillar.color from DB, falls back to slug-based map, then "primary".
+ */
+export function getPillarGradient(slug: string, dbColor?: string | null): string {
+  if (dbColor) return dbColor;
+  return PILLAR_GRADIENT_FALLBACK[slug] || "primary";
 }
 
-export function getPillarIconName(slug: string): string {
-  return PILLAR_ICON_MAP[slug] || "Circle";
+/**
+ * Returns an icon name for a pillar.
+ * Prefers pillar.icon_name from DB, falls back to slug-based map, then "Circle".
+ */
+export function getPillarIconName(slug: string, dbIconName?: string | null): string {
+  if (dbIconName) return dbIconName;
+  return PILLAR_ICON_FALLBACK[slug] || "Circle";
 }
 
-// Phase label mapping
+// Phase label mapping (kept as reference; phases are enum-based in DB)
 export const PHASE_LABELS: Record<string, string> = {
   foundations: "Fondations",
   model: "Modèle",
