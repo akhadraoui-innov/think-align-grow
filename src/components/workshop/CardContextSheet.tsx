@@ -98,7 +98,7 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
             {card.action && (
               <div 
                 className="rounded-xl p-4"
-                style={{ background: `${pillarColor}08`, borderLeft: `4px solid ${pillarColor}` }}
+                style={{ background: pillarColorAlpha(0.05), borderLeft: `4px solid ${pillarColor}` }}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <Footprints className="h-4 w-4" style={{ color: pillarColor }} />
