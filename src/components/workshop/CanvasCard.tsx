@@ -313,7 +313,7 @@ export function CanvasCard({
 
           {/* Action */}
           {card.action && (
-            <div className="rounded-xl p-3 mb-3" style={{ background: `hsl(${pillarColorVar} / 0.04)`, borderLeft: `3px solid ${pillarColor}` }}>
+            <div className="rounded-xl p-3 mb-3" style={{ background: `${pillarColor}0a`, borderLeft: `3px solid ${pillarColor}` }}>
               <div className="flex items-center gap-1.5 mb-1">
                 <Zap className="h-3 w-3" style={{ color: pillarColor }} />
                 <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: pillarColor }}>
