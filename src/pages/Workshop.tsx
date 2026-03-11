@@ -209,7 +209,7 @@ export default function Workshop() {
                 />
               </div>
               <Button
-                onClick={() => { create(workshopName); setCreateOpen(false); }}
+                onClick={() => { create(workshopName, {}, activeOrgId); setCreateOpen(false); }}
                 disabled={!workshopName.trim() || creating}
                 className="w-full font-black uppercase tracking-wider rounded-xl h-11"
               >
