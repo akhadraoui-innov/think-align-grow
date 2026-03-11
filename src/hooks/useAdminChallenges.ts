@@ -95,7 +95,7 @@ export function useAdminChallengeDetail(id: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("challenge_analyses")
-        .select("*, workshops(id, name, status, created_at, code)")
+        .select("*, workshops(id, name, status, created_at, code, organizations(id, name, logo_url))")
         .eq("template_id", id!)
         .order("created_at", { ascending: false });
       if (error) throw error;
