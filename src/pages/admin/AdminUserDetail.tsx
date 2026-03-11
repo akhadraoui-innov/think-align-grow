@@ -181,7 +181,25 @@ export default function AdminUserDetail() {
           </TabsContent>
 
           <TabsContent value="organizations">
-            <UserOrgsTab organizations={organizations as any} />
+            <UserOrgsTab
+              organizations={organizations as any}
+              onAdd={async (orgId, role) => {
+                try {
+                  await addToOrganization.mutateAsync({ organizationId: orgId, role });
+                  toast({ title: "Organisation ajoutée" });
+                } catch (e: any) {
+                  toast({ title: "Erreur", description: e.message, variant: "destructive" });
+                }
+              }}
+              onRemove={async (membershipId) => {
+                try {
+                  await removeFromOrganization.mutateAsync(membershipId);
+                  toast({ title: "Organisation retirée" });
+                } catch (e: any) {
+                  toast({ title: "Erreur", description: e.message, variant: "destructive" });
+                }
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="credits">
