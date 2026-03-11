@@ -41,7 +41,7 @@ export default function Explore() {
     if (selectedPillarId) result = result.filter(c => c.pillar_id === selectedPillarId);
     if (query) {
       const q = query.toLowerCase();
-      result = (allCards || []).filter(c =>
+      result = result.filter(c =>
         c.title.toLowerCase().includes(q) ||
         (c.definition || "").toLowerCase().includes(q)
       );
