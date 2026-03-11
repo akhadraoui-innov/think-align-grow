@@ -208,6 +208,26 @@ export function useAdminUserDetail(userId: string | undefined) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-user-credits", userId] }),
   });
 
+  const addToOrganization = useMutation({
+    mutationFn: async ({ organizationId, role }: { organizationId: string; role: string }) => {
+      const { error } = await supabase.from("organization_members").insert({
+        user_id: userId!,
+        organization_id: organizationId,
+        role: role as any,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-user-orgs", userId] }),
+  });
+
+  const removeFromOrganization = useMutation({
+    mutationFn: async (membershipId: string) => {
+      const { error } = await supabase.from("organization_members").delete().eq("id", membershipId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-user-orgs", userId] }),
+  });
+
   return {
     profile: profile.data,
     roles: roles.data || [],
