@@ -21,6 +21,7 @@ interface ChallengeBoardProps {
   onStage?: (cardId: string) => void;
   onUnstage?: (itemId: string) => void;
   onStagingFormatChange?: (itemId: string, format: CardFormat) => void;
+  onReorderStaging?: (draggedId: string, targetId: string) => void;
   readOnly?: boolean;
 }
 
