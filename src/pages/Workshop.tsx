@@ -22,6 +22,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export default function Workshop() {
   const { user } = useAuth();
+  const { activeOrgId } = useActiveOrg();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [createOpen, setCreateOpen] = useState(false);
