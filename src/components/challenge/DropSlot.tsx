@@ -45,10 +45,20 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
     if (!cardId) return;
 
     const sourceSlotId = e.dataTransfer.getData("source-slot-id");
+    const sourceResponseId = e.dataTransfer.getData("source-response-id");
+
+    // Cross-slot move
+    if (sourceSlotId && sourceSlotId !== slot.id && sourceResponseId && onMoveToSlot) {
+      onMoveToSlot(sourceResponseId, slot.id, cardId);
+      return;
+    }
+
+    // Same slot → ignore (reorder handled internally)
     if (sourceSlotId === slot.id) return;
 
+    // New card from sidebar/staging
     onDrop(slot.id, cardId);
-  }, [slot.id, onDrop]);
+  }, [slot.id, onDrop, onMoveToSlot]);
 
   const handleReorder = useCallback((dragId: string, dropIdx: number) => {
     if (!onUpdateResponse) return;

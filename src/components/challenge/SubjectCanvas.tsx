@@ -117,6 +117,7 @@ export function SubjectCanvas({
               pillars={pillars}
               onDrop={handleSlotDrop}
               onRemove={onRemove}
+              onMoveToSlot={onMoveToSlot}
               onUpdateResponse={onUpdateResponse}
               readOnly={readOnly}
             />
