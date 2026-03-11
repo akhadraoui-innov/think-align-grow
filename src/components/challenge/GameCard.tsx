@@ -131,7 +131,7 @@ export function GameCard({
           {/* Bottom accent */}
           <div
             className="h-1 shrink-0"
-            style={{ background: `hsl(var(--pillar-${gradient}))` }}
+            style={{ background: pillarColor }}
           />
         </div>
 
