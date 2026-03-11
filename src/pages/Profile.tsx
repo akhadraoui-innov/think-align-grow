@@ -62,7 +62,7 @@ function GuestProfile() {
 }
 
 function AuthenticatedProfile() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const { balance } = useCredits();
   const { memberships } = useActiveOrg();
   const [editOpen, setEditOpen] = useState(false);
@@ -102,8 +102,7 @@ function AuthenticatedProfile() {
     if (error) { toast.error("Erreur de sauvegarde"); return; }
     toast.success("Profil mis à jour");
     setEditOpen(false);
-    // Force reload profile
-    window.location.reload();
+    refreshProfile();
   };
 
   const stats = [

@@ -2,3 +2,9 @@ project_id = "yucwxukikfianvaokebs"
 
 [functions.import-toolkit-cards]
 verify_jwt = false
+
+[functions.ai-reflection]
+verify_jwt = false
+
+[functions.ai-deliverables]
+verify_jwt = false
