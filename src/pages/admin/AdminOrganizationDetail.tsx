@@ -110,7 +110,17 @@ export default function AdminOrganizationDetail() {
           </TabsList>
 
           <TabsContent value="info">
-            <OrgInfoTab organization={organization} />
+            <OrgInfoTab
+              organization={organization}
+              stats={{
+                memberCount: members.length,
+                teamCount: teams.length,
+                workshopCount: workshops.length,
+                toolkitCount: toolkits.length,
+                subscriptionPlan: (subscription as any)?.subscription_plans?.name || null,
+                subscriptionStatus: subscription?.status || null,
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="members">
