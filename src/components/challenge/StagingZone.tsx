@@ -57,8 +57,9 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
   }, [onDropFromSidebar]);
 
   // Reorder handlers per item
-  const handleItemDragStart = useCallback((e: React.DragEvent, itemId: string) => {
+  const handleItemDragStart = useCallback((e: React.DragEvent, itemId: string, cardId: string) => {
     e.dataTransfer.setData("reorder-id", itemId);
+    e.dataTransfer.setData("card-id", cardId);
     e.dataTransfer.effectAllowed = "move";
     setReorderDragId(itemId);
   }, []);
