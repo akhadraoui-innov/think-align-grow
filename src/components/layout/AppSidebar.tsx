@@ -18,6 +18,7 @@ import { Compass, Layers, Gamepad2, Sparkles, User, LogOut, Coins, Search, Layou
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { OrgSwitcher } from "@/components/layout/OrgSwitcher";
 
 const navItems = [
   { path: "/explore", icon: Compass, label: "Explorer" },
