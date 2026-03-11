@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, LogIn, Users, Zap, ArrowRight, Crown, Clock, UserCheck, LayoutGrid } from "lucide-react";
+import { Plus, LogIn, Users, Zap, ArrowRight, Crown, Clock, UserCheck, LayoutGrid, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +11,12 @@ import { useNavigate } from "react-router-dom";
 import { useCreateWorkshop, useJoinWorkshop, useMyWorkshops } from "@/hooks/useWorkshop";
 import { useChallengeTemplates } from "@/hooks/useChallengeData";
 import { useToolkit } from "@/hooks/useToolkitData";
+import { useCredits } from "@/hooks/useCredits";
+import { useSpendCredits } from "@/hooks/useSpendCredits";
+import { useQuotas } from "@/hooks/useQuotas";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   lobby: { label: "Lobby", className: "bg-blue-500/15 text-blue-400 border-blue-500/20" },
