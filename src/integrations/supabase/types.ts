@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          metadata: Json | null
+          organization_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cards: {
         Row: {
           action: string | null
@@ -489,6 +530,51 @@ export type Database = {
           },
         ]
       }
+      organization_subscriptions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          organization_id: string
+          plan_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          organization_id: string
+          plan_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          organization_id?: string
+          plan_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_toolkits: {
         Row: {
           created_at: string
@@ -608,6 +694,8 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          last_seen_at: string | null
+          status: string
           updated_at: string
           user_id: string
           xp: number
@@ -617,6 +705,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          last_seen_at?: string | null
+          status?: string
           updated_at?: string
           user_id: string
           xp?: number
@@ -626,6 +716,8 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          last_seen_at?: string | null
+          status?: string
           updated_at?: string
           user_id?: string
           xp?: number
@@ -695,6 +787,103 @@ export type Database = {
             columns: ["toolkit_id"]
             isOneToOne: false
             referencedRelation: "toolkits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          features: Json
+          id: string
+          is_active: boolean
+          name: string
+          price_monthly: number | null
+          price_yearly: number | null
+          quotas: Json
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          features?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          quotas?: Json
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          features?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          quotas?: Json
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          id: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          id: string
+          lead_user_id: string | null
+          name: string
+          organization_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_user_id?: string | null
+          name: string
+          organization_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_user_id?: string | null
+          name?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -846,6 +1035,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      workshop_actions: {
+        Row: {
+          assignee_id: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          status: string
+          title: string
+          workshop_id: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          title: string
+          workshop_id: string
+        }
+        Update: {
+          assignee_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          title?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_actions_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workshop_canvas_items: {
         Row: {
@@ -1023,6 +1253,47 @@ export type Database = {
           },
         ]
       }
+      workshop_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          role: string
+          status: string
+          token: string
+          workshop_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          invited_by: string
+          role?: string
+          status?: string
+          token?: string
+          workshop_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          status?: string
+          token?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_invitations_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workshop_participants: {
         Row: {
           display_name: string
@@ -1113,16 +1384,56 @@ export type Database = {
           },
         ]
       }
+      workshop_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          snapshot_data: Json
+          workshop_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          snapshot_data?: Json
+          workshop_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          snapshot_data?: Json
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_snapshots_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workshops: {
         Row: {
           code: string
           config: Json
+          context: string | null
           created_at: string
           current_card_id: string | null
           current_step: number
+          description: string | null
+          facilitator_id: string | null
           host_id: string
           id: string
+          max_participants: number | null
           name: string
+          objectives: Json | null
+          organization_id: string | null
+          scheduled_at: string | null
+          session_mode: string | null
           status: Database["public"]["Enums"]["workshop_status"]
           timer_seconds: number | null
           timer_started_at: string | null
@@ -1131,12 +1442,20 @@ export type Database = {
         Insert: {
           code: string
           config?: Json
+          context?: string | null
           created_at?: string
           current_card_id?: string | null
           current_step?: number
+          description?: string | null
+          facilitator_id?: string | null
           host_id: string
           id?: string
+          max_participants?: number | null
           name: string
+          objectives?: Json | null
+          organization_id?: string | null
+          scheduled_at?: string | null
+          session_mode?: string | null
           status?: Database["public"]["Enums"]["workshop_status"]
           timer_seconds?: number | null
           timer_started_at?: string | null
@@ -1145,12 +1464,20 @@ export type Database = {
         Update: {
           code?: string
           config?: Json
+          context?: string | null
           created_at?: string
           current_card_id?: string | null
           current_step?: number
+          description?: string | null
+          facilitator_id?: string | null
           host_id?: string
           id?: string
+          max_participants?: number | null
           name?: string
+          objectives?: Json | null
+          organization_id?: string | null
+          scheduled_at?: string | null
+          session_mode?: string | null
           status?: Database["public"]["Enums"]["workshop_status"]
           timer_seconds?: number | null
           timer_started_at?: string | null
@@ -1164,6 +1491,13 @@ export type Database = {
             referencedRelation: "cards"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "workshops_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -1171,6 +1505,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_any_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1186,6 +1527,7 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      is_saas_team: { Args: { _user_id: string }; Returns: boolean }
       is_workshop_host: {
         Args: { _user_id: string; _workshop_id: string }
         Returns: boolean
@@ -1196,7 +1538,19 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "owner" | "admin" | "member"
+      app_role:
+        | "owner"
+        | "admin"
+        | "member"
+        | "super_admin"
+        | "customer_lead"
+        | "innovation_lead"
+        | "performance_lead"
+        | "product_actor"
+        | "lead"
+        | "facilitator"
+        | "manager"
+        | "guest"
       canvas_item_type: "card" | "sticky" | "group" | "arrow" | "icon" | "text"
       card_phase: "foundations" | "model" | "growth" | "execution"
       challenge_slot_type: "single" | "multi" | "ranked"
@@ -1331,7 +1685,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "admin", "member"],
+      app_role: [
+        "owner",
+        "admin",
+        "member",
+        "super_admin",
+        "customer_lead",
+        "innovation_lead",
+        "performance_lead",
+        "product_actor",
+        "lead",
+        "facilitator",
+        "manager",
+        "guest",
+      ],
       canvas_item_type: ["card", "sticky", "group", "arrow", "icon", "text"],
       card_phase: ["foundations", "model", "growth", "execution"],
       challenge_slot_type: ["single", "multi", "ranked"],
