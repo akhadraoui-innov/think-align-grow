@@ -48,7 +48,7 @@ export function CanvasCard({
     onUpdateContent({ maturity_level: level });
   };
 
-  const gradient = pillar ? getPillarGradient(pillar.slug) : "primary";
+  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
   const pillarColorVar = `var(--pillar-${gradient})`;
   const pillarColor = `hsl(${pillarColorVar})`;
 
