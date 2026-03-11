@@ -57,14 +57,19 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
     stageCard(subject.id, cardId);
   }, [subjects, currentIndex, stageCard]);
 
+  const currentSubjectStagedCardIds = useMemo(() => {
+    const subjectId = subjects[currentIndex]?.id;
+    if (!subjectId) return new Set<string>();
+    return new Set(stagingItems.filter(i => i.subject_id === subjectId).map(i => i.card_id));
+  }, [stagingItems, subjects, currentIndex]);
+
   const handleAddFromSidebar = useCallback((cardId: string) => {
-    // If already placed or staged, skip
-    if (placedCardIds.has(cardId) || stagedCardIds.has(cardId)) {
+    if (placedCardIds.has(cardId) || currentSubjectStagedCardIds.has(cardId)) {
       toast.info("Cette carte est déjà utilisée");
       return;
     }
     handleStage(cardId);
-  }, [placedCardIds, stagedCardIds, handleStage]);
+  }, [placedCardIds, currentSubjectStagedCardIds, handleStage]);
 
   const handleMoveToSlot = useCallback((sourceResponseId: string, targetSlotId: string, cardId: string) => {
     moveToSlot(sourceResponseId, targetSlotId, cardId);

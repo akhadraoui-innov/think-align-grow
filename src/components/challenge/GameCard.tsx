@@ -52,9 +52,12 @@ export function GameCard({
     setIsFlipped(!isFlipped);
   };
 
-  const handleRemoveClick = (e: React.MouseEvent) => {
+  const handleRemoveClick = (e: React.MouseEvent | React.PointerEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    // Prevent flip from triggering
+    isDraggingRef.current = true;
+    setTimeout(() => { isDraggingRef.current = false; }, 150);
     onRemove?.();
   };
 
