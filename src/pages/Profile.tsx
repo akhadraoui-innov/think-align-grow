@@ -102,8 +102,7 @@ function AuthenticatedProfile() {
     if (error) { toast.error("Erreur de sauvegarde"); return; }
     toast.success("Profil mis à jour");
     setEditOpen(false);
-    // Force reload profile
-    window.location.reload();
+    refreshProfile();
   };
 
   const stats = [
