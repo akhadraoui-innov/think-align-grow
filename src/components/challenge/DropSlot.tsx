@@ -31,10 +31,7 @@ export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, on
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    const sourceSlotId = e.dataTransfer.types.includes("source-slot-id");
-    if (!sourceSlotId) {
-      setIsDragOver(true);
-    }
+    setIsDragOver(true);
   }, []);
 
   const handleDragLeave = useCallback(() => setIsDragOver(false), []);
