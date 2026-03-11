@@ -245,7 +245,7 @@ export default function Explore() {
                       onClick={() => setSelectedPillarId(pillar.id)}
                       className="relative overflow-hidden rounded-3xl bg-card border border-border p-5 cursor-pointer hover:scale-[1.03] active:scale-[0.97] transition-all duration-200 hover:shadow-lg hover:shadow-primary/5"
                     >
-                      <GradientIcon icon={Icon} gradient={getPillarGradient(pillar.slug)} size="sm" className="mb-3" />
+                      <GradientIcon icon={Icon} gradient={getPillarGradient(pillar.slug, pillar.color)} size="sm" className="mb-3" />
                       <h3 className="font-display font-bold text-sm text-foreground uppercase tracking-wide">{pillar.name}</h3>
                       <p className="text-xs text-muted-foreground mt-0.5">{getCardCount(pillar.id)} cartes</p>
                       <div className="absolute -bottom-6 -right-6 h-20 w-20 rounded-full bg-primary/5" />
