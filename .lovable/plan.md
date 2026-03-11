@@ -1,69 +1,188 @@
+# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
+## Vision produit
 
-## Diagnostic — Regression couleurs et formats dans Workshop
+Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
 
-### Cause racine identifiée
+### L'organisation comme entité centrale
 
-La colonne `pillar.color` en base contient des **valeurs hexadécimales** (`#8B5CF6`, `#F59E0B`, `#E8552D`, etc.), mais la fonction `getPillarGradient()` retourne ces valeurs telles quelles. Ensuite, tous les composants construisent des variables CSS comme :
+L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
 
-```text
-hsl(var(--pillar-#8B5CF6))   ← CSS invalide, aucune couleur rendue
-```
+- **Identité & branding** : nom, slug, logo, couleur primaire
+- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
+- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
+- **Coordonnées** : email, téléphone, site web
+- **Adresses** : multi-adresses (siège, sites, bureaux)
+- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
+- **Notes internes** : champ libre pour l'équipe SaaS
+- **Membres** avec rôles (Owner, Admin, Member, Guest…)
+- **Équipes** internes
+- **Toolkits** assignés et activés
+- **Abonnement** avec plan et quotas
+- **Workshops** réalisés
+- **Journal d'activité** (audit trail)
 
-Les variables CSS définies dans `index.css` sont nommées `--pillar-thinking`, `--pillar-business`, etc. — jamais avec des codes hex.
+### Organisation plateforme : Growthinnov
 
-**Résultat** : toutes les cartes du Workshop (et CardSidebar, CardContextSheet) perdent leurs couleurs de pilier.
+**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
+1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
+2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
 
-### Composants affectés
+Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
 
-| Composant | Utilise `getPillarGradient` | Cassé |
-|-----------|---------------------------|-------|
-| `CanvasCard.tsx` | Oui — `hsl(var(--pillar-${gradient}))` | Oui |
-| `CardSidebar.tsx` | Oui — idem | Oui |
-| `CardContextSheet.tsx` | Oui — idem | Oui |
-| `GameCard.tsx` (Challenge) | Oui — idem | Oui |
-| `FlipCard.tsx` (Explore) | Oui — idem | Oui |
-| `GradientIcon.tsx` | Oui — Tailwind `from-pillar-${gradient}` | Oui |
+Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
 
-### Correction proposée
+## Sprint 1 — COMPLÉTÉ ✅
 
-**1. Refactorer `useToolkitData.ts`** — Modifier `getPillarGradient()` pour **ignorer les couleurs hex** et ne retourner que des tokens CSS valides. Ajouter une nouvelle fonction `getPillarHexColor()` qui retourne la couleur hex de la DB ou un fallback.
+### Migration SQL
+- ✅ Enum `app_role` étendu : +9 valeurs
+- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
 
-```typescript
-// getPillarGradient : retourne TOUJOURS un token CSS (jamais un hex)
-export function getPillarGradient(slug: string, dbColor?: string | null): string {
-  // Si dbColor est un token CSS valide (pas un hex), l'utiliser
-  if (dbColor && !dbColor.startsWith('#')) return dbColor;
-  return PILLAR_GRADIENT_FALLBACK[slug] || "primary";
-}
+### Frontend Admin
+- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
+- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
 
-// Nouvelle : retourne la couleur utilisable directement (hex ou hsl var)
-export function getPillarCssColor(slug: string, dbColor?: string | null): string {
-  if (dbColor?.startsWith('#')) return dbColor;
-  const token = PILLAR_GRADIENT_FALLBACK[slug] || "primary";
-  return `hsl(var(--pillar-${token}))`;
-}
-```
+## Sprint 2 — COMPLÉTÉ ✅
 
-**2. Mettre à jour les composants** qui construisent manuellement `hsl(var(--pillar-${gradient}))` pour utiliser `getPillarCssColor()` à la place, tout en gardant `getPillarGradient()` pour les classes Tailwind de `GradientIcon`.
+### Dashboard avec données réelles
+- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
+- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
 
-Composants à modifier :
-- `CanvasCard.tsx` : remplacer `pillarColor` par `getPillarCssColor()`
-- `CardSidebar.tsx` : idem
-- `CardContextSheet.tsx` : idem  
-- `GameCard.tsx` : idem
-- `FlipCard.tsx` : idem
+### Composant DataTable réutilisable
+- ✅ Recherche, tri par colonne, pagination, row click, slot actions
 
-**3. Pas de regression de format** à proprement parler — les 4 modes (section, preview, full, gamified) sont toujours implémentés dans `CanvasCard.tsx` et `getItemDimensions`. La régression visuelle des formats est une conséquence directe de l'absence de couleurs (les modes section et gamified utilisent la couleur comme fond, donc sans couleur ils apparaissent transparents/blancs).
+### CRUD Organisations
+- ✅ useOrganizations + useOrganizationDetail hooks
+- ✅ Liste avec DataTable, recherche, tri, création via dialog
+- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
+- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
+- ✅ Route /admin/organizations/:id
+- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
 
-### Fichiers modifiés
+## Sprint 3 — COMPLÉTÉ ✅
 
-| Fichier | Action |
-|---------|--------|
-| `src/hooks/useToolkitData.ts` | Fix `getPillarGradient` + ajouter `getPillarCssColor` |
-| `src/components/workshop/CanvasCard.tsx` | Utiliser `getPillarCssColor` |
-| `src/components/workshop/CardSidebar.tsx` | Idem |
-| `src/components/workshop/CardContextSheet.tsx` | Idem |
-| `src/components/challenge/GameCard.tsx` | Idem |
-| `src/components/ui/FlipCard.tsx` | Idem |
+### Gestion des utilisateurs (AdminUsers)
+- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
+- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
+- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
+- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
+- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
+- ✅ UserCreditsTab : solde, lifetime, historique des transactions
+- ✅ UserWorkshopsTab : workshops hébergés et participations
+- ✅ UserChallengesTab : performances quiz et challenges
+- ✅ UserCardsTab : suivi des vues et favoris
+- ✅ UserActivityTab : journal d'audit utilisateur
 
+### Hook usePermissions
+- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
+
+### Hook useAdminUserDetail
+- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
+
+### Migration SQL Sprint 3
+- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
+
+## Sprint 4 — COMPLÉTÉ ✅
+
+### Gestion des Toolkits
+- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
+- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
+- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
+- ✅ Fiche AdminToolkitDetail avec 7 onglets :
+  - Infos : nom, slug, emoji, description, statut, métadonnées
+  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
+  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
+  - Challenges : templates avec sujets et slots imbriqués
+  - Game Plans : plans avec étapes ordonnées
+  - Quiz : questions par pilier avec compteur d'options
+  - Organisations : ajout/retrait d'accès toolkit pour les orgs
+- ✅ Route /admin/toolkits/:id
+
+### Gestion des Workshops (vue admin)
+- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
+- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
+
+## Sprint 4.2 — COMPLÉTÉ ✅
+
+### Nettoyage & dynamisation toolkit
+- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
+- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
+- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
+- ✅ Aucune migration DB nécessaire
+
+## Sprint 5 — COMPLÉTÉ ✅
+
+### Facturation & Abonnements (AdminBilling)
+- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
+- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
+- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
+- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
+- ✅ Suppression plan avec confirmation AlertDialog
+- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
+
+### Logs d'audit (AdminLogs)
+- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
+- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
+- ✅ Pagination server-side (25/page) avec compteur total
+- ✅ Détail metadata : dialog avec JSON formaté
+- ✅ Styles cohérents avec le design system existant
+
+## Sprint 6 — COMPLÉTÉ ✅
+
+### Enrichissement logs
+- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
+- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
+- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
+
+### Dashboard billing avancé
+- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
+- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
+- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
+
+## Sprint 7 — COMPLÉTÉ ✅
+
+### Profil utilisateur authentifié
+- ✅ Page Profile détecte l'état de connexion (guest vs authentifié)
+- ✅ Vue authentifiée : avatar, display_name, job_title, department, email
+- ✅ Stats temps réel : XP, crédits, cartes vues, quiz complétés
+- ✅ Liste des organisations avec rôles
+- ✅ Dialog d'édition profil (display_name, job_title, department)
+- ✅ Bouton déconnexion
+
+### Contexte multi-tenant
+- ✅ `OrgProvider` context avec `useActiveOrg` hook
+- ✅ Composant `OrgSwitcher` dans la sidebar (dropdown si multi-org, badge si mono-org)
+- ✅ Persistance de l'org active dans localStorage
+- ✅ Intégration dans `AppSidebar` footer
+
+### Persistance quiz
+- ✅ `QuizEngine` sauvegarde les scores dans `quiz_results` à la complétion
+- ✅ `Lab.tsx` charge le dernier résultat quiz depuis la DB au montage
+- ✅ Hydratation automatique du RadarChart et des badges depuis les données persistées
+
+### Liaison Workshop → Organisation
+- ✅ `useCreateWorkshop` accepte un `organizationId` optionnel
+- ✅ `Workshop.tsx` passe l'org active du contexte à la création
+
+## Sprint 8 — COMPLÉTÉ ✅
+
+### Activation des crédits côté utilisateur
+- ✅ Fonction DB `spend_credits` atomique (SECURITY DEFINER, row lock, vérification solde)
+- ✅ Hook `useSpendCredits` pour débit sécurisé via RPC
+- ✅ Hook `useCredits` simplifié (lecture seule, invalidation via spend)
+
+### Débit réel sur les actions
+- ✅ **Coach IA** : 1 crédit par message, appel réel à l'IA via edge function `ai-coach` (Gemini 2.5 Flash)
+- ✅ **Création Workshop** : débit de `toolkit.credit_cost_workshop` crédits avant création
+- ✅ **Création Challenge** : débit de `toolkit.credit_cost_challenge` crédits avant lancement
+
+### Enforcement des quotas d'abonnement
+- ✅ Hook `useQuotas` : lecture quotas depuis `subscription_plans.quotas` via `organization_subscriptions`
+- ✅ Vérification `max_workshops` et `max_challenges` vs usage réel
+- ✅ Blocage UI avec messages explicites quand quota atteint
+
+### UX crédits
+- ✅ Page IA : solde réel affiché, outils grisés si crédits insuffisants
+- ✅ Chat IA : alerte inline crédits insuffisants, input désactivé
+- ✅ Workshop/Challenge : coût affiché dans la dialog de création, bouton désactivé si insuffisant
+- ✅ Edge function `ai-coach` déployée avec prompt coach stratégique

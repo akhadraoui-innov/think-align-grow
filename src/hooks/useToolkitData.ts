@@ -154,12 +154,39 @@ const PILLAR_GRADIENT_FALLBACK: Record<string, string> = {
 };
 
 /**
- * Returns a gradient token for a pillar.
- * Prefers pillar.color from DB, falls back to slug-based map, then "primary".
+ * Returns a gradient TOKEN for a pillar (e.g. "thinking", "business").
+ * Always returns a valid CSS token — never a raw hex value.
  */
 export function getPillarGradient(slug: string, dbColor?: string | null): string {
-  if (dbColor) return dbColor;
+  // Only use dbColor if it's a known token (not a hex)
+  if (dbColor && !dbColor.startsWith('#')) return dbColor;
   return PILLAR_GRADIENT_FALLBACK[slug] || "primary";
+}
+
+/**
+ * Returns a ready-to-use CSS color string for a pillar.
+ * If the DB stores a hex (#8B5CF6), returns it directly.
+ * Otherwise, returns hsl(var(--pillar-<token>)).
+ */
+export function getPillarCssColor(slug: string, dbColor?: string | null): string {
+  if (dbColor?.startsWith('#')) return dbColor;
+  const token = PILLAR_GRADIENT_FALLBACK[slug] || "primary";
+  return `hsl(var(--pillar-${token}))`;
+}
+
+/**
+ * Returns a CSS color with alpha/opacity.
+ * For hex colors: appends hex alpha (e.g. #8B5CF626).
+ * For token colors: uses hsl(var(--pillar-token) / alpha).
+ * @param alpha - opacity from 0 to 1
+ */
+export function getPillarCssColorAlpha(slug: string, dbColor: string | null | undefined, alpha: number): string {
+  if (dbColor?.startsWith('#')) {
+    const hexAlpha = Math.round(alpha * 255).toString(16).padStart(2, '0');
+    return `${dbColor}${hexAlpha}`;
+  }
+  const token = PILLAR_GRADIENT_FALLBACK[slug] || "primary";
+  return `hsl(var(--pillar-${token}) / ${alpha})`;
 }
 
 /**

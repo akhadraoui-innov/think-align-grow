@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
-import { getPillarGradient, PHASE_LABELS } from "@/hooks/useToolkitData";
+import { getPillarGradient, getPillarCssColor, getPillarCssColorAlpha, PHASE_LABELS } from "@/hooks/useToolkitData";
 
 interface CardSidebarProps {
   cards: DbCard[];
@@ -63,6 +63,7 @@ export function CardSidebar({ cards, pillars, onAddCard, isMobile }: CardSidebar
                 const pillarCards = cards.filter(c => c.pillar_id === pillar.id);
                 const isExpanded = expandedPillar === pillar.id;
                 const gradient = getPillarGradient(pillar.slug, pillar.color);
+                const sidebarPillarColor = getPillarCssColor(pillar.slug, pillar.color);
 
                 return (
                   <div key={pillar.id}>
@@ -71,7 +72,7 @@ export function CardSidebar({ cards, pillars, onAddCard, isMobile }: CardSidebar
                       className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors"
                     >
                       <div className="h-8 w-8 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0"
-                        style={{ background: `hsl(var(--pillar-${gradient}))` }}>
+                        style={{ background: sidebarPillarColor }}>
                         {pillar.name.charAt(0)}
                       </div>
                       <div className="flex-1 text-left min-w-0">
@@ -118,8 +119,8 @@ export function CardSidebar({ cards, pillars, onAddCard, isMobile }: CardSidebar
 }
 
 function CardItem({ card, pillar, onAdd }: { card: DbCard; pillar: DbPillar | undefined; onAdd: () => void }) {
-  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
-  const pillarColor = `hsl(var(--pillar-${gradient}))`;
+  const pillarColor = pillar ? getPillarCssColor(pillar.slug, pillar.color) : `hsl(var(--pillar-primary))`;
+  const pillarColorAlpha = (a: number) => getPillarCssColorAlpha(pillar?.slug || "", pillar?.color || null, a);
 
   return (
     <HoverCard openDelay={1200} closeDelay={200}>
@@ -151,7 +152,7 @@ function CardItem({ card, pillar, onAdd }: { card: DbCard; pillar: DbPillar | un
           {/* Pillar badge */}
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
-              style={{ background: `${pillarColor}15`, color: pillarColor }}>
+              style={{ background: pillarColorAlpha(0.08), color: pillarColor }}>
               {pillar?.name || "Pilier"}
             </span>
             <span className="text-[9px] text-muted-foreground uppercase tracking-wider">
@@ -176,7 +177,7 @@ function CardItem({ card, pillar, onAdd }: { card: DbCard; pillar: DbPillar | un
 
           {/* Action */}
           {card.action && (
-            <div className="rounded-lg p-2.5 mb-3" style={{ background: `${pillarColor}08`, borderLeft: `3px solid ${pillarColor}` }}>
+            <div className="rounded-lg p-2.5 mb-3" style={{ background: pillarColorAlpha(0.05), borderLeft: `3px solid ${pillarColor}` }}>
               <span className="text-[9px] font-black uppercase tracking-widest block mb-1" style={{ color: pillarColor }}>
                 {card.step_name || "Action"}
               </span>

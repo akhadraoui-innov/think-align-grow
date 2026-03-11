@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { DbCard } from "@/hooks/useToolkitData";
-import { getPillarGradient, PHASE_LABELS } from "@/hooks/useToolkitData";
+import { getPillarGradient, getPillarCssColor, getPillarCssColorAlpha, PHASE_LABELS } from "@/hooks/useToolkitData";
 
 interface FlipCardProps {
   card: DbCard;
@@ -12,6 +12,8 @@ interface FlipCardProps {
 export function FlipCard({ card, pillarSlug = "business", pillarColor }: FlipCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const gradient = getPillarGradient(pillarSlug, pillarColor);
+  const cssColor = getPillarCssColor(pillarSlug, pillarColor);
+  const cssColorAlpha = (a: number) => getPillarCssColorAlpha(pillarSlug, pillarColor, a);
 
   return (
     <div
@@ -29,14 +31,14 @@ export function FlipCard({ card, pillarSlug = "business", pillarColor }: FlipCar
           className="absolute inset-0 rounded-3xl border border-border overflow-hidden p-5 flex flex-col justify-between"
           style={{
             backfaceVisibility: "hidden",
-            background: `linear-gradient(135deg, hsl(var(--pillar-${gradient}) / 0.2), hsl(var(--pillar-${gradient}) / 0.05))`,
-            borderColor: `hsl(var(--pillar-${gradient}) / 0.3)`,
+            background: `linear-gradient(135deg, ${cssColorAlpha(0.2)}, ${cssColorAlpha(0.05)})`,
+            borderColor: cssColorAlpha(0.3),
           }}
         >
           <div>
             <span
               className="text-[10px] font-bold uppercase tracking-[0.15em]"
-              style={{ color: `hsl(var(--pillar-${gradient}))` }}
+              style={{ color: cssColor }}
             >
               {pillarSlug} · {PHASE_LABELS[card.phase] || card.phase}
             </span>
@@ -54,14 +56,14 @@ export function FlipCard({ card, pillarSlug = "business", pillarColor }: FlipCar
           style={{
             backfaceVisibility: "hidden",
             transform: "rotateY(180deg)",
-            background: `linear-gradient(135deg, hsl(var(--pillar-${gradient}) / 0.2), hsl(var(--pillar-${gradient}) / 0.05))`,
-            borderColor: `hsl(var(--pillar-${gradient}) / 0.3)`,
+            background: `linear-gradient(135deg, ${cssColorAlpha(0.2)}, ${cssColorAlpha(0.05)})`,
+            borderColor: cssColorAlpha(0.3),
           }}
         >
           <div>
             <span
               className="text-[10px] font-bold uppercase tracking-[0.15em]"
-              style={{ color: `hsl(var(--pillar-${gradient}))` }}
+              style={{ color: cssColor }}
             >
               Action
             </span>
@@ -70,7 +72,7 @@ export function FlipCard({ card, pillarSlug = "business", pillarColor }: FlipCar
           <div>
             <span
               className="text-[10px] font-bold uppercase tracking-[0.15em]"
-              style={{ color: `hsl(var(--pillar-${gradient}))` }}
+              style={{ color: cssColor }}
             >
               KPI
             </span>

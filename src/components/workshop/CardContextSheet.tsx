@@ -5,7 +5,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DbCard, DbPillar, getPillarGradient, PHASE_LABELS } from "@/hooks/useToolkitData";
+import { DbCard, DbPillar, getPillarCssColor, getPillarCssColorAlpha, PHASE_LABELS } from "@/hooks/useToolkitData";
 import { CanvasItem } from "@/hooks/useCanvasItems";
 import { Zap, BarChart3, Target, Footprints } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,8 +21,10 @@ interface CardContextSheetProps {
 }
 
 export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onUpdateContent }: CardContextSheetProps) {
-  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
-  const pillarColor = `hsl(var(--pillar-${gradient}))`;
+  const slug = pillar?.slug || "";
+  const dbCol = pillar?.color || null;
+  const pillarColor = getPillarCssColor(slug, dbCol);
+  const pillarColorAlpha = (a: number) => getPillarCssColorAlpha(slug, dbCol, a);
 
   const notes = item.content?.custom_notes || "";
 
@@ -44,7 +46,7 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
               <span 
                 className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
                 style={{ 
-                  background: `${pillarColor}15`,
+                  background: pillarColorAlpha(0.08),
                   color: pillarColor,
                 }}
               >
@@ -67,7 +69,7 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
           <div className="space-y-6 pb-12">
             {/* Objective */}
             {(card as any).objective && (
-              <div className="flex items-start gap-3 p-4 rounded-xl" style={{ background: `${pillarColor}06` }}>
+              <div className="flex items-start gap-3 p-4 rounded-xl" style={{ background: pillarColorAlpha(0.04) }}>
                 <Target className="h-5 w-5 shrink-0 mt-0.5" style={{ color: pillarColor }} />
                 <div>
                   <h4 className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: pillarColor }}>
@@ -96,7 +98,7 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
             {card.action && (
               <div 
                 className="rounded-xl p-4"
-                style={{ background: `${pillarColor}08`, borderLeft: `4px solid ${pillarColor}` }}
+                style={{ background: pillarColorAlpha(0.05), borderLeft: `4px solid ${pillarColor}` }}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <Footprints className="h-4 w-4" style={{ color: pillarColor }} />
@@ -135,7 +137,7 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
                             ? "border-transparent shadow-sm" 
                             : "border-border/50 bg-background/50"
                         )}
-                        style={isActive ? { background: `${pillarColor}12` } : {}}
+                        style={isActive ? { background: pillarColorAlpha(0.07) } : {}}
                       >
                         <div 
                           className={cn("h-3 w-3 rounded-full shrink-0", isActive ? "opacity-100" : "opacity-20")}

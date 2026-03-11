@@ -4,7 +4,7 @@ import dynamicIconImports from "lucide-react/dynamicIconImports";
 import { cn } from "@/lib/utils";
 import { CanvasItem } from "@/hooks/useCanvasItems";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
-import { getPillarGradient, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
+import { getPillarGradient, getPillarCssColor, getPillarCssColorAlpha, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
 
 // Dynamic icon loader for pillar icons
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
@@ -48,9 +48,11 @@ export function CanvasCard({
     onUpdateContent({ maturity_level: level });
   };
 
-  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
-  const pillarColorVar = `var(--pillar-${gradient})`;
-  const pillarColor = `hsl(${pillarColorVar})`;
+  const slug = pillar?.slug || "";
+  const dbCol = pillar?.color || null;
+  const gradient = pillar ? getPillarGradient(slug, dbCol) : "primary";
+  const pillarColor = getPillarCssColor(slug, dbCol);
+  const pillarColorAlpha = (a: number) => getPillarCssColorAlpha(slug, dbCol, a);
 
   const width = displayMode === "section" ? 220 : displayMode === "full" ? 420 : displayMode === "gamified" ? 240 : 280;
 
@@ -94,7 +96,7 @@ export function CanvasCard({
           )}
           style={{
             width: `${width}px`, left: item.x, top: item.y, zIndex: item.z_index,
-            background: `linear-gradient(145deg, hsl(${pillarColorVar}), hsl(${pillarColorVar} / 0.85))`,
+            background: `linear-gradient(145deg, ${pillarColor}, ${pillarColorAlpha(0.85)})`,
           }}
           onPointerDown={onPointerDown}
         >
@@ -178,7 +180,7 @@ export function CanvasCard({
           )}
           style={{
             width: `${width}px`, left: item.x, top: item.y, zIndex: item.z_index,
-            background: `linear-gradient(145deg, hsl(${pillarColorVar}), hsl(${pillarColorVar} / 0.85))`,
+            background: `linear-gradient(145deg, ${pillarColor}, ${pillarColorAlpha(0.85)})`,
           }}
           onPointerDown={onPointerDown}
         >
@@ -257,7 +259,7 @@ export function CanvasCard({
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-black uppercase tracking-widest rounded-full text-[9px] px-2 py-0.5"
-                style={{ background: `hsl(${pillarColorVar} / 0.08)`, color: pillarColor }}>
+                style={{ background: pillarColorAlpha(0.08), color: pillarColor }}>
                 {pillar?.name || "Pilier"}
               </span>
               <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -313,7 +315,7 @@ export function CanvasCard({
 
           {/* Action */}
           {card.action && (
-            <div className="rounded-xl p-3 mb-3" style={{ background: `hsl(${pillarColorVar} / 0.04)`, borderLeft: `3px solid ${pillarColor}` }}>
+            <div className="rounded-xl p-3 mb-3" style={{ background: pillarColorAlpha(0.04), borderLeft: `3px solid ${pillarColor}` }}>
               <div className="flex items-center gap-1.5 mb-1">
                 <Zap className="h-3 w-3" style={{ color: pillarColor }} />
                 <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: pillarColor }}>

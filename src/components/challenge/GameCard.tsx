@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
-import { getPillarGradient, PHASE_LABELS } from "@/hooks/useToolkitData";
+import { getPillarGradient, getPillarCssColor, getPillarCssColorAlpha, PHASE_LABELS } from "@/hooks/useToolkitData";
 import { MaturitySelector, MaturityBadge } from "./MaturitySelector";
 import { X } from "lucide-react";
 
@@ -29,7 +29,11 @@ export function GameCard({
 }: GameCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const isDraggingRef = useRef(false);
-  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
+  const slug = pillar?.slug || "";
+  const dbCol = pillar?.color || null;
+  const gradient = getPillarGradient(slug, dbCol);
+  const pillarColor = getPillarCssColor(slug, dbCol);
+  const pillarColorAlpha = (a: number) => getPillarCssColorAlpha(slug, dbCol, a);
   const phaseLabel = PHASE_LABELS[card.phase] || card.phase;
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -80,12 +84,12 @@ export function GameCard({
           {/* Colored header */}
           <div
             className="px-3 pt-3 pb-2 shrink-0"
-            style={{ background: `hsl(var(--pillar-${gradient}) / 0.15)` }}
+            style={{ background: pillarColorAlpha(0.15) }}
           >
             <div className="flex items-center justify-between mb-1">
               <span
                 className="text-[8px] font-black uppercase tracking-[0.15em] truncate"
-                style={{ color: `hsl(var(--pillar-${gradient}))` }}
+                style={{ color: pillarColor }}
               >
                 {pillar?.name || "Pilier"}
               </span>
@@ -117,8 +121,8 @@ export function GameCard({
               <span
                 className="text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md"
                 style={{
-                  background: `hsl(var(--pillar-${gradient}) / 0.1)`,
-                  color: `hsl(var(--pillar-${gradient}))`,
+                  background: pillarColorAlpha(0.1),
+                  color: pillarColor,
                 }}
               >
                 {phaseLabel}
@@ -130,7 +134,7 @@ export function GameCard({
           {/* Bottom accent */}
           <div
             className="h-1 shrink-0"
-            style={{ background: `hsl(var(--pillar-${gradient}))` }}
+            style={{ background: pillarColor }}
           />
         </div>
 
@@ -141,7 +145,7 @@ export function GameCard({
         >
           <div
             className="h-1 shrink-0"
-            style={{ background: `hsl(var(--pillar-${gradient}))` }}
+            style={{ background: pillarColor }}
           />
           <div className="flex-1 px-3 py-3 flex flex-col gap-3 overflow-auto">
             <div>
