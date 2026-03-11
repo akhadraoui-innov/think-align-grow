@@ -132,6 +132,7 @@ export function SubjectCanvas({
               onDropFromSidebar={handleStageDrop}
               onRemove={(id) => onUnstage?.(id)}
               onFormatChange={(id, fmt) => onStagingFormatChange?.(id, fmt)}
+              onReorder={onReorderStaging}
               readOnly={readOnly}
               viewMode="list"
             />
