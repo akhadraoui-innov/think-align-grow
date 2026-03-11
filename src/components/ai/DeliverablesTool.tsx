@@ -19,9 +19,10 @@ const DELIVERABLE_TYPES = [
 interface DeliverablesToolProps {
   onBack: () => void;
   creditCost: number;
+  organizationId?: string | null;
 }
 
-export function DeliverablesTool({ onBack, creditCost }: DeliverablesToolProps) {
+export function DeliverablesTool({ onBack, creditCost, organizationId }: DeliverablesToolProps) {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
