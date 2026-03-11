@@ -180,7 +180,7 @@ export function CanvasCard({
           )}
           style={{
             width: `${width}px`, left: item.x, top: item.y, zIndex: item.z_index,
-            background: `linear-gradient(145deg, ${pillarColor}, ${pillarColor}d9)`,
+            background: `linear-gradient(145deg, ${pillarColor}, ${pillarColorAlpha(0.85)})`,
           }}
           onPointerDown={onPointerDown}
         >
