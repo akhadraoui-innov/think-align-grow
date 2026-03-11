@@ -26,6 +26,7 @@ import AdminDesignInnovation from "./pages/admin/AdminDesignInnovation";
 import AdminBilling from "./pages/admin/AdminBilling";
 import AdminLogs from "./pages/admin/AdminLogs";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminOrganizationDetail from "./pages/admin/AdminOrganizationDetail";
 
 const queryClient = new QueryClient();
 
