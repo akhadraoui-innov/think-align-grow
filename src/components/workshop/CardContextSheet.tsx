@@ -21,7 +21,10 @@ interface CardContextSheetProps {
 }
 
 export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onUpdateContent }: CardContextSheetProps) {
-  const pillarColor = pillar ? getPillarCssColor(pillar.slug, pillar.color) : `hsl(var(--pillar-primary))`;
+  const slug = pillar?.slug || "";
+  const dbCol = pillar?.color || null;
+  const pillarColor = getPillarCssColor(slug, dbCol);
+  const pillarColorAlpha = (a: number) => getPillarCssColorAlpha(slug, dbCol, a);
 
   const notes = item.content?.custom_notes || "";
 
