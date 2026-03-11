@@ -114,7 +114,7 @@ export default function Explore() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ delay: i * 0.03 }}
                 >
-                  <FlipCard card={card} pillarSlug={getPillarSlug(card.pillar_id)} />
+                  <FlipCard card={card} pillarSlug={getPillarSlug(card.pillar_id)} pillarColor={pillarMap[card.pillar_id]?.color} />
                 </motion.div>
               ))}
             </AnimatePresence>
