@@ -137,7 +137,7 @@ export function CardContextSheet({ isOpen, onOpenChange, card, pillar, item, onU
                             ? "border-transparent shadow-sm" 
                             : "border-border/50 bg-background/50"
                         )}
-                        style={isActive ? { background: `${pillarColor}12` } : {}}
+                        style={isActive ? { background: pillarColorAlpha(0.07) } : {}}
                       >
                         <div 
                           className={cn("h-3 w-3 rounded-full shrink-0", isActive ? "opacity-100" : "opacity-20")}
