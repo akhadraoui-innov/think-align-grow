@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
