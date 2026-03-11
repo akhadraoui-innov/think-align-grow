@@ -48,9 +48,11 @@ export function CanvasCard({
     onUpdateContent({ maturity_level: level });
   };
 
-  const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
-  const pillarColor = pillar ? getPillarCssColor(pillar.slug, pillar.color) : `hsl(var(--pillar-primary))`;
-  const pillarColorVar = `var(--pillar-${gradient})`;
+  const slug = pillar?.slug || "";
+  const dbCol = pillar?.color || null;
+  const gradient = pillar ? getPillarGradient(slug, dbCol) : "primary";
+  const pillarColor = getPillarCssColor(slug, dbCol);
+  const pillarColorAlpha = (a: number) => getPillarCssColorAlpha(slug, dbCol, a);
 
   const width = displayMode === "section" ? 220 : displayMode === "full" ? 420 : displayMode === "gamified" ? 240 : 280;
 
