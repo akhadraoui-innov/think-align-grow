@@ -4,14 +4,13 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { DataTable } from "@/components/admin/DataTable";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Building2, Sparkles, Palette, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { StepDialog, type StepDef } from "@/components/admin/StepDialog";
 
 export default function AdminOrganizations() {
   const navigate = useNavigate();
@@ -32,6 +31,97 @@ export default function AdminOrganizations() {
     }
   };
 
+  const steps: StepDef[] = [
+    {
+      title: "Identité",
+      description: "Nommez l'organisation",
+      icon: Sparkles,
+      canProceed: !!form.name.trim() && !!form.slug.trim(),
+      content: (
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Nom *</label>
+            <Input
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") }))}
+              placeholder="Acme Corp"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Slug *</label>
+            <Input
+              value={form.slug}
+              onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+              placeholder="acme-corp"
+            />
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Personnalisation",
+      description: "Couleur de marque",
+      icon: Palette,
+      content: (
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Couleur principale</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={form.primary_color}
+                onChange={(e) => setForm((f) => ({ ...f, primary_color: e.target.value }))}
+                className="h-10 w-10 rounded-xl border border-border cursor-pointer"
+              />
+              <Input
+                value={form.primary_color}
+                onChange={(e) => setForm((f) => ({ ...f, primary_color: e.target.value }))}
+                className="flex-1"
+              />
+            </div>
+          </div>
+          {/* Preview */}
+          <div className="flex items-center gap-3 p-4 rounded-xl border border-border/50 bg-muted/30">
+            <div
+              className="h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold text-white"
+              style={{ backgroundColor: form.primary_color }}
+            >
+              {form.name?.[0]?.toUpperCase() || "A"}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">{form.name || "Aperçu"}</p>
+              <p className="text-xs text-muted-foreground">/{form.slug || "slug"}</p>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Récapitulatif",
+      description: "Vérifiez avant de créer",
+      icon: Eye,
+      content: (
+        <div className="rounded-xl border border-border/50 bg-muted/30 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Nom</span>
+            <span className="text-sm font-medium text-foreground">{form.name || "—"}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Slug</span>
+            <span className="text-sm font-mono text-foreground">{form.slug || "—"}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Couleur</span>
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded" style={{ backgroundColor: form.primary_color }} />
+              <span className="text-sm font-mono text-foreground">{form.primary_color}</span>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
   const columns = [
     {
       key: "name",
@@ -49,7 +139,7 @@ export default function AdminOrganizations() {
             <div className="flex items-center gap-2">
               <p className="font-medium text-foreground">{row.name}</p>
               {(row as any).is_platform_owner && (
-                <Badge variant="outline" className="text-[9px] bg-red-500/10 text-red-600 border-red-500/30">SaaS</Badge>
+                <Badge variant="outline" className="text-[9px] bg-destructive/10 text-destructive border-destructive/30">SaaS</Badge>
               )}
             </div>
             <p className="text-xs text-muted-foreground">{row.slug}</p>
@@ -100,57 +190,23 @@ export default function AdminOrganizations() {
             searchPlaceholder="Rechercher une organisation..."
             onRowClick={(row) => navigate(`/admin/organizations/${row.id}`)}
             actions={
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Nouvelle organisation
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Créer une organisation</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label>Nom</Label>
-                      <Input
-                        value={form.name}
-                        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") }))}
-                        placeholder="Acme Corp"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Slug</Label>
-                      <Input
-                        value={form.slug}
-                        onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                        placeholder="acme-corp"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Couleur principale</Label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={form.primary_color}
-                          onChange={(e) => setForm((f) => ({ ...f, primary_color: e.target.value }))}
-                          className="h-9 w-9 rounded-lg border border-border cursor-pointer"
-                        />
-                        <Input
-                          value={form.primary_color}
-                          onChange={(e) => setForm((f) => ({ ...f, primary_color: e.target.value }))}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                    <Button onClick={handleCreate} disabled={create.isPending} className="w-full">
-                      {create.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Créer
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <>
+                <Button size="sm" className="gap-2" onClick={() => setOpen(true)}>
+                  <Plus className="h-4 w-4" />
+                  Nouvelle organisation
+                </Button>
+                <StepDialog
+                  open={open}
+                  onOpenChange={setOpen}
+                  steps={steps}
+                  onComplete={handleCreate}
+                  completing={create.isPending}
+                  title="Nouvelle organisation"
+                  icon={Building2}
+                  gradient="business"
+                  completeLabel="Créer l'organisation"
+                />
+              </>
             }
           />
         )}

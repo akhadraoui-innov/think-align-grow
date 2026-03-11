@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { GradientIcon } from "@/components/ui/GradientIcon";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -64,24 +63,34 @@ export function OrgTeamsTab({ teams, organizationId }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{teams.length} équipe{teams.length > 1 ? "s" : ""}</p>
+        <Button size="sm" className="gap-2" onClick={() => setOpen(true)}>
+          <Plus className="h-4 w-4" />
+          Nouvelle équipe
+        </Button>
+
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nouvelle équipe
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Créer une équipe</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label>Nom de l'équipe</Label>
+          <DialogContent className="p-0 gap-0 rounded-2xl overflow-hidden border-border/50 shadow-[var(--shadow-elevated)] max-w-md">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-primary/5 via-accent/5 to-transparent px-6 pt-6 pb-4">
+              <div className="flex items-center gap-3">
+                <GradientIcon icon={Users} gradient="team" size="sm" />
+                <div>
+                  <h2 className="text-lg font-display font-bold text-foreground">Créer une équipe</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Ajoutez une nouvelle équipe à l'organisation</p>
+                </div>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="px-6 py-4 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Nom de l'équipe</label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Équipe Produit" />
               </div>
-              <Button onClick={handleCreate} disabled={creating} className="w-full">
-                {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            </div>
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-border/50 bg-muted/30 flex justify-end">
+              <Button onClick={handleCreate} disabled={creating || !name.trim()} className="gap-1.5 min-w-[100px]">
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Créer
               </Button>
             </div>
