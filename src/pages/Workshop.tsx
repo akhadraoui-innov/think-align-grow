@@ -95,7 +95,7 @@ export default function Workshop() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-3 gap-3 mb-8"
+          className="grid grid-cols-2 gap-3 mb-8"
         >
           <button
             onClick={() => setCreateOpen(true)}
