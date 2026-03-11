@@ -64,7 +64,8 @@ export function useCreateWorkshop() {
         role: "host",
       });
 
-      navigate(`/workshop/${workshop.id}`);
+      const isChallenge = config?.type === "challenge";
+      navigate(isChallenge ? `/challenge/${workshop.id}` : `/workshop/${workshop.id}`);
     } catch (e: any) {
       toast.error(e.message || "Erreur lors de la création");
     } finally {
@@ -211,6 +212,7 @@ export interface MyWorkshopItem {
   status: Workshop["status"];
   created_at: string;
   host_id: string;
+  config: any;
   role: string;
   participant_count: number;
 }
@@ -246,7 +248,7 @@ export function useMyWorkshops() {
 
       const { data: ws } = await supabase
         .from("workshops")
-        .select("id, name, code, status, created_at, host_id")
+        .select("id, name, code, status, created_at, host_id, config")
         .in("id", workshopIds)
         .order("created_at", { ascending: false });
 

@@ -5,7 +5,7 @@ import {
   ZoomIn, ZoomOut, Play, Pause, Check, 
   Users, ArrowLeft, Type, Smile, ChevronDown,
   Circle, Triangle, Hexagon, Diamond, RectangleHorizontal,
-  Maximize, Grid3X3, Pencil, Save, Lock,
+  Maximize, Grid3X3, Pencil, Save, Lock, LayoutGrid,
   icons
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,8 @@ interface WorkshopToolbarProps {
   onFitToContent?: () => void;
   editMode?: boolean;
   onEditModeChange?: (editMode: boolean) => void;
+  hasChallenge?: boolean;
+  onOpenChallenge?: () => void;
 }
 
 const TOOLS = [
@@ -76,6 +78,7 @@ export function WorkshopToolbar({
   readOnly,
   snapToGrid, onSnapToggle, onFitToContent,
   editMode, onEditModeChange,
+  hasChallenge, onOpenChallenge,
 }: WorkshopToolbarProps) {
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [iconSearch, setIconSearch] = useState("");
@@ -233,6 +236,12 @@ export function WorkshopToolbar({
 
       {/* Right */}
       <div className="flex items-center gap-3">
+        {/* Challenge toggle button */}
+        {hasChallenge && (
+          <Button variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs" onClick={onOpenChallenge}>
+            <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />Challenge
+          </Button>
+        )}
         {/* Edit mode controls for completed workshops */}
         {workshopStatus === "completed" && (
           readOnly ? (
