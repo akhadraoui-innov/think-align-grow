@@ -56,8 +56,8 @@ export function FlipCard({ card, pillarSlug = "business", pillarColor }: FlipCar
           style={{
             backfaceVisibility: "hidden",
             transform: "rotateY(180deg)",
-            background: `linear-gradient(135deg, ${cssColor}33, ${cssColor}0d)`,
-            borderColor: `${cssColor}4d`,
+            background: `linear-gradient(135deg, ${cssColorAlpha(0.2)}, ${cssColorAlpha(0.05)})`,
+            borderColor: cssColorAlpha(0.3),
           }}
         >
           <div>

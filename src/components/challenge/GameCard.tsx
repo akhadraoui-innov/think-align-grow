@@ -121,7 +121,7 @@ export function GameCard({
               <span
                 className="text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md"
                 style={{
-                  background: `${pillarColor}1a`,
+                  background: pillarColorAlpha(0.1),
                   color: pillarColor,
                 }}
               >
