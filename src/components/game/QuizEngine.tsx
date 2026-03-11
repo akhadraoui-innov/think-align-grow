@@ -4,6 +4,10 @@ import { ChevronRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadarChart } from "./RadarChart";
 import { useQuizQuestions, usePillars } from "@/hooks/useToolkitData";
+import { useToolkit } from "@/hooks/useToolkitData";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface QuizOption {
   label: string;
@@ -17,6 +21,8 @@ interface QuizEngineProps {
 export function QuizEngine({ onComplete }: QuizEngineProps) {
   const { data: questions, isLoading: loadingQ } = useQuizQuestions();
   const { data: pillars, isLoading: loadingP } = usePillars();
+  const { data: toolkit } = useToolkit();
+  const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -26,7 +32,6 @@ export function QuizEngine({ onComplete }: QuizEngineProps) {
     return <p className="text-center text-muted-foreground py-8">Chargement du quiz...</p>;
   }
 
-  // Build pillar lookup
   const pillarMap = Object.fromEntries(pillars.map(p => [p.id, p]));
 
   const computeScores = (ans: Record<string, number>): Record<string, number> => {
@@ -53,6 +58,22 @@ export function QuizEngine({ onComplete }: QuizEngineProps) {
   const scores = computeScores(answers);
   const pillarName = pillarMap[question.pillar_id]?.name || "";
 
+  const saveScoresToDb = async (finalScores: Record<string, number>) => {
+    if (!user || !toolkit) return;
+    const nonZero = Object.values(finalScores).filter(v => v > 0);
+    const avg = nonZero.length ? nonZero.reduce((a, b) => a + b, 0) / nonZero.length : 0;
+    try {
+      await supabase.from("quiz_results").insert({
+        user_id: user.id,
+        toolkit_id: toolkit.id,
+        scores: finalScores,
+        total_score: Math.round(avg),
+      });
+    } catch {
+      // Silently fail — quiz still works without persistence
+    }
+  };
+
   const handleNext = () => {
     if (selectedOption === null) return;
     const newAnswers = { ...answers, [question.id]: selectedOption };
@@ -64,6 +85,7 @@ export function QuizEngine({ onComplete }: QuizEngineProps) {
     } else {
       setFinished(true);
       const finalScores = computeScores(newAnswers);
+      saveScoresToDb(finalScores);
       onComplete?.(finalScores);
     }
   };

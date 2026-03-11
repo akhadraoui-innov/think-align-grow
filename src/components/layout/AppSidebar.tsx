@@ -18,6 +18,7 @@ import { Compass, Layers, Gamepad2, Sparkles, User, LogOut, Coins, Search, Layou
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { OrgSwitcher } from "@/components/layout/OrgSwitcher";
 
 const navItems = [
   { path: "/explore", icon: Compass, label: "Explorer" },
@@ -197,8 +198,12 @@ export function AppSidebar({ onCommandPalette }: AppSidebarProps) {
         )}
       </SidebarContent>
 
-      {/* Footer: credits + user */}
+      {/* Footer: org switcher + credits + user */}
       <SidebarFooter className="px-3 py-3 border-t border-border/50 space-y-2">
+        {user && (
+          <OrgSwitcher collapsed={collapsed} />
+        )}
+
         {user && !collapsed && (
           <div className="flex items-center gap-2 rounded-xl bg-secondary/50 px-3 py-2">
             <Coins className="h-4 w-4 text-pillar-impact shrink-0" />

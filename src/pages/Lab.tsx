@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Gamepad2, Trophy, Target, Zap, Lock, ChevronRight, Star, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,10 @@ import { MeshGradient } from "@/components/ui/PatternBackground";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { QuizEngine } from "@/components/game/QuizEngine";
 import { RadarChart } from "@/components/game/RadarChart";
+import { useAuth } from "@/hooks/useAuth";
+import { useToolkit } from "@/hooks/useToolkitData";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const features = [
   { title: "Auto-Évaluation", description: "Mesurez votre maturité stratégique par pilier", icon: Target, gradient: "accent", locked: false },
@@ -21,10 +25,42 @@ const badges = [
 ];
 
 export default function Lab() {
+  const { user } = useAuth();
+  const { data: toolkit } = useToolkit();
   const [showQuiz, setShowQuiz] = useState(false);
   const [scores, setScores] = useState<Record<string, number> | null>(null);
   const [xp, setXp] = useState(0);
   const [unlockedBadges, setUnlockedBadges] = useState<Set<string>>(new Set());
+
+  // Load last quiz results from DB
+  const { data: lastResult } = useQuery({
+    queryKey: ["last_quiz_result", user?.id, toolkit?.id],
+    enabled: !!user?.id && !!toolkit?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("quiz_results")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("toolkit_id", toolkit!.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  // Hydrate from DB on load
+  useEffect(() => {
+    if (lastResult && !scores) {
+      const dbScores = lastResult.scores as Record<string, number>;
+      setScores(dbScores);
+      setXp(lastResult.total_score || 0);
+      const newBadges = new Set<string>();
+      newBadges.add("Stratège");
+      if ((lastResult.total_score || 0) > 80) newBadges.add("Champion");
+      setUnlockedBadges(newBadges);
+    }
+  }, [lastResult, scores]);
 
   const emptyScores: Record<string, number> = {
     thinking: 0, business: 0, innovation: 0, finance: 0, marketing: 0,

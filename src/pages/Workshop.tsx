@@ -9,6 +9,7 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCreateWorkshop, useJoinWorkshop, useMyWorkshops } from "@/hooks/useWorkshop";
+import { useActiveOrg } from "@/contexts/OrgContext";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -21,6 +22,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 export default function Workshop() {
   const { user } = useAuth();
+  const { activeOrgId } = useActiveOrg();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [createOpen, setCreateOpen] = useState(false);
@@ -207,7 +209,7 @@ export default function Workshop() {
                 />
               </div>
               <Button
-                onClick={() => { create(workshopName); setCreateOpen(false); }}
+                onClick={() => { create(workshopName, {}, activeOrgId); setCreateOpen(false); }}
                 disabled={!workshopName.trim() || creating}
                 className="w-full font-black uppercase tracking-wider rounded-xl h-11"
               >
