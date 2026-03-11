@@ -5,7 +5,7 @@ import {
   ZoomIn, ZoomOut, Play, Pause, Check, 
   Users, ArrowLeft, Type, Smile, ChevronDown,
   Circle, Triangle, Hexagon, Diamond, RectangleHorizontal,
-  Maximize, Grid3X3, Pencil, Save, Lock,
+  Maximize, Grid3X3, Pencil, Save, Lock, LayoutGrid,
   icons
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
