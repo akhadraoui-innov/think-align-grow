@@ -14,6 +14,8 @@ import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import Workshop from "./pages/Workshop";
 import WorkshopRoom from "./pages/WorkshopRoom";
+import Challenge from "./pages/Challenge";
+import ChallengeRoom from "./pages/ChallengeRoom";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
