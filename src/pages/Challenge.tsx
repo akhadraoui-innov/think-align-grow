@@ -36,6 +36,10 @@ export default function Challenge() {
   const { workshops, loading: loadingList } = useMyWorkshops();
   const { data: toolkit } = useToolkit();
   const { data: challengeTemplates } = useChallengeTemplates(toolkit?.id);
+  const { balance, hasCredits } = useCredits();
+  const spendCredits = useSpendCredits();
+  const { canCreateChallenge } = useQuotas();
+  const challengeCost = toolkit?.credit_cost_challenge ?? 0;
 
   // Filter workshops that are challenge-type (config.type === "challenge")
   const challengeWorkshops = workshops.filter(w => {
