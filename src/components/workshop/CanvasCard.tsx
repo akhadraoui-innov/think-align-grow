@@ -49,8 +49,8 @@ export function CanvasCard({
   };
 
   const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
+  const pillarColor = pillar ? getPillarCssColor(pillar.slug, pillar.color) : `hsl(var(--pillar-primary))`;
   const pillarColorVar = `var(--pillar-${gradient})`;
-  const pillarColor = `hsl(${pillarColorVar})`;
 
   const width = displayMode === "section" ? 220 : displayMode === "full" ? 420 : displayMode === "gamified" ? 240 : 280;
 

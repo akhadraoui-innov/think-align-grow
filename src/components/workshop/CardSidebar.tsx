@@ -120,7 +120,7 @@ export function CardSidebar({ cards, pillars, onAddCard, isMobile }: CardSidebar
 
 function CardItem({ card, pillar, onAdd }: { card: DbCard; pillar: DbPillar | undefined; onAdd: () => void }) {
   const gradient = pillar ? getPillarGradient(pillar.slug, pillar.color) : "primary";
-  const pillarColor = `hsl(var(--pillar-${gradient}))`;
+  const pillarColor = pillar ? getPillarCssColor(pillar.slug, pillar.color) : `hsl(var(--pillar-primary))`;
 
   return (
     <HoverCard openDelay={1200} closeDelay={200}>
