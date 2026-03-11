@@ -1,46 +1,50 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { useAdminUsers } from "@/hooks/useAdminUsers";
-import { usePermissions } from "@/hooks/usePermissions";
+import { useAdminUserDetail } from "@/hooks/useAdminUserDetail";
+import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
 import {
-  ArrowLeft, Loader2, Shield, Building2, Coins, Plus, X, CreditCard,
+  ArrowLeft, Loader2, Settings, Shield, Building2, CreditCard,
+  Presentation, Swords, BookOpen, ScrollText,
 } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Constants } from "@/integrations/supabase/types";
+import { useState } from "react";
 
-const ALL_ROLES = Constants.public.Enums.app_role;
-
-const ROLE_COLORS: Record<string, string> = {
-  super_admin: "bg-red-500/10 text-red-600 border-red-500/30",
-  customer_lead: "bg-blue-500/10 text-blue-600 border-blue-500/30",
-  innovation_lead: "bg-violet-500/10 text-violet-600 border-violet-500/30",
-  performance_lead: "bg-amber-500/10 text-amber-600 border-amber-500/30",
-  product_actor: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
-  owner: "bg-orange-500/10 text-orange-600 border-orange-500/30",
-  admin: "bg-sky-500/10 text-sky-600 border-sky-500/30",
-};
+import { UserInfoTab } from "@/components/admin/UserInfoTab";
+import { UserRolesTab } from "@/components/admin/UserRolesTab";
+import { UserOrgsTab } from "@/components/admin/UserOrgsTab";
+import { UserCreditsTab } from "@/components/admin/UserCreditsTab";
+import { UserWorkshopsTab } from "@/components/admin/UserWorkshopsTab";
+import { UserChallengesTab } from "@/components/admin/UserChallengesTab";
+import { UserCardsTab } from "@/components/admin/UserCardsTab";
+import { UserActivityTab } from "@/components/admin/UserActivityTab";
 
 export default function AdminUserDetail() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { users, isLoading, addRole, removeRole, adjustCredits } = useAdminUsers();
-  const permissions = usePermissions();
+  const [saving, setSaving] = useState(false);
 
-  const [newRole, setNewRole] = useState("");
-  const [creditAmount, setCreditAmount] = useState("");
-  const [creditDesc, setCreditDesc] = useState("");
-
-  const user = users.find((u) => u.user_id === userId);
+  const {
+    profile,
+    roles,
+    organizations,
+    credits,
+    workshops,
+    challenges,
+    quizResults,
+    cardProgress,
+    activityLogs,
+    isLoading,
+    updateProfile,
+    addRole,
+    removeRole,
+    adjustCredits,
+  } = useAdminUserDetail(userId);
 
   if (isLoading) {
     return (
@@ -52,7 +56,7 @@ export default function AdminUserDetail() {
     );
   }
 
-  if (!user) {
+  if (!profile) {
     return (
       <AdminShell>
         <div className="p-6">
@@ -62,14 +66,23 @@ export default function AdminUserDetail() {
     );
   }
 
-  const availableRoles = ALL_ROLES.filter((r) => !user.roles.includes(r));
+  const createdAgo = formatDistanceToNow(new Date(profile.created_at), { addSuffix: true, locale: fr });
 
-  const handleAddRole = async () => {
-    if (!newRole) return;
+  const handleSaveProfile = async (updates: Record<string, any>) => {
+    setSaving(true);
     try {
-      await addRole.mutateAsync({ userId: user.user_id, role: newRole });
-      toast({ title: `Rôle "${newRole.replace(/_/g, " ")}" ajouté` });
-      setNewRole("");
+      await updateProfile.mutateAsync(updates);
+      toast({ title: "Profil mis à jour" });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    }
+    setSaving(false);
+  };
+
+  const handleAddRole = async (role: string) => {
+    try {
+      await addRole.mutateAsync(role);
+      toast({ title: `Rôle "${role.replace(/_/g, " ")}" ajouté` });
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }
@@ -77,27 +90,21 @@ export default function AdminUserDetail() {
 
   const handleRemoveRole = async (role: string) => {
     try {
-      await removeRole.mutateAsync({ userId: user.user_id, role });
+      await removeRole.mutateAsync(role);
       toast({ title: `Rôle "${role.replace(/_/g, " ")}" retiré` });
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }
   };
 
-  const handleAdjustCredits = async () => {
-    const amount = parseInt(creditAmount);
-    if (isNaN(amount) || amount === 0 || !creditDesc) return;
+  const handleAdjustCredits = async (amount: number, description: string) => {
     try {
-      await adjustCredits.mutateAsync({ userId: user.user_id, amount, description: creditDesc });
+      await adjustCredits.mutateAsync({ amount, description });
       toast({ title: `${amount > 0 ? "+" : ""}${amount} crédits` });
-      setCreditAmount("");
-      setCreditDesc("");
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }
   };
-
-  const createdAgo = formatDistanceToNow(new Date(user.created_at), { addSuffix: true, locale: fr });
 
   return (
     <AdminShell>
@@ -108,147 +115,99 @@ export default function AdminUserDetail() {
             <ArrowLeft className="h-4 w-4 mr-1" /> Retour
           </Button>
           <Avatar className="h-12 w-12">
-            <AvatarImage src={user.avatar_url || undefined} />
+            <AvatarImage src={profile.avatar_url || undefined} />
             <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
-              {(user.display_name || "?")[0]?.toUpperCase()}
+              {(profile.display_name || "?")[0]?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-xl font-display font-bold text-foreground">{user.display_name || "Sans nom"}</h1>
+            <h1 className="text-xl font-display font-bold text-foreground">
+              {profile.display_name || "Sans nom"}
+            </h1>
             <p className="text-xs text-muted-foreground">
-              Inscrit {createdAgo} · {user.xp} XP · {user.credit_balance} crédits
+              {(profile as any).job_title && `${(profile as any).job_title} · `}
+              Inscrit {createdAgo}
+              {" · "}{profile.xp} XP
+              {" · "}{credits?.balance.balance ?? 0} crédits
+              {" · "}{organizations.length} org{organizations.length > 1 ? "s" : ""}
+              {" · "}{workshops.hosted.length + workshops.participations.length} workshop{workshops.hosted.length + workshops.participations.length > 1 ? "s" : ""}
             </p>
           </div>
-          <Badge variant="outline" className={`ml-auto text-xs ${user.status === "active" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : ""}`}>
-            {user.status === "active" ? "Actif" : user.status}
-          </Badge>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Profil */}
-          <div className="rounded-xl border border-border/50 bg-card p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Shield className="h-4 w-4 text-primary" /> Profil
-            </h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">User ID</p>
-                <p className="font-mono text-xs text-foreground break-all">{user.user_id}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Statut</p>
-                <p className="text-foreground">{user.status}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Inscription</p>
-                <p className="text-foreground">{format(new Date(user.created_at), "dd MMM yyyy à HH:mm", { locale: fr })}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Dernière connexion</p>
-                <p className="text-foreground">
-                  {user.last_seen_at ? format(new Date(user.last_seen_at), "dd MMM yyyy à HH:mm", { locale: fr }) : "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">XP</p>
-                <p className="text-foreground font-mono">{user.xp}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Crédits</p>
-                <p className="text-foreground font-mono">{user.credit_balance}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Rôles */}
-          <div className="rounded-xl border border-border/50 bg-card p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Shield className="h-4 w-4 text-primary" /> Rôles plateforme
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {user.roles.length === 0 && <p className="text-sm text-muted-foreground italic">Aucun rôle attribué</p>}
-              {user.roles.map((role) => (
-                <Badge key={role} variant="outline" className={`text-xs gap-1 ${ROLE_COLORS[role] || "bg-muted text-muted-foreground border-border"}`}>
-                  {role.replace(/_/g, " ")}
-                  {permissions.canManageUsers && (
-                    <button onClick={() => handleRemoveRole(role)} className="ml-1 hover:text-destructive">
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </Badge>
-              ))}
-            </div>
-            {permissions.canManageUsers && availableRoles.length > 0 && (
-              <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                <Select value={newRole} onValueChange={setNewRole}>
-                  <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue placeholder="Ajouter un rôle…" /></SelectTrigger>
-                  <SelectContent>
-                    {availableRoles.map((r) => (
-                      <SelectItem key={r} value={r}>{r.replace(/_/g, " ")}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button size="sm" variant="outline" onClick={handleAddRole} disabled={!newRole || addRole.isPending} className="h-8 gap-1 text-xs">
-                  <Plus className="h-3 w-3" /> Ajouter
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Organisations */}
-          <div className="rounded-xl border border-border/50 bg-card p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" /> Organisations
-            </h3>
-            {user.organizations.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">Aucune organisation</p>
-            ) : (
-              <div className="space-y-2">
-                {user.organizations.map((org) => (
-                  <div key={org.id} className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/30 p-3">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{org.name}</p>
-                      <p className="text-[10px] text-muted-foreground font-mono">{org.id}</p>
-                    </div>
-                    <Badge variant="outline" className="text-[10px]">{org.role.replace(/_/g, " ")}</Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Crédits */}
-          <div className="rounded-xl border border-border/50 bg-card p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Coins className="h-4 w-4 text-primary" /> Ajuster les crédits
-            </h3>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-xl bg-muted/50 border border-border/50 px-4 py-3">
-                <CreditCard className="h-5 w-5 text-primary" />
-                <span className="text-2xl font-bold text-foreground">{user.credit_balance}</span>
-                <span className="text-xs text-muted-foreground">crédits</span>
-              </div>
-            </div>
-            {permissions.canManageUsers && (
-              <div className="space-y-3 pt-2 border-t border-border/50">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Montant (+/-)</Label>
-                    <Input value={creditAmount} onChange={(e) => setCreditAmount(e.target.value)} placeholder="Ex: 50 ou -10" type="number" className="h-8 text-sm" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Raison</Label>
-                    <Input value={creditDesc} onChange={(e) => setCreditDesc(e.target.value)} placeholder="Bonus, correction…" className="h-8 text-sm" />
-                  </div>
-                </div>
-                <Button size="sm" onClick={handleAdjustCredits} disabled={adjustCredits.isPending} className="gap-2 text-xs">
-                  {adjustCredits.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-                  Appliquer
-                </Button>
-              </div>
-            )}
+          <div className="ml-auto flex items-center gap-2">
+            {roles.map((r) => (
+              <Badge key={r} variant="outline" className="text-[10px]">{r.replace(/_/g, " ")}</Badge>
+            ))}
+            <Badge variant="outline" className={`text-xs ${profile.status === "active" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : ""}`}>
+              {profile.status === "active" ? "Actif" : profile.status}
+            </Badge>
           </div>
         </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="info" className="space-y-4">
+          <TabsList className="bg-muted/50 flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="info" className="gap-1.5 text-xs">
+              <Settings className="h-3.5 w-3.5" /> Infos
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="gap-1.5 text-xs">
+              <Shield className="h-3.5 w-3.5" /> Rôles ({roles.length})
+            </TabsTrigger>
+            <TabsTrigger value="organizations" className="gap-1.5 text-xs">
+              <Building2 className="h-3.5 w-3.5" /> Organisations ({organizations.length})
+            </TabsTrigger>
+            <TabsTrigger value="credits" className="gap-1.5 text-xs">
+              <CreditCard className="h-3.5 w-3.5" /> Crédits
+            </TabsTrigger>
+            <TabsTrigger value="workshops" className="gap-1.5 text-xs">
+              <Presentation className="h-3.5 w-3.5" /> Workshops ({workshops.hosted.length + workshops.participations.length})
+            </TabsTrigger>
+            <TabsTrigger value="challenges" className="gap-1.5 text-xs">
+              <Swords className="h-3.5 w-3.5" /> Challenges ({challenges.length})
+            </TabsTrigger>
+            <TabsTrigger value="cards" className="gap-1.5 text-xs">
+              <BookOpen className="h-3.5 w-3.5" /> Cartes ({cardProgress.length})
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="gap-1.5 text-xs">
+              <ScrollText className="h-3.5 w-3.5" /> Activité
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="info">
+            <UserInfoTab profile={profile} onSave={handleSaveProfile} saving={saving} />
+          </TabsContent>
+
+          <TabsContent value="roles">
+            <UserRolesTab roles={roles} onAddRole={handleAddRole} onRemoveRole={handleRemoveRole} />
+          </TabsContent>
+
+          <TabsContent value="organizations">
+            <UserOrgsTab organizations={organizations as any} />
+          </TabsContent>
+
+          <TabsContent value="credits">
+            <UserCreditsTab
+              balance={credits?.balance || { balance: 0, lifetime_earned: 0 }}
+              transactions={credits?.transactions || []}
+              onAdjust={handleAdjustCredits}
+            />
+          </TabsContent>
+
+          <TabsContent value="workshops">
+            <UserWorkshopsTab hosted={workshops.hosted} participations={workshops.participations as any} />
+          </TabsContent>
+
+          <TabsContent value="challenges">
+            <UserChallengesTab challenges={challenges} quizResults={quizResults as any} />
+          </TabsContent>
+
+          <TabsContent value="cards">
+            <UserCardsTab progress={cardProgress as any} />
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <UserActivityTab logs={activityLogs} />
+          </TabsContent>
+        </Tabs>
       </div>
     </AdminShell>
   );
