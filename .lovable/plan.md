@@ -59,21 +59,56 @@ Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `cu
 - ✅ Route /admin/organizations/:id
 - ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
 
-## Sprint 3 — EN COURS 🚧
+## Sprint 3 — COMPLÉTÉ ✅
 
 ### Gestion des utilisateurs (AdminUsers)
-- Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
-- Fiche utilisateur détaillée : profil, rôles, organisations, historique d'activité, crédits
-- Actions : changement de rôle, attribution/retrait de crédits, désactivation
+- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
+- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
+- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
+- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
+- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
+- ✅ UserCreditsTab : solde, lifetime, historique des transactions
+- ✅ UserWorkshopsTab : workshops hébergés et participations
+- ✅ UserChallengesTab : performances quiz et challenges
+- ✅ UserCardsTab : suivi des vues et favoris
+- ✅ UserActivityTab : journal d'audit utilisateur
 
 ### Hook usePermissions
-- Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
-- Utilisé dans toute l'app pour conditionner les actions
+- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
 
-## Sprint 4 — À FAIRE
-- Gestion des Toolkits : CRUD complet, import de cartes, gestion des piliers
-- Gestion des Workshops : vue admin, modération, export des résultats
+### Hook useAdminUserDetail
+- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
+
+### Migration SQL Sprint 3
+- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
+
+## Sprint 4 — COMPLÉTÉ ✅
+
+### Gestion des Toolkits
+- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
+- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
+- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
+- ✅ Fiche AdminToolkitDetail avec 7 onglets :
+  - Infos : nom, slug, emoji, description, statut, métadonnées
+  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
+  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
+  - Challenges : templates avec sujets et slots imbriqués
+  - Game Plans : plans avec étapes ordonnées
+  - Quiz : questions par pilier avec compteur d'options
+  - Organisations : ajout/retrait d'accès toolkit pour les orgs
+- ✅ Route /admin/toolkits/:id
+
+### Gestion des Workshops (vue admin)
+- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
+- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
 
 ## Sprint 5 — À FAIRE
-- Facturation & abonnements : plans, quotas, suivi de consommation
-- Logs & audit : historique complet, filtres, export
+
+### Facturation & abonnements
+- Gestion des plans d'abonnement (CRUD)
+- Attribution de plans aux organisations
+- Suivi de consommation (crédits, quotas)
+
+### Logs & audit
+- Page AdminLogs : historique complet des actions, filtres par type/utilisateur/organisation, export
+- Recherche avancée dans les logs
