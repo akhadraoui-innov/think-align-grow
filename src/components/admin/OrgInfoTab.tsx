@@ -74,6 +74,7 @@ interface Organization {
   addresses?: Address[] | null;
   contacts?: Contact[] | null;
   notes?: string | null;
+  is_platform_owner?: boolean;
 }
 
 interface Props {
