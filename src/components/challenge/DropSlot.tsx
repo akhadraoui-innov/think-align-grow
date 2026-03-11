@@ -15,6 +15,7 @@ interface DropSlotProps {
   pillars: DbPillar[];
   onDrop: (slotId: string, cardId: string) => void;
   onRemove: (responseId: string) => void;
+  onMoveToSlot?: (responseId: string, newSlotId: string, cardId: string) => void;
   onUpdateResponse?: (responseId: string, updates: { format?: string; maturity?: number; rank?: number }) => void;
   readOnly?: boolean;
 }
