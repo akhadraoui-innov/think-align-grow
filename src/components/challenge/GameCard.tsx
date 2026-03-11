@@ -84,7 +84,7 @@ export function GameCard({
           {/* Colored header */}
           <div
             className="px-3 pt-3 pb-2 shrink-0"
-            style={{ background: `${pillarColor}26` }}
+            style={{ background: pillarColorAlpha(0.15) }}
           >
             <div className="flex items-center justify-between mb-1">
               <span
