@@ -81,7 +81,7 @@ export function GameCard({
           {/* Colored header */}
           <div
             className="px-3 pt-3 pb-2 shrink-0"
-            style={{ background: `hsl(var(--pillar-${gradient}) / 0.15)` }}
+            style={{ background: `${pillarColor}26` }}
           >
             <div className="flex items-center justify-between mb-1">
               <span
