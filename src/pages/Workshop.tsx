@@ -29,7 +29,7 @@ export default function Workshop() {
   const [joinOpen, setJoinOpen] = useState(false);
   const [workshopName, setWorkshopName] = useState("");
   const [joinCode, setJoinCode] = useState("");
-  const [challengeOpen, setChallengeOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
   const { create, loading: creating } = useCreateWorkshop();
   const { join, loading: joining } = useJoinWorkshop();
   const { workshops, loading: loadingList } = useMyWorkshops();
