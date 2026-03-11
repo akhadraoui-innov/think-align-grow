@@ -4,7 +4,7 @@ import dynamicIconImports from "lucide-react/dynamicIconImports";
 import { cn } from "@/lib/utils";
 import { CanvasItem } from "@/hooks/useCanvasItems";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
-import { getPillarGradient, getPillarCssColor, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
+import { getPillarGradient, getPillarCssColor, getPillarCssColorAlpha, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
 
 // Dynamic icon loader for pillar icons
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
