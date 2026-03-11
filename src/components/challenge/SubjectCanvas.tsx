@@ -39,7 +39,7 @@ const TYPE_COLORS: Record<string, string> = {
 export function SubjectCanvas({
   subject, slots, responses, cards, pillars,
   onDrop, onRemove, onUpdateResponse,
-  stagingItems = [], onStage, onUnstage, onStagingFormatChange,
+  stagingItems = [], onStage, onUnstage, onStagingFormatChange, onReorderStaging,
   readOnly,
 }: SubjectCanvasProps) {
   const subjectSlots = slots.filter(s => s.subject_id === subject.id);
