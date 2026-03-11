@@ -46,6 +46,15 @@ function AnimatedRoutes() {
           <Route path="/workshop/:id" element={<WorkshopRoom />} />
           <Route path="/challenge" element={<Challenge />} />
           <Route path="/challenge/:id" element={<ChallengeRoom />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/organizations" element={<AdminOrganizations />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/toolkits" element={<AdminToolkits />} />
+          <Route path="/admin/workshops" element={<AdminWorkshops />} />
+          <Route path="/admin/design-innovation" element={<AdminDesignInnovation />} />
+          <Route path="/admin/billing" element={<AdminBilling />} />
+          <Route path="/admin/logs" element={<AdminLogs />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
