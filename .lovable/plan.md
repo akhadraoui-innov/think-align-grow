@@ -1,75 +1,145 @@
 
 
-## Audit Front-End du Workshop Canvas
+## Analyse de la regression et plan de restructuration Workshop / Challenge
 
-Apres analyse complete de toutes les couches (WorkshopCanvas, WorkshopToolbar, CanvasCard, StickyNote, CanvasGroup, CanvasIcon, CanvasText, DiscussionPanel, CanvasStats, WorkshopRoom), voici les problemes identifies et le plan de correction.
+### Diagnostic de la regression
 
----
+La simplification du header a introduit **3 pertes critiques** :
 
-### Bugs critiques
+1. **Le canvas collaboratif est mort.** Ligne 74-79 de `WorkshopRoom.tsx` force `workshopMode = "challenge"` dès qu'un template de challenge existe. Or un template existe toujours (il est lié au toolkit publié). Résultat : le mode canvas (post-its, flèches, groupes, icônes, texte, discussion) est **inaccessible**. Le code est encore là (lignes 402-457), mais il ne s'exécute jamais.
 
-**1. Indicateur fleche duplique et casse**
-- `WorkshopCanvas.tsx` ligne 321 : un `<div className="fixed ...">` est rendu DANS le conteneur transforme (`translate + scale`). CSS `fixed` ne fonctionne pas dans un parent avec `transform` → l'indicateur est mal positionne ou invisible.
-- Le meme indicateur existe deja dans `WorkshopRoom.tsx` ligne 396. Le doublon dans WorkshopCanvas doit etre supprime.
+2. **La toolbar canvas a disparu.** `WorkshopToolbar` est importé mais jamais rendu. Les outils de création (post-it, flèche, groupe, texte, icône), le zoom, le snap-to-grid, le fit-to-content — tout est perdu. Le header minimal ne contient que : retour, nom, statut, participants, contrôles host.
 
-**2. Perte de capture pointer sur les elements enfants**
-- `handleItemDragStart` fait `(e.target as HTMLElement).setPointerCapture(e.pointerId)` — si l'utilisateur clique sur un element enfant (texte, icone, badge), la capture est mise sur cet enfant et non sur le conteneur. Quand le pointer bouge hors de ce petit element, le drag cesse brusquement.
-- Fix : capturer sur `containerRef.current` au lieu de `e.target`.
+3. **La `CardSidebar` est mal connectée.** Elle est toujours affichée, mais son `onAddCard` envoie les cartes sur le canvas (pas dans le challenge). En mode challenge forcé, elle ne sert à rien — le challenge a sa propre `StagingZone` intégrée.
 
-**3. Resize des groupes perd les events**
-- Le resize handler dans `CanvasGroup` ecoute `onPointerMove/Up` sur le handle lui-meme (div 24x24px). Si le curseur sort de ce petit element pendant le resize, les events sont perdus.
-- Fix : le resize doit aussi utiliser `setPointerCapture` sur le handle pour garantir le tracking.
+### Problème de fond : couplage forcé de deux modules indépendants
 
-**4. Margin-top hardcodee pour le canvas**
-- `WorkshopRoom.tsx` ligne 322 : `mt-[60px]` ou `mt-[92px]` selon le statut. Tout changement de hauteur de toolbar ou banniere casse le layout.
-- Fix : utiliser un layout flex naturel sans margin-top fixe (la toolbar doit etre dans le flux flex, pas absolute).
+Aujourd'hui, Workshop et Challenge sont **fusionnés dans le même écran** (`WorkshopRoom.tsx` = 486 lignes). Challenge n'existe qu'à l'intérieur d'un workshop. Il n'a pas :
+- Son propre historique (pas de liste "Mes challenges")
+- Sa propre entrée standalone (on doit créer un workshop pour lancer un challenge)
+- Son propre header/toolbar adapté à son usage
+- Sa propre route dédiée
 
----
+### Architecture cible
 
-### Ameliorations UX majeures
+```text
+┌─────────────────────────────────────────────────────┐
+│                    WORKSHOP                         │
+│  Route: /workshop/:id                               │
+│  Header: WorkshopToolbar (outils canvas complets)   │
+│  Contenu: WorkshopCanvas + CardSidebar + Discussion │
+│  Données: workshop_canvas_items, workshop_comments  │
+│                                                     │
+│  ┌─ Optionnel: Challenge intégré ─────────────────┐ │
+│  │ Activé par l'hôte via un bouton dans la toolbar│ │
+│  │ S'ouvre en overlay/panel ou remplace le canvas  │ │
+│  │ Utilise le même workshop_id pour les réponses   │ │
+│  └────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────┘
 
-**5. Zoom au scroll (sans Ctrl)**
-- Actuellement le scroll sans Ctrl ne fait rien. Sur un canvas infini, le scroll devrait panner le canvas (standard Figma/Miro).
-- Ajouter : scroll = pan, Ctrl+scroll = zoom.
+┌─────────────────────────────────────────────────────┐
+│                    CHALLENGE                        │
+│  Route: /challenge/:id (standalone)                 │
+│  Header: minimal (nom challenge, sujets, analyser)  │
+│  Contenu: ChallengeView (existant, inchangé)        │
+│  Données: challenge_responses, challenge_analyses    │
+│  Entrée: /challenge (liste + création)              │
+└─────────────────────────────────────────────────────┘
+```
 
-**6. Pinch-to-zoom / Touch**
-- Aucun support tactile pour le zoom ou le pan a deux doigts. Sur tablette/mobile le canvas est inutilisable.
-- Ajouter la gestion des `touchstart/touchmove` pour pinch-zoom et pan 2 doigts.
-
-**7. Raccourcis clavier**
-- Pas de `Delete`/`Backspace` pour supprimer l'element selectionne
-- Pas de `Escape` pour deselectionner
-- Ajouter ces raccourcis dans WorkshopCanvas via `useEffect` + `keydown`.
-
-**8. Snap-to-grid optionnel**
-- Ajouter un snap magnetique lors du drag (arrondir x/y au multiple de 20px le plus proche quand actif).
-- Toggle dans la toolbar.
-
-**9. Fit-to-content / Reset view**
-- Le bouton "%" reset a `{x:0, y:0, scale:1}` ce qui ne correspond pas forcement au contenu.
-- Ajouter un bouton "Fit" qui calcule le bounding box de tous les items et ajuste viewport pour tout afficher.
-
----
-
-### Corrections mineures
-
-**10. SVG arrows container trop grand**
-- `width: 10000px, height: 10000px` est excessif. Utiliser `width: 0, height: 0` avec `overflow: visible` suffit.
-
-**11. Performance du drag**
-- Le debounce DB est a 300ms mais le state local est mis a jour a chaque pointermove. C'est correct, mais `onUpdatePosition` dans `useCanvasItems` declenche un re-render de la liste entiere. Pas critique pour < 100 items.
+### Plan d'implémentation — 5 étapes
 
 ---
 
-### Plan d'implementation
+**Étape 1 — Restaurer le Workshop canvas (correctif urgent)**
 
-| Fichier | Modifications |
+Fichier : `WorkshopRoom.tsx`
+
+- Supprimer le `useEffect` qui force `workshopMode = "challenge"` (lignes 74-79)
+- Remettre `workshopMode` par défaut à `"canvas"`
+- Restaurer le rendu de `<WorkshopToolbar>` quand `workshopMode === "canvas"`, avec tous ses props (mode, zoom, snap, fit, icons, shapes, participants, contrôles host)
+- Garder le header minimal uniquement pour le mode challenge
+- Rétablir le bouton toggle "Canvas / Challenge" accessible depuis la toolbar, visible uniquement si des templates challenge existent
+- La `CardSidebar` n'apparaît qu'en mode canvas (elle ajoute des cartes au canvas, pas au challenge)
+
+Résultat : le workshop collaboratif avec canvas est de nouveau fonctionnel.
+
+---
+
+**Étape 2 — Créer la route standalone Challenge**
+
+Fichiers nouveaux :
+- `src/pages/Challenge.tsx` — page liste "Mes Challenges" (similaire à `Workshop.tsx`)
+- `src/pages/ChallengeRoom.tsx` — page autonome qui affiche `ChallengeView` avec son propre header minimal
+
+Fichier modifié : `src/App.tsx` — ajouter les routes `/challenge` et `/challenge/:id`
+
+La page Challenge standalone :
+- Utilise le même `workshop_id` en base (un challenge standalone crée un workshop de type "challenge-only" avec un champ config qui le distingue)
+- Header minimal : nom du challenge, statut, participants, contrôles host
+- Contenu : `<ChallengeView>` tel quel (aucune modification du composant)
+- Liste "Mes challenges" : filtre les workshops dont `config.type === "challenge"`
+
+Résultat : on peut lancer un challenge sans passer par le flux workshop.
+
+---
+
+**Étape 3 — Séparer la navigation et les entrées**
+
+Fichier modifié : `src/components/layout/AppSidebar.tsx`
+
+- Ajouter une entrée "Challenge" dans la navigation (icône LayoutGrid)
+- L'entrée Workshop reste pour le canvas collaboratif
+- L'entrée Challenge mène à `/challenge` (liste + création standalone)
+
+Fichier modifié : `src/pages/Workshop.tsx`
+
+- Retirer le bouton "Challenge" de la page Workshop (il a sa propre entrée maintenant)
+- Garder uniquement "Créer" et "Rejoindre" pour les workshops canvas
+
+---
+
+**Étape 4 — Adapter le modèle de données pour distinguer les types**
+
+Migration SQL :
+- Ajouter un champ dans la config JSONB des workshops : `config->>'type'` avec valeurs `"canvas"` (défaut) ou `"challenge"`
+- Pas de nouvelle table — on réutilise la même infrastructure workshops/participants pour les challenges standalone
+- Les tables `challenge_responses`, `challenge_analyses`, `challenge_staging` restent identiques (elles référencent déjà `workshop_id`)
+
+Cela prépare le terrain pour plus tard avoir des requêtes distinctes : "tous mes challenges", "tous mes workshops canvas", etc.
+
+---
+
+**Étape 5 — Intégration Challenge dans Workshop (optionnel, second temps)**
+
+Fichier modifié : `WorkshopRoom.tsx`
+
+- Dans la toolbar canvas, ajouter un bouton "Ouvrir un Challenge" (visible si des templates existent)
+- Au clic, affiche un sélecteur de template puis bascule en mode challenge (comme aujourd'hui, mais par action explicite de l'hôte, pas automatique)
+- Un bouton "Retour au canvas" permet de revenir
+
+Résultat : l'hôte peut alterner entre canvas libre et challenge structuré pendant un même workshop.
+
+---
+
+### Priorités
+
+| Priorité | Étape | Impact |
+|----------|-------|--------|
+| P0 — Bloquant | Étape 1 | Le canvas workshop ne fonctionne plus du tout |
+| P1 — Important | Étapes 2+3 | Challenge standalone = valeur produit nouvelle |
+| P2 — Structurant | Étape 4 | Distinguer les types dans les données |
+| P3 — Enrichissement | Étape 5 | Intégration fluide workshop ↔ challenge |
+
+### Fichiers impactés (récapitulatif)
+
+| Fichier | Action |
 |---|---|
-| `WorkshopCanvas.tsx` | Supprimer indicateur fleche duplique, fix pointer capture sur containerRef, ajouter scroll=pan, pinch-zoom, keydown (Delete/Escape), snap-to-grid, fit-to-content |
-| `WorkshopRoom.tsx` | Retirer mt-[60px]/mt-[92px], rendre toolbar dans le flux flex (retirer position absolute), ajouter snap toggle dans toolbar state |
-| `WorkshopToolbar.tsx` | Retirer `absolute top-0`, rendre en flux flex, ajouter bouton Fit + toggle Snap |
-| `CanvasGroup.tsx` | Fix resize avec setPointerCapture sur le handle |
-| `CanvasArrow.tsx` | SVG container : passer a width/height 0 |
-
-Environ 7 fichiers touches, principalement WorkshopCanvas et WorkshopRoom.
+| `src/pages/WorkshopRoom.tsx` | Restaurer canvas + toolbar, corriger le forçage challenge |
+| `src/pages/Challenge.tsx` | Nouveau — liste "Mes challenges" |
+| `src/pages/ChallengeRoom.tsx` | Nouveau — page standalone challenge |
+| `src/App.tsx` | Ajouter routes `/challenge` et `/challenge/:id` |
+| `src/components/layout/AppSidebar.tsx` | Ajouter entrée Challenge |
+| `src/pages/Workshop.tsx` | Retirer bouton Challenge |
+| Migration SQL | Ajouter `config->>'type'` convention |
 
