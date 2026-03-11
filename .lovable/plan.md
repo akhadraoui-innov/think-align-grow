@@ -1,59 +1,114 @@
+# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
+## Vision produit
 
-## Amélioration UI : Tableaux, Dialogs & Composants Admin
+Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
 
-### Problèmes identifiés
-- **DataTable** : headers plats, pas de backdrop subtil, pagination basique, lignes monotones
-- **ToolkitCardsTab** : utilise des `<table>` HTML brutes au lieu du composant `Table` unifié, pas de hover states élégants
-- **Dialog d'édition carte** : fond plat, pas de sections visuelles, formulaire dense sans hiérarchie
-- **ToolkitPillarsTab** : collapsibles basiques, pas de séparation visuelle entre sections du formulaire
-- **ToolkitInfoTab** : sections avec titres simples, pas d'icônes de section, espacement perfectible
+### L'organisation comme entité centrale
 
-### Changements prévus
+L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
 
-**1. DataTable.tsx — Design system upgrade**
-- Header avec `backdrop-blur`, fond `bg-muted/40`, uppercase tracking-wide sur labels
-- Lignes alternées subtiles (`even:bg-muted/10`)
-- Pagination redesignée : pills avec numéro de page, compteur stylé
-- Boutons de tri avec indicateur directionnel actif (chevron up/down au lieu d'icône générique)
-- Search bar avec fond transparent, border plus fine, focus ring orange
+- **Identité & branding** : nom, slug, logo, couleur primaire
+- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
+- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
+- **Coordonnées** : email, téléphone, site web
+- **Adresses** : multi-adresses (siège, sites, bureaux)
+- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
+- **Notes internes** : champ libre pour l'équipe SaaS
+- **Membres** avec rôles (Owner, Admin, Member, Guest…)
+- **Équipes** internes
+- **Toolkits** assignés et activés
+- **Abonnement** avec plan et quotas
+- **Workshops** réalisés
+- **Journal d'activité** (audit trail)
 
-**2. ToolkitCardsTab.tsx — Refonte tableau + dialog**
-- Remplacer les `<table>` brutes par le composant `Table/TableHeader/TableRow/TableCell`
-- Ajouter des indicateurs colorés par phase (dot coloré)
-- Dialog refondu en sections visuelles avec séparateurs et icônes de section :
-  - Section "Identité" avec grille propre
-  - Section "Contenu" avec textareas espacés
-  - Section "Paramètres" (qualification, valorisation, difficulté, durée)
-  - Section "Tags & Statut"
-  - Footer sticky avec actions
+### Organisation plateforme : Growthinnov
 
-**3. ToolkitPillarsTab.tsx — Collapsibles premium**
-- Trigger avec fond gradient subtil au hover
-- Panneau d'édition avec sections groupées par thème (Identité, Apparence, Pédagogie)
-- Séparateurs visuels entre groupes
-- Badge de statut coloré dans le trigger
+**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
+1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
+2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
 
-**4. ToolkitInfoTab.tsx — Sections avec icônes**
-- Chaque section reçoit une icône dans le header (Settings, FileText, CreditCard, Database)
-- Description sous le titre de section en muted
-- Meilleur espacement entre les champs
-- Bouton Save sticky en bas avec backdrop-blur
+Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
 
-**5. Dialog global (dialog.tsx)**
-- Overlay plus léger (`bg-black/60` + `backdrop-blur-sm`)
-- Border radius cohérent `rounded-2xl`
-- Shadow plus prononcée pour effet de profondeur
+Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
 
-### Fichiers modifiés
+## Sprint 1 — COMPLÉTÉ ✅
 
-| Fichier | Changement |
-|---------|-----------|
-| `src/components/ui/dialog.tsx` | Overlay blur, rounded-2xl, shadow élevée |
-| `src/components/admin/DataTable.tsx` | Headers uppercase, lignes alternées, pagination pills |
-| `src/components/admin/ToolkitCardsTab.tsx` | Composant Table unifié, dialog sectionné |
-| `src/components/admin/ToolkitPillarsTab.tsx` | Collapsibles avec sections groupées |
-| `src/components/admin/ToolkitInfoTab.tsx` | Icônes de section, descriptions, spacing |
+### Migration SQL
+- ✅ Enum `app_role` étendu : +9 valeurs
+- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
 
-Aucune migration DB. Aucun nouveau fichier. Purement visuel/CSS.
+### Frontend Admin
+- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
+- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
 
+## Sprint 2 — COMPLÉTÉ ✅
+
+### Dashboard avec données réelles
+- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
+- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
+
+### Composant DataTable réutilisable
+- ✅ Recherche, tri par colonne, pagination, row click, slot actions
+
+### CRUD Organisations
+- ✅ useOrganizations + useOrganizationDetail hooks
+- ✅ Liste avec DataTable, recherche, tri, création via dialog
+- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
+- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
+- ✅ Route /admin/organizations/:id
+- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
+
+## Sprint 3 — COMPLÉTÉ ✅
+
+### Gestion des utilisateurs (AdminUsers)
+- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
+- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
+- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
+- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
+- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
+- ✅ UserCreditsTab : solde, lifetime, historique des transactions
+- ✅ UserWorkshopsTab : workshops hébergés et participations
+- ✅ UserChallengesTab : performances quiz et challenges
+- ✅ UserCardsTab : suivi des vues et favoris
+- ✅ UserActivityTab : journal d'audit utilisateur
+
+### Hook usePermissions
+- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
+
+### Hook useAdminUserDetail
+- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
+
+### Migration SQL Sprint 3
+- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
+
+## Sprint 4 — COMPLÉTÉ ✅
+
+### Gestion des Toolkits
+- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
+- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
+- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
+- ✅ Fiche AdminToolkitDetail avec 7 onglets :
+  - Infos : nom, slug, emoji, description, statut, métadonnées
+  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
+  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
+  - Challenges : templates avec sujets et slots imbriqués
+  - Game Plans : plans avec étapes ordonnées
+  - Quiz : questions par pilier avec compteur d'options
+  - Organisations : ajout/retrait d'accès toolkit pour les orgs
+- ✅ Route /admin/toolkits/:id
+
+### Gestion des Workshops (vue admin)
+- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
+- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
+
+## Sprint 5 — À FAIRE
+
+### Facturation & abonnements
+- Gestion des plans d'abonnement (CRUD)
+- Attribution de plans aux organisations
+- Suivi de consommation (crédits, quotas)
+
+### Logs & audit
+- Page AdminLogs : historique complet des actions, filtres par type/utilisateur/organisation, export
+- Recherche avancée dans les logs
