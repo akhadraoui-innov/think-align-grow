@@ -78,6 +78,7 @@ export function WorkshopToolbar({
   readOnly,
   snapToGrid, onSnapToggle, onFitToContent,
   editMode, onEditModeChange,
+  hasChallenge, onOpenChallenge,
 }: WorkshopToolbarProps) {
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [iconSearch, setIconSearch] = useState("");
