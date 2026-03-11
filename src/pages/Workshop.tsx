@@ -218,9 +218,31 @@ export default function Workshop() {
                   autoFocus
                 />
               </div>
+              {workshopCost > 0 && (
+                <div className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs ${hasCredits(workshopCost) ? "bg-secondary border border-border text-muted-foreground" : "bg-destructive/10 border border-destructive/20 text-destructive"}`}>
+                  <Zap className="h-3.5 w-3.5" />
+                  <span>{workshopCost} crédit{workshopCost > 1 ? "s" : ""} requis (solde: {balance})</span>
+                </div>
+              )}
+              {!canCreateWorkshop && (
+                <div className="flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <span>Quota de workshops atteint pour votre abonnement</span>
+                </div>
+              )}
               <Button
-                onClick={() => { create(workshopName, {}, activeOrgId); setCreateOpen(false); }}
-                disabled={!workshopName.trim() || creating}
+                onClick={async () => {
+                  if (workshopCost > 0) {
+                    try {
+                      await spendCredits.mutateAsync({ amount: workshopCost, description: "Création workshop" });
+                    } catch {
+                      return;
+                    }
+                  }
+                  create(workshopName, {}, activeOrgId);
+                  setCreateOpen(false);
+                }}
+                disabled={!workshopName.trim() || creating || (workshopCost > 0 && !hasCredits(workshopCost)) || !canCreateWorkshop}
                 className="w-full font-black uppercase tracking-wider rounded-xl h-11"
               >
                 {creating ? "Création..." : "Lancer le workshop"}
