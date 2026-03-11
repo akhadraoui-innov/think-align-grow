@@ -1,114 +1,52 @@
-# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
-## Vision produit
 
-Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
+## Audit : Workshop & Challenge pointent-ils sur le deck DB ?
 
-### L'organisation comme entité centrale
+### Resultat
 
-L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
+**Workshop et Challenge utilisent bien la DB** — ils importent `useCards()`, `usePillars()`, `useToolkit()` depuis `useToolkitData.ts` qui requete les tables `toolkits`, `pillars`, `cards` via la base de donnees. Aucun des deux modules n'importe `mockCards.ts` ou `mockQuiz.ts`.
 
-- **Identité & branding** : nom, slug, logo, couleur primaire
-- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
-- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
-- **Coordonnées** : email, téléphone, site web
-- **Adresses** : multi-adresses (siège, sites, bureaux)
-- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
-- **Notes internes** : champ libre pour l'équipe SaaS
-- **Membres** avec rôles (Owner, Admin, Member, Guest…)
-- **Équipes** internes
-- **Toolkits** assignés et activés
-- **Abonnement** avec plan et quotas
-- **Workshops** réalisés
-- **Journal d'activité** (audit trail)
+### Problemes identifies
 
-### Organisation plateforme : Growthinnov
+| # | Probleme | Fichier | Impact |
+|---|----------|---------|--------|
+| 1 | **Slug hardcode** `TOOLKIT_SLUG = "bootstrap-in-business"` | `useToolkitData.ts:11` | Tous les modules (Explore, Workshop, Challenge, Lab, Plans) sont verrouilles sur un seul toolkit. Impossible d'utiliser un autre toolkit meme s'il est cree en admin. |
+| 2 | **Fichiers mock inutilises** `mockCards.ts` (107 lignes) et `mockQuiz.ts` (104 lignes) | `src/data/` | Code mort — plus importe nulle part, mais reste dans le repo. |
+| 3 | **Maps visuelles hardcodees** `PILLAR_ICON_MAP` et `PILLAR_GRADIENT_MAP` (10 entrees chacune) | `useToolkitData.ts:115-139` | Si un pilier a un slug different des 10 prevus, il obtient un fallback generique. Les piliers ont deja `color` et `icon_emoji` en DB — ces maps devraient en deriver. |
+| 4 | **`PHASE_LABELS` hardcode** (4 entrees) | `useToolkitData.ts:150-155` | Les phases sont figees. Si un toolkit utilise d'autres phases, les labels seront manquants. |
 
-**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
-1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
-2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
+### Ce qui n'est PAS prevu dans Sprint 5
 
-Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
+Sprint 5 (plan.md) couvre uniquement **Facturation/abonnements** et **Logs/audit**. Aucun sprint ne prevoit :
+- La suppression du slug hardcode
+- Le nettoyage des fichiers mock
+- La dynamisation des maps visuelles
 
-Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
+### Plan d'implementation
 
-## Sprint 1 — COMPLÉTÉ ✅
+**1. Supprimer le slug hardcode** — `useToolkitData.ts`
+- Remplacer `TOOLKIT_SLUG` par un parametre dynamique : `useToolkit(slug?: string)` qui accepte un slug ou recupere le premier toolkit actif de l'organisation courante
+- Pour l'instant (mono-toolkit), recuperer le premier toolkit `status = 'published'` au lieu d'un slug en dur
+- Propager le changement dans les hooks dependants (`usePillars`, `useCards`, etc.) — aucun changement car ils dependent deja de `useToolkit()`
 
-### Migration SQL
-- ✅ Enum `app_role` étendu : +9 valeurs
-- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
+**2. Supprimer les fichiers mock** — `src/data/mockCards.ts`, `src/data/mockQuiz.ts`
+- Suppression pure, aucune reference existante
 
-### Frontend Admin
-- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
-- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
+**3. Dynamiser les maps visuelles** — `useToolkitData.ts`
+- `getPillarGradient(slug)` : utiliser `pillar.color` de la DB avec fallback sur la map actuelle
+- `getPillarIconName(slug)` : utiliser `pillar.icon_emoji` de la DB avec fallback
+- Garder les maps comme fallback pour retrocompatibilite
 
-## Sprint 2 — COMPLÉTÉ ✅
+**4. Mettre a jour plan.md** — ajouter ces taches comme "Sprint 4.2 - Nettoyage"
 
-### Dashboard avec données réelles
-- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
-- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
+### Fichiers modifies
 
-### Composant DataTable réutilisable
-- ✅ Recherche, tri par colonne, pagination, row click, slot actions
+| Action | Fichier |
+|--------|---------|
+| Edit | `src/hooks/useToolkitData.ts` — slug dynamique + maps dynamiques |
+| Delete | `src/data/mockCards.ts` |
+| Delete | `src/data/mockQuiz.ts` |
+| Edit | `.lovable/plan.md` — documenter Sprint 4.2 |
 
-### CRUD Organisations
-- ✅ useOrganizations + useOrganizationDetail hooks
-- ✅ Liste avec DataTable, recherche, tri, création via dialog
-- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
-- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
-- ✅ Route /admin/organizations/:id
-- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
+Aucune migration DB. Aucun changement dans Workshop/Challenge/Explore (ils consomment deja les hooks).
 
-## Sprint 3 — COMPLÉTÉ ✅
-
-### Gestion des utilisateurs (AdminUsers)
-- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
-- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
-- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
-- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
-- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
-- ✅ UserCreditsTab : solde, lifetime, historique des transactions
-- ✅ UserWorkshopsTab : workshops hébergés et participations
-- ✅ UserChallengesTab : performances quiz et challenges
-- ✅ UserCardsTab : suivi des vues et favoris
-- ✅ UserActivityTab : journal d'audit utilisateur
-
-### Hook usePermissions
-- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
-
-### Hook useAdminUserDetail
-- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
-
-### Migration SQL Sprint 3
-- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
-
-## Sprint 4 — COMPLÉTÉ ✅
-
-### Gestion des Toolkits
-- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
-- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
-- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
-- ✅ Fiche AdminToolkitDetail avec 7 onglets :
-  - Infos : nom, slug, emoji, description, statut, métadonnées
-  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
-  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
-  - Challenges : templates avec sujets et slots imbriqués
-  - Game Plans : plans avec étapes ordonnées
-  - Quiz : questions par pilier avec compteur d'options
-  - Organisations : ajout/retrait d'accès toolkit pour les orgs
-- ✅ Route /admin/toolkits/:id
-
-### Gestion des Workshops (vue admin)
-- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
-- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
-
-## Sprint 5 — À FAIRE
-
-### Facturation & abonnements
-- Gestion des plans d'abonnement (CRUD)
-- Attribution de plans aux organisations
-- Suivi de consommation (crédits, quotas)
-
-### Logs & audit
-- Page AdminLogs : historique complet des actions, filtres par type/utilisateur/organisation, export
-- Recherche avancée dans les logs
