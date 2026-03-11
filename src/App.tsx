@@ -21,6 +21,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrganizations from "./pages/admin/AdminOrganizations";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminToolkits from "./pages/admin/AdminToolkits";
+import AdminToolkitDetail from "./pages/admin/AdminToolkitDetail";
 import AdminWorkshops from "./pages/admin/AdminWorkshops";
 import AdminDesignInnovation from "./pages/admin/AdminDesignInnovation";
 import AdminBilling from "./pages/admin/AdminBilling";
@@ -54,6 +55,7 @@ function AnimatedRoutes() {
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
           <Route path="/admin/toolkits" element={<AdminToolkits />} />
+          <Route path="/admin/toolkits/:id" element={<AdminToolkitDetail />} />
           <Route path="/admin/workshops" element={<AdminWorkshops />} />
           <Route path="/admin/design-innovation" element={<AdminDesignInnovation />} />
           <Route path="/admin/billing" element={<AdminBilling />} />
