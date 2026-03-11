@@ -39,6 +39,8 @@ interface WorkshopToolbarProps {
   onFitToContent?: () => void;
   editMode?: boolean;
   onEditModeChange?: (editMode: boolean) => void;
+  hasChallenge?: boolean;
+  onOpenChallenge?: () => void;
 }
 
 const TOOLS = [

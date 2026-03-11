@@ -64,7 +64,8 @@ export function useCreateWorkshop() {
         role: "host",
       });
 
-      navigate(`/workshop/${workshop.id}`);
+      const isChallenge = config?.type === "challenge";
+      navigate(isChallenge ? `/challenge/${workshop.id}` : `/workshop/${workshop.id}`);
     } catch (e: any) {
       toast.error(e.message || "Erreur lors de la création");
     } finally {
