@@ -5,7 +5,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DbCard, DbPillar, getPillarCssColor, PHASE_LABELS } from "@/hooks/useToolkitData";
+import { DbCard, DbPillar, getPillarCssColor, getPillarCssColorAlpha, PHASE_LABELS } from "@/hooks/useToolkitData";
 import { CanvasItem } from "@/hooks/useCanvasItems";
 import { Zap, BarChart3, Target, Footprints } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
