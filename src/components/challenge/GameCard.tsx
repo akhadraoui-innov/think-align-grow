@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
-import { getPillarGradient, getPillarCssColor, PHASE_LABELS } from "@/hooks/useToolkitData";
+import { getPillarGradient, getPillarCssColor, getPillarCssColorAlpha, PHASE_LABELS } from "@/hooks/useToolkitData";
 import { MaturitySelector, MaturityBadge } from "./MaturitySelector";
 import { X } from "lucide-react";
 
