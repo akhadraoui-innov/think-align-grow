@@ -40,7 +40,7 @@ export function usePermissions(): Permissions {
     },
   });
 
-  const has = (role: string) => roles.includes(role);
+  const has = (role: string) => roles.includes(role as any);
   const hasAny = (...r: string[]) => r.some(has);
 
   const isSuperAdmin = has("super_admin");
