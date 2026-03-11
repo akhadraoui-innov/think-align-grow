@@ -37,7 +37,7 @@ export function FlipCard({ card, pillarSlug = "business", pillarColor }: FlipCar
           <div>
             <span
               className="text-[10px] font-bold uppercase tracking-[0.15em]"
-              style={{ color: `hsl(var(--pillar-${gradient}))` }}
+              style={{ color: cssColor }}
             >
               {pillarSlug} · {PHASE_LABELS[card.phase] || card.phase}
             </span>
