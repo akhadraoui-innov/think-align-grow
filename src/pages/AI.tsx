@@ -62,7 +62,7 @@ export default function AI() {
             </div>
           </div>
           <div className="flex-1 overflow-hidden pb-20">
-            <ChatInterface creditCost={1} />
+            <ChatInterface creditCost={1} organizationId={activeOrgId} />
           </div>
         </div>
       </PageTransition>
