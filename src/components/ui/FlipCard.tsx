@@ -13,6 +13,7 @@ export function FlipCard({ card, pillarSlug = "business", pillarColor }: FlipCar
   const [isFlipped, setIsFlipped] = useState(false);
   const gradient = getPillarGradient(pillarSlug, pillarColor);
   const cssColor = getPillarCssColor(pillarSlug, pillarColor);
+  const cssColorAlpha = (a: number) => getPillarCssColorAlpha(pillarSlug, pillarColor, a);
 
   return (
     <div
