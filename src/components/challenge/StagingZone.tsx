@@ -57,8 +57,9 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
   }, [onDropFromSidebar]);
 
   // Reorder handlers per item
-  const handleItemDragStart = useCallback((e: React.DragEvent, itemId: string) => {
+  const handleItemDragStart = useCallback((e: React.DragEvent, itemId: string, cardId: string) => {
     e.dataTransfer.setData("reorder-id", itemId);
+    e.dataTransfer.setData("card-id", cardId);
     e.dataTransfer.effectAllowed = "move";
     setReorderDragId(itemId);
   }, []);
@@ -140,7 +141,7 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
                     isDropTarget && "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-2xl"
                   )}
                   draggable={!readOnly}
-                  onDragStart={(e: any) => handleItemDragStart(e, item.id)}
+                  onDragStart={(e: any) => handleItemDragStart(e, item.id, item.card_id)}
                   onDragOver={(e: any) => handleItemDragOver(e, item.id)}
                   onDragLeave={handleItemDragLeave}
                   onDrop={(e: any) => handleItemDrop(e, item.id)}
@@ -165,7 +166,7 @@ export function StagingZone({ items, cards, pillars, onDropFromSidebar, onRemove
                 animate={{ opacity: isDragging ? 0.4 : 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 draggable={!readOnly}
-                onDragStart={(e: any) => handleItemDragStart(e, item.id)}
+                onDragStart={(e: any) => handleItemDragStart(e, item.id, item.card_id)}
                 onDragOver={(e: any) => handleItemDragOver(e, item.id)}
                 onDragLeave={handleItemDragLeave}
                 onDrop={(e: any) => handleItemDrop(e, item.id)}
