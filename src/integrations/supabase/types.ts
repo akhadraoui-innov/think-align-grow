@@ -60,46 +60,64 @@ export type Database = {
           action: string | null
           created_at: string
           definition: string | null
+          difficulty: string | null
+          duration_minutes: number | null
           icon_name: string | null
           id: string
           kpi: string | null
           objective: string | null
           phase: Database["public"]["Enums"]["card_phase"]
           pillar_id: string
+          qualification: string | null
           sort_order: number
+          status: string
           step_name: string | null
           subtitle: string | null
+          tags: Json
           title: string
+          valorization: number
         }
         Insert: {
           action?: string | null
           created_at?: string
           definition?: string | null
+          difficulty?: string | null
+          duration_minutes?: number | null
           icon_name?: string | null
           id?: string
           kpi?: string | null
           objective?: string | null
           phase?: Database["public"]["Enums"]["card_phase"]
           pillar_id: string
+          qualification?: string | null
           sort_order?: number
+          status?: string
           step_name?: string | null
           subtitle?: string | null
+          tags?: Json
           title: string
+          valorization?: number
         }
         Update: {
           action?: string | null
           created_at?: string
           definition?: string | null
+          difficulty?: string | null
+          duration_minutes?: number | null
           icon_name?: string | null
           id?: string
           kpi?: string | null
           objective?: string | null
           phase?: Database["public"]["Enums"]["card_phase"]
           pillar_id?: string
+          qualification?: string | null
           sort_order?: number
+          status?: string
           step_name?: string | null
           subtitle?: string | null
+          tags?: Json
           title?: string
+          valorization?: number
         }
         Relationships: [
           {
@@ -697,30 +715,45 @@ export type Database = {
           description: string | null
           icon_name: string | null
           id: string
+          learning_outcomes: Json
           name: string
           slug: string
           sort_order: number
+          status: string
+          subtitle: string | null
+          target_audience: string | null
           toolkit_id: string
+          weight: number
         }
         Insert: {
           color?: string | null
           description?: string | null
           icon_name?: string | null
           id?: string
+          learning_outcomes?: Json
           name: string
           slug: string
           sort_order?: number
+          status?: string
+          subtitle?: string | null
+          target_audience?: string | null
           toolkit_id: string
+          weight?: number
         }
         Update: {
           color?: string | null
           description?: string | null
           icon_name?: string | null
           id?: string
+          learning_outcomes?: Json
           name?: string
           slug?: string
           sort_order?: number
+          status?: string
+          subtitle?: string | null
+          target_audience?: string | null
           toolkit_id?: string
+          weight?: number
         }
         Relationships: [
           {
@@ -976,34 +1009,73 @@ export type Database = {
       }
       toolkits: {
         Row: {
+          benefits: string | null
+          content_description: string | null
           created_at: string
+          credit_cost_challenge: number
+          credit_cost_workshop: number
           description: string | null
+          difficulty_level: string | null
+          estimated_duration: string | null
           icon_emoji: string | null
           id: string
           name: string
+          nomenclature: string | null
+          price_info: Json
           slug: string
           status: Database["public"]["Enums"]["toolkit_status"]
+          tags: Json
+          target_audience: string | null
+          terms: string | null
           updated_at: string
+          usage_mode: string | null
+          version: string
         }
         Insert: {
+          benefits?: string | null
+          content_description?: string | null
           created_at?: string
+          credit_cost_challenge?: number
+          credit_cost_workshop?: number
           description?: string | null
+          difficulty_level?: string | null
+          estimated_duration?: string | null
           icon_emoji?: string | null
           id?: string
           name: string
+          nomenclature?: string | null
+          price_info?: Json
           slug: string
           status?: Database["public"]["Enums"]["toolkit_status"]
+          tags?: Json
+          target_audience?: string | null
+          terms?: string | null
           updated_at?: string
+          usage_mode?: string | null
+          version?: string
         }
         Update: {
+          benefits?: string | null
+          content_description?: string | null
           created_at?: string
+          credit_cost_challenge?: number
+          credit_cost_workshop?: number
           description?: string | null
+          difficulty_level?: string | null
+          estimated_duration?: string | null
           icon_emoji?: string | null
           id?: string
           name?: string
+          nomenclature?: string | null
+          price_info?: Json
           slug?: string
           status?: Database["public"]["Enums"]["toolkit_status"]
+          tags?: Json
+          target_audience?: string | null
+          terms?: string | null
           updated_at?: string
+          usage_mode?: string | null
+          version?: string
         }
         Relationships: []
       }
