@@ -269,6 +269,34 @@ export default function AdminSettings() {
               </div>
             </div>
           </TabsContent>
+
+          {/* Default Prompts */}
+          <TabsContent value="default-prompts">
+            <div className="space-y-6">
+              <div className="rounded-xl border border-border/50 bg-secondary/30 p-4 flex items-start gap-3">
+                <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  Ces prompts sont utilisés par défaut lorsqu'aucune surcharge n'est configurée (ni globale, ni par organisation). Ils sont codés dans les fonctions backend et ne sont pas modifiables ici — utilisez l'onglet <strong>Configuration IA</strong> pour les surcharger.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {Object.entries(DEFAULT_PROMPTS).map(([key, { label, prompt }]) => (
+                  <div key={key} className="rounded-xl border border-border/50 bg-card p-5 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold">{label}</h3>
+                      <Badge variant="secondary" className="text-[10px]">Par défaut</Badge>
+                    </div>
+                    <Textarea
+                      value={prompt}
+                      readOnly
+                      className="min-h-[100px] text-xs bg-muted/50 cursor-default resize-none"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
     </AdminShell>

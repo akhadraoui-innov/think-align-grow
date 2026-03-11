@@ -205,6 +205,22 @@ export function OrgAIConfigTab({ organizationId }: OrgAIConfigTabProps) {
                   placeholder="Laisser vide pour le prompt par défaut"
                   className="min-h-[80px] text-xs"
                 />
+                {DEFAULT_PROMPTS[key] && (
+                  <Collapsible>
+                    <CollapsibleTrigger className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors group">
+                      <ChevronRight className="h-3 w-3 group-data-[state=open]:hidden" />
+                      <ChevronDown className="h-3 w-3 hidden group-data-[state=open]:block" />
+                      Voir le prompt par défaut
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <Textarea
+                        value={DEFAULT_PROMPTS[key].prompt}
+                        readOnly
+                        className="mt-1.5 min-h-[60px] text-[11px] bg-muted/50 cursor-default resize-none"
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
               </div>
             ))}
           </div>
