@@ -23,6 +23,7 @@ export default function AI() {
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const { balance, isLoading: creditsLoading, hasCredits } = useCredits();
   const { user } = useAuth();
+  const { activeOrgId } = useActiveOrg();
 
   const handleToolLaunch = (toolId: string, credits: number) => {
     if (!user) {
