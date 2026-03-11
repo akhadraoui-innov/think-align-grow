@@ -175,6 +175,21 @@ export function getPillarCssColor(slug: string, dbColor?: string | null): string
 }
 
 /**
+ * Returns a CSS color with alpha/opacity.
+ * For hex colors: appends hex alpha (e.g. #8B5CF626).
+ * For token colors: uses hsl(var(--pillar-token) / alpha).
+ * @param alpha - opacity from 0 to 1
+ */
+export function getPillarCssColorAlpha(slug: string, dbColor: string | null | undefined, alpha: number): string {
+  if (dbColor?.startsWith('#')) {
+    const hexAlpha = Math.round(alpha * 255).toString(16).padStart(2, '0');
+    return `${dbColor}${hexAlpha}`;
+  }
+  const token = PILLAR_GRADIENT_FALLBACK[slug] || "primary";
+  return `hsl(var(--pillar-${token}) / ${alpha})`;
+}
+
+/**
  * Returns an icon name for a pillar.
  * Prefers pillar.icon_name from DB, falls back to slug-based map, then "Circle".
  */
