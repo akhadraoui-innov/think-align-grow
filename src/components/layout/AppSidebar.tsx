@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import {
   Sidebar,
   SidebarContent,
