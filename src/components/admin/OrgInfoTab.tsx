@@ -95,6 +95,7 @@ const emptyContact = (): Contact => ({ name: "", role: "", email: "", phone: "",
 export function OrgInfoTab({ organization, stats }: Props) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const permissions = usePermissions();
   const [saving, setSaving] = useState(false);
   const [allOrgs, setAllOrgs] = useState<{ id: string; name: string }[]>([]);
 
