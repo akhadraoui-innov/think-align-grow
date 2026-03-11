@@ -39,7 +39,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 export function SubjectCanvas({
   subject, slots, responses, cards, pillars,
-  onDrop, onRemove, onUpdateResponse,
+  onDrop, onRemove, onMoveToSlot, onUpdateResponse,
   stagingItems = [], onStage, onUnstage, onStagingFormatChange, onReorderStaging,
   readOnly,
 }: SubjectCanvasProps) {
