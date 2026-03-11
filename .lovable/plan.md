@@ -1,46 +1,140 @@
+# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
+## Vision produit
 
-## Sprint 6 — Améliorations UX & fonctionnalités avancées
+Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
 
-### 1. Enrichissement logs avec display_name
+### L'organisation comme entité centrale
 
-**Probleme actuel** : La colonne "Utilisateur" affiche `user_id.slice(0,8)…` — illisible.
+L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
 
-**Solution** : Jointure avec `profiles` dans `useAdminLogs.ts`. La table `activity_logs` a `user_id` mais pas de FK vers `profiles`. On fera une requete secondaire pour resoudre les user_ids en display_names.
+- **Identité & branding** : nom, slug, logo, couleur primaire
+- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
+- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
+- **Coordonnées** : email, téléphone, site web
+- **Adresses** : multi-adresses (siège, sites, bureaux)
+- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
+- **Notes internes** : champ libre pour l'équipe SaaS
+- **Membres** avec rôles (Owner, Admin, Member, Guest…)
+- **Équipes** internes
+- **Toolkits** assignés et activés
+- **Abonnement** avec plan et quotas
+- **Workshops** réalisés
+- **Journal d'activité** (audit trail)
 
-- `useAdminLogs.ts` : apres fetch des logs, collecter les `user_id` uniques, batch-query `profiles` pour `user_id, display_name`, merge dans les resultats
-- `AdminLogs.tsx` : afficher `display_name` au lieu du UUID tronque
+### Organisation plateforme : Growthinnov
 
-### 2. Export CSV des logs
+**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
+1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
+2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
 
-- Bouton "Exporter CSV" dans `AdminLogs.tsx`
-- Requete sans pagination (tous les logs filtrés, limit 5000) + generation CSV cote client
-- Colonnes : date, utilisateur, action, type, entité, organisation
-- Declenchement via `Blob` + `URL.createObjectURL` + download
+Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
 
-### 3. Dashboard billing avec graphiques
+Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
 
-- Section graphique dans `AdminBilling.tsx` avec recharts
-- **BarChart** : credits consommes par mois (6 derniers mois) — aggregation depuis `credit_transactions`
-- **Stats cards** enrichies : nb plans actifs, nb abonnements actifs, revenu mensuel total
-- Hook `useAdminBilling.ts` : ajouter query `monthlyCredits` pour aggregation temporelle
+## Sprint 1 — COMPLÉTÉ ✅
 
-### 4. Gestion des credits par organisation
+### Migration SQL
+- ✅ Enum `app_role` étendu : +9 valeurs
+- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
 
-- Nouvel onglet/section dans `AdminBilling.tsx` : "Credits par organisation"
-- Table : org name, credits distribues, credits depenses, solde
-- Jointure `credit_transactions` → `profiles` → `organization_members` → `organizations`
-- Action rapide : bouton "Ajuster credits" par org (credit/debit pour tous les membres ou un membre specifique)
+### Frontend Admin
+- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
+- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
 
-### Fichiers
+## Sprint 2 — COMPLÉTÉ ✅
 
-| Action | Fichier |
-|--------|---------|
-| Edit | `src/hooks/useAdminLogs.ts` — jointure profiles + export query |
-| Edit | `src/pages/admin/AdminLogs.tsx` — display_name + bouton export CSV |
-| Edit | `src/hooks/useAdminBilling.ts` — monthly stats + credits par org |
-| Edit | `src/pages/admin/AdminBilling.tsx` — graphiques recharts + section credits/org |
-| Edit | `.lovable/plan.md` — documenter Sprint 6 |
+### Dashboard avec données réelles
+- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
+- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
 
-Aucune migration DB necessaire. Toutes les donnees sont deja accessibles via les tables existantes et les RLS en place.
+### Composant DataTable réutilisable
+- ✅ Recherche, tri par colonne, pagination, row click, slot actions
 
+### CRUD Organisations
+- ✅ useOrganizations + useOrganizationDetail hooks
+- ✅ Liste avec DataTable, recherche, tri, création via dialog
+- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
+- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
+- ✅ Route /admin/organizations/:id
+- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
+
+## Sprint 3 — COMPLÉTÉ ✅
+
+### Gestion des utilisateurs (AdminUsers)
+- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
+- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
+- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
+- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
+- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
+- ✅ UserCreditsTab : solde, lifetime, historique des transactions
+- ✅ UserWorkshopsTab : workshops hébergés et participations
+- ✅ UserChallengesTab : performances quiz et challenges
+- ✅ UserCardsTab : suivi des vues et favoris
+- ✅ UserActivityTab : journal d'audit utilisateur
+
+### Hook usePermissions
+- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
+
+### Hook useAdminUserDetail
+- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
+
+### Migration SQL Sprint 3
+- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
+
+## Sprint 4 — COMPLÉTÉ ✅
+
+### Gestion des Toolkits
+- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
+- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
+- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
+- ✅ Fiche AdminToolkitDetail avec 7 onglets :
+  - Infos : nom, slug, emoji, description, statut, métadonnées
+  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
+  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
+  - Challenges : templates avec sujets et slots imbriqués
+  - Game Plans : plans avec étapes ordonnées
+  - Quiz : questions par pilier avec compteur d'options
+  - Organisations : ajout/retrait d'accès toolkit pour les orgs
+- ✅ Route /admin/toolkits/:id
+
+### Gestion des Workshops (vue admin)
+- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
+- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
+
+## Sprint 4.2 — COMPLÉTÉ ✅
+
+### Nettoyage & dynamisation toolkit
+- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
+- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
+- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
+- ✅ Aucune migration DB nécessaire
+
+## Sprint 5 — COMPLÉTÉ ✅
+
+### Facturation & Abonnements (AdminBilling)
+- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
+- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
+- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
+- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
+- ✅ Suppression plan avec confirmation AlertDialog
+- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
+
+### Logs d'audit (AdminLogs)
+- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
+- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
+- ✅ Pagination server-side (25/page) avec compteur total
+- ✅ Détail metadata : dialog avec JSON formaté
+- ✅ Styles cohérents avec le design system existant
+
+## Sprint 6 — COMPLÉTÉ ✅
+
+### Enrichissement logs
+- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
+- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
+- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
+
+### Dashboard billing avancé
+- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
+- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
+- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
