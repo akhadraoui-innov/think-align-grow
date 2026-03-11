@@ -37,6 +37,11 @@ export default function Workshop() {
   const { create, loading: creating } = useCreateWorkshop();
   const { join, loading: joining } = useJoinWorkshop();
   const { workshops, loading: loadingList } = useMyWorkshops();
+  const { balance, hasCredits } = useCredits();
+  const spendCredits = useSpendCredits();
+  const { canCreateWorkshop } = useQuotas();
+  const { data: toolkit } = useToolkit();
+  const workshopCost = toolkit?.credit_cost_workshop ?? 0;
 
   // Handle ?action=create from sidebar
   useEffect(() => {
