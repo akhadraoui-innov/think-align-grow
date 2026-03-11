@@ -12,6 +12,7 @@ interface FlipCardProps {
 export function FlipCard({ card, pillarSlug = "business", pillarColor }: FlipCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const gradient = getPillarGradient(pillarSlug, pillarColor);
+  const cssColor = getPillarCssColor(pillarSlug, pillarColor);
 
   return (
     <div
