@@ -138,3 +138,28 @@ Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `cu
 - ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
 - ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
 - ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
+
+## Sprint 7 — COMPLÉTÉ ✅
+
+### Profil utilisateur authentifié
+- ✅ Page Profile détecte l'état de connexion (guest vs authentifié)
+- ✅ Vue authentifiée : avatar, display_name, job_title, department, email
+- ✅ Stats temps réel : XP, crédits, cartes vues, quiz complétés
+- ✅ Liste des organisations avec rôles
+- ✅ Dialog d'édition profil (display_name, job_title, department)
+- ✅ Bouton déconnexion
+
+### Contexte multi-tenant
+- ✅ `OrgProvider` context avec `useActiveOrg` hook
+- ✅ Composant `OrgSwitcher` dans la sidebar (dropdown si multi-org, badge si mono-org)
+- ✅ Persistance de l'org active dans localStorage
+- ✅ Intégration dans `AppSidebar` footer
+
+### Persistance quiz
+- ✅ `QuizEngine` sauvegarde les scores dans `quiz_results` à la complétion
+- ✅ `Lab.tsx` charge le dernier résultat quiz depuis la DB au montage
+- ✅ Hydratation automatique du RadarChart et des badges depuis les données persistées
+
+### Liaison Workshop → Organisation
+- ✅ `useCreateWorkshop` accepte un `organizationId` optionnel
+- ✅ `Workshop.tsx` passe l'org active du contexte à la création
