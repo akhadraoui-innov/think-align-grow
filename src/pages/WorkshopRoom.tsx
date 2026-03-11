@@ -70,13 +70,14 @@ export default function WorkshopRoom() {
   const [workshopMode, setWorkshopMode] = useState<"canvas" | "challenge">("canvas");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
-  // Auto-select first template & force challenge mode when templates exist
+  const hasChallenge = !!(challengeTemplates && challengeTemplates.length > 0);
+
+  // Auto-select first template (but do NOT force challenge mode)
   useEffect(() => {
-    if (challengeTemplates && challengeTemplates.length > 0) {
-      if (!selectedTemplateId) setSelectedTemplateId(challengeTemplates[0].id);
-      setWorkshopMode("challenge");
+    if (hasChallenge && !selectedTemplateId) {
+      setSelectedTemplateId(challengeTemplates![0].id);
     }
-  }, [challengeTemplates, selectedTemplateId]);
+  }, [challengeTemplates, selectedTemplateId, hasChallenge]);
 
   // Comments for selected item
   const { comments, loading: commentsLoading, addComment, deleteComment } = useCanvasComments(id, selectedItemId);
@@ -173,7 +174,7 @@ export default function WorkshopRoom() {
     }
   }, []);
 
-  // Fit-to-content: calculate bounding box of all items and adjust viewport
+  // Fit-to-content
   const handleFitToContent = useCallback(() => {
     const nonArrows = items.filter(i => i.type !== "arrow");
     if (nonArrows.length === 0) {
@@ -290,100 +291,113 @@ export default function WorkshopRoom() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* Minimal header */}
-      <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-background/80 backdrop-blur-sm border-b border-border shrink-0">
-        {/* Left: back + name + status */}
-        <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/workshop")} className="rounded-xl shrink-0">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="font-display font-bold text-sm uppercase tracking-tight truncate">{workshop.name}</h1>
-            <StatusBadge status={workshop.status} />
-          </div>
-        </div>
+      {/* Canvas mode: full WorkshopToolbar */}
+      {workshopMode === "canvas" && (
+        <WorkshopToolbar
+          mode={isReadOnly ? "select" : mode}
+          onModeChange={isReadOnly ? () => {} : setMode}
+          viewport={viewport}
+          onViewportChange={setViewport}
+          workshopStatus={workshop.status}
+          isHost={isHost}
+          participants={participants}
+          onStart={startWorkshop}
+          onPause={pauseWorkshop}
+          onResume={resumeWorkshop}
+          onComplete={completeWorkshop}
+          onBack={() => navigate("/workshop")}
+          workshopName={workshop.name}
+          selectedIconName={selectedIconName}
+          onSelectIcon={setSelectedIconName}
+          stickyShape={stickyShape}
+          onStickyShapeChange={setStickyShape}
+          groupShape={groupShape}
+          onGroupShapeChange={setGroupShape}
+          readOnly={isReadOnly}
+          snapToGrid={snapToGrid}
+          onSnapToggle={() => setSnapToGrid(s => !s)}
+          onFitToContent={handleFitToContent}
+          editMode={editMode}
+          onEditModeChange={setEditMode}
+          hasChallenge={hasChallenge}
+          onOpenChallenge={() => setWorkshopMode("challenge")}
+        />
+      )}
 
-        {/* Right: participants + host controls + edit mode */}
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Edit mode controls for completed workshops */}
-          {isCompleted && (
-            isReadOnly ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Lock className="h-3.5 w-3.5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Lecture seule</span>
-                {isHost && (
-                  <Button variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs h-7 ml-1" onClick={() => setEditMode(true)}>
-                    <Pencil className="h-3 w-3 mr-1.5" />Modifier
+      {/* Challenge mode: minimal header */}
+      {workshopMode === "challenge" && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-background/80 backdrop-blur-sm border-b border-border shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button variant="ghost" size="sm" onClick={() => setWorkshopMode("canvas")} className="rounded-xl shrink-0">
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Canvas
+            </Button>
+            <div className="min-w-0">
+              <h1 className="font-display font-bold text-sm uppercase tracking-tight truncate">{workshop.name}</h1>
+              <StatusBadge status={workshop.status} />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            {isCompleted && (
+              isReadOnly ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Lock className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Lecture seule</span>
+                  {isHost && (
+                    <Button variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs h-7 ml-1" onClick={() => setEditMode(true)}>
+                      <Pencil className="h-3 w-3 mr-1.5" />Modifier
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-primary">
+                  <Pencil className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Édition</span>
+                  <Button variant="default" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs h-7 ml-1" onClick={() => { setEditMode(false); toast.success("Modifications enregistrées"); }}>
+                    <Save className="h-3 w-3 mr-1.5" />Enregistrer
                   </Button>
+                </div>
+              )
+            )}
+
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-secondary/50">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-bold">{participants.length}</span>
+            </div>
+
+            {isHost && !isCompleted && (
+              <div className="flex items-center gap-2">
+                {workshop.status === "active" && (
+                  <>
+                    <Button onClick={pauseWorkshop} variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                      <Pause className="h-3.5 w-3.5 mr-1.5" />Pause
+                    </Button>
+                    <Button onClick={completeWorkshop} variant="destructive" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                      <Check className="h-3.5 w-3.5 mr-1.5" />Terminer
+                    </Button>
+                  </>
+                )}
+                {workshop.status === "paused" && (
+                  <>
+                    <Button onClick={resumeWorkshop} size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                      <Play className="h-3.5 w-3.5 mr-1.5" />Reprendre
+                    </Button>
+                    <Button onClick={completeWorkshop} variant="destructive" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
+                      Terminer
+                    </Button>
+                  </>
                 )}
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-primary">
-                <Pencil className="h-3.5 w-3.5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Édition</span>
-                <Button variant="default" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs h-7 ml-1" onClick={() => { setEditMode(false); toast.success("Modifications enregistrées"); }}>
-                  <Save className="h-3 w-3 mr-1.5" />Enregistrer
-                </Button>
-              </div>
-            )
-          )}
-
-          {/* Participants */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-secondary/50">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-bold">{participants.length}</span>
-            <div className="flex -space-x-2">
-              {participants.slice(0, 4).map(p => (
-                <div
-                  key={p.id}
-                  className={`h-6 w-6 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold uppercase ${
-                    p.role === "host" ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"
-                  }`}
-                  title={p.display_name}
-                >
-                  {p.display_name.charAt(0)}
-                </div>
-              ))}
-              {participants.length > 4 && (
-                <div className="h-6 w-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-bold">
-                  +{participants.length - 4}
-                </div>
-              )}
-            </div>
+            )}
           </div>
-
-          {/* Host controls */}
-          {isHost && !isCompleted && (
-            <div className="flex items-center gap-2">
-              {workshop.status === "active" && (
-                <>
-                  <Button onClick={pauseWorkshop} variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
-                    <Pause className="h-3.5 w-3.5 mr-1.5" />Pause
-                  </Button>
-                  <Button onClick={completeWorkshop} variant="destructive" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
-                    <Check className="h-3.5 w-3.5 mr-1.5" />Terminer
-                  </Button>
-                </>
-              )}
-              {workshop.status === "paused" && (
-                <>
-                  <Button onClick={resumeWorkshop} size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
-                    <Play className="h-3.5 w-3.5 mr-1.5" />Reprendre
-                  </Button>
-                  <Button onClick={completeWorkshop} variant="destructive" size="sm" className="rounded-xl font-bold uppercase tracking-wider text-xs">
-                    Terminer
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
         </div>
-      </div>
+      )}
 
-      {/* Main area — flex-1, no margin-top */}
+      {/* Main area */}
       <div className="flex-1 flex relative min-h-0">
-        {/* Card Sidebar — always visible when not read-only */}
-        {!isReadOnly && allCards && pillars && (
+        {/* Card Sidebar — only in canvas mode */}
+        {workshopMode === "canvas" && !isReadOnly && allCards && pillars && (
           <CardSidebar cards={allCards} pillars={pillars} onAddCard={handleAddCard} isMobile={isMobile} />
         )}
 
