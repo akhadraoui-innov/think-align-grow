@@ -3,24 +3,28 @@
 ## Sprint 1 — COMPLÉTÉ ✅
 
 ### Migration SQL
-- ✅ Enum `app_role` étendu : +9 valeurs (super_admin, customer_lead, innovation_lead, performance_lead, product_actor, lead, facilitator, manager, guest)
-- ✅ Colonnes ajoutées sur `profiles` (status, last_seen_at) et `workshops` (description, objectives, context, scheduled_at, max_participants, session_mode, facilitator_id, organization_id)
-- ✅ 8 nouvelles tables : teams, team_members, subscription_plans, organization_subscriptions, workshop_invitations, workshop_actions, workshop_snapshots, activity_logs
-- ✅ Fonctions SECURITY DEFINER : `is_saas_team()`, `has_any_role()`
-- ✅ RLS complètes sur toutes les nouvelles tables + policies SaaS team sur tables existantes
+- ✅ Enum `app_role` étendu : +9 valeurs
+- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
 
 ### Frontend Admin
-- ✅ `useAdminRole` hook (RPC is_saas_team)
-- ✅ `AdminGuard` — protection par rôle
-- ✅ `AdminSidebar` — navigation dédiée (9 entrées)
-- ✅ `AdminShell` — layout avec sidebar + breadcrumb
-- ✅ Dashboard admin (placeholder avec 4 StatsCards)
-- ✅ 8 pages placeholder : Organizations, Users, Toolkits, Workshops, Design Innovation, Billing, Logs, Settings
-- ✅ Routes `/admin/*` dans App.tsx
-- ✅ Lien "Administration" conditionnel dans AppSidebar (visible si is_saas_team)
-- ✅ AppShell bypass pour les routes `/admin`
+- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
+- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
 
-## Sprint 2 — À FAIRE
-- Dashboard avec données réelles (counts, graphiques recharts)
-- AdminOrganizations : DataTable, CRUD, fiche avec 6 onglets
-- OrganizationMembers : invitation, changement rôle
+## Sprint 2 — COMPLÉTÉ ✅
+
+### Dashboard avec données réelles
+- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
+- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
+
+### Composant DataTable réutilisable
+- ✅ Recherche, tri par colonne, pagination, row click, slot actions
+
+### CRUD Organisations
+- ✅ useOrganizations + useOrganizationDetail hooks
+- ✅ Liste avec DataTable, recherche, tri, création via dialog
+- ✅ Fiche détaillée avec 5 onglets : Infos, Membres, Toolkits, Abonnement, Usage
+- ✅ Route /admin/organizations/:id
+
+## Sprint 3 — À FAIRE
+- AdminUsers : liste, fiche détaillée, changement de rôle, attribution crédits
+- Hook usePermissions : booléens granulaires par rôle
