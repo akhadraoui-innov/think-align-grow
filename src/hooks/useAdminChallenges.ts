@@ -187,6 +187,8 @@ export function useAdminChallengeDetail(id: string | undefined) {
     sessions: sessions.data || [],
     toolkits: toolkits.data || [],
     pillars: pillarsByToolkit.data || [],
+    participantCounts: sessionExtras.data?.participantCounts || {},
+    responseCounts: sessionExtras.data?.responseCounts || {},
     isLoading: template.isLoading,
     invalidateAll,
   };
