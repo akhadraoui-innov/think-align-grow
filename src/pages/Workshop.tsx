@@ -10,7 +10,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCreateWorkshop, useJoinWorkshop, useMyWorkshops } from "@/hooks/useWorkshop";
 import { formatDistanceToNow } from "date-fns";
-import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
