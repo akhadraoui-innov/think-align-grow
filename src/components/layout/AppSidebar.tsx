@@ -44,6 +44,7 @@ export function AppSidebar({ onCommandPalette }: AppSidebarProps) {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const { balance } = useCredits();
+  const { isAdmin } = useAdminRole();
 
   const isActive = (path: string) => location.pathname.startsWith(path);
 
