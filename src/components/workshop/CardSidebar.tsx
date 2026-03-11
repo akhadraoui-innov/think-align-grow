@@ -152,7 +152,7 @@ function CardItem({ card, pillar, onAdd }: { card: DbCard; pillar: DbPillar | un
           {/* Pillar badge */}
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
-              style={{ background: `${pillarColor}15`, color: pillarColor }}>
+              style={{ background: pillarColorAlpha(0.08), color: pillarColor }}>
               {pillar?.name || "Pilier"}
             </span>
             <span className="text-[9px] text-muted-foreground uppercase tracking-wider">
