@@ -198,6 +198,8 @@ export function ToolkitCardsTab({ cards, pillars, toolkitId, onUpdate }: Props) 
           Créez d'abord des piliers pour organiser les cartes.
         </div>
       )}
+        </>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={!!editCard} onOpenChange={(open) => !open && setEditCard(null)}>
