@@ -60,8 +60,17 @@ function buildFetchParams(config: any) {
   return { url: `${baseUrl}/chat/completions`, headers, model };
 }
 
-async function callAI(fetchParams: any, messages: any[], tools?: any[], toolChoice?: any) {
-  const body: any = { model: fetchParams.model, messages, max_tokens: 8000 };
+function parseAIContent(raw: string): any {
+  let cleaned = raw.trim();
+  // Strip markdown code fences
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?\s*```$/, "");
+  }
+  return JSON.parse(cleaned);
+}
+
+async function callAI(fetchParams: any, messages: any[], maxTokens: number, tools?: any[], toolChoice?: any) {
+  const body: any = { model: fetchParams.model, messages, max_tokens: maxTokens };
   if (tools) { body.tools = tools; body.tool_choice = toolChoice; }
 
   const resp = await fetch(fetchParams.url, {
@@ -77,13 +86,25 @@ async function callAI(fetchParams: any, messages: any[], tools?: any[], toolChoi
 
   const data = await resp.json();
   const choice = data.choices?.[0];
+  
+  console.log(`AI response: finish_reason=${choice?.finish_reason}, has_tool_calls=${!!choice?.message?.tool_calls}, content_length=${choice?.message?.content?.length || 0}`);
+
   if (choice?.message?.tool_calls?.[0]) {
     return JSON.parse(choice.message.tool_calls[0].function.arguments);
   }
   if (choice?.message?.content) {
-    return JSON.parse(choice.message.content);
+    return parseAIContent(choice.message.content);
   }
   throw new Error("No valid AI response");
+}
+
+async function callAIWithRetry(fetchParams: any, messages: any[], maxTokens: number, tools?: any[], toolChoice?: any) {
+  try {
+    return await callAI(fetchParams, messages, maxTokens, tools, toolChoice);
+  } catch (e: any) {
+    console.warn(`AI call failed, retrying once: ${e.message}`);
+    return await callAI(fetchParams, messages, maxTokens, tools, toolChoice);
+  }
 }
 
 const SYSTEM_PROMPT = `Tu es un expert en conception pédagogique, stratégie business et innovation. Tu crées des toolkits éducatifs de niveau professionnel.
@@ -109,47 +130,64 @@ QUALITÉ ATTENDUE :
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+  // SSE stream setup
+  const encoder = new TextEncoder();
+  const stream = new TransformStream();
+  const writer = stream.writable.getWriter();
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
-    // Verify user with anon key client
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-    const userId = claimsData.claims.sub as string;
+  function sendEvent(data: any) {
+    const msg = `data: ${JSON.stringify(data)}\n\n`;
+    writer.write(encoder.encode(msg)).catch(() => {});
+  }
 
-    // Check saas team role
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data: isSaas } = await adminClient.rpc("is_saas_team", { _user_id: userId });
-    if (!isSaas) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+  async function run() {
+    try {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader?.startsWith("Bearer ")) {
+        sendEvent({ type: "error", message: "Unauthorized" });
+        writer.close();
+        return;
+      }
 
-    const { name, slug, icon_emoji, description, target_audience, objectives, pillar_count, cards_per_pillar, language, difficulty_level, generate_quiz } = await req.json();
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const config = await resolveAIConfig();
-    const fetchParams = buildFetchParams(config);
+      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(authHeader.replace("Bearer ", ""));
+      if (claimsError || !claimsData?.claims) {
+        sendEvent({ type: "error", message: "Unauthorized" });
+        writer.close();
+        return;
+      }
+      const userId = claimsData.claims.sub as string;
 
-    // Step 1: Create toolkit in DB
-    const { data: toolkit, error: tkError } = await adminClient
-      .from("toolkits")
-      .insert({ name, slug, icon_emoji: icon_emoji || "🚀", description, target_audience, difficulty_level, status: "draft" })
-      .select()
-      .single();
-    if (tkError) throw new Error(`Toolkit insert error: ${tkError.message}`);
+      const adminClient = createClient(supabaseUrl, serviceRoleKey);
+      const { data: isSaas } = await adminClient.rpc("is_saas_team", { _user_id: userId });
+      if (!isSaas) {
+        sendEvent({ type: "error", message: "Forbidden" });
+        writer.close();
+        return;
+      }
 
-    // Step 2: Generate pillars
-    const pillarPrompt = `Crée exactement ${pillar_count || 8} piliers thématiques pour un toolkit intitulé "${name}".
+      const { name, slug, icon_emoji, description, target_audience, objectives, pillar_count, cards_per_pillar, language, difficulty_level, generate_quiz } = await req.json();
+
+      const config = await resolveAIConfig();
+      const fetchParams = buildFetchParams(config);
+
+      // Step 1: Create toolkit
+      const { data: toolkit, error: tkError } = await adminClient
+        .from("toolkits")
+        .insert({ name, slug, icon_emoji: icon_emoji || "🚀", description, target_audience, difficulty_level, status: "draft" })
+        .select()
+        .single();
+      if (tkError) throw new Error(`Toolkit insert error: ${tkError.message}`);
+
+      sendEvent({ type: "progress", step: "toolkit_created", toolkit_id: toolkit.id });
+
+      // Step 2: Generate pillars
+      const pillarPrompt = `Crée exactement ${pillar_count || 8} piliers thématiques pour un toolkit intitulé "${name}".
 Description: ${description || "Non fournie"}
 Audience cible: ${target_audience || "Professionnels"}
 Objectifs: ${objectives || "Formation complète"}
@@ -158,110 +196,118 @@ Niveau: ${difficulty_level || "Intermédiaire"}
 
 Chaque pilier doit couvrir un aspect essentiel et distinct du sujet. La progression doit être logique.`;
 
-    const pillarTool = {
-      type: "function",
-      function: {
-        name: "create_pillars",
-        description: "Create the pillar structure for the toolkit",
-        parameters: {
-          type: "object",
-          properties: {
-            pillars: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string", description: "Nom du pilier (2-3 mots)" },
-                  slug: { type: "string", description: "Slug URL-friendly" },
-                  description: { type: "string", description: "Description détaillée (2-3 phrases)" },
-                  subtitle: { type: "string", description: "Phrase d'accroche courte" },
-                  target_audience: { type: "string", description: "Audience cible spécifique" },
-                  learning_outcomes: { type: "array", items: { type: "string" }, description: "3-5 acquis pédagogiques" },
+      const pillarTool = {
+        type: "function",
+        function: {
+          name: "create_pillars",
+          description: "Create the pillar structure for the toolkit",
+          parameters: {
+            type: "object",
+            properties: {
+              pillars: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string", description: "Nom du pilier (2-3 mots)" },
+                    slug: { type: "string", description: "Slug URL-friendly" },
+                    description: { type: "string", description: "Description détaillée (2-3 phrases)" },
+                    subtitle: { type: "string", description: "Phrase d'accroche courte" },
+                    target_audience: { type: "string", description: "Audience cible spécifique" },
+                    learning_outcomes: { type: "array", items: { type: "string" }, description: "3-5 acquis pédagogiques" },
+                  },
+                  required: ["name", "slug", "description", "subtitle", "target_audience", "learning_outcomes"],
+                  additionalProperties: false,
                 },
-                required: ["name", "slug", "description", "subtitle", "target_audience", "learning_outcomes"],
-                additionalProperties: false,
               },
             },
+            required: ["pillars"],
+            additionalProperties: false,
           },
-          required: ["pillars"],
-          additionalProperties: false,
         },
-      },
-    };
+      };
 
-    const pillarResult = await callAI(
-      fetchParams,
-      [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: pillarPrompt }],
-      [pillarTool],
-      { type: "function", function: { name: "create_pillars" } }
-    );
+      const pillarResult = await callAIWithRetry(
+        fetchParams,
+        [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: pillarPrompt }],
+        8000,
+        [pillarTool],
+        { type: "function", function: { name: "create_pillars" } }
+      );
 
-    // Insert pillars
-    const pillarInserts = pillarResult.pillars.map((p: any, i: number) => ({
-      toolkit_id: toolkit.id,
-      name: p.name,
-      slug: p.slug,
-      description: p.description,
-      subtitle: p.subtitle,
-      target_audience: p.target_audience,
-      learning_outcomes: p.learning_outcomes,
-      icon_name: PILLAR_ICONS[i % PILLAR_ICONS.length],
-      color: PILLAR_COLORS[i % PILLAR_COLORS.length],
-      sort_order: i,
-      weight: 1,
-      status: "active",
-    }));
+      const pillarInserts = pillarResult.pillars.map((p: any, i: number) => ({
+        toolkit_id: toolkit.id,
+        name: p.name,
+        slug: p.slug,
+        description: p.description,
+        subtitle: p.subtitle,
+        target_audience: p.target_audience,
+        learning_outcomes: p.learning_outcomes,
+        icon_name: PILLAR_ICONS[i % PILLAR_ICONS.length],
+        color: PILLAR_COLORS[i % PILLAR_COLORS.length],
+        sort_order: i,
+        weight: 1,
+        status: "active",
+      }));
 
-    const { data: pillars, error: pError } = await adminClient
-      .from("pillars")
-      .insert(pillarInserts)
-      .select();
-    if (pError) throw new Error(`Pillars insert error: ${pError.message}`);
+      const { data: pillars, error: pError } = await adminClient
+        .from("pillars")
+        .insert(pillarInserts)
+        .select();
+      if (pError) throw new Error(`Pillars insert error: ${pError.message}`);
 
-    // Step 3: Generate cards per pillar
-    const cardsPerPillar = cards_per_pillar || 20;
-    const cardTool = {
-      type: "function",
-      function: {
-        name: "create_cards",
-        description: "Create cards for a pillar",
-        parameters: {
-          type: "object",
-          properties: {
-            cards: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string", description: "Concept clé (2-4 mots)" },
-                  subtitle: { type: "string", description: "Phrase d'accroche" },
-                  definition: { type: "string", description: "Explication pédagogique (2-3 phrases)" },
-                  action: { type: "string", description: "Exercice concret et actionnable" },
-                  kpi: { type: "string", description: "Indicateur mesurable" },
-                  objective: { type: "string", description: "Objectif pédagogique de la carte" },
-                  phase: { type: "string", enum: ["foundations", "model", "growth", "execution"] },
-                  qualification: { type: "string", enum: ["essentiel", "avancé", "expert"] },
-                  difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
-                  valorization: { type: "integer", description: "Points (10-50)" },
+      const pillarNames = pillars!.map((p: any) => p.name);
+      sendEvent({ type: "progress", step: "pillars_generated", pillars: pillarNames });
+
+      // Step 3: Generate cards per pillar
+      const cardsPerPillar = cards_per_pillar || 20;
+      const cardTool = {
+        type: "function",
+        function: {
+          name: "create_cards",
+          description: "Create cards for a pillar",
+          parameters: {
+            type: "object",
+            properties: {
+              cards: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    title: { type: "string", description: "Concept clé (2-4 mots)" },
+                    subtitle: { type: "string", description: "Phrase d'accroche" },
+                    definition: { type: "string", description: "Explication pédagogique (2-3 phrases)" },
+                    action: { type: "string", description: "Exercice concret et actionnable" },
+                    kpi: { type: "string", description: "Indicateur mesurable" },
+                    objective: { type: "string", description: "Objectif pédagogique de la carte" },
+                    phase: { type: "string", enum: ["foundations", "model", "growth", "execution"] },
+                    qualification: { type: "string", enum: ["essentiel", "avancé", "expert"] },
+                    difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
+                    valorization: { type: "integer", description: "Points (10-50)" },
+                  },
+                  required: ["title", "subtitle", "definition", "action", "kpi", "objective", "phase", "qualification", "difficulty", "valorization"],
+                  additionalProperties: false,
                 },
-                required: ["title", "subtitle", "definition", "action", "kpi", "objective", "phase", "qualification", "difficulty", "valorization"],
-                additionalProperties: false,
               },
             },
+            required: ["cards"],
+            additionalProperties: false,
           },
-          required: ["cards"],
-          additionalProperties: false,
         },
-      },
-    };
+      };
 
-    for (const pillar of pillars!) {
-      const f = Math.floor(cardsPerPillar * 0.25);
-      const m = Math.floor(cardsPerPillar * 0.25);
-      const g = Math.floor(cardsPerPillar * 0.25);
-      const e = cardsPerPillar - f - m - g;
+      let totalCards = 0;
 
-      const cardPrompt = `Crée exactement ${cardsPerPillar} cartes pour le pilier "${pillar.name}" du toolkit "${name}".
+      for (let pi = 0; pi < pillars!.length; pi++) {
+        const pillar = pillars![pi];
+        sendEvent({ type: "progress", step: "cards_generating", pillar: pillar.name, index: pi, total: pillars!.length });
+
+        const f = Math.floor(cardsPerPillar * 0.25);
+        const m = Math.floor(cardsPerPillar * 0.25);
+        const g = Math.floor(cardsPerPillar * 0.25);
+        const e = cardsPerPillar - f - m - g;
+
+        const cardPrompt = `Crée exactement ${cardsPerPillar} cartes pour le pilier "${pillar.name}" du toolkit "${name}".
 Description du pilier: ${pillar.description}
 Audience: ${target_audience || "Professionnels"}
 Langue: ${language || "Français"}
@@ -275,111 +321,129 @@ Répartition stricte par phase:
 Valorization: foundations 10-20pts, model 15-30pts, growth 25-40pts, execution 30-50pts.
 Chaque carte doit avoir un contenu unique, professionnel et actionnable.`;
 
-      const cardResult = await callAI(
-        fetchParams,
-        [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: cardPrompt }],
-        [cardTool],
-        { type: "function", function: { name: "create_cards" } }
-      );
+        const cardResult = await callAIWithRetry(
+          fetchParams,
+          [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: cardPrompt }],
+          16000,
+          [cardTool],
+          { type: "function", function: { name: "create_cards" } }
+        );
 
-      const cardInserts = cardResult.cards.map((c: any, i: number) => ({
-        pillar_id: pillar.id,
-        title: c.title,
-        subtitle: c.subtitle,
-        definition: c.definition,
-        action: c.action,
-        kpi: c.kpi,
-        objective: c.objective,
-        phase: c.phase,
-        qualification: c.qualification,
-        difficulty: c.difficulty,
-        valorization: c.valorization,
-        sort_order: i,
-        status: "active",
-        tags: [],
-      }));
+        const cardInserts = cardResult.cards.map((c: any, i: number) => ({
+          pillar_id: pillar.id,
+          title: c.title,
+          subtitle: c.subtitle,
+          definition: c.definition,
+          action: c.action,
+          kpi: c.kpi,
+          objective: c.objective,
+          phase: c.phase,
+          qualification: c.qualification,
+          difficulty: c.difficulty,
+          valorization: c.valorization,
+          sort_order: i,
+          status: "active",
+          tags: [],
+        }));
 
-      const { error: cError } = await adminClient.from("cards").insert(cardInserts);
-      if (cError) throw new Error(`Cards insert error for pillar ${pillar.name}: ${cError.message}`);
-    }
+        const { error: cError } = await adminClient.from("cards").insert(cardInserts);
+        if (cError) throw new Error(`Cards insert error for pillar ${pillar.name}: ${cError.message}`);
 
-    // Step 4: Generate quiz (optional)
-    if (generate_quiz) {
-      const quizTool = {
-        type: "function",
-        function: {
-          name: "create_quiz",
-          description: "Create quiz questions for a pillar",
-          parameters: {
-            type: "object",
-            properties: {
-              questions: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    question: { type: "string", description: "Question de quiz" },
-                    options: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          label: { type: "string" },
-                          score: { type: "integer", description: "Score 0-3 (0=incorrect, 3=meilleure réponse)" },
+        totalCards += cardInserts.length;
+        sendEvent({ type: "progress", step: "cards_done", pillar: pillar.name, count: cardInserts.length });
+      }
+
+      // Step 4: Quiz (optional)
+      let totalQuiz = 0;
+      if (generate_quiz) {
+        const quizTool = {
+          type: "function",
+          function: {
+            name: "create_quiz",
+            description: "Create quiz questions for a pillar",
+            parameters: {
+              type: "object",
+              properties: {
+                questions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      question: { type: "string", description: "Question de quiz" },
+                      options: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            label: { type: "string" },
+                            score: { type: "integer", description: "Score 0-3" },
+                          },
+                          required: ["label", "score"],
+                          additionalProperties: false,
                         },
-                        required: ["label", "score"],
-                        additionalProperties: false,
                       },
                     },
+                    required: ["question", "options"],
+                    additionalProperties: false,
                   },
-                  required: ["question", "options"],
-                  additionalProperties: false,
                 },
               },
+              required: ["questions"],
+              additionalProperties: false,
             },
-            required: ["questions"],
-            additionalProperties: false,
           },
-        },
-      };
+        };
 
-      for (const pillar of pillars!) {
-        const quizPrompt = `Crée 4 questions de quiz pour évaluer la compréhension du pilier "${pillar.name}" du toolkit "${name}".
+        for (const pillar of pillars!) {
+          sendEvent({ type: "progress", step: "quiz_generating", pillar: pillar.name });
+
+          const quizPrompt = `Crée 4 questions de quiz pour évaluer la compréhension du pilier "${pillar.name}" du toolkit "${name}".
 Description: ${pillar.description}
 Langue: ${language || "Français"}
 
-Chaque question doit avoir 4 options avec un score de 0 à 3 (0=incorrect, 1=partiel, 2=bon, 3=excellent).
-Les questions doivent tester la compréhension pratique, pas la mémorisation.`;
+Chaque question doit avoir 4 options avec un score de 0 à 3.`;
 
-        const quizResult = await callAI(
-          fetchParams,
-          [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: quizPrompt }],
-          [quizTool],
-          { type: "function", function: { name: "create_quiz" } }
-        );
+          const quizResult = await callAIWithRetry(
+            fetchParams,
+            [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: quizPrompt }],
+            4000,
+            [quizTool],
+            { type: "function", function: { name: "create_quiz" } }
+          );
 
-        const quizInserts = quizResult.questions.map((q: any, i: number) => ({
-          pillar_id: pillar.id,
-          question: q.question,
-          options: q.options,
-          sort_order: i,
-        }));
+          const quizInserts = quizResult.questions.map((q: any, i: number) => ({
+            pillar_id: pillar.id,
+            question: q.question,
+            options: q.options,
+            sort_order: i,
+          }));
 
-        const { error: qError } = await adminClient.from("quiz_questions").insert(quizInserts);
-        if (qError) throw new Error(`Quiz insert error for pillar ${pillar.name}: ${qError.message}`);
+          const { error: qError } = await adminClient.from("quiz_questions").insert(quizInserts);
+          if (qError) throw new Error(`Quiz insert error for pillar ${pillar.name}: ${qError.message}`);
+
+          totalQuiz += quizInserts.length;
+          sendEvent({ type: "progress", step: "quiz_done", pillar: pillar.name, count: quizInserts.length });
+        }
       }
-    }
 
-    return new Response(
-      JSON.stringify({ toolkit_id: toolkit.id, pillars_count: pillars!.length }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (e: any) {
-    console.error("generate-toolkit error:", e);
-    const status = e.message?.includes("429") ? 429 : e.message?.includes("402") ? 402 : 500;
-    return new Response(
-      JSON.stringify({ error: e.message || "Une erreur est survenue" }),
-      { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      sendEvent({ type: "complete", toolkit_id: toolkit.id, pillars: pillars!.length, cards: totalCards, quiz: totalQuiz });
+      writer.close();
+    } catch (e: any) {
+      console.error("generate-toolkit error:", e);
+      sendEvent({ type: "error", message: e.message || "Une erreur est survenue" });
+      writer.close();
+    }
   }
+
+  // Start the generation in the background
+  run();
+
+  return new Response(stream.readable, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+    },
+  });
 });
