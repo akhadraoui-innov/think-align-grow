@@ -193,7 +193,13 @@ serve(async (req) => {
 
         const { data: existingCards } = await adminClient.from("cards").select("pillar_id").in("pillar_id", allPillars.map(p => p.id));
         const pillarIdsWithCards = new Set((existingCards || []).map(c => c.pillar_id));
-        const emptyPillars = allPillars.filter(p => !pillarIdsWithCards.has(p.id));
+        let emptyPillars = allPillars.filter(p => !pillarIdsWithCards.has(p.id));
+
+        // If pillar_ids provided, filter to only those pillars
+        if (body.pillar_ids && Array.isArray(body.pillar_ids) && body.pillar_ids.length > 0) {
+          const requestedIds = new Set(body.pillar_ids);
+          emptyPillars = emptyPillars.filter(p => requestedIds.has(p.id));
+        }
 
         let totalCards = 0;
         const cPerPillar = cards_per_pillar || 20;
