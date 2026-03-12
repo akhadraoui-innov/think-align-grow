@@ -17,8 +17,9 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Loader2, Save, Trash2, X, Tag, Settings2, FileText, Layers } from "lucide-react";
+import { Upload, Loader2, Save, Trash2, X, Tag, Settings2, FileText, Layers, LayoutGrid, List } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { ToolkitCardsBrowser } from "./ToolkitCardsBrowser";
 
 const PHASE_LABELS: Record<string, string> = {
   foundations: "Fondations", model: "Modèle", growth: "Croissance", execution: "Exécution",
