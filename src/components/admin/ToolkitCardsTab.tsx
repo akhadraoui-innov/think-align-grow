@@ -51,6 +51,7 @@ function buildCardForm(c: Tables<"cards">) {
 
 export function ToolkitCardsTab({ cards, pillars, toolkitId, onUpdate }: Props) {
   const { toast } = useToast();
+  const [viewMode, setViewMode] = useState<"table" | "visual">("table");
   const [importing, setImporting] = useState(false);
   const [editCard, setEditCard] = useState<Tables<"cards"> | null>(null);
   const [form, setForm] = useState<ReturnType<typeof buildCardForm> | null>(null);
