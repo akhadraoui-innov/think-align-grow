@@ -112,14 +112,26 @@ export function ToolkitCardsTab({ cards, pillars, toolkitId, onUpdate }: Props) 
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-1 rounded-lg bg-muted/50 p-1">
+          <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="sm" onClick={() => setViewMode("table")} className="gap-1.5 text-xs h-8">
+            <List className="h-3.5 w-3.5" /> Tableau
+          </Button>
+          <Button variant={viewMode === "visual" ? "secondary" : "ghost"} size="sm" onClick={() => setViewMode("visual")} className="gap-1.5 text-xs h-8">
+            <LayoutGrid className="h-3.5 w-3.5" /> Visuel
+          </Button>
+        </div>
         <Button variant="outline" size="sm" onClick={handleImport} disabled={importing} className="gap-2">
           {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
           Importer des cartes
         </Button>
       </div>
 
-      {grouped.map(({ pillar, cards: pillarCards }) => (
+      {viewMode === "visual" ? (
+        <ToolkitCardsBrowser cards={cards} pillars={pillars} />
+      ) : (
+        <>
+          {grouped.map(({ pillar, cards: pillarCards }) => (
         <div key={pillar.id} className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
           <div className="px-4 py-3 bg-muted/30 backdrop-blur-sm border-b border-border/40 flex items-center gap-3">
             <div className="h-3 w-3 rounded-full ring-2 ring-background shadow-sm" style={{ backgroundColor: pillar.color || "#ccc" }} />
