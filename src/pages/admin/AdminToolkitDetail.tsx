@@ -12,6 +12,8 @@ import { ToolkitChallengesTab } from "@/components/admin/ToolkitChallengesTab";
 import { ToolkitGamePlansTab } from "@/components/admin/ToolkitGamePlansTab";
 import { ToolkitQuizTab } from "@/components/admin/ToolkitQuizTab";
 import { ToolkitOrgsTab } from "@/components/admin/ToolkitOrgsTab";
+import { ToolkitCompletionBanner } from "@/components/admin/ToolkitCompletionBanner";
+import { ToolkitAIChatDialog } from "@/components/admin/ToolkitAIChatDialog";
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
   draft: { label: "Brouillon", className: "bg-muted text-muted-foreground border-border" },
