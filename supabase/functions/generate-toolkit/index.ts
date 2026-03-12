@@ -171,11 +171,143 @@ serve(async (req) => {
         return;
       }
 
-      const { name, slug, icon_emoji, description, target_audience, objectives, pillar_count, cards_per_pillar, language, difficulty_level, generate_quiz } = await req.json();
+      const body = await req.json();
+      const { mode, name, slug, icon_emoji, description, target_audience, objectives, pillar_count, cards_per_pillar, language, difficulty_level, generate_quiz } = body;
 
       const config = await resolveAIConfig();
       const fetchParams = buildFetchParams(config);
 
+      // ===== MODE: COMPLETE MISSING =====
+      if (mode === "complete_missing") {
+        const toolkitId = body.toolkit_id;
+        if (!toolkitId) throw new Error("toolkit_id required for complete_missing mode");
+
+        const { data: toolkit } = await adminClient.from("toolkits").select("*").eq("id", toolkitId).single();
+        if (!toolkit) throw new Error("Toolkit not found");
+
+        sendEvent({ type: "progress", step: "analysis_done", toolkit_id: toolkitId });
+
+        // Find pillars without cards
+        const { data: allPillars } = await adminClient.from("pillars").select("*").eq("toolkit_id", toolkitId).order("sort_order");
+        if (!allPillars || allPillars.length === 0) throw new Error("No pillars found");
+
+        const { data: existingCards } = await adminClient.from("cards").select("pillar_id").in("pillar_id", allPillars.map(p => p.id));
+        const pillarIdsWithCards = new Set((existingCards || []).map(c => c.pillar_id));
+        const emptyPillars = allPillars.filter(p => !pillarIdsWithCards.has(p.id));
+
+        let totalCards = 0;
+        const cPerPillar = cards_per_pillar || 20;
+
+        const cardTool = {
+          type: "function",
+          function: {
+            name: "create_cards",
+            description: "Create cards for a pillar",
+            parameters: {
+              type: "object",
+              properties: {
+                cards: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      title: { type: "string" }, subtitle: { type: "string" }, definition: { type: "string" },
+                      action: { type: "string" }, kpi: { type: "string" }, objective: { type: "string" },
+                      phase: { type: "string", enum: ["foundations", "model", "growth", "execution"] },
+                      qualification: { type: "string", enum: ["essentiel", "avancé", "expert"] },
+                      difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
+                      valorization: { type: "integer" },
+                    },
+                    required: ["title", "subtitle", "definition", "action", "kpi", "objective", "phase", "qualification", "difficulty", "valorization"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["cards"],
+              additionalProperties: false,
+            },
+          },
+        };
+
+        for (let pi = 0; pi < emptyPillars.length; pi++) {
+          const pillar = emptyPillars[pi];
+          sendEvent({ type: "progress", step: "cards_generating", pillar: pillar.name, index: pi, total: emptyPillars.length });
+
+          const f = Math.floor(cPerPillar * 0.25), m = Math.floor(cPerPillar * 0.25), g = Math.floor(cPerPillar * 0.25), e = cPerPillar - f - m - g;
+          const cardPrompt = `Crée exactement ${cPerPillar} cartes pour le pilier "${pillar.name}" du toolkit "${toolkit.name}".
+Description du pilier: ${pillar.description}
+Audience: ${toolkit.target_audience || "Professionnels"}
+Langue: ${language || "Français"}
+
+Répartition par phase: foundations: ${f}, model: ${m}, growth: ${g}, execution: ${e}.
+Chaque carte doit avoir un contenu unique, professionnel et actionnable.`;
+
+          const cardResult = await callAIWithRetry(fetchParams, [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: cardPrompt }], 16000, [cardTool], { type: "function", function: { name: "create_cards" } });
+
+          const cardInserts = cardResult.cards.map((c: any, i: number) => ({
+            pillar_id: pillar.id, title: c.title, subtitle: c.subtitle, definition: c.definition,
+            action: c.action, kpi: c.kpi, objective: c.objective, phase: c.phase,
+            qualification: c.qualification, difficulty: c.difficulty, valorization: c.valorization,
+            sort_order: i, status: "active", tags: [],
+          }));
+
+          const { error: cError } = await adminClient.from("cards").insert(cardInserts);
+          if (cError) throw new Error(`Cards insert error for ${pillar.name}: ${cError.message}`);
+          totalCards += cardInserts.length;
+          sendEvent({ type: "progress", step: "cards_done", pillar: pillar.name, count: cardInserts.length });
+        }
+
+        // Quiz if requested
+        let totalQuiz = 0;
+        if (body.generate_quiz) {
+          const { data: existingQuiz } = await adminClient.from("quiz_questions").select("pillar_id").in("pillar_id", allPillars.map(p => p.id));
+          const pillarIdsWithQuiz = new Set((existingQuiz || []).map(q => q.pillar_id));
+          const pillarsNeedingQuiz = allPillars.filter(p => !pillarIdsWithQuiz.has(p.id));
+
+          const quizTool = {
+            type: "function",
+            function: {
+              name: "create_quiz",
+              description: "Create quiz questions",
+              parameters: {
+                type: "object",
+                properties: {
+                  questions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        question: { type: "string" },
+                        options: { type: "array", items: { type: "object", properties: { label: { type: "string" }, score: { type: "integer" } }, required: ["label", "score"], additionalProperties: false } },
+                      },
+                      required: ["question", "options"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["questions"],
+                additionalProperties: false,
+              },
+            },
+          };
+
+          for (const pillar of pillarsNeedingQuiz) {
+            sendEvent({ type: "progress", step: "quiz_generating", pillar: pillar.name });
+            const quizPrompt = `Crée 4 questions de quiz pour le pilier "${pillar.name}" du toolkit "${toolkit.name}". Description: ${pillar.description}. 4 options avec score 0-3.`;
+            const quizResult = await callAIWithRetry(fetchParams, [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: quizPrompt }], 4000, [quizTool], { type: "function", function: { name: "create_quiz" } });
+            const quizInserts = quizResult.questions.map((q: any, i: number) => ({ pillar_id: pillar.id, question: q.question, options: q.options, sort_order: i }));
+            await adminClient.from("quiz_questions").insert(quizInserts);
+            totalQuiz += quizInserts.length;
+            sendEvent({ type: "progress", step: "quiz_done", pillar: pillar.name, count: quizInserts.length });
+          }
+        }
+
+        sendEvent({ type: "complete", toolkit_id: toolkitId, pillars: allPillars.length, cards: totalCards, quiz: totalQuiz });
+        writer.close();
+        return;
+      }
+
+      // ===== MODE: FULL (default) =====
       // Step 1: Create toolkit
       const { data: toolkit, error: tkError } = await adminClient
         .from("toolkits")

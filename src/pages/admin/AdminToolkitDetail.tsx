@@ -55,8 +55,13 @@ export default function AdminToolkitDetail() {
               </p>
             </div>
           </div>
-          <Badge variant="outline" className={`ml-auto ${s.className}`}>{s.label}</Badge>
+          <div className="ml-auto flex items-center gap-2">
+            <ToolkitAIChatDialog toolkit={toolkit} pillars={pillars} onUpdate={invalidateAll} />
+            <Badge variant="outline" className={s.className}>{s.label}</Badge>
+          </div>
         </div>
+
+        <ToolkitCompletionBanner toolkit={toolkit} pillars={pillars} cards={cards} quizQuestions={quizQuestions} onUpdate={invalidateAll} />
 
         <Tabs defaultValue="info" className="space-y-4">
           <TabsList className="bg-muted/50 flex-wrap h-auto gap-1 p-1">
