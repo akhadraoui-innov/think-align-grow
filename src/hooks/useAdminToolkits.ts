@@ -73,6 +73,31 @@ export function useAdminToolkits() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-toolkits"] }),
   });
 
+  const generateWithAI = useMutation({
+    mutationFn: async (input: {
+      name: string;
+      slug: string;
+      icon_emoji: string;
+      description: string;
+      target_audience: string;
+      objectives: string;
+      pillar_count: number;
+      cards_per_pillar: number;
+      language: string;
+      difficulty_level: string;
+      generate_quiz: boolean;
+    }) => {
+      const { data, error } = await supabase.functions.invoke("generate-toolkit", { body: input });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as { toolkit_id: string; pillars_count: number };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-toolkits"] });
+      qc.invalidateQueries({ queryKey: ["admin-toolkit-counts"] });
+    },
+  });
+
   return {
     toolkits: list.data || [],
     isLoading: list.isLoading,
@@ -80,6 +105,7 @@ export function useAdminToolkits() {
     create,
     update,
     remove,
+    generateWithAI,
   };
 }
 
