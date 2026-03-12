@@ -5,9 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, AlertTriangle, Check, Clock, CircleDot, PartyPopper, ArrowRight, Loader2 } from "lucide-react";
+import { Sparkles, AlertTriangle, Check, Clock, CircleDot, PartyPopper, ArrowRight, Loader2, RotateCcw } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { useNavigate } from "react-router-dom";
 
 interface Props {
   toolkit: Tables<"toolkits">;
@@ -27,7 +26,6 @@ type TimelineEntry = {
 type GenPhase = "idle" | "generating" | "complete" | "error";
 
 export function ToolkitCompletionBanner({ toolkit, pillars, cards, quizQuestions, onUpdate }: Props) {
-  const navigate = useNavigate();
   const emptyPillars = pillars.filter(p => !cards.some(c => c.pillar_id === p.id));
   const hasQuiz = quizQuestions.length > 0;
   const missingItems: string[] = [];
@@ -42,94 +40,167 @@ export function ToolkitCompletionBanner({ toolkit, pillars, cards, quizQuestions
   const [totalQuiz, setTotalQuiz] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
+  const [failedPillars, setFailedPillars] = useState<Tables<"pillars">[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
-  const handleComplete = useCallback(async () => {
+  const processSSEStream = async (response: Response, onProgress: (data: any) => void) => {
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("No stream");
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const data = JSON.parse(line.slice(6));
+        if (data.type === "error") throw new Error(data.message);
+        onProgress(data);
+      }
+    }
+  };
+
+  const callGenerate = async (session: any, body: Record<string, any>) => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    return fetch(`${supabaseUrl}/functions/v1/generate-toolkit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(body),
+    });
+  };
+
+  const handleComplete = useCallback(async (pillarsToProcess?: Tables<"pillars">[]) => {
+    const targetPillars = pillarsToProcess || emptyPillars;
+    const needQuiz = !hasQuiz && pillars.length > 0;
+
     setGenOpen(true);
     setPhase("generating");
-    setTimeline([{ id: "start", label: "Analyse du toolkit", status: "active" }]);
     setTotalCards(0);
     setTotalQuiz(0);
     setElapsed(0);
     setErrorMessage("");
+    setFailedPillars([]);
+
+    // Build initial timeline
+    const initialTimeline: TimelineEntry[] = targetPillars.map((p, i) => ({
+      id: `cards-${p.id}`,
+      label: p.name,
+      status: i === 0 ? "active" : "pending",
+      detail: "En attente…",
+    }));
+    if (needQuiz) {
+      initialTimeline.push({ id: "quiz", label: "Quiz", status: "pending", detail: "En attente…" });
+    }
+    setTimeline(initialTimeline);
+
     timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Non connecté");
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-toolkit`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          mode: "complete_missing",
-          toolkit_id: toolkit.id,
-          generate_quiz: !hasQuiz,
-        }),
-      });
+      let cardsTotal = 0;
+      const failed: Tables<"pillars">[] = [];
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("No stream");
-      const decoder = new TextDecoder();
-      let buffer = "";
+      // Process each pillar individually
+      for (let i = 0; i < targetPillars.length; i++) {
+        const pillar = targetPillars[i];
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+        setTimeline(prev => prev.map(t =>
+          t.id === `cards-${pillar.id}` ? { ...t, status: "active", detail: "Génération…" } : t
+        ));
 
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const data = JSON.parse(line.slice(6));
+        try {
+          const response = await callGenerate(session, {
+            mode: "complete_missing",
+            toolkit_id: toolkit.id,
+            pillar_ids: [pillar.id],
+            generate_quiz: false,
+          });
 
-          if (data.type === "progress") {
-            switch (data.step) {
-              case "toolkit_created":
-              case "analysis_done":
-                setTimeline(prev => prev.map(t => t.id === "start" ? { ...t, status: "done", detail: "✓" } : t));
-                break;
-              case "cards_generating":
-                setTimeline(prev => [...prev, { id: `cards-${data.index}`, label: data.pillar, status: "active", detail: "Génération..." }]);
-                break;
-              case "cards_done":
-                setTimeline(prev => prev.map(t => t.label === data.pillar && t.status === "active" ? { ...t, status: "done", detail: `${data.count} cartes` } : t));
-                setTotalCards(prev => prev + data.count);
-                break;
-              case "quiz_generating":
-                setTimeline(prev => [...prev, { id: `quiz-${data.pillar}`, label: `Quiz — ${data.pillar}`, status: "active" }]);
-                break;
-              case "quiz_done":
-                setTimeline(prev => prev.map(t => t.id === `quiz-${data.pillar}` ? { ...t, status: "done", detail: `${data.count} questions` } : t));
-                setTotalQuiz(prev => prev + data.count);
-                break;
+          let pillarCards = 0;
+          await processSSEStream(response, (data) => {
+            if (data.type === "progress" && data.step === "cards_done") {
+              pillarCards = data.count || 0;
             }
-          } else if (data.type === "complete") {
-            if (timerRef.current) clearInterval(timerRef.current);
-            setPhase("complete");
-            setTotalCards(data.cards || 0);
-            setTotalQuiz(data.quiz || 0);
-            onUpdate();
-          } else if (data.type === "error") {
-            throw new Error(data.message);
-          }
+          });
+
+          cardsTotal += pillarCards;
+          setTotalCards(cardsTotal);
+          setTimeline(prev => prev.map(t =>
+            t.id === `cards-${pillar.id}` ? { ...t, status: "done", detail: `${pillarCards} cartes` } : t
+          ));
+        } catch (e: any) {
+          console.error(`Failed for pillar ${pillar.name}:`, e);
+          failed.push(pillar);
+          setTimeline(prev => prev.map(t =>
+            t.id === `cards-${pillar.id}` ? { ...t, status: "error", detail: "Erreur" } : t
+          ));
         }
       }
+
+      // Quiz pass - all pillars at once
+      if (needQuiz) {
+        setTimeline(prev => prev.map(t =>
+          t.id === "quiz" ? { ...t, status: "active", detail: "Génération…" } : t
+        ));
+
+        try {
+          const response = await callGenerate(session, {
+            mode: "complete_missing",
+            toolkit_id: toolkit.id,
+            generate_quiz: true,
+            pillar_ids: [], // empty = skip cards, quiz handles all pillars internally
+          });
+
+          let quizTotal = 0;
+          await processSSEStream(response, (data) => {
+            if (data.type === "progress" && data.step === "quiz_done") {
+              quizTotal += data.count || 0;
+            }
+            if (data.type === "complete") {
+              quizTotal = data.quiz || quizTotal;
+            }
+          });
+
+          setTotalQuiz(quizTotal);
+          setTimeline(prev => prev.map(t =>
+            t.id === "quiz" ? { ...t, status: "done", detail: `${quizTotal} questions` } : t
+          ));
+        } catch (e: any) {
+          console.error("Quiz generation failed:", e);
+          setTimeline(prev => prev.map(t =>
+            t.id === "quiz" ? { ...t, status: "error", detail: "Erreur" } : t
+          ));
+        }
+      }
+
+      if (timerRef.current) clearInterval(timerRef.current);
+      setFailedPillars(failed);
+      setPhase(failed.length > 0 ? "error" : "complete");
+      setTotalCards(cardsTotal);
+      if (failed.length > 0) {
+        setErrorMessage(`${failed.length} pilier(s) en erreur. Les autres ont été sauvegardés.`);
+      }
+      onUpdate();
     } catch (e: any) {
       if (timerRef.current) clearInterval(timerRef.current);
       setPhase("error");
       setErrorMessage(e.message);
     }
-  }, [toolkit.id, hasQuiz, onUpdate]);
+  }, [toolkit.id, emptyPillars, hasQuiz, pillars, onUpdate]);
 
   if (missingItems.length === 0) return null;
 
@@ -151,7 +222,7 @@ export function ToolkitCompletionBanner({ toolkit, pillars, cards, quizQuestions
           <p className="text-sm font-medium text-foreground">Toolkit incomplet</p>
           <p className="text-xs text-muted-foreground mt-0.5">{missingItems.join(" · ")}</p>
         </div>
-        <Button size="sm" onClick={handleComplete} className="gap-2 shrink-0">
+        <Button size="sm" onClick={() => handleComplete()} className="gap-2 shrink-0">
           <Sparkles className="h-4 w-4" /> Compléter avec l'IA
         </Button>
       </div>
@@ -174,7 +245,8 @@ export function ToolkitCompletionBanner({ toolkit, pillars, cards, quizQuestions
                       {t.status === "active" && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
                       {t.status === "done" && <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
                       {t.status === "pending" && <CircleDot className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />}
-                      <span className={t.status === "done" ? "text-muted-foreground" : "text-foreground"}>{t.label}</span>
+                      {t.status === "error" && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                      <span className={t.status === "done" ? "text-muted-foreground" : t.status === "error" ? "text-destructive" : "text-foreground"}>{t.label}</span>
                       {t.detail && <span className="ml-auto text-xs text-muted-foreground">{t.detail}</span>}
                     </div>
                   ))}
@@ -202,8 +274,15 @@ export function ToolkitCompletionBanner({ toolkit, pillars, cards, quizQuestions
                 <AlertTriangle className="h-10 w-10 text-destructive mx-auto" />
                 <p className="text-sm text-foreground font-medium">Erreur lors de la complétion</p>
                 <p className="text-xs text-muted-foreground">{errorMessage}</p>
-                {totalCards > 0 && <p className="text-xs text-muted-foreground">{totalCards} cartes générées avant l'erreur</p>}
-                <Button variant="outline" onClick={() => { setGenOpen(false); onUpdate(); }}>Fermer</Button>
+                {totalCards > 0 && <p className="text-xs text-muted-foreground">{totalCards} cartes générées avec succès</p>}
+                <div className="flex justify-center gap-2">
+                  {failedPillars.length > 0 && (
+                    <Button variant="default" size="sm" onClick={() => handleComplete(failedPillars)} className="gap-2">
+                      <RotateCcw className="h-4 w-4" /> Relancer ({failedPillars.length} pilier{failedPillars.length > 1 ? "s" : ""})
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={() => { setGenOpen(false); onUpdate(); }}>Fermer</Button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
