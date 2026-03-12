@@ -12,6 +12,8 @@ import { ToolkitChallengesTab } from "@/components/admin/ToolkitChallengesTab";
 import { ToolkitGamePlansTab } from "@/components/admin/ToolkitGamePlansTab";
 import { ToolkitQuizTab } from "@/components/admin/ToolkitQuizTab";
 import { ToolkitOrgsTab } from "@/components/admin/ToolkitOrgsTab";
+import { ToolkitCompletionBanner } from "@/components/admin/ToolkitCompletionBanner";
+import { ToolkitAIChatDialog } from "@/components/admin/ToolkitAIChatDialog";
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
   draft: { label: "Brouillon", className: "bg-muted text-muted-foreground border-border" },
@@ -53,8 +55,13 @@ export default function AdminToolkitDetail() {
               </p>
             </div>
           </div>
-          <Badge variant="outline" className={`ml-auto ${s.className}`}>{s.label}</Badge>
+          <div className="ml-auto flex items-center gap-2">
+            <ToolkitAIChatDialog toolkit={toolkit} pillars={pillars} onUpdate={invalidateAll} />
+            <Badge variant="outline" className={s.className}>{s.label}</Badge>
+          </div>
         </div>
+
+        <ToolkitCompletionBanner toolkit={toolkit} pillars={pillars} cards={cards} quizQuestions={quizQuestions} onUpdate={invalidateAll} />
 
         <Tabs defaultValue="info" className="space-y-4">
           <TabsList className="bg-muted/50 flex-wrap h-auto gap-1 p-1">
