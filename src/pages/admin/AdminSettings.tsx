@@ -8,11 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Bot, Server, Info, FileText } from "lucide-react";
+import { Loader2, Save, Bot, Server, Info, FileText, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { DEFAULT_PROMPTS } from "@/constants/defaultPrompts";
+import { RolesPermissionsTab } from "@/components/admin/RolesPermissionsTab";
 
 interface Provider {
   id: string;
@@ -52,9 +53,7 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -80,24 +79,15 @@ export default function AdminSettings() {
   };
 
   const handleSave = async () => {
-    if (!config.provider_id) {
-      toast.error("Sélectionnez un fournisseur");
-      return;
-    }
+    if (!config.provider_id) { toast.error("Sélectionnez un fournisseur"); return; }
     setSaving(true);
     try {
       const payload = {
-        provider_id: config.provider_id,
-        api_key: config.api_key || null,
-        model_chat: config.model_chat,
-        model_structured: config.model_structured,
-        prompts: config.prompts,
-        max_tokens: config.max_tokens,
-        temperature: config.temperature,
-        is_active: config.is_active,
-        organization_id: null,
+        provider_id: config.provider_id, api_key: config.api_key || null,
+        model_chat: config.model_chat, model_structured: config.model_structured,
+        prompts: config.prompts, max_tokens: config.max_tokens,
+        temperature: config.temperature, is_active: config.is_active, organization_id: null,
       };
-
       if (config.id) {
         const { error } = await supabase.from("ai_configurations").update(payload).eq("id", config.id);
         if (error) throw error;
@@ -109,9 +99,7 @@ export default function AdminSettings() {
       toast.success("Configuration IA sauvegardée");
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la sauvegarde");
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   const updatePrompt = (key: string, value: string) => {
@@ -138,8 +126,11 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        <Tabs defaultValue="ai" className="space-y-4">
+        <Tabs defaultValue="roles" className="space-y-4">
           <TabsList className="bg-muted/50">
+            <TabsTrigger value="roles" className="gap-1.5 text-xs">
+              <ShieldAlert className="h-3.5 w-3.5" /> Rôles & Permissions
+            </TabsTrigger>
             <TabsTrigger value="ai" className="gap-1.5 text-xs">
               <Bot className="h-3.5 w-3.5" /> Configuration IA
             </TabsTrigger>
@@ -151,17 +142,20 @@ export default function AdminSettings() {
             </TabsTrigger>
           </TabsList>
 
+          {/* Roles & Permissions */}
+          <TabsContent value="roles">
+            <RolesPermissionsTab />
+          </TabsContent>
+
           {/* AI Config */}
           <TabsContent value="ai">
             <div className="space-y-6">
-              {/* Info banner */}
               <div className="rounded-xl border border-border/50 bg-secondary/30 p-4 flex items-start gap-3">
                 <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  Sans configuration, <strong>Lovable AI</strong> est utilisé par défaut (aucune clé API requise). Configurez un fournisseur personnalisé pour utiliser votre propre compte.
+                  Sans configuration, <strong>Lovable AI</strong> est utilisé par défaut (aucune clé API requise).
                 </p>
               </div>
-
               <div className="rounded-xl border border-border/50 bg-card p-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-display font-bold">Configuration globale</h2>
@@ -170,15 +164,11 @@ export default function AdminSettings() {
                     <Switch id="config-active" checked={config.is_active} onCheckedChange={(v) => setConfig(prev => ({ ...prev, is_active: v }))} />
                   </div>
                 </div>
-
-                {/* Provider */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs">Fournisseur</Label>
                     <Select value={config.provider_id} onValueChange={(v) => setConfig(prev => ({ ...prev, provider_id: v }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner..." />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
                       <SelectContent>
                         {providers.filter(p => p.is_active).map(p => (
                           <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
@@ -191,8 +181,6 @@ export default function AdminSettings() {
                     <Input type="password" value={config.api_key} onChange={(e) => setConfig(prev => ({ ...prev, api_key: e.target.value }))} placeholder="Laisser vide pour Lovable AI" />
                   </div>
                 </div>
-
-                {/* Models */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs">Modèle Chat</Label>
@@ -203,8 +191,6 @@ export default function AdminSettings() {
                     <Input value={config.model_structured} onChange={(e) => setConfig(prev => ({ ...prev, model_structured: e.target.value }))} />
                   </div>
                 </div>
-
-                {/* Temperature & Max tokens */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs">Température ({config.temperature})</Label>
@@ -215,23 +201,15 @@ export default function AdminSettings() {
                     <Input type="number" value={config.max_tokens} onChange={(e) => setConfig(prev => ({ ...prev, max_tokens: parseInt(e.target.value) || 1000 }))} />
                   </div>
                 </div>
-
-                {/* Prompts */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-bold">Prompts système</h3>
                   {PROMPT_KEYS.map(({ key, label }) => (
                     <div key={key} className="space-y-1.5">
                       <Label className="text-xs">{label}</Label>
-                      <Textarea
-                        value={config.prompts[key] || ""}
-                        onChange={(e) => updatePrompt(key, e.target.value)}
-                        placeholder="Laisser vide pour le prompt par défaut"
-                        className="min-h-[80px] text-xs"
-                      />
+                      <Textarea value={config.prompts[key] || ""} onChange={(e) => updatePrompt(key, e.target.value)} placeholder="Laisser vide pour le prompt par défaut" className="min-h-[80px] text-xs" />
                     </div>
                   ))}
                 </div>
-
                 <Button onClick={handleSave} disabled={saving} className="gap-2">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   Sauvegarder
@@ -252,11 +230,9 @@ export default function AdminSettings() {
                       <p className="text-xs text-muted-foreground">{p.slug} · {p.base_url}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">Auth: {p.auth_header_prefix}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${p.is_active ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"}`}>
-                        {p.is_active ? "Actif" : "Inactif"}
-                      </span>
-                    </div>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${p.is_active ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"}`}>
+                      {p.is_active ? "Actif" : "Inactif"}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -269,22 +245,17 @@ export default function AdminSettings() {
               <div className="rounded-xl border border-border/50 bg-secondary/30 p-4 flex items-start gap-3">
                 <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  Ces prompts sont utilisés par défaut lorsqu'aucune surcharge n'est configurée (ni globale, ni par organisation). Ils sont codés dans les fonctions backend et ne sont pas modifiables ici — utilisez l'onglet <strong>Configuration IA</strong> pour les surcharger.
+                  Ces prompts sont utilisés par défaut. Utilisez l'onglet <strong>Configuration IA</strong> pour les surcharger.
                 </p>
               </div>
-
               <div className="space-y-4">
                 {Object.entries(DEFAULT_PROMPTS).map(([key, { label, prompt }]) => (
                   <div key={key} className="rounded-xl border border-border/50 bg-card p-5 space-y-3">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-bold">{label}</h3>
-                      <span><Badge variant="secondary" className="text-[10px]">Par défaut</Badge></span>
+                      <Badge variant="secondary" className="text-[10px]">Par défaut</Badge>
                     </div>
-                    <Textarea
-                      value={prompt}
-                      readOnly
-                      className="min-h-[100px] text-xs bg-muted/50 cursor-default resize-none"
-                    />
+                    <Textarea value={prompt} readOnly className="min-h-[100px] text-xs bg-muted/50 cursor-default resize-none" />
                   </div>
                 ))}
               </div>
