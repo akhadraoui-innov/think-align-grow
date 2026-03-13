@@ -1,9 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Plus, X } from "lucide-react";
+import { Shield, Plus, X, Check } from "lucide-react";
 import { useState } from "react";
 import { Constants } from "@/integrations/supabase/types";
+import { getPermissionsForRole, PERMISSION_LABELS } from "@/hooks/usePermissions";
 
 const ALL_ROLES = Constants.public.Enums.app_role;
 const ROLE_COLORS: Record<string, string> = {
@@ -22,9 +23,23 @@ interface Props {
   onRemoveRole: (role: string) => Promise<void>;
 }
 
+function PermissionChips({ permissions, className = "" }: { permissions: string[]; className?: string }) {
+  if (permissions.length === 0) return <span className={`text-[10px] text-muted-foreground italic ${className}`}>Aucune permission spéciale</span>;
+  return (
+    <div className={`flex flex-wrap gap-1 ${className}`}>
+      {permissions.map(p => (
+        <span key={p} className="inline-flex items-center gap-0.5 text-[9px] font-medium bg-primary/8 text-primary border border-primary/15 rounded px-1.5 py-0.5">
+          <Check className="h-2 w-2" /> {PERMISSION_LABELS[p] || p}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function UserRolesTab({ roles, onAddRole, onRemoveRole }: Props) {
   const [newRole, setNewRole] = useState("");
   const availableRoles = ALL_ROLES.filter((r) => !roles.includes(r));
+  const previewPerms = newRole ? getPermissionsForRole(newRole) : [];
 
   return (
     <div className="space-y-6">
@@ -32,46 +47,44 @@ export function UserRolesTab({ roles, onAddRole, onRemoveRole }: Props) {
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Shield className="h-4 w-4 text-primary" /> Rôles plateforme
         </h3>
-        <div className="flex flex-wrap gap-2">
+        <div className="space-y-3">
           {roles.length === 0 && <p className="text-sm text-muted-foreground italic">Aucun rôle attribué</p>}
-          {roles.map((role) => (
-            <Badge key={role} variant="outline" className={`text-xs gap-1.5 py-1.5 px-3 ${ROLE_COLORS[role] || "bg-muted text-muted-foreground border-border"}`}>
-              {role.replace(/_/g, " ")}
-              <button onClick={() => onRemoveRole(role)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
-            </Badge>
-          ))}
+          {roles.map((role) => {
+            const perms = getPermissionsForRole(role);
+            return (
+              <div key={role} className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={`text-xs gap-1.5 py-1.5 px-3 ${ROLE_COLORS[role] || "bg-muted text-muted-foreground border-border"}`}>
+                    {role.replace(/_/g, " ")}
+                    <button onClick={() => onRemoveRole(role)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
+                  </Badge>
+                </div>
+                <PermissionChips permissions={perms} className="ml-1" />
+              </div>
+            );
+          })}
         </div>
         {availableRoles.length > 0 && (
-          <div className="flex items-center gap-2 pt-3 border-t border-border/50">
-            <Select value={newRole} onValueChange={setNewRole}>
-              <SelectTrigger className="w-[220px] h-9 text-xs"><SelectValue placeholder="Ajouter un rôle…" /></SelectTrigger>
-              <SelectContent>
-                {availableRoles.map((r) => <SelectItem key={r} value={r}>{r.replace(/_/g, " ")}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button size="sm" variant="outline" onClick={async () => { if (newRole) { await onAddRole(newRole); setNewRole(""); } }} className="gap-1 text-xs">
-              <Plus className="h-3 w-3" /> Ajouter
-            </Button>
+          <div className="pt-3 border-t border-border/50 space-y-2">
+            <div className="flex items-center gap-2">
+              <Select value={newRole} onValueChange={setNewRole}>
+                <SelectTrigger className="w-[220px] h-9 text-xs"><SelectValue placeholder="Ajouter un rôle…" /></SelectTrigger>
+                <SelectContent>
+                  {availableRoles.map((r) => <SelectItem key={r} value={r}>{r.replace(/_/g, " ")}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button size="sm" variant="outline" onClick={async () => { if (newRole) { await onAddRole(newRole); setNewRole(""); } }} className="gap-1 text-xs">
+                <Plus className="h-3 w-3" /> Ajouter
+              </Button>
+            </div>
+            {newRole && previewPerms.length > 0 && (
+              <div className="ml-1">
+                <p className="text-[10px] text-muted-foreground mb-1 italic">Permissions déverrouillées :</p>
+                <PermissionChips permissions={previewPerms} className="opacity-60" />
+              </div>
+            )}
           </div>
         )}
-      </div>
-
-      <div className="rounded-xl border border-border/50 bg-card p-6">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Légende des rôles</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-muted-foreground">
-          <p><strong className="text-foreground">super_admin</strong> — Accès total, gestion plateforme</p>
-          <p><strong className="text-foreground">customer_lead</strong> — Gestion clients & organisations</p>
-          <p><strong className="text-foreground">innovation_lead</strong> — Gestion toolkits & design</p>
-          <p><strong className="text-foreground">performance_lead</strong> — Facturation & performance</p>
-          <p><strong className="text-foreground">product_actor</strong> — Contribution produit</p>
-          <p><strong className="text-foreground">owner</strong> — Propriétaire d'une organisation</p>
-          <p><strong className="text-foreground">admin</strong> — Admin d'une organisation</p>
-          <p><strong className="text-foreground">member</strong> — Membre standard</p>
-          <p><strong className="text-foreground">facilitator</strong> — Animation de workshops</p>
-          <p><strong className="text-foreground">manager</strong> — Gestionnaire d'équipe</p>
-          <p><strong className="text-foreground">lead</strong> — Chef de projet</p>
-          <p><strong className="text-foreground">guest</strong> — Accès invité limité</p>
-        </div>
       </div>
     </div>
   );

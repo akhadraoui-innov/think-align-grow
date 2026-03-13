@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowRight, Sparkles, Gamepad2, ArrowUpRight,
   BookOpen, Target, Coins, Star, Presentation, Layers,
-  TrendingUp, Clock, Trophy
+  TrendingUp, Building2, Heart
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { GradientIcon } from "@/components/ui/GradientIcon";
+import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -159,27 +160,18 @@ function UserDashboard() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { balance } = useCredits();
+  const { activeOrg, membership } = useActiveOrg();
+
+  const xp = profile?.xp || 0;
+  const level = Math.floor(xp / 100) + 1;
+  const xpProgress = xp % 100;
 
   const { data: recentWorkshops } = useQuery({
     queryKey: ["user-recent-workshops", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("workshop_participants")
-        .select("workshop_id, role, joined_at, workshops(id, name, code, status, created_at)")
-        .eq("user_id", user!.id)
-        .order("joined_at", { ascending: false })
-        .limit(5);
+      const { data } = await supabase.from("workshop_participants").select("workshop_id, role, joined_at, workshops(id, name, code, status, created_at)").eq("user_id", user!.id).order("joined_at", { ascending: false }).limit(5);
       return data || [];
-    },
-  });
-
-  const { data: hostedWorkshops } = useQuery({
-    queryKey: ["user-hosted-workshops", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { count } = await supabase.from("workshops").select("id", { count: "exact", head: true }).eq("host_id", user!.id);
-      return count || 0;
     },
   });
 
@@ -188,15 +180,6 @@ function UserDashboard() {
     enabled: !!user?.id,
     queryFn: async () => {
       const { count } = await supabase.from("user_card_progress").select("id", { count: "exact", head: true }).eq("user_id", user!.id).eq("is_viewed", true);
-      return count || 0;
-    },
-  });
-
-  const { data: quizCount } = useQuery({
-    queryKey: ["user-quiz-count", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { count } = await supabase.from("quiz_results").select("id", { count: "exact", head: true }).eq("user_id", user!.id);
       return count || 0;
     },
   });
@@ -210,8 +193,27 @@ function UserDashboard() {
     },
   });
 
+  const { data: quizCount } = useQuery({
+    queryKey: ["user-quiz-count", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { count } = await supabase.from("quiz_results").select("id", { count: "exact", head: true }).eq("user_id", user!.id);
+      return count || 0;
+    },
+  });
+
+  // Org toolkit recommendation
+  const { data: orgToolkit } = useQuery({
+    queryKey: ["user-org-toolkit", activeOrg?.id],
+    enabled: !!activeOrg?.id,
+    queryFn: async () => {
+      const { data } = await supabase.from("organization_toolkits").select("toolkit_id, toolkits(name, icon_emoji, slug)").eq("organization_id", activeOrg!.id).eq("is_active", true).limit(1).maybeSingle();
+      return data;
+    },
+  });
+
   const stats = [
-    { icon: Star, label: "XP", value: profile?.xp || 0, gradient: "accent" },
+    { icon: Star, label: "XP", value: xp, gradient: "accent" },
     { icon: Coins, label: "Crédits", value: balance, gradient: "finance" },
     { icon: BookOpen, label: "Cartes vues", value: cardsViewed || 0, gradient: "thinking" },
     { icon: Target, label: "Quiz", value: quizCount || 0, gradient: "business" },
@@ -237,8 +239,28 @@ function UserDashboard() {
           </motion.div>
         </div>
 
+        {/* XP Progression */}
+        <div className="px-6 mb-4">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+            className="rounded-2xl bg-card border border-border p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <span className="font-display font-black text-xs text-primary-foreground">{level}</span>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">Niveau {level}</p>
+                  <p className="text-[10px] text-muted-foreground">{xp} XP total</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-muted-foreground">{xpProgress}/100 XP</span>
+            </div>
+            <Progress value={xpProgress} className="h-2" />
+          </motion.div>
+        </div>
+
         {/* Stats row */}
-        <div className="px-6 mb-6">
+        <div className="px-6 mb-4">
           <div className="grid grid-cols-4 gap-2">
             {stats.map((s, i) => (
               <motion.div key={s.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 + i * 0.04 }}
@@ -251,8 +273,32 @@ function UserDashboard() {
           </div>
         </div>
 
+        {/* Org context + toolkit recommendation */}
+        {activeOrg && (
+          <div className="px-6 mb-4">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+              className="rounded-2xl bg-card border border-border p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Building2 className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate text-foreground">{activeOrg.name}</p>
+                  <p className="text-[10px] text-muted-foreground capitalize">{membership?.role?.replace(/_/g, " ") || "Membre"}</p>
+                </div>
+                {orgToolkit && (
+                  <button onClick={() => navigate("/explore")} className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1">
+                    {(orgToolkit as any).toolkits?.icon_emoji} {(orgToolkit as any).toolkits?.name}
+                    <ArrowRight className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {/* Quick actions */}
-        <div className="px-6 mb-6">
+        <div className="px-6 mb-4">
           <h2 className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Actions rapides</h2>
           <div className="grid grid-cols-2 gap-2">
             {quickActions.map((a, i) => (
@@ -267,7 +313,7 @@ function UserDashboard() {
         </div>
 
         {/* Recent workshops */}
-        <div className="px-6 mb-6">
+        <div className="px-6 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">Workshops récents</h2>
             <button onClick={() => navigate("/workshop")} className="text-xs font-bold text-primary hover:underline">Voir tout</button>
@@ -308,24 +354,25 @@ function UserDashboard() {
           )}
         </div>
 
-        {/* Activity summary */}
+        {/* Bookmarks summary */}
         <div className="px-6">
-          <h2 className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Résumé</h2>
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-2xl bg-card border border-border p-4">
+            <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} onClick={() => navigate("/explore")}
+              className="rounded-2xl bg-card border border-border p-4 text-left hover:bg-secondary/50 active:scale-[0.98] transition-all">
               <div className="flex items-center gap-2 mb-1">
-                <Presentation className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Animés</span>
-              </div>
-              <p className="font-display font-bold text-2xl text-foreground">{hostedWorkshops || 0}</p>
-            </div>
-            <div className="rounded-2xl bg-card border border-border p-4">
-              <div className="flex items-center gap-2 mb-1">
-                <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                <Heart className="h-3.5 w-3.5 text-primary" />
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Favoris</span>
               </div>
               <p className="font-display font-bold text-2xl text-foreground">{bookmarks || 0}</p>
-            </div>
+            </motion.button>
+            <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} onClick={() => navigate("/explore")}
+              className="rounded-2xl bg-card border border-border p-4 text-left hover:bg-secondary/50 active:scale-[0.98] transition-all">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="h-3.5 w-3.5 text-accent" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Progression</span>
+              </div>
+              <p className="font-display font-bold text-2xl text-foreground">Niv. {level}</p>
+            </motion.button>
           </div>
         </div>
       </div>
@@ -335,8 +382,6 @@ function UserDashboard() {
 
 export default function Index() {
   const { user, loading } = useAuth();
-
   if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground">Chargement...</p></div>;
-
   return user ? <UserDashboard /> : <GuestLanding />;
 }
