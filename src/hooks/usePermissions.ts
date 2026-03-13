@@ -290,36 +290,38 @@ export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   ],
 
   // ── Client Roles ──
-  owner: [
-    ...ALL_APP_PERMS,
-    "app.workshop.create", "app.workshop.facilitate", "app.workshop.deliverables",
-  ],
+  // Owner — full app access (17 perms)
+  owner: [...ALL_APP_PERMS],
 
-  admin: [
-    ...ALL_APP_PERMS,
-    "app.workshop.create", "app.workshop.facilitate",
-  ],
+  // Admin — like owner minus workshop.deliverables (16 perms)
+  admin: ALL_APP_PERMS.filter(p => p !== "app.workshop.deliverables"),
 
-  lead: [
-    ...ALL_APP_PERMS,
-    "app.workshop.create", "app.workshop.facilitate",
-  ],
+  // Lead — create/facilitate workshops, AI coach+deliverables, no reflection, no workshop deliverables (15 perms)
+  lead: ALL_APP_PERMS.filter(p => !["app.ai.reflection", "app.workshop.deliverables"].includes(p)),
 
+  // Facilitator — facilitate only (no create), AI coach only, no challenge analyze (12 perms)
   facilitator: [
-    ...ALL_APP_PERMS,
-    "app.workshop.facilitate",
-  ],
-
-  manager: [
     "app.explore.view", "app.explore.bookmark",
     "app.plans.view", "app.plans.progress",
     "app.lab.quiz", "app.lab.results",
     "app.ai.coach",
+    "app.workshop.join", "app.workshop.facilitate",
+    "app.challenge.participate",
+    "app.profile.edit", "app.profile.org",
+  ],
+
+  // Manager — create workshops (no facilitate), AI coach+deliverables, challenge analyze (13 perms)
+  manager: [
+    "app.explore.view", "app.explore.bookmark",
+    "app.plans.view", "app.plans.progress",
+    "app.lab.quiz", "app.lab.results",
+    "app.ai.coach", "app.ai.deliverables",
     "app.workshop.create", "app.workshop.join",
     "app.challenge.participate", "app.challenge.analyze",
     "app.profile.edit", "app.profile.org",
   ],
 
+  // Member — join only, AI coach, basic (11 perms)
   member: [
     "app.explore.view", "app.explore.bookmark",
     "app.plans.view", "app.plans.progress",
@@ -330,6 +332,7 @@ export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
     "app.profile.edit", "app.profile.org",
   ],
 
+  // Guest — minimal read access (4 perms)
   guest: [
     "app.explore.view",
     "app.workshop.join",
