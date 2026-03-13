@@ -239,6 +239,9 @@ export default function Challenge() {
                         </div>
                         <div>
                           <div className="font-display font-bold text-sm">{t.name}</div>
+                          {(t as any).toolkits?.name && (
+                            <div className="text-[10px] text-muted-foreground/60">{(t as any).toolkits.icon_emoji} {(t as any).toolkits.name}</div>
+                          )}
                           {t.description && (
                             <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{t.description}</div>
                           )}
