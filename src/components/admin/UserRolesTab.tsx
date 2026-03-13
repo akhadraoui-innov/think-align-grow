@@ -93,7 +93,7 @@ function RolePermissionBreakdown({ role, dbMap }: { role: string; dbMap?: Record
             className="overflow-hidden space-y-2 pl-2 border-l-2 border-primary/10"
           >
             {domainsWithPerms.map(d => (
-              <DomainSummary key={d.key} role={role} domain={d} />
+              <DomainSummary key={d.key} role={role} domain={d} dbMap={dbMap} />
             ))}
           </motion.div>
         )}
