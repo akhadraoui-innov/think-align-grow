@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb,
-  CreditCard, ScrollText, Settings, ArrowLeft, Sparkles, ShieldAlert,
+  CreditCard, ScrollText, Settings, ArrowLeft, Sparkles,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -17,18 +17,18 @@ export function AdminSidebar() {
   const perms = usePermissions();
 
   const mainItems = [
-    { path: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true, show: perms.isSaasTeam },
-    { path: "/admin/organizations", icon: Building2, label: "Organisations", show: perms.canManageOrgs },
-    { path: "/admin/users", icon: Users, label: "Utilisateurs", show: perms.canManageUsers },
-    { path: "/admin/toolkits", icon: Layers, label: "Toolkits", show: perms.canManageToolkits },
-    { path: "/admin/workshops", icon: Presentation, label: "Workshops", show: perms.canManageWorkshops },
-    { path: "/admin/design-innovation", icon: Lightbulb, label: "Design Innovation", show: perms.canManageDesignInnovation },
+    { path: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true, show: perms.has("admin.dashboard.view") },
+    { path: "/admin/organizations", icon: Building2, label: "Organisations", show: perms.has("admin.orgs.view") },
+    { path: "/admin/users", icon: Users, label: "Utilisateurs", show: perms.has("admin.users.view") },
+    { path: "/admin/toolkits", icon: Layers, label: "Toolkits", show: perms.has("admin.toolkits.view") },
+    { path: "/admin/workshops", icon: Presentation, label: "Workshops", show: perms.has("admin.workshops.view") },
+    { path: "/admin/design-innovation", icon: Lightbulb, label: "Design Innovation", show: perms.has("admin.challenges.view") },
   ];
 
   const systemItems = [
-    { path: "/admin/billing", icon: CreditCard, label: "Crédits & Abonnements", show: perms.canViewBilling },
-    { path: "/admin/logs", icon: ScrollText, label: "Logs d'activité", show: perms.canViewLogs },
-    { path: "/admin/settings", icon: Settings, label: "Paramètres", show: perms.canManageSettings },
+    { path: "/admin/billing", icon: CreditCard, label: "Crédits & Abonnements", show: perms.has("admin.billing.view") },
+    { path: "/admin/logs", icon: ScrollText, label: "Logs d'activité", show: perms.has("admin.logs.view") },
+    { path: "/admin/settings", icon: Settings, label: "Paramètres", show: perms.hasAny("admin.settings.ai", "admin.settings.roles", "admin.settings.platform") },
   ];
 
   const visibleMain = mainItems.filter(i => i.show);
