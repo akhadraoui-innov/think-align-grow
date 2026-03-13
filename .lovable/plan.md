@@ -1,188 +1,113 @@
-# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
-## Vision produit
 
-Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
+## Audit complet — Complétion IA, Raffinement, Visualisation des cartes
 
-### L'organisation comme entité centrale
+### 1. BUGS ACTIFS
 
-L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
+**BUG 1 — Console : "Function components cannot be given refs" dans ToolkitCompletionBanner**
+- Ligne 272-273 : `Badge` est utilisé comme enfant direct de `motion.div` dans `AnimatePresence`. Framer Motion tente de passer une `ref` au `Badge`, qui est un composant fonction sans `forwardRef`.
+- Impact : Warning React, potentiel crash d'animation.
+- Fix : Envelopper les `Badge` dans des `<span>` ou utiliser un `<div>` au lieu de `Badge` dans le contexte `AnimatePresence`.
 
-- **Identité & branding** : nom, slug, logo, couleur primaire
-- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
-- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
-- **Coordonnées** : email, téléphone, site web
-- **Adresses** : multi-adresses (siège, sites, bureaux)
-- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
-- **Notes internes** : champ libre pour l'équipe SaaS
-- **Membres** avec rôles (Owner, Admin, Member, Guest…)
-- **Équipes** internes
-- **Toolkits** assignés et activés
-- **Abonnement** avec plan et quotas
-- **Workshops** réalisés
-- **Journal d'activité** (audit trail)
+**BUG 2 — `refine-toolkit` non déclaré dans `config.toml`**
+- Le fichier `supabase/config.toml` ne contient PAS d'entrée `[functions.refine-toolkit]`. Toutes les autres fonctions y sont listées avec `verify_jwt = false`.
+- Impact : La fonction est déployée mais utilise la vérification JWT par défaut. Comme le frontend utilise `supabase.functions.invoke()` (qui passe le JWT), ça peut fonctionner, mais c'est incohérent avec les autres fonctions et peut causer des erreurs si le JWT expire.
+- Fix : Ajouter `[functions.refine-toolkit] verify_jwt = false` dans config.toml.
 
-### Organisation plateforme : Growthinnov
+**BUG 3 — `getClaims` potentiellement non supporté**
+- Les deux edge functions (`generate-toolkit`, `refine-toolkit`) utilisent `anonClient.auth.getClaims()`. Cette méthode n'est pas standard dans le SDK Supabase JS v2. Le SDK utilise `getUser()` ou `getSession()`.
+- Impact : Peut fonctionner avec certaines versions mais est fragile.
+- Fix : Remplacer par `anonClient.auth.getUser(token)` pour valider le JWT côté edge function.
 
-**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
-1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
-2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
+**BUG 4 — Gamified card : `position: absolute` sans `position: relative` sur le parent**
+- `ToolkitCardsBrowser.tsx` ligne 110 : le pseudo-overlay utilise `absolute inset-0` mais le parent div (ligne 105-108) n'a pas `relative`.
+- Impact : L'overlay est positionné par rapport au mauvais ancêtre, effet visuel cassé.
+- Fix : Ajouter `relative` à la div parent.
 
-Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
+**BUG 5 — `invalidateAll` n'invalide pas avec les bons pillarIds**
+- `useAdminToolkits.ts` ligne 192 : `invalidateQueries({ queryKey: ["admin-toolkit-cards", id] })` ne match pas la queryKey réelle `["admin-toolkit-cards", id, pillarIds]` car `invalidateQueries` fait un match partiel par préfixe.
+- Impact : En fait ça fonctionne car React Query fait un match par préfixe. Pas de bug réel ici.
 
-Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
+### 2. RACE CONDITIONS / DATA
 
-## Sprint 1 — COMPLÉTÉ ✅
+**La query cards dépend des pillarIds — CORRIGÉ**
+- Le fix précédent (`enabled: !!id && pillarIds.length > 0` + pillarIds dans queryKey) est correct et en place.
+- Cependant, les `quizQuestions` utilisent `enabled: !!pillars.data?.length` mais recalculent `pillarIds` en interne (ligne 171). C'est correct mais redondant — pourrait utiliser le même `pillarIds` de la ligne 135.
 
-### Migration SQL
-- ✅ Enum `app_role` étendu : +9 valeurs
-- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
+### 3. EDGE FUNCTIONS
 
-### Frontend Admin
-- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
-- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
+**`generate-toolkit`** — Solide
+- Auth correcte (JWT + is_saas_team RPC)
+- Mode `complete_missing` avec `pillar_ids` bien implémenté
+- SSE stream correct
+- Retry intégré
+- Seul problème : `getClaims` (voir bug 3)
 
-## Sprint 2 — COMPLÉTÉ ✅
+**`refine-toolkit`** — Fonctionnel avec risques
+- Auth correcte
+- Pas de tool calling (JSON libre dans le content) — plus fragile que le tool calling utilisé dans generate-toolkit
+- Le parsing JSON peut échouer si l'IA ajoute du texte autour malgré le prompt
+- La validation des champs est bonne (`allowedFields` whitelist)
+- Manque un rate limiting (un utilisateur pourrait spammer des appels coûteux)
 
-### Dashboard avec données réelles
-- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
-- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
+### 4. UI/UX
 
-### Composant DataTable réutilisable
-- ✅ Recherche, tri par colonne, pagination, row click, slot actions
+**ToolkitCompletionBanner** — Bon
+- Détection correcte des piliers vides
+- État "complet" avec résumé
+- Orchestration séquentielle par pilier (fix timeout)
+- Retry des piliers en erreur
+- Nit : Le dialog n'a pas de phase "idle" dans l'AnimatePresence — si on ouvre le dialog sans lancer de génération (impossible actuellement), rien ne s'affiche.
 
-### CRUD Organisations
-- ✅ useOrganizations + useOrganizationDetail hooks
-- ✅ Liste avec DataTable, recherche, tri, création via dialog
-- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
-- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
-- ✅ Route /admin/organizations/:id
-- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
+**ToolkitAIChatDialog** — Bon
+- Scope par pilier ou tout le toolkit
+- Messages d'erreur clairs
+- Suggestions de prompts
+- Auto-scroll
+- Nit : Les messages ne sont pas persistés — si on ferme/rouvre le dialog, on perd l'historique. Ce n'est pas forcément un bug mais une limitation.
 
-## Sprint 3 — COMPLÉTÉ ✅
+**ToolkitCardsBrowser** — Bon avec un problème de rendu
+- 5 formats de cartes
+- Filtres par pilier et phase
+- Groupement par pilier/phase/tout
+- Slider de colonnes
+- Problème : Le `DynamicIcon` recrée un `lazy()` à chaque rendu (ligne 16) car il est dans le corps de la fonction. Cela cause un re-mount à chaque render. Le `lazy()` devrait être mémoïsé ou mis en cache.
 
-### Gestion des utilisateurs (AdminUsers)
-- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
-- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
-- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
-- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
-- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
-- ✅ UserCreditsTab : solde, lifetime, historique des transactions
-- ✅ UserWorkshopsTab : workshops hébergés et participations
-- ✅ UserChallengesTab : performances quiz et challenges
-- ✅ UserCardsTab : suivi des vues et favoris
-- ✅ UserActivityTab : journal d'audit utilisateur
+**ToolkitCardsTab** — Bon
+- Toggle tableau/visuel bien intégré
+- L'édition des cartes reste dans la vue tableau (normal)
 
-### Hook usePermissions
-- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
+**AdminToolkitDetail** — Bon
+- Banner de complétion visible
+- Bouton IA chat visible dans le header
+- Badge de comptage de cartes
 
-### Hook useAdminUserDetail
-- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
+### 5. SÉCURITÉ
 
-### Migration SQL Sprint 3
-- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
+- RLS correctement appliquée sur toutes les tables concernées
+- Les edge functions vérifient `is_saas_team` côté serveur
+- Le `refine-toolkit` valide les champs modifiables (whitelist)
+- Pas d'injection SQL possible (utilisation du SDK typé)
+- Les secrets sont correctement configurés
 
-## Sprint 4 — COMPLÉTÉ ✅
+### 6. RÉSUMÉ DES ACTIONS
 
-### Gestion des Toolkits
-- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
-- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
-- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
-- ✅ Fiche AdminToolkitDetail avec 7 onglets :
-  - Infos : nom, slug, emoji, description, statut, métadonnées
-  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
-  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
-  - Challenges : templates avec sujets et slots imbriqués
-  - Game Plans : plans avec étapes ordonnées
-  - Quiz : questions par pilier avec compteur d'options
-  - Organisations : ajout/retrait d'accès toolkit pour les orgs
-- ✅ Route /admin/toolkits/:id
+| Priorité | Issue | Fix |
+|----------|-------|-----|
+| Haute | `refine-toolkit` absent de `config.toml` | Ajouter l'entrée |
+| Haute | `getClaims` non standard dans les 2 edge functions | Remplacer par `getUser()` |
+| Moyenne | Warning ref sur Badge dans AnimatePresence | Wrapper dans `<span>` |
+| Moyenne | Gamified card `absolute` sans `relative` parent | Ajouter `relative` |
+| Faible | `DynamicIcon` recrée `lazy()` à chaque rendu | Mettre en cache avec Map |
+| Faible | `refine-toolkit` utilise du JSON libre vs tool calling | Migrer vers tool calling pour fiabilité |
 
-### Gestion des Workshops (vue admin)
-- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
-- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
+### Fichiers à modifier
 
-## Sprint 4.2 — COMPLÉTÉ ✅
+| Fichier | Changement |
+|---------|-----------|
+| `supabase/config.toml` | Ne pas toucher (auto-géré) — mais signaler que `refine-toolkit` manque |
+| `supabase/functions/generate-toolkit/index.ts` | Remplacer `getClaims` par `getUser` |
+| `supabase/functions/refine-toolkit/index.ts` | Remplacer `getClaims` par `getUser` |
+| `src/components/admin/ToolkitCompletionBanner.tsx` | Wrapper Badge dans span pour AnimatePresence |
+| `src/components/admin/ToolkitCardsBrowser.tsx` | Ajouter `relative` au parent gamified + cache DynamicIcon |
 
-### Nettoyage & dynamisation toolkit
-- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
-- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
-- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
-- ✅ Aucune migration DB nécessaire
-
-## Sprint 5 — COMPLÉTÉ ✅
-
-### Facturation & Abonnements (AdminBilling)
-- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
-- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
-- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
-- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
-- ✅ Suppression plan avec confirmation AlertDialog
-- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
-
-### Logs d'audit (AdminLogs)
-- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
-- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
-- ✅ Pagination server-side (25/page) avec compteur total
-- ✅ Détail metadata : dialog avec JSON formaté
-- ✅ Styles cohérents avec le design system existant
-
-## Sprint 6 — COMPLÉTÉ ✅
-
-### Enrichissement logs
-- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
-- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
-- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
-
-### Dashboard billing avancé
-- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
-- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
-- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
-
-## Sprint 7 — COMPLÉTÉ ✅
-
-### Profil utilisateur authentifié
-- ✅ Page Profile détecte l'état de connexion (guest vs authentifié)
-- ✅ Vue authentifiée : avatar, display_name, job_title, department, email
-- ✅ Stats temps réel : XP, crédits, cartes vues, quiz complétés
-- ✅ Liste des organisations avec rôles
-- ✅ Dialog d'édition profil (display_name, job_title, department)
-- ✅ Bouton déconnexion
-
-### Contexte multi-tenant
-- ✅ `OrgProvider` context avec `useActiveOrg` hook
-- ✅ Composant `OrgSwitcher` dans la sidebar (dropdown si multi-org, badge si mono-org)
-- ✅ Persistance de l'org active dans localStorage
-- ✅ Intégration dans `AppSidebar` footer
-
-### Persistance quiz
-- ✅ `QuizEngine` sauvegarde les scores dans `quiz_results` à la complétion
-- ✅ `Lab.tsx` charge le dernier résultat quiz depuis la DB au montage
-- ✅ Hydratation automatique du RadarChart et des badges depuis les données persistées
-
-### Liaison Workshop → Organisation
-- ✅ `useCreateWorkshop` accepte un `organizationId` optionnel
-- ✅ `Workshop.tsx` passe l'org active du contexte à la création
-
-## Sprint 8 — COMPLÉTÉ ✅
-
-### Activation des crédits côté utilisateur
-- ✅ Fonction DB `spend_credits` atomique (SECURITY DEFINER, row lock, vérification solde)
-- ✅ Hook `useSpendCredits` pour débit sécurisé via RPC
-- ✅ Hook `useCredits` simplifié (lecture seule, invalidation via spend)
-
-### Débit réel sur les actions
-- ✅ **Coach IA** : 1 crédit par message, appel réel à l'IA via edge function `ai-coach` (Gemini 2.5 Flash)
-- ✅ **Création Workshop** : débit de `toolkit.credit_cost_workshop` crédits avant création
-- ✅ **Création Challenge** : débit de `toolkit.credit_cost_challenge` crédits avant lancement
-
-### Enforcement des quotas d'abonnement
-- ✅ Hook `useQuotas` : lecture quotas depuis `subscription_plans.quotas` via `organization_subscriptions`
-- ✅ Vérification `max_workshops` et `max_challenges` vs usage réel
-- ✅ Blocage UI avec messages explicites quand quota atteint
-
-### UX crédits
-- ✅ Page IA : solde réel affiché, outils grisés si crédits insuffisants
-- ✅ Chat IA : alerte inline crédits insuffisants, input désactivé
-- ✅ Workshop/Challenge : coût affiché dans la dialog de création, bouton désactivé si insuffisant
-- ✅ Edge function `ai-coach` déployée avec prompt coach stratégique
