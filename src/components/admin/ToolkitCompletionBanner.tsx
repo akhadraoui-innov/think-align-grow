@@ -216,16 +216,26 @@ export function ToolkitCompletionBanner({ toolkit, pillars, cards, quizQuestions
 
   return (
     <>
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-center gap-4">
-        <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground">Toolkit incomplet</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{missingItems.join(" · ")}</p>
+      {isComplete ? (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 flex items-center gap-4">
+          <Check className="h-5 w-5 text-emerald-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">Toolkit complet</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{pillars.length} piliers · {cards.length} cartes · {quizQuestions.length} questions quiz</p>
+          </div>
         </div>
-        <Button size="sm" onClick={() => handleComplete()} className="gap-2 shrink-0">
-          <Sparkles className="h-4 w-4" /> Compléter avec l'IA
-        </Button>
-      </div>
+      ) : (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-center gap-4">
+          <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">Toolkit incomplet</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{missingItems.join(" · ")}</p>
+          </div>
+          <Button size="sm" onClick={() => handleComplete()} className="gap-2 shrink-0">
+            <Sparkles className="h-4 w-4" /> Compléter avec l'IA
+          </Button>
+        </div>
+      )}
 
       <Dialog open={genOpen} onOpenChange={setGenOpen}>
         <DialogContent className="sm:max-w-lg">
