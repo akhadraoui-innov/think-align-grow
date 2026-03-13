@@ -1,51 +1,38 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import {
-  LayoutDashboard,
-  Building2,
-  Users,
-  Layers,
-  Presentation,
-  Lightbulb,
-  CreditCard,
-  ScrollText,
-  Settings,
-  ArrowLeft,
-  Sparkles,
+  LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb,
+  CreditCard, ScrollText, Settings, ArrowLeft, Sparkles, ShieldAlert,
 } from "lucide-react";
-
-const mainItems = [
-  { path: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
-  { path: "/admin/organizations", icon: Building2, label: "Organisations" },
-  { path: "/admin/users", icon: Users, label: "Utilisateurs" },
-  { path: "/admin/toolkits", icon: Layers, label: "Toolkits" },
-  { path: "/admin/workshops", icon: Presentation, label: "Workshops" },
-  { path: "/admin/design-innovation", icon: Lightbulb, label: "Design Innovation" },
-];
-
-const systemItems = [
-  { path: "/admin/billing", icon: CreditCard, label: "Crédits & Abonnements" },
-  { path: "/admin/logs", icon: ScrollText, label: "Logs d'activité" },
-  { path: "/admin/settings", icon: Settings, label: "Paramètres" },
-];
+import { usePermissions } from "@/hooks/usePermissions";
 
 export function AdminSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
+  const perms = usePermissions();
+
+  const mainItems = [
+    { path: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true, show: perms.isSaasTeam },
+    { path: "/admin/organizations", icon: Building2, label: "Organisations", show: perms.canManageOrgs },
+    { path: "/admin/users", icon: Users, label: "Utilisateurs", show: perms.canManageUsers },
+    { path: "/admin/toolkits", icon: Layers, label: "Toolkits", show: perms.canManageToolkits },
+    { path: "/admin/workshops", icon: Presentation, label: "Workshops", show: perms.canManageWorkshops },
+    { path: "/admin/design-innovation", icon: Lightbulb, label: "Design Innovation", show: perms.canManageDesignInnovation },
+  ];
+
+  const systemItems = [
+    { path: "/admin/billing", icon: CreditCard, label: "Crédits & Abonnements", show: perms.canViewBilling },
+    { path: "/admin/logs", icon: ScrollText, label: "Logs d'activité", show: perms.canViewLogs },
+    { path: "/admin/settings", icon: Settings, label: "Paramètres", show: perms.canManageSettings },
+  ];
+
+  const visibleMain = mainItems.filter(i => i.show);
+  const visibleSystem = systemItems.filter(i => i.show);
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
@@ -75,10 +62,7 @@ export function AdminSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50">
       <SidebarHeader className="px-3 py-4">
-        <div
-          className="flex items-center gap-3 cursor-pointer"
-          onClick={() => navigate("/admin")}
-        >
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/admin")}>
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-foreground to-foreground/80 shadow-md">
             <Sparkles className="h-4 w-4 text-background" />
           </div>
@@ -92,27 +76,31 @@ export function AdminSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          {!collapsed && (
-            <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-3">
-              Gestion
-            </SidebarGroupLabel>
-          )}
-          <SidebarGroupContent>
-            <SidebarMenu>{mainItems.map(renderItem)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {visibleMain.length > 0 && (
+          <SidebarGroup>
+            {!collapsed && (
+              <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-3">
+                Gestion
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>{visibleMain.map(renderItem)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        <SidebarGroup>
-          {!collapsed && (
-            <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-3">
-              Système
-            </SidebarGroupLabel>
-          )}
-          <SidebarGroupContent>
-            <SidebarMenu>{systemItems.map(renderItem)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {visibleSystem.length > 0 && (
+          <SidebarGroup>
+            {!collapsed && (
+              <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-3">
+                Système
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>{visibleSystem.map(renderItem)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="px-3 py-3 border-t border-border/50">
