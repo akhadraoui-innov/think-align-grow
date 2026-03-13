@@ -1,213 +1,189 @@
-# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
-## Vision produit
 
-Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
+# PRD Sprint 10 — Rôles & Permissions, Dashboards Métier, Paramètres Plateforme
 
-### L'organisation comme entité centrale
+---
 
-L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
+## 1. Contexte et Problèmes
 
-- **Identité & branding** : nom, slug, logo, couleur primaire
-- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
-- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
-- **Coordonnées** : email, téléphone, site web
-- **Adresses** : multi-adresses (siège, sites, bureaux)
-- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
-- **Notes internes** : champ libre pour l'équipe SaaS
-- **Membres** avec rôles (Owner, Admin, Member, Guest…)
-- **Équipes** internes
-- **Toolkits** assignés et activés
-- **Abonnement** avec plan et quotas
-- **Workshops** réalisés
-- **Journal d'activité** (audit trail)
+### 1.1 Gestion des rôles : aucune vue dédiée
+- Les rôles se gèrent uniquement dans la fiche d'un utilisateur individuel (onglet Rôles)
+- **Aucune vue globale** pour voir tous les rôles, les utilisateurs associés, et la matrice de permissions
+- Quand on attribue un rôle (ex: `innovation_lead`), **on ne voit pas** quelles permissions ça déverrouille
+- La légende des rôles dans `UserRolesTab` est statique et déconnectée de la logique réelle de `usePermissions`
 
-### Organisation plateforme : Growthinnov
+### 1.2 Dashboards non pertinents
+- **Admin Dashboard** : 4 KPIs génériques (orgs, users, workshops, crédits), graphique "sessions par semaine" avec 0 data (les `weeklyWorkshops` sont calculés mais jamais remplis depuis la DB), top users par XP seul
+- **Aucune métrique métier** : pas de toolkits publiés, pas de cartes totales, pas de taux d'engagement, pas de challenges, pas de répartition des rôles
+- **User Dashboard** : stats basiques, pas de barre de progression XP, pas de recommandations, pas d'activité org
 
-**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
-1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
-2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
+### 1.3 Paramètres trop limités
+- La page `/admin/settings` ne gère que la config IA (3 onglets : IA, Fournisseurs, Prompts par défaut)
+- Pas de paramètres généraux, pas de gestion visuelle des rôles/permissions
 
-Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
+---
 
-Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
+## 2. Fonctionnalités à développer
 
-## Sprint 1 — COMPLÉTÉ ✅
+### A. Page "Rôles & Permissions" dans AdminSettings
 
-### Migration SQL
-- ✅ Enum `app_role` étendu : +9 valeurs
-- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
+**Nouvel onglet** dans `/admin/settings` + nouveau composant `RolesPermissionsTab`.
 
-### Frontend Admin
-- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
-- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
+**Contenu :**
 
-## Sprint 2 — COMPLÉTÉ ✅
+1. **Matrice rôles × permissions** — Tableau visuel :
+   - Lignes : les 12 rôles de l'enum `app_role`
+   - Colonnes : les 10 permissions de `usePermissions` (canManageOrgs, canManageUsers, canManageToolkits, canManageWorkshops, canViewBilling, canViewLogs, canManageSettings, canManageDesignInnovation, canEditPlatformOwner, isSaasTeam)
+   - Cellules : checkmark vert si le rôle donne cette permission, vide sinon
+   - Calculé **en live** depuis la logique de `usePermissions` (pas de données DB supplémentaires)
+   - Séparation visuelle : rôles SaaS (super_admin, customer_lead, innovation_lead, performance_lead, product_actor) vs rôles client (owner, admin, member, lead, facilitator, manager, guest)
 
-### Dashboard avec données réelles
-- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
-- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
+2. **Compteurs par rôle** — Pour chaque rôle, nombre d'utilisateurs assignés (requête `user_roles` groupée)
 
-### Composant DataTable réutilisable
-- ✅ Recherche, tri par colonne, pagination, row click, slot actions
+3. **Liste des utilisateurs par rôle** — Clic sur un rôle pour voir ses membres (mini-liste avec lien vers fiche user)
 
-### CRUD Organisations
-- ✅ useOrganizations + useOrganizationDetail hooks
-- ✅ Liste avec DataTable, recherche, tri, création via dialog
-- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
-- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
-- ✅ Route /admin/organizations/:id
-- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
+**Source de données :** `usePermissions` (logique) + requête `user_roles` avec `group by role` pour les compteurs + requête détail avec jointure `profiles` pour les listes.
 
-## Sprint 3 — COMPLÉTÉ ✅
+**Fichiers :**
+- `src/components/admin/RolesPermissionsTab.tsx` — **Nouveau**
+- `src/pages/admin/AdminSettings.tsx` — Ajouter onglet "Rôles & Permissions" avec icône `ShieldAlert`
+- `src/components/admin/AdminSidebar.tsx` — Pas de changement (Settings déjà visible pour canManageSettings)
 
-### Gestion des utilisateurs (AdminUsers)
-- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
-- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
-- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
-- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
-- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
-- ✅ UserCreditsTab : solde, lifetime, historique des transactions
-- ✅ UserWorkshopsTab : workshops hébergés et participations
-- ✅ UserChallengesTab : performances quiz et challenges
-- ✅ UserCardsTab : suivi des vues et favoris
-- ✅ UserActivityTab : journal d'audit utilisateur
+### B. Permissions visibles dans UserRolesTab
 
-### Hook usePermissions
-- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
+Quand un utilisateur a des rôles, afficher **sous chaque badge de rôle** les permissions qu'il déverrouille.
 
-### Hook useAdminUserDetail
-- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
+**Détail :**
+- Pour chaque rôle attribué, calculer les permissions qu'il apporte en utilisant la même logique que `usePermissions`
+- Afficher en dessous du badge : petits chips "Gestion Orgs", "Gestion Toolkits", etc. en `text-[10px]`
+- Quand on sélectionne un rôle dans le dropdown "Ajouter", prévisualiser les permissions que ça ajouterait (en italique ou opacité réduite)
 
-### Migration SQL Sprint 3
-- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
+**Implémentation :**
+- Extraire la logique de mapping `role → permissions[]` depuis `usePermissions` dans un helper exporté `getPermissionsForRole(role: string): string[]`
+- L'utiliser dans `UserRolesTab` et dans `RolesPermissionsTab`
 
-## Sprint 4 — COMPLÉTÉ ✅
+**Fichiers :**
+- `src/hooks/usePermissions.ts` — Exporter `ROLE_PERMISSION_MAP` et `getPermissionsForRole()`
+- `src/components/admin/UserRolesTab.tsx` — Afficher permissions par rôle + preview
 
-### Gestion des Toolkits
-- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
-- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
-- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
-- ✅ Fiche AdminToolkitDetail avec 7 onglets :
-  - Infos : nom, slug, emoji, description, statut, métadonnées
-  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
-  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
-  - Challenges : templates avec sujets et slots imbriqués
-  - Game Plans : plans avec étapes ordonnées
-  - Quiz : questions par pilier avec compteur d'options
-  - Organisations : ajout/retrait d'accès toolkit pour les orgs
-- ✅ Route /admin/toolkits/:id
+### C. Dashboard Admin enrichi — Métriques métier
 
-### Gestion des Workshops (vue admin)
-- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
-- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
+Refonte complète du dashboard pour refléter l'activité réelle de la plateforme Hack & Show.
 
-## Sprint 4.2 — COMPLÉTÉ ✅
+**KPIs (8 cards, 2 lignes de 4) :**
 
-### Nettoyage & dynamisation toolkit
-- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
-- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
-- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
-- ✅ Aucune migration DB nécessaire
+| KPI | Source |
+|-----|--------|
+| Organisations actives | `organizations` count |
+| Utilisateurs | `profiles` count |
+| Toolkits publiés | `toolkits` count where status = 'published' |
+| Cartes totales | `toolkit_cards` count |
+| Workshops ce mois | `workshops` count this month |
+| Challenges complétés | `challenge_sessions` count where status = 'completed' |
+| Crédits consommés | `credit_transactions` sum where type = 'spent' |
+| Quiz réalisés | `quiz_results` count |
 
-## Sprint 5 — COMPLÉTÉ ✅
+**Graphiques (2 lignes) :**
 
-### Facturation & Abonnements (AdminBilling)
-- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
-- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
-- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
-- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
-- ✅ Suppression plan avec confirmation AlertDialog
-- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
+1. **Workshops par semaine** (12 semaines) — BarChart avec données réelles depuis `workshops.created_at`
+2. **Croissance utilisateurs** — LineChart cumulative (déjà en place, garder)
+3. **Répartition des rôles** — PieChart/donut depuis `user_roles` group by role
 
-### Logs d'audit (AdminLogs)
-- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
-- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
-- ✅ Pagination server-side (25/page) avec compteur total
-- ✅ Détail metadata : dialog avec JSON formaté
-- ✅ Styles cohérents avec le design system existant
+**Tableaux (3 colonnes) :**
 
-## Sprint 6 — COMPLÉTÉ ✅
+1. **Top 5 organisations** par activité (workshops count) — requête `workshops` group by `organization_id` avec jointure `organizations`
+2. **Alertes** — Abonnements expirant + orgs sans toolkit + utilisateurs à 0 crédits
+3. **Activité récente** — Garder tel quel
 
-### Enrichissement logs
-- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
-- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
-- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
+**Fichiers :**
+- `src/hooks/useAdminStats.ts` — Ajouter queries : toolkits publiés, cartes totales, challenges complétés, quiz count, workshops par semaine réels, rôles distribution, top orgs
+- `src/pages/admin/AdminDashboard.tsx` — Refonte layout avec 8 KPIs, 3 graphiques, 3 tableaux
 
-### Dashboard billing avancé
-- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
-- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
-- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
+### D. Dashboard Utilisateur enrichi
 
-## Sprint 7 — COMPLÉTÉ ✅
+Améliorer le dashboard user avec progression et contexte organisationnel.
 
-### Profil utilisateur authentifié
-- ✅ Page Profile détecte l'état de connexion (guest vs authentifié)
-- ✅ Vue authentifiée : avatar, display_name, job_title, department, email
-- ✅ Stats temps réel : XP, crédits, cartes vues, quiz complétés
-- ✅ Liste des organisations avec rôles
-- ✅ Dialog d'édition profil (display_name, job_title, department)
-- ✅ Bouton déconnexion
+**Ajouts :**
 
-### Contexte multi-tenant
-- ✅ `OrgProvider` context avec `useActiveOrg` hook
-- ✅ Composant `OrgSwitcher` dans la sidebar (dropdown si multi-org, badge si mono-org)
-- ✅ Persistance de l'org active dans localStorage
-- ✅ Intégration dans `AppSidebar` footer
+1. **Barre de progression XP** — Niveau actuel + % vers le niveau suivant (niveau = xp / 100 + 1, progression = xp % 100)
+2. **Organisation active** — Card avec nom de l'org, rôle, lien vers les workshops de l'org
+3. **Recommandation toolkit** — Si l'org a un toolkit assigné, afficher "Continuer votre toolkit" avec progression (cartes vues / cartes totales)
+4. **Badges favoris** — Compteur de cartes bookmarkées avec lien vers `/explore`
 
-### Persistance quiz
-- ✅ `QuizEngine` sauvegarde les scores dans `quiz_results` à la complétion
-- ✅ `Lab.tsx` charge le dernier résultat quiz depuis la DB au montage
-- ✅ Hydratation automatique du RadarChart et des badges depuis les données persistées
+**Fichier :**
+- `src/pages/Index.tsx` — Enrichir `UserDashboard` avec barre XP, card org, recommandation
 
-### Liaison Workshop → Organisation
-- ✅ `useCreateWorkshop` accepte un `organizationId` optionnel
-- ✅ `Workshop.tsx` passe l'org active du contexte à la création
+---
 
-## Sprint 8 — COMPLÉTÉ ✅
+## 3. Architecture technique
 
-### Activation des crédits côté utilisateur
-- ✅ Fonction DB `spend_credits` atomique (SECURITY DEFINER, row lock, vérification solde)
-- ✅ Hook `useSpendCredits` pour débit sécurisé via RPC
-- ✅ Hook `useCredits` simplifié (lecture seule, invalidation via spend)
+### Nouveau helper de permissions
 
-### Débit réel sur les actions
-- ✅ **Coach IA** : 1 crédit par message, appel réel à l'IA via edge function `ai-coach` (Gemini 2.5 Flash)
-- ✅ **Création Workshop** : débit de `toolkit.credit_cost_workshop` crédits avant création
-- ✅ **Création Challenge** : débit de `toolkit.credit_cost_challenge` crédits avant lancement
+```text
+src/hooks/usePermissions.ts
+├── ROLE_PERMISSION_MAP: Record<string, string[]>
+│   Exemple: { super_admin: ["all"], customer_lead: ["canManageOrgs", "canManageUsers", ...] }
+├── getPermissionsForRole(role): string[]
+│   Retourne les permissions déverrouillées par un rôle spécifique
+├── PERMISSION_LABELS: Record<string, string>
+│   Mapping technique → français: { canManageOrgs: "Gestion Organisations", ... }
+└── usePermissions() — existant, inchangé
+```
 
-### Enforcement des quotas d'abonnement
-- ✅ Hook `useQuotas` : lecture quotas depuis `subscription_plans.quotas` via `organization_subscriptions`
-- ✅ Vérification `max_workshops` et `max_challenges` vs usage réel
-- ✅ Blocage UI avec messages explicites quand quota atteint
+### Requêtes ajoutées dans useAdminStats
 
-### UX crédits
-- ✅ Page IA : solde réel affiché, outils grisés si crédits insuffisants
-- ✅ Chat IA : alerte inline crédits insuffisants, input désactivé
-- ✅ Workshop/Challenge : coût affiché dans la dialog de création, bouton désactivé si insuffisant
-- ✅ Edge function `ai-coach` déployée avec prompt coach stratégique
+```text
+Promise.all([
+  ...existantes...,
+  supabase.from("toolkits").select("id", { count: "exact", head: true }).eq("status", "published"),
+  supabase.from("toolkit_cards").select("id", { count: "exact", head: true }),
+  supabase.from("challenge_sessions").select("id", { count: "exact", head: true }),
+  supabase.from("quiz_results").select("id", { count: "exact", head: true }),
+  supabase.from("user_roles").select("role"),
+  supabase.from("workshops").select("created_at, organization_id, organizations(name)"),
+])
+```
 
-## Sprint 9 — COMPLÉTÉ ✅
+Les workshops par semaine seront calculés côté client en filtrant `workshops.created_at` sur les 12 dernières semaines.
 
-### Dashboard utilisateur (P0)
-- ✅ Page d'accueil (`/`) : landing guest vs dashboard authentifié
-- ✅ Dashboard : stats (XP, crédits, cartes vues, quiz), actions rapides, workshops récents, résumé (animés, favoris)
+### Nouveau composant RolesPermissionsTab
 
-### Profil enrichi (P0)
-- ✅ Tous les champs DB en édition : service, pôle, hiérarchie, manager, bio, LinkedIn, localisation, téléphone, email secondaire
-- ✅ Dialog d'édition organisé en 3 onglets (Identité, Pro, Contact)
-- ✅ Upload avatar avec storage bucket `avatars` (RLS : upload/delete propre user, lecture publique)
-- ✅ Affichage LinkedIn, localisation, détails professionnels sur le profil
+```text
+RolesPermissionsTab
+├── useQuery["admin-role-counts"] → user_roles group by role + profiles join
+├── Matrice calculée depuis ROLE_PERMISSION_MAP (pas de requête)
+├── État local: selectedRole (pour la liste détaillée)
+└── Mini DataTable pour les utilisateurs du rôle sélectionné
+```
 
-### Permissions admin UI (P1)
-- ✅ `AdminSidebar` filtre les entrées selon `usePermissions` (canManageOrgs, canManageUsers, canManageToolkits, etc.)
-- ✅ Chaque item sidebar conditionné par le rôle de l'utilisateur
+---
 
-### Dashboard admin enrichi (P1)
-- ✅ Graphique croissance utilisateurs (6 mois, LineChart cumulative + nouveaux)
-- ✅ Top 5 utilisateurs par XP
-- ✅ Alertes : abonnements expirant dans 30 jours
-- ✅ Layout amélioré : 2 graphiques côte à côte + 3 colonnes (top users, alertes, activité)
+## 4. Fichiers impactés
 
-### Vue quotas (P1)
-- ✅ `OrgUsageTab` déjà fonctionnel : affichage quotas vs usage avec progress bars et alertes visuelles (>80%)
+| Fichier | Action | Description |
+|---------|--------|-------------|
+| `src/hooks/usePermissions.ts` | Modifier | Exporter `ROLE_PERMISSION_MAP`, `getPermissionsForRole()`, `PERMISSION_LABELS` |
+| `src/components/admin/RolesPermissionsTab.tsx` | **Créer** | Matrice rôles/permissions + compteurs + liste users par rôle |
+| `src/pages/admin/AdminSettings.tsx` | Modifier | Ajouter onglet "Rôles & Permissions" |
+| `src/components/admin/UserRolesTab.tsx` | Modifier | Afficher permissions par rôle + preview à l'ajout |
+| `src/hooks/useAdminStats.ts` | Modifier | Ajouter 6 requêtes métier + calcul workshops réels par semaine + distribution rôles |
+| `src/pages/admin/AdminDashboard.tsx` | Modifier | Refonte : 8 KPIs, 3 graphiques (bar, line, pie), 3 tableaux |
+| `src/pages/Index.tsx` | Modifier | Barre XP, card org active, recommandation toolkit |
+
+**Aucune migration DB nécessaire** — toutes les tables existent déjà.
+
+---
+
+## 5. Critères d'acceptation
+
+- [ ] Page Settings > onglet "Rôles & Permissions" affiche la matrice complète des 12 rôles × 10 permissions
+- [ ] Clic sur un rôle dans la matrice affiche la liste des utilisateurs avec ce rôle
+- [ ] Dans la fiche user (UserRolesTab), chaque rôle attribué montre ses permissions en chips
+- [ ] Le dropdown "Ajouter un rôle" prévisualise les permissions avant ajout
+- [ ] Dashboard admin affiche 8 KPIs dont toolkits publiés, cartes totales, challenges, quiz
+- [ ] Le graphique "Workshops par semaine" affiche des données réelles (pas des zéros)
+- [ ] Le PieChart montre la répartition des rôles de la plateforme
+- [ ] Le tableau "Top organisations" classe les orgs par nombre de workshops
+- [ ] Dashboard user affiche une barre de progression XP avec niveau
+- [ ] Dashboard user affiche l'organisation active et son rôle
+
