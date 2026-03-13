@@ -9,11 +9,16 @@ import type { Tables } from "@/integrations/supabase/types";
 import { getPillarCssColor, getPillarCssColorAlpha, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
 import dynamicIconImports from "lucide-react/dynamicIconImports";
 
+const iconCache = new Map<string, React.LazyExoticComponent<React.ComponentType<{ className?: string }>>>();
+
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
   const kebab = name.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
   const importFn = dynamicIconImports[kebab as keyof typeof dynamicIconImports];
   if (!importFn) return null;
-  const LazyIcon = lazy(importFn);
+  if (!iconCache.has(kebab)) {
+    iconCache.set(kebab, lazy(importFn as () => Promise<{ default: React.ComponentType<{ className?: string }> }>));
+  }
+  const LazyIcon = iconCache.get(kebab)!;
   return (
     <Suspense fallback={<div className={className} />}>
       <LazyIcon className={className} />
@@ -104,7 +109,7 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
       return (
         <div
           key={card.id}
-          className="rounded-3xl overflow-hidden flex flex-col min-h-[280px] w-60"
+          className="relative rounded-3xl overflow-hidden flex flex-col min-h-[280px] w-60"
           style={{ background: `linear-gradient(145deg, ${pillarColor}, ${pillarColorAlpha(0.85)})` }}
         >
           <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{

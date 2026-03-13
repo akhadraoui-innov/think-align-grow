@@ -269,8 +269,8 @@ export function ToolkitCompletionBanner({ toolkit, pillars, cards, quizQuestions
                 <PartyPopper className="h-12 w-12 text-primary mx-auto" />
                 <h3 className="text-lg font-display font-bold text-foreground">Complétion terminée !</h3>
                 <div className="flex justify-center gap-4">
-                  {totalCards > 0 && <Badge variant="secondary" className="text-sm">{totalCards} cartes</Badge>}
-                  {totalQuiz > 0 && <Badge variant="secondary" className="text-sm">{totalQuiz} quiz</Badge>}
+                  {totalCards > 0 && <span><Badge variant="secondary" className="text-sm">{totalCards} cartes</Badge></span>}
+                  {totalQuiz > 0 && <span><Badge variant="secondary" className="text-sm">{totalQuiz} quiz</Badge></span>}
                 </div>
                 <p className="text-xs text-muted-foreground">Temps : {formatElapsed(elapsed)}</p>
                 <Button onClick={() => { setGenOpen(false); onUpdate(); }} className="gap-2">
