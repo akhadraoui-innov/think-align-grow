@@ -109,7 +109,7 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
       return (
         <div
           key={card.id}
-          className="rounded-3xl overflow-hidden flex flex-col min-h-[280px] w-60"
+          className="relative rounded-3xl overflow-hidden flex flex-col min-h-[280px] w-60"
           style={{ background: `linear-gradient(145deg, ${pillarColor}, ${pillarColorAlpha(0.85)})` }}
         >
           <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{
