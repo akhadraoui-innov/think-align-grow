@@ -204,10 +204,10 @@ function UserDashboard() {
 
   // Org toolkit recommendation
   const { data: orgToolkit } = useQuery({
-    queryKey: ["user-org-toolkit", activeOrg?.id],
-    enabled: !!activeOrg?.id,
+    queryKey: ["user-org-toolkit", activeOrg?.organization_id],
+    enabled: !!activeOrg?.organization_id,
     queryFn: async () => {
-      const { data } = await supabase.from("organization_toolkits").select("toolkit_id, toolkits(name, icon_emoji, slug)").eq("organization_id", activeOrg!.id).eq("is_active", true).limit(1).maybeSingle();
+      const { data } = await supabase.from("organization_toolkits").select("toolkit_id, toolkits(name, icon_emoji, slug)").eq("organization_id", activeOrg!.organization_id).eq("is_active", true).limit(1).maybeSingle();
       return data;
     },
   });
