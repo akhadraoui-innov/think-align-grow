@@ -802,6 +802,71 @@ export type Database = {
           },
         ]
       }
+      permission_definitions: {
+        Row: {
+          created_at: string
+          description: string
+          domain_key: string
+          id: string
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          domain_key: string
+          id?: string
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          domain_key?: string
+          id?: string
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_definitions_domain_key_fkey"
+            columns: ["domain_key"]
+            isOneToOne: false
+            referencedRelation: "permission_domains"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      permission_domains: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          key: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id?: string
+          key: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          key?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       pillars: {
         Row: {
           color: string | null

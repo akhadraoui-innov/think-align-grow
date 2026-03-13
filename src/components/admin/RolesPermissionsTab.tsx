@@ -1,11 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  PERMISSION_DOMAINS,
-  ROLE_PERMISSION_MAP,
-  getPermissionsForRole,
   getPermissionsForRoleFromDB,
   useRolePermissionsFromDB,
+  usePermissionRegistry,
   type PermissionDomain,
 } from "@/hooks/usePermissions";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -66,21 +64,30 @@ const ROLE_META: Record<string, { color: string; bgColor: string; description: s
   guest: { color: "text-muted-foreground", bgColor: "bg-secondary border-border/50", description: "Accès limité en lecture" },
 };
 
-const TOTAL_PERMS = PERMISSION_DOMAINS.reduce((s, d) => s + d.permissions.length, 0);
-
 export function RolesPermissionsTab() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const perms = usePermissions();
   const canEdit = perms.isSuperAdmin;
 
+  // DB-backed data
+  const { data: registryData, isLoading: registryLoading } = usePermissionRegistry();
+  const { data: dbMap, isLoading: dbLoading } = useRolePermissionsFromDB();
+
+  const DOMAINS = registryData?.domains ?? [];
+  const TOTAL_PERMS = DOMAINS.reduce((s, d) => s + d.permissions.length, 0);
+
   const [selectedRole, setSelectedRole] = useState<string>("super_admin");
-  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set(PERMISSION_DOMAINS.map(d => d.key)));
+  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [compareRoles, setCompareRoles] = useState<string[]>([]);
 
-  // DB-backed permissions
-  const { data: dbMap, isLoading: dbLoading } = useRolePermissionsFromDB();
+  // Auto-expand all domains when registry loads
+  useMemo(() => {
+    if (DOMAINS.length > 0 && expandedDomains.size === 0) {
+      setExpandedDomains(new Set(DOMAINS.map(d => d.key)));
+    }
+  }, [DOMAINS.length]);
 
   // Role counts
   const { data: roleCounts } = useQuery({
@@ -124,9 +131,9 @@ export function RolesPermissionsTab() {
   };
 
   const filteredDomains = useMemo(() => {
-    if (!searchQuery.trim()) return PERMISSION_DOMAINS;
+    if (!searchQuery.trim()) return DOMAINS;
     const q = searchQuery.toLowerCase();
-    return PERMISSION_DOMAINS.map(d => ({
+    return DOMAINS.map(d => ({
       ...d,
       permissions: d.permissions.filter(p =>
         p.label.toLowerCase().includes(q) ||
@@ -134,7 +141,7 @@ export function RolesPermissionsTab() {
         p.key.toLowerCase().includes(q)
       ),
     })).filter(d => d.permissions.length > 0);
-  }, [searchQuery]);
+  }, [searchQuery, DOMAINS]);
 
   // Toggle a permission for the selected role
   const togglePermission = async (permKey: string, currentlyGranted: boolean) => {
@@ -165,9 +172,19 @@ export function RolesPermissionsTab() {
     );
   };
 
+  const isLoading = registryLoading || dbLoading;
+
   const meta = ROLE_META[selectedRole] || ROLE_META.member;
   const permCount = rolePerms.length;
-  const coveragePct = Math.round((permCount / TOTAL_PERMS) * 100);
+  const coveragePct = TOTAL_PERMS > 0 ? Math.round((permCount / TOTAL_PERMS) * 100) : 0;
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -271,83 +288,77 @@ export function RolesPermissionsTab() {
           </div>
 
           {/* Domains with switches */}
-          {dbLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {filteredDomains.map(domain => {
-                const isExpanded = expandedDomains.has(domain.key);
-                const IconComp = ICON_MAP[domain.icon] || Layers;
-                const granted = domain.permissions.filter(p => rolePerms.includes(p.key)).length;
-                const total = domain.permissions.length;
-                const domainPct = total > 0 ? Math.round((granted / total) * 100) : 0;
+          <div className="space-y-2">
+            {filteredDomains.map(domain => {
+              const isExpanded = expandedDomains.has(domain.key);
+              const IconComp = ICON_MAP[domain.icon] || Layers;
+              const granted = domain.permissions.filter(p => rolePerms.includes(p.key)).length;
+              const total = domain.permissions.length;
+              const domainPct = total > 0 ? Math.round((granted / total) * 100) : 0;
 
-                return (
-                  <div key={domain.key} className="rounded-xl border border-border/50 bg-card overflow-hidden">
-                    <button
-                      onClick={() => toggleDomain(domain.key)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors"
-                    >
-                      <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <IconComp className="h-3.5 w-3.5 text-primary" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-sm font-bold text-foreground">{domain.label}</p>
-                      </div>
-                      <Badge variant="secondary" className="text-[10px] gap-1">
-                        {granted}/{total}
-                      </Badge>
-                      <Progress value={domainPct} className="h-1.5 w-16 hidden sm:block" />
-                      {isExpanded ? (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                      )}
-                    </button>
+              return (
+                <div key={domain.key} className="rounded-xl border border-border/50 bg-card overflow-hidden">
+                  <button
+                    onClick={() => toggleDomain(domain.key)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors"
+                  >
+                    <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <IconComp className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-bold text-foreground">{domain.label}</p>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] gap-1">
+                      {granted}/{total}
+                    </Badge>
+                    <Progress value={domainPct} className="h-1.5 w-16 hidden sm:block" />
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
+                  </button>
 
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: "auto" }}
-                          exit={{ height: 0 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="border-t border-border/30 divide-y divide-border/20">
-                            {domain.permissions.map(perm => {
-                              const hasIt = rolePerms.includes(perm.key);
-                              return (
-                                <div
-                                  key={perm.key}
-                                  className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/20 transition-colors"
-                                >
-                                  <Switch
-                                    checked={hasIt}
-                                    onCheckedChange={() => togglePermission(perm.key, hasIt)}
-                                    disabled={!canEdit}
-                                    className="shrink-0"
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-foreground">{perm.label}</p>
-                                    <p className="text-xs text-muted-foreground leading-tight">{perm.description}</p>
-                                  </div>
-                                  <code className="text-[9px] text-muted-foreground/50 hidden lg:block font-mono">
-                                    {perm.key}
-                                  </code>
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: "auto" }}
+                        exit={{ height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border-t border-border/30 divide-y divide-border/20">
+                          {domain.permissions.map(perm => {
+                            const hasIt = rolePerms.includes(perm.key);
+                            return (
+                              <div
+                                key={perm.key}
+                                className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/20 transition-colors"
+                              >
+                                <Switch
+                                  checked={hasIt}
+                                  onCheckedChange={() => togglePermission(perm.key, hasIt)}
+                                  disabled={!canEdit}
+                                  className="shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-foreground">{perm.label}</p>
+                                  <p className="text-xs text-muted-foreground leading-tight">{perm.description}</p>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                                <code className="text-[9px] text-muted-foreground/50 hidden lg:block font-mono">
+                                  {perm.key}
+                                </code>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
 
           {/* Users with this role */}
           <div className="rounded-xl border border-border/50 bg-card p-5">
@@ -438,7 +449,7 @@ export function RolesPermissionsTab() {
                     </tr>
                   </thead>
                   <tbody>
-                    {PERMISSION_DOMAINS.map(domain => {
+                    {DOMAINS.map(domain => {
                       const IconComp = ICON_MAP[domain.icon] || Layers;
                       return (
                         <>
@@ -503,7 +514,7 @@ export function RolesPermissionsTab() {
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Permissions</p>
           </div>
           <div>
-            <p className="font-bold text-xl text-foreground">{PERMISSION_DOMAINS.length}</p>
+            <p className="font-bold text-xl text-foreground">{DOMAINS.length}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Domaines</p>
           </div>
         </div>

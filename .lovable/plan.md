@@ -1,77 +1,213 @@
+# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
+## Vision produit
 
-# Permissions 100% DB — Domaines et définitions en base de données
+Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
 
-## Problème
+### L'organisation comme entité centrale
 
-`PERMISSION_DOMAINS` est un tableau hardcodé de ~200 lignes dans `usePermissions.ts`. Pour ajouter une permission (ex: nouveau module), il faut modifier le code et redéployer. Pas agile.
+L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
 
-## Solution
+- **Identité & branding** : nom, slug, logo, couleur primaire
+- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
+- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
+- **Coordonnées** : email, téléphone, site web
+- **Adresses** : multi-adresses (siège, sites, bureaux)
+- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
+- **Notes internes** : champ libre pour l'équipe SaaS
+- **Membres** avec rôles (Owner, Admin, Member, Guest…)
+- **Équipes** internes
+- **Toolkits** assignés et activés
+- **Abonnement** avec plan et quotas
+- **Workshops** réalisés
+- **Journal d'activité** (audit trail)
 
-Deux nouvelles tables DB qui remplacent le hardcode :
+### Organisation plateforme : Growthinnov
 
-### Tables
+**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
+1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
+2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
 
-**`permission_domains`** — les groupes fonctionnels
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid PK | |
-| key | text UNIQUE | ex: "admin.toolkits" |
-| label | text | ex: "Toolkits" |
-| icon | text | nom icône lucide |
-| sort_order | int | ordre d'affichage |
+Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
 
-**`permission_definitions`** — chaque permission unitaire
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid PK | |
-| key | text UNIQUE | ex: "admin.toolkits.cards" |
-| label | text | ex: "Gérer les cartes" |
-| description | text | |
-| domain_key | text FK→permission_domains.key | rattachement au domaine |
-| sort_order | int | |
+Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
+
+## Sprint 1 — COMPLÉTÉ ✅
 
 ### Migration SQL
+- ✅ Enum `app_role` étendu : +9 valeurs
+- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
 
-1. Créer les 2 tables avec RLS (lecture pour tous les authenticated, écriture super_admin uniquement)
-2. Seed avec les 16 domaines et 64 permissions actuels depuis `PERMISSION_DOMAINS`
+### Frontend Admin
+- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
+- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
 
-### Code
+## Sprint 2 — COMPLÉTÉ ✅
 
-**`src/hooks/usePermissions.ts`** :
-- Supprimer le tableau hardcodé `PERMISSION_DOMAINS` (~170 lignes)
-- Supprimer `PERMISSION_REGISTRY`, `ALL_PERMISSION_KEYS`, `PERMISSION_LABELS` (dérivés du hardcode)
-- Nouveau hook `usePermissionRegistry()` qui charge `permission_domains` + `permission_definitions` depuis la DB
-- Reconstruire `PermissionDomain[]` à partir des données DB (même interface TypeScript)
-- Les helpers `getDomainCoverage` utilisent les données DB
+### Dashboard avec données réelles
+- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
+- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
 
-**`src/components/admin/RolesPermissionsTab.tsx`** :
-- Remplacer l'import de `PERMISSION_DOMAINS` par `usePermissionRegistry()`
-- Le reste de la logique (switches, comparaison) reste identique
+### Composant DataTable réutilisable
+- ✅ Recherche, tri par colonne, pagination, row click, slot actions
 
-**`src/components/admin/UserRolesTab.tsx`** :
-- Même adaptation : utiliser le registry DB
+### CRUD Organisations
+- ✅ useOrganizations + useOrganizationDetail hooks
+- ✅ Liste avec DataTable, recherche, tri, création via dialog
+- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
+- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
+- ✅ Route /admin/organizations/:id
+- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
 
-### Ce qui reste dans le code (légitime)
+## Sprint 3 — COMPLÉTÉ ✅
 
-- Les **interfaces TypeScript** (`PermissionDef`, `PermissionDomain`) — ce sont des types, pas des données
-- Le hook `usePermissions()` — logique de résolution des permissions utilisateur
-- Les helpers (`has`, `hasAny`, `getPermsFromMap`)
+### Gestion des utilisateurs (AdminUsers)
+- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
+- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
+- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
+- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
+- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
+- ✅ UserCreditsTab : solde, lifetime, historique des transactions
+- ✅ UserWorkshopsTab : workshops hébergés et participations
+- ✅ UserChallengesTab : performances quiz et challenges
+- ✅ UserCardsTab : suivi des vues et favoris
+- ✅ UserActivityTab : journal d'audit utilisateur
 
-### Résultat
+### Hook usePermissions
+- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
 
-- Ajouter une permission = 2 INSERT en DB (domaine si nouveau + définition)
-- Modifier un label/description = 1 UPDATE
-- Zero redéploiement pour faire évoluer le référentiel
-- La table `role_permissions` (existante) lie les rôles aux permission keys
-- Les 3 tables forment un système complet : **définitions** → **assignations** → **résolution**
+### Hook useAdminUserDetail
+- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
 
-## Fichiers impactés
+### Migration SQL Sprint 3
+- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
 
-| Fichier | Action |
-|---------|--------|
-| Migration SQL | Créer tables + seed 16 domaines + 64 permissions |
-| `src/hooks/usePermissions.ts` | Supprimer hardcode, ajouter `usePermissionRegistry()` |
-| `src/components/admin/RolesPermissionsTab.tsx` | Utiliser registry DB |
-| `src/components/admin/UserRolesTab.tsx` | Utiliser registry DB |
+## Sprint 4 — COMPLÉTÉ ✅
 
+### Gestion des Toolkits
+- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
+- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
+- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
+- ✅ Fiche AdminToolkitDetail avec 7 onglets :
+  - Infos : nom, slug, emoji, description, statut, métadonnées
+  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
+  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
+  - Challenges : templates avec sujets et slots imbriqués
+  - Game Plans : plans avec étapes ordonnées
+  - Quiz : questions par pilier avec compteur d'options
+  - Organisations : ajout/retrait d'accès toolkit pour les orgs
+- ✅ Route /admin/toolkits/:id
+
+### Gestion des Workshops (vue admin)
+- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
+- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
+
+## Sprint 4.2 — COMPLÉTÉ ✅
+
+### Nettoyage & dynamisation toolkit
+- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
+- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
+- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
+- ✅ Aucune migration DB nécessaire
+
+## Sprint 5 — COMPLÉTÉ ✅
+
+### Facturation & Abonnements (AdminBilling)
+- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
+- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
+- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
+- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
+- ✅ Suppression plan avec confirmation AlertDialog
+- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
+
+### Logs d'audit (AdminLogs)
+- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
+- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
+- ✅ Pagination server-side (25/page) avec compteur total
+- ✅ Détail metadata : dialog avec JSON formaté
+- ✅ Styles cohérents avec le design system existant
+
+## Sprint 6 — COMPLÉTÉ ✅
+
+### Enrichissement logs
+- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
+- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
+- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
+
+### Dashboard billing avancé
+- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
+- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
+- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
+
+## Sprint 7 — COMPLÉTÉ ✅
+
+### Profil utilisateur authentifié
+- ✅ Page Profile détecte l'état de connexion (guest vs authentifié)
+- ✅ Vue authentifiée : avatar, display_name, job_title, department, email
+- ✅ Stats temps réel : XP, crédits, cartes vues, quiz complétés
+- ✅ Liste des organisations avec rôles
+- ✅ Dialog d'édition profil (display_name, job_title, department)
+- ✅ Bouton déconnexion
+
+### Contexte multi-tenant
+- ✅ `OrgProvider` context avec `useActiveOrg` hook
+- ✅ Composant `OrgSwitcher` dans la sidebar (dropdown si multi-org, badge si mono-org)
+- ✅ Persistance de l'org active dans localStorage
+- ✅ Intégration dans `AppSidebar` footer
+
+### Persistance quiz
+- ✅ `QuizEngine` sauvegarde les scores dans `quiz_results` à la complétion
+- ✅ `Lab.tsx` charge le dernier résultat quiz depuis la DB au montage
+- ✅ Hydratation automatique du RadarChart et des badges depuis les données persistées
+
+### Liaison Workshop → Organisation
+- ✅ `useCreateWorkshop` accepte un `organizationId` optionnel
+- ✅ `Workshop.tsx` passe l'org active du contexte à la création
+
+## Sprint 8 — COMPLÉTÉ ✅
+
+### Activation des crédits côté utilisateur
+- ✅ Fonction DB `spend_credits` atomique (SECURITY DEFINER, row lock, vérification solde)
+- ✅ Hook `useSpendCredits` pour débit sécurisé via RPC
+- ✅ Hook `useCredits` simplifié (lecture seule, invalidation via spend)
+
+### Débit réel sur les actions
+- ✅ **Coach IA** : 1 crédit par message, appel réel à l'IA via edge function `ai-coach` (Gemini 2.5 Flash)
+- ✅ **Création Workshop** : débit de `toolkit.credit_cost_workshop` crédits avant création
+- ✅ **Création Challenge** : débit de `toolkit.credit_cost_challenge` crédits avant lancement
+
+### Enforcement des quotas d'abonnement
+- ✅ Hook `useQuotas` : lecture quotas depuis `subscription_plans.quotas` via `organization_subscriptions`
+- ✅ Vérification `max_workshops` et `max_challenges` vs usage réel
+- ✅ Blocage UI avec messages explicites quand quota atteint
+
+### UX crédits
+- ✅ Page IA : solde réel affiché, outils grisés si crédits insuffisants
+- ✅ Chat IA : alerte inline crédits insuffisants, input désactivé
+- ✅ Workshop/Challenge : coût affiché dans la dialog de création, bouton désactivé si insuffisant
+- ✅ Edge function `ai-coach` déployée avec prompt coach stratégique
+
+## Sprint 9 — COMPLÉTÉ ✅
+
+### Dashboard utilisateur (P0)
+- ✅ Page d'accueil (`/`) : landing guest vs dashboard authentifié
+- ✅ Dashboard : stats (XP, crédits, cartes vues, quiz), actions rapides, workshops récents, résumé (animés, favoris)
+
+### Profil enrichi (P0)
+- ✅ Tous les champs DB en édition : service, pôle, hiérarchie, manager, bio, LinkedIn, localisation, téléphone, email secondaire
+- ✅ Dialog d'édition organisé en 3 onglets (Identité, Pro, Contact)
+- ✅ Upload avatar avec storage bucket `avatars` (RLS : upload/delete propre user, lecture publique)
+- ✅ Affichage LinkedIn, localisation, détails professionnels sur le profil
+
+### Permissions admin UI (P1)
+- ✅ `AdminSidebar` filtre les entrées selon `usePermissions` (canManageOrgs, canManageUsers, canManageToolkits, etc.)
+- ✅ Chaque item sidebar conditionné par le rôle de l'utilisateur
+
+### Dashboard admin enrichi (P1)
+- ✅ Graphique croissance utilisateurs (6 mois, LineChart cumulative + nouveaux)
+- ✅ Top 5 utilisateurs par XP
+- ✅ Alertes : abonnements expirant dans 30 jours
+- ✅ Layout amélioré : 2 graphiques côte à côte + 3 colonnes (top users, alertes, activité)
+
+### Vue quotas (P1)
+- ✅ `OrgUsageTab` déjà fonctionnel : affichage quotas vs usage avec progress bars et alertes visuelles (>80%)
