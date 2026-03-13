@@ -132,12 +132,12 @@ export function useAdminToolkitDetail(id: string | undefined) {
     },
   });
 
+  const pillarIds = pillars.data?.map((p) => p.id) || [];
+
   const cards = useQuery({
-    queryKey: ["admin-toolkit-cards", id],
-    enabled: !!id,
+    queryKey: ["admin-toolkit-cards", id, pillarIds],
+    enabled: !!id && pillarIds.length > 0,
     queryFn: async () => {
-      const pillarIds = pillars.data?.map((p) => p.id) || [];
-      if (!pillarIds.length) return [];
       const { data, error } = await supabase.from("cards").select("*").in("pillar_id", pillarIds).order("sort_order");
       if (error) throw error;
       return data;

@@ -1,18 +1,27 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { FlipCard } from "@/components/ui/FlipCard";
 import { GameCard } from "@/components/challenge/GameCard";
-import { LayoutGrid, Grid3X3, Layers, Eye } from "lucide-react";
+import { LayoutGrid, Grid3X3, Layers, Eye, BarChart3, Zap, Target } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
+import { getPillarCssColor, getPillarCssColorAlpha, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
+import dynamicIconImports from "lucide-react/dynamicIconImports";
 
-const PHASE_LABELS: Record<string, string> = {
-  foundations: "Fondations", model: "Modèle", growth: "Croissance", execution: "Exécution",
-};
+function DynamicIcon({ name, className }: { name: string; className?: string }) {
+  const kebab = name.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+  const importFn = dynamicIconImports[kebab as keyof typeof dynamicIconImports];
+  if (!importFn) return null;
+  const LazyIcon = lazy(importFn);
+  return (
+    <Suspense fallback={<div className={className} />}>
+      <LazyIcon className={className} />
+    </Suspense>
+  );
+}
 
-type CardFormat = "flip" | "game" | "section" | "full";
+type CardFormat = "game" | "section" | "preview" | "full" | "gamified";
 type GroupBy = "all" | "pillar" | "phase";
 
 interface Props {
@@ -53,7 +62,6 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
         }))
         .filter(g => g.items.length > 0);
     }
-    // phase
     return ["foundations", "model", "growth", "execution"]
       .filter(ph => filterPhase === "all" || ph === filterPhase)
       .map(ph => ({
@@ -73,71 +81,160 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
 
   const renderCard = (card: Tables<"cards">) => {
     const pillar = pillarMap.get(card.pillar_id);
-    const dbCard = card as any;
+    const slug = pillar?.slug || "";
+    const dbCol = pillar?.color || null;
+    const pillarColor = getPillarCssColor(slug, dbCol);
+    const pillarColorAlpha = (a: number) => getPillarCssColorAlpha(slug, dbCol, a);
+    const pillarIconName = pillar ? getPillarIconName(pillar.slug, pillar.icon_name) : "Circle";
 
-    if (format === "flip") {
-      return (
-        <FlipCard
-          key={card.id}
-          card={dbCard}
-          pillarSlug={pillar?.slug || ""}
-          pillarColor={pillar?.color}
-        />
-      );
-    }
-
+    // ── Game card (flip card from challenge) ──
     if (format === "game") {
       return (
         <GameCard
           key={card.id}
-          card={dbCard}
+          card={card as any}
           pillar={pillar as any}
           readOnly
         />
       );
     }
 
-    if (format === "section") {
+    // ── Gamified (collectible, full-color, from CanvasCard) ──
+    if (format === "gamified") {
       return (
         <div
           key={card.id}
-          className="rounded-xl p-4 text-white min-h-[120px] flex flex-col justify-between"
-          style={{ backgroundColor: pillar?.color || "#666" }}
+          className="rounded-3xl overflow-hidden flex flex-col min-h-[280px] w-60"
+          style={{ background: `linear-gradient(145deg, ${pillarColor}, ${pillarColorAlpha(0.85)})` }}
         >
-          <div>
-            <span className="text-[9px] font-bold uppercase tracking-widest opacity-70">
-              {PHASE_LABELS[card.phase]}
+          <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{
+            backgroundImage: `radial-gradient(circle at 20% 80%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)`,
+            backgroundSize: '30px 30px',
+          }} />
+          <div className="relative p-5 flex flex-col items-center text-center flex-1">
+            <div className="inline-flex px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm mb-4">
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/90">
+                {PHASE_LABELS[card.phase] || card.phase}
+              </span>
+            </div>
+            <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4 shadow-inner">
+              <DynamicIcon name={pillarIconName} className="h-8 w-8 text-white" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/60 mb-1">
+              {pillar?.name || "Pilier"}
             </span>
-            <h4 className="font-display font-bold text-sm mt-1 leading-tight">{card.title}</h4>
+            <h3 className="font-display font-black text-base uppercase tracking-tight leading-tight text-white mb-3 line-clamp-3">
+              {card.title}
+            </h3>
+            {card.subtitle && (
+              <p className="text-[11px] text-white/60 italic line-clamp-2">{card.subtitle}</p>
+            )}
           </div>
-          <p className="text-[10px] opacity-80 mt-2 line-clamp-2">{card.subtitle}</p>
         </div>
       );
     }
 
-    // full
-    return (
-      <div key={card.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <Badge variant="outline" className="text-[9px]" style={{ borderColor: pillar?.color || undefined, color: pillar?.color || undefined }}>
-            {pillar?.name}
-          </Badge>
-          <span className="text-[9px] text-muted-foreground">{PHASE_LABELS[card.phase]}</span>
+    // ── Section (compact colored, from CanvasCard) ──
+    if (format === "section") {
+      return (
+        <div
+          key={card.id}
+          className="rounded-2xl overflow-hidden"
+          style={{ background: `linear-gradient(145deg, ${pillarColor}, ${pillarColorAlpha(0.85)})` }}
+        >
+          <div className="p-3 text-white">
+            <span className="text-[8px] font-black uppercase tracking-widest text-white/70">
+              {pillar?.name || "Pilier"}
+            </span>
+            <h3 className="font-display font-black text-sm uppercase tracking-tight leading-tight text-white line-clamp-2 mt-1 mb-2">
+              {card.title}
+            </h3>
+            <div className="flex gap-1.5 mt-1">
+              {[1, 2, 3].map((level) => (
+                <div key={level} className="h-2 w-2 rounded-full border bg-transparent border-white/40" />
+              ))}
+            </div>
+          </div>
         </div>
-        <h4 className="font-semibold text-sm text-foreground">{card.title}</h4>
-        {card.subtitle && <p className="text-xs text-muted-foreground">{card.subtitle}</p>}
-        {card.definition && <p className="text-xs text-foreground/80 leading-relaxed">{card.definition}</p>}
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          {card.action && (
-            <div>
-              <span className="text-[9px] font-bold uppercase text-muted-foreground">Action</span>
-              <p className="text-[11px] text-foreground mt-0.5">{card.action}</p>
+      );
+    }
+
+    // ── Preview / Full (standard card with pillar bar, from CanvasCard) ──
+    const isFull = format === "full";
+    return (
+      <div key={card.id} className="rounded-2xl bg-card border-2 border-border overflow-hidden flex flex-col">
+        {/* Pillar color bar */}
+        <div className="h-2 w-full shrink-0" style={{ background: pillarColor }} />
+
+        <div className={cn("p-4", isFull && "p-5")}>
+          {/* Header */}
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <span className="font-black uppercase tracking-widest rounded-full text-[9px] px-2 py-0.5"
+              style={{ background: pillarColorAlpha(0.08), color: pillarColor }}>
+              {pillar?.name || "Pilier"}
+            </span>
+            <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+              {PHASE_LABELS[card.phase] || card.phase}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h3 className={cn(
+            "font-display font-black uppercase tracking-tight leading-tight text-lg mb-2",
+            isFull && "text-xl mb-3"
+          )}>
+            {card.title}
+          </h3>
+
+          {card.subtitle && (
+            <p className="text-xs text-muted-foreground italic mb-2">{card.subtitle}</p>
+          )}
+
+          {/* Objective (full only) */}
+          {isFull && card.objective && (
+            <div className="flex items-start gap-2 mb-3">
+              <Target className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: pillarColor }} />
+              <p className="text-xs text-foreground/80 leading-relaxed">{card.objective}</p>
             </div>
           )}
+
+          {/* Definition */}
+          {card.definition && (
+            <p className={cn("text-xs text-foreground/80 leading-relaxed mb-3", !isFull && "line-clamp-3")}>
+              {card.definition}
+            </p>
+          )}
+
+          {/* Action */}
+          {card.action && (
+            <div className="rounded-xl p-3 mb-3" style={{ background: pillarColorAlpha(0.04), borderLeft: `3px solid ${pillarColor}` }}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <Zap className="h-3 w-3" style={{ color: pillarColor }} />
+                <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: pillarColor }}>
+                  {card.step_name || "Action"}
+                </span>
+              </div>
+              <p className={cn("text-xs text-foreground leading-relaxed", !isFull && "line-clamp-2")}>
+                {card.action}
+              </p>
+            </div>
+          )}
+
+          {/* KPI */}
           {card.kpi && (
-            <div>
-              <span className="text-[9px] font-bold uppercase text-muted-foreground">KPI</span>
-              <p className="text-[11px] text-foreground mt-0.5">{card.kpi}</p>
+            <div className="flex items-start gap-2 bg-muted/30 p-3 rounded-lg border border-border/50 mb-2">
+              <BarChart3 className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="text-xs leading-relaxed">
+                <div className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Indicateurs de maturité</div>
+                <div className={cn("text-foreground/90 space-y-0.5", !isFull && "line-clamp-3")}>
+                  {card.kpi.split('\n').map((line, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full shrink-0 opacity-30" style={{ background: pillarColor }} />
+                      <span className="text-[10px]">{line}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -155,9 +252,10 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
             <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="game">Game</SelectItem>
-              <SelectItem value="flip">Flip</SelectItem>
               <SelectItem value="section">Section</SelectItem>
-              <SelectItem value="full">Détaillé</SelectItem>
+              <SelectItem value="preview">Preview</SelectItem>
+              <SelectItem value="full">Full</SelectItem>
+              <SelectItem value="gamified">Gamifié</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -224,7 +322,7 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
               <Badge variant="outline" className="text-[10px]">{g.items.length}</Badge>
             </div>
           )}
-          <div className={format === "game" ? "flex flex-wrap gap-4" : gridClass}>
+          <div className={format === "game" || format === "gamified" ? "flex flex-wrap gap-4" : gridClass}>
             {g.items.map(renderCard)}
           </div>
         </div>

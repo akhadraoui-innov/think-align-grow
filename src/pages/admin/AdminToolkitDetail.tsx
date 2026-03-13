@@ -58,6 +58,9 @@ export default function AdminToolkitDetail() {
           <div className="ml-auto flex items-center gap-2">
             <ToolkitAIChatDialog toolkit={toolkit} pillars={pillars} onUpdate={invalidateAll} />
             <Badge variant="outline" className={s.className}>{s.label}</Badge>
+            <Badge className="bg-primary text-primary-foreground text-[10px]">
+              {cards.length} carte{cards.length > 1 ? "s" : ""}
+            </Badge>
           </div>
         </div>
 
