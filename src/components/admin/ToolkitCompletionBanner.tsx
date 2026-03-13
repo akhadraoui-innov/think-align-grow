@@ -202,7 +202,7 @@ export function ToolkitCompletionBanner({ toolkit, pillars, cards, quizQuestions
     }
   }, [toolkit.id, emptyPillars, hasQuiz, pillars, onUpdate]);
 
-  if (missingItems.length === 0) return null;
+  const isComplete = missingItems.length === 0;
 
   const formatElapsed = (s: number) => {
     const m = Math.floor(s / 60);
