@@ -63,18 +63,20 @@ export interface ChallengeAnalysis {
   created_at: string;
 }
 
-export function useChallengeTemplates(toolkitId: string | undefined) {
+export function useChallengeTemplates(toolkitId?: string | undefined) {
   return useQuery({
-    queryKey: ["challenge-templates", toolkitId],
-    enabled: !!toolkitId,
+    queryKey: ["challenge-templates", toolkitId ?? "__all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("challenge_templates")
-        .select("*")
-        .eq("toolkit_id", toolkitId!)
+        .select("*, toolkits(id, name, icon_emoji)")
         .order("created_at");
+      if (toolkitId) {
+        query = query.eq("toolkit_id", toolkitId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
-      return data as ChallengeTemplate[];
+      return data as (ChallengeTemplate & { toolkits?: { id: string; name: string; icon_emoji: string | null } })[];
     },
   });
 }

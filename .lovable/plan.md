@@ -1,29 +1,213 @@
+# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
+## Vision produit
 
-# Challenge C-Level : Cadrer et Piloter l'IA dans votre Métier
+Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
 
-## Cible
+### L'organisation comme entité centrale
 
-Dirigeants métier (hors DG) : directeurs commerciaux, marketing, RH, finance, opérations, supply chain... Ceux qui doivent intégrer l'IA dans LEUR périmètre, pas piloter la stratégie globale de l'entreprise.
+L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
 
-## Les 7 étapes
+- **Identité & branding** : nom, slug, logo, couleur primaire
+- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
+- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
+- **Coordonnées** : email, téléphone, site web
+- **Adresses** : multi-adresses (siège, sites, bureaux)
+- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
+- **Notes internes** : champ libre pour l'équipe SaaS
+- **Membres** avec rôles (Owner, Admin, Member, Guest…)
+- **Équipes** internes
+- **Toolkits** assignés et activés
+- **Abonnement** avec plan et quotas
+- **Workshops** réalisés
+- **Journal d'activité** (audit trail)
 
-| # | Titre | Type | Description métier | Slots |
-|---|-------|------|--------------------|-------|
-| 1 | **Où en est votre direction face à l'IA ?** | context | Prenez du recul sur votre périmètre : quels processus tournent déjà, quels irritants reviennent, quel est le niveau de maturité de vos équipes ? Ce diagnostic honnête est le socle de tout le reste. | **Niveau de maturité actuel** (single) — "Choisissez la carte qui reflète le mieux où en sont vos équipes aujourd'hui." · **Atouts de votre direction** (multi) — "Quelles forces pouvez-vous déjà mobiliser ? Données existantes, équipes ouvertes, processus documentés..." · **Freins à lever en priorité** (ranked) — "Classez les obstacles par urgence : résistance au changement, données dispersées, manque de compétences..." |
-| 2 | **Quelle place pour l'IA dans votre feuille de route métier ?** | challenge | L'IA n'est pas un projet IT qu'on vous impose. C'est un levier pour atteindre VOS objectifs métier. Quel est votre enjeu n°1 cette année ? Comment l'IA peut-elle y contribuer concrètement ? | **Objectif métier prioritaire que l'IA doit servir** (single) — "Pas un objectif IA, un objectif MÉTIER : réduire le churn, accélérer le closing, fiabiliser les prévisions..." · **Leviers d'alignement avec la stratégie groupe** (multi) — "Comment votre initiative IA s'inscrit-elle dans le plan stratégique global ?" · **Horizons de résultats visés** (ranked) — "Classez : quick win à 3 mois, impact visible à 6 mois, transformation à 18 mois." |
-| 3 | **Quels processus métier transformer en priorité ?** | challenge | Cartographiez vos processus clés : relation client, production, reporting, décision... Où l'IA crée-t-elle le plus de valeur dans VOTRE quotidien opérationnel ? | **Premier processus à transformer** (single) — "Celui qui fait le plus mal aujourd'hui ou qui a le plus fort potentiel de gain." · **Cas d'usage à fort impact opérationnel** (multi) — "Sélectionnez les processus où l'IA peut changer la donne : automatisation, prédiction, personnalisation..." · **Top 3 des priorités d'investissement** (ranked) — "Si vous n'aviez que 3 projets à lancer, lesquels ?" · **Pari transformant à 2 ans** (single) — "Le projet ambitieux qui pourrait redéfinir votre façon de travailler." |
-| 4 | **Comment chiffrer la valeur et convaincre en COMEX ?** | challenge | Votre DG et le CFO veulent des chiffres. Construisez un argumentaire solide : gains attendus, coûts réels, time-to-value. Pas de la tech, des euros et des ETP. | **Modèle de valorisation adapté à votre contexte** (single) — "Gain de productivité, revenus additionnels, réduction de risque, expérience client..." · **Postes de coûts à anticiper** (multi) — "Licences, intégration, formation, accompagnement au changement, maintenance..." · **Indicateurs de succès à présenter au COMEX** (ranked) — "Quels KPIs parleront à votre DG ? Classez-les par pouvoir de conviction." |
-| 5 | **Comment organiser votre direction pour réussir ?** | challenge | Qui porte le sujet IA dans votre équipe ? Faut-il recruter, former, réorganiser ? Comment articuler avec la DSI et les autres directions ? | **Modèle d'organisation retenu** (single) — "Équipe dédiée, référents dans chaque service, binôme métier-tech, task force temporaire..." · **Compétences à développer dans vos équipes** (multi) — "Prompt engineering, lecture de données, cadrage de cas d'usage, gestion du changement..." · **Rôles clés à créer ou renforcer** (ranked) — "Data translator, product owner IA, champion du changement... Par quoi commencer ?" · **Sponsor et relais dans l'organisation** (single) — "Qui est votre allié au COMEX ? Qui est votre relais terrain ?" |
-| 6 | **Quels risques anticiper et comment se protéger ?** | challenge | Les vraies inquiétudes d'un directeur métier : qualité des résultats, confidentialité des données clients, conformité réglementaire, résistance des équipes, dépendance fournisseur. | **Risque n°1 à traiter avant de lancer** (single) — "Celui qui pourrait faire échouer votre initiative ou nuire à votre crédibilité." · **Mesures de protection à mettre en place** (multi) — "Cadre d'usage, validation humaine, tests pilotes, clauses contractuelles, RGPD..." · **Sujets de conformité et d'éthique à traiter** (ranked) — "Classez par urgence réglementaire et impact réputationnel." |
-| 7 | **Votre plan d'action à 12 mois** | question | Synthèse opérationnelle : quels sont vos jalons, vos quick wins, vos points de contrôle ? C'est le livrable que vous présentez à votre équipe lundi matin. | **Premier livrable visible à 90 jours** (single) — "Le résultat concret qui prouvera que ça marche et créera l'adhésion." · **Actions prioritaires du premier trimestre** (multi) — "Les chantiers à lancer immédiatement : pilote, formation, données, gouvernance..." · **Jalons Go/No-Go sur 12 mois** (ranked) — "À 3, 6, 9, 12 mois : quels critères pour continuer, pivoter ou arrêter ?" |
+### Organisation plateforme : Growthinnov
 
-## Implémentation
+**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
+1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
+2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
 
-Migration SQL unique via l'outil insert (données, pas schéma) :
-- 1 `challenge_template` : toolkit_id `4dc04fa1-...`, difficulty "advanced", description riche
-- 7 `challenge_subjects` avec descriptions détaillées orientées dirigeant métier
-- 23 `challenge_slots` avec hints pédagogiques en langage business
+Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
 
-Aucun changement de code requis — le moteur de challenge existant affiche tout automatiquement.
+Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
 
+## Sprint 1 — COMPLÉTÉ ✅
+
+### Migration SQL
+- ✅ Enum `app_role` étendu : +9 valeurs
+- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
+
+### Frontend Admin
+- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
+- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
+
+## Sprint 2 — COMPLÉTÉ ✅
+
+### Dashboard avec données réelles
+- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
+- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
+
+### Composant DataTable réutilisable
+- ✅ Recherche, tri par colonne, pagination, row click, slot actions
+
+### CRUD Organisations
+- ✅ useOrganizations + useOrganizationDetail hooks
+- ✅ Liste avec DataTable, recherche, tri, création via dialog
+- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
+- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
+- ✅ Route /admin/organizations/:id
+- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
+
+## Sprint 3 — COMPLÉTÉ ✅
+
+### Gestion des utilisateurs (AdminUsers)
+- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
+- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
+- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
+- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
+- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
+- ✅ UserCreditsTab : solde, lifetime, historique des transactions
+- ✅ UserWorkshopsTab : workshops hébergés et participations
+- ✅ UserChallengesTab : performances quiz et challenges
+- ✅ UserCardsTab : suivi des vues et favoris
+- ✅ UserActivityTab : journal d'audit utilisateur
+
+### Hook usePermissions
+- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
+
+### Hook useAdminUserDetail
+- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
+
+### Migration SQL Sprint 3
+- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
+
+## Sprint 4 — COMPLÉTÉ ✅
+
+### Gestion des Toolkits
+- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
+- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
+- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
+- ✅ Fiche AdminToolkitDetail avec 7 onglets :
+  - Infos : nom, slug, emoji, description, statut, métadonnées
+  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
+  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
+  - Challenges : templates avec sujets et slots imbriqués
+  - Game Plans : plans avec étapes ordonnées
+  - Quiz : questions par pilier avec compteur d'options
+  - Organisations : ajout/retrait d'accès toolkit pour les orgs
+- ✅ Route /admin/toolkits/:id
+
+### Gestion des Workshops (vue admin)
+- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
+- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
+
+## Sprint 4.2 — COMPLÉTÉ ✅
+
+### Nettoyage & dynamisation toolkit
+- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
+- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
+- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
+- ✅ Aucune migration DB nécessaire
+
+## Sprint 5 — COMPLÉTÉ ✅
+
+### Facturation & Abonnements (AdminBilling)
+- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
+- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
+- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
+- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
+- ✅ Suppression plan avec confirmation AlertDialog
+- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
+
+### Logs d'audit (AdminLogs)
+- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
+- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
+- ✅ Pagination server-side (25/page) avec compteur total
+- ✅ Détail metadata : dialog avec JSON formaté
+- ✅ Styles cohérents avec le design system existant
+
+## Sprint 6 — COMPLÉTÉ ✅
+
+### Enrichissement logs
+- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
+- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
+- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
+
+### Dashboard billing avancé
+- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
+- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
+- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
+
+## Sprint 7 — COMPLÉTÉ ✅
+
+### Profil utilisateur authentifié
+- ✅ Page Profile détecte l'état de connexion (guest vs authentifié)
+- ✅ Vue authentifiée : avatar, display_name, job_title, department, email
+- ✅ Stats temps réel : XP, crédits, cartes vues, quiz complétés
+- ✅ Liste des organisations avec rôles
+- ✅ Dialog d'édition profil (display_name, job_title, department)
+- ✅ Bouton déconnexion
+
+### Contexte multi-tenant
+- ✅ `OrgProvider` context avec `useActiveOrg` hook
+- ✅ Composant `OrgSwitcher` dans la sidebar (dropdown si multi-org, badge si mono-org)
+- ✅ Persistance de l'org active dans localStorage
+- ✅ Intégration dans `AppSidebar` footer
+
+### Persistance quiz
+- ✅ `QuizEngine` sauvegarde les scores dans `quiz_results` à la complétion
+- ✅ `Lab.tsx` charge le dernier résultat quiz depuis la DB au montage
+- ✅ Hydratation automatique du RadarChart et des badges depuis les données persistées
+
+### Liaison Workshop → Organisation
+- ✅ `useCreateWorkshop` accepte un `organizationId` optionnel
+- ✅ `Workshop.tsx` passe l'org active du contexte à la création
+
+## Sprint 8 — COMPLÉTÉ ✅
+
+### Activation des crédits côté utilisateur
+- ✅ Fonction DB `spend_credits` atomique (SECURITY DEFINER, row lock, vérification solde)
+- ✅ Hook `useSpendCredits` pour débit sécurisé via RPC
+- ✅ Hook `useCredits` simplifié (lecture seule, invalidation via spend)
+
+### Débit réel sur les actions
+- ✅ **Coach IA** : 1 crédit par message, appel réel à l'IA via edge function `ai-coach` (Gemini 2.5 Flash)
+- ✅ **Création Workshop** : débit de `toolkit.credit_cost_workshop` crédits avant création
+- ✅ **Création Challenge** : débit de `toolkit.credit_cost_challenge` crédits avant lancement
+
+### Enforcement des quotas d'abonnement
+- ✅ Hook `useQuotas` : lecture quotas depuis `subscription_plans.quotas` via `organization_subscriptions`
+- ✅ Vérification `max_workshops` et `max_challenges` vs usage réel
+- ✅ Blocage UI avec messages explicites quand quota atteint
+
+### UX crédits
+- ✅ Page IA : solde réel affiché, outils grisés si crédits insuffisants
+- ✅ Chat IA : alerte inline crédits insuffisants, input désactivé
+- ✅ Workshop/Challenge : coût affiché dans la dialog de création, bouton désactivé si insuffisant
+- ✅ Edge function `ai-coach` déployée avec prompt coach stratégique
+
+## Sprint 9 — COMPLÉTÉ ✅
+
+### Dashboard utilisateur (P0)
+- ✅ Page d'accueil (`/`) : landing guest vs dashboard authentifié
+- ✅ Dashboard : stats (XP, crédits, cartes vues, quiz), actions rapides, workshops récents, résumé (animés, favoris)
+
+### Profil enrichi (P0)
+- ✅ Tous les champs DB en édition : service, pôle, hiérarchie, manager, bio, LinkedIn, localisation, téléphone, email secondaire
+- ✅ Dialog d'édition organisé en 3 onglets (Identité, Pro, Contact)
+- ✅ Upload avatar avec storage bucket `avatars` (RLS : upload/delete propre user, lecture publique)
+- ✅ Affichage LinkedIn, localisation, détails professionnels sur le profil
+
+### Permissions admin UI (P1)
+- ✅ `AdminSidebar` filtre les entrées selon `usePermissions` (canManageOrgs, canManageUsers, canManageToolkits, etc.)
+- ✅ Chaque item sidebar conditionné par le rôle de l'utilisateur
+
+### Dashboard admin enrichi (P1)
+- ✅ Graphique croissance utilisateurs (6 mois, LineChart cumulative + nouveaux)
+- ✅ Top 5 utilisateurs par XP
+- ✅ Alertes : abonnements expirant dans 30 jours
+- ✅ Layout amélioré : 2 graphiques côte à côte + 3 colonnes (top users, alertes, activité)
+
+### Vue quotas (P1)
+- ✅ `OrgUsageTab` déjà fonctionnel : affichage quotas vs usage avec progress bars et alertes visuelles (>80%)
