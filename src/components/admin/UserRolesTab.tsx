@@ -32,11 +32,12 @@ interface Props {
   onRemoveRole: (role: string) => Promise<void>;
 }
 
-function DomainSummary({ role, domain }: { role: string; domain: PermissionDomain }) {
-  const { granted, total } = getDomainCoverage(role, domain.key);
+function DomainSummary({ role, domain, dbMap }: { role: string; domain: PermissionDomain; dbMap?: Record<string, string[]> }) {
+  const rolePerms = getPermissionsForRoleFromDB(dbMap, role);
+  const granted = domain.permissions.filter(p => rolePerms.includes(p.key)).length;
+  const total = domain.permissions.length;
   if (granted === 0) return null;
   const pct = total > 0 ? Math.round((granted / total) * 100) : 0;
-  const rolePerms = getPermissionsForRole(role);
   const domainPerms = domain.permissions.filter(p => rolePerms.includes(p.key));
 
   return (
