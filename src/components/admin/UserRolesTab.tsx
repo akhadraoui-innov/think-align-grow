@@ -58,14 +58,14 @@ function DomainSummary({ role, domain, dbMap }: { role: string; domain: Permissi
   );
 }
 
-function RolePermissionBreakdown({ role }: { role: string }) {
+function RolePermissionBreakdown({ role, dbMap }: { role: string; dbMap?: Record<string, string[]> }) {
   const [expanded, setExpanded] = useState(false);
-  const perms = getPermissionsForRole(role);
+  const perms = getPermissionsForRoleFromDB(dbMap, role);
   const totalPermsCount = PERMISSION_DOMAINS.reduce((s, d) => s + d.permissions.length, 0);
   const pct = Math.round((perms.length / totalPermsCount) * 100);
   const domainsWithPerms = PERMISSION_DOMAINS.filter(d => {
-    const { granted } = getDomainCoverage(role, d.key);
-    return granted > 0;
+    const rolePerms = getPermissionsForRoleFromDB(dbMap, role);
+    return d.permissions.some(p => rolePerms.includes(p.key));
   });
 
   if (perms.length === 0) {
