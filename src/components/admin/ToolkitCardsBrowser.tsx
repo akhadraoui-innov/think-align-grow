@@ -9,14 +9,14 @@ import type { Tables } from "@/integrations/supabase/types";
 import { getPillarCssColor, getPillarCssColorAlpha, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
 import dynamicIconImports from "lucide-react/dynamicIconImports";
 
-const iconCache = new Map<string, React.LazyExoticComponent<any>>();
+const iconCache = new Map<string, React.LazyExoticComponent<React.ComponentType<{ className?: string }>>>();
 
 function DynamicIcon({ name, className }: { name: string; className?: string }) {
   const kebab = name.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
   const importFn = dynamicIconImports[kebab as keyof typeof dynamicIconImports];
   if (!importFn) return null;
   if (!iconCache.has(kebab)) {
-    iconCache.set(kebab, lazy(importFn));
+    iconCache.set(kebab, lazy(importFn as () => Promise<{ default: React.ComponentType<{ className?: string }> }>));
   }
   const LazyIcon = iconCache.get(kebab)!;
   return (
