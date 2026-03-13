@@ -35,7 +35,7 @@ export default function Challenge() {
   const { join, loading: joining } = useJoinWorkshop();
   const { workshops, loading: loadingList } = useMyWorkshops();
   const { data: toolkit } = useToolkit();
-  const { data: challengeTemplates } = useChallengeTemplates(toolkit?.id);
+  const { data: challengeTemplates } = useChallengeTemplates();
   const { balance, hasCredits } = useCredits();
   const spendCredits = useSpendCredits();
   const { canCreateChallenge } = useQuotas();
