@@ -105,6 +105,7 @@ function RolePermissionBreakdown({ role, dbMap }: { role: string; dbMap?: Record
 export function UserRolesTab({ roles, onAddRole, onRemoveRole }: Props) {
   const [newRole, setNewRole] = useState("");
   const availableRoles = ALL_ROLES.filter((r) => !roles.includes(r));
+  const { data: dbMap } = useRolePermissionsFromDB();
 
   return (
     <div className="space-y-6">
@@ -123,7 +124,7 @@ export function UserRolesTab({ roles, onAddRole, onRemoveRole }: Props) {
                   <button onClick={() => onRemoveRole(role)} className="hover:text-destructive ml-1"><X className="h-3 w-3" /></button>
                 </Badge>
               </div>
-              <RolePermissionBreakdown role={role} />
+              <RolePermissionBreakdown role={role} dbMap={dbMap} />
             </div>
           ))}
         </div>
@@ -139,7 +140,7 @@ export function UserRolesTab({ roles, onAddRole, onRemoveRole }: Props) {
                       <span className="flex items-center gap-2">
                         {r.replace(/_/g, " ")}
                         <span className="text-[10px] text-muted-foreground">
-                          ({getPermissionsForRole(r).length} perms)
+                          ({getPermissionsForRoleFromDB(dbMap, r).length} perms)
                         </span>
                       </span>
                     </SelectItem>
@@ -161,7 +162,7 @@ export function UserRolesTab({ roles, onAddRole, onRemoveRole }: Props) {
                 <p className="text-[10px] font-bold text-primary mb-2">
                   Aperçu — permissions de « {newRole.replace(/_/g, " ")} »
                 </p>
-                <RolePermissionBreakdown role={newRole} />
+                <RolePermissionBreakdown role={newRole} dbMap={dbMap} />
               </motion.div>
             )}
           </div>
