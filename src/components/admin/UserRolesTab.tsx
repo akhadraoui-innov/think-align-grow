@@ -5,8 +5,9 @@ import { Shield, Plus, X, Check, ChevronDown, ChevronRight } from "lucide-react"
 import { useState } from "react";
 import { Constants } from "@/integrations/supabase/types";
 import {
-  getPermissionsForRole, PERMISSION_DOMAINS, PERMISSION_REGISTRY,
-  getDomainCoverage, type PermissionDomain,
+  getPermissionsForRoleFromDB, useRolePermissionsFromDB,
+  PERMISSION_DOMAINS, getDomainCoverage,
+  type PermissionDomain,
 } from "@/hooks/usePermissions";
 import { motion, AnimatePresence } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
@@ -31,11 +32,12 @@ interface Props {
   onRemoveRole: (role: string) => Promise<void>;
 }
 
-function DomainSummary({ role, domain }: { role: string; domain: PermissionDomain }) {
-  const { granted, total } = getDomainCoverage(role, domain.key);
+function DomainSummary({ role, domain, dbMap }: { role: string; domain: PermissionDomain; dbMap?: Record<string, string[]> }) {
+  const rolePerms = getPermissionsForRoleFromDB(dbMap, role);
+  const granted = domain.permissions.filter(p => rolePerms.includes(p.key)).length;
+  const total = domain.permissions.length;
   if (granted === 0) return null;
   const pct = total > 0 ? Math.round((granted / total) * 100) : 0;
-  const rolePerms = getPermissionsForRole(role);
   const domainPerms = domain.permissions.filter(p => rolePerms.includes(p.key));
 
   return (
@@ -56,14 +58,14 @@ function DomainSummary({ role, domain }: { role: string; domain: PermissionDomai
   );
 }
 
-function RolePermissionBreakdown({ role }: { role: string }) {
+function RolePermissionBreakdown({ role, dbMap }: { role: string; dbMap?: Record<string, string[]> }) {
   const [expanded, setExpanded] = useState(false);
-  const perms = getPermissionsForRole(role);
+  const perms = getPermissionsForRoleFromDB(dbMap, role);
   const totalPermsCount = PERMISSION_DOMAINS.reduce((s, d) => s + d.permissions.length, 0);
   const pct = Math.round((perms.length / totalPermsCount) * 100);
   const domainsWithPerms = PERMISSION_DOMAINS.filter(d => {
-    const { granted } = getDomainCoverage(role, d.key);
-    return granted > 0;
+    const rolePerms = getPermissionsForRoleFromDB(dbMap, role);
+    return d.permissions.some(p => rolePerms.includes(p.key));
   });
 
   if (perms.length === 0) {
@@ -91,7 +93,7 @@ function RolePermissionBreakdown({ role }: { role: string }) {
             className="overflow-hidden space-y-2 pl-2 border-l-2 border-primary/10"
           >
             {domainsWithPerms.map(d => (
-              <DomainSummary key={d.key} role={role} domain={d} />
+              <DomainSummary key={d.key} role={role} domain={d} dbMap={dbMap} />
             ))}
           </motion.div>
         )}
@@ -103,6 +105,7 @@ function RolePermissionBreakdown({ role }: { role: string }) {
 export function UserRolesTab({ roles, onAddRole, onRemoveRole }: Props) {
   const [newRole, setNewRole] = useState("");
   const availableRoles = ALL_ROLES.filter((r) => !roles.includes(r));
+  const { data: dbMap } = useRolePermissionsFromDB();
 
   return (
     <div className="space-y-6">
@@ -121,7 +124,7 @@ export function UserRolesTab({ roles, onAddRole, onRemoveRole }: Props) {
                   <button onClick={() => onRemoveRole(role)} className="hover:text-destructive ml-1"><X className="h-3 w-3" /></button>
                 </Badge>
               </div>
-              <RolePermissionBreakdown role={role} />
+              <RolePermissionBreakdown role={role} dbMap={dbMap} />
             </div>
           ))}
         </div>
@@ -137,7 +140,7 @@ export function UserRolesTab({ roles, onAddRole, onRemoveRole }: Props) {
                       <span className="flex items-center gap-2">
                         {r.replace(/_/g, " ")}
                         <span className="text-[10px] text-muted-foreground">
-                          ({getPermissionsForRole(r).length} perms)
+                          ({getPermissionsForRoleFromDB(dbMap, r).length} perms)
                         </span>
                       </span>
                     </SelectItem>
@@ -159,7 +162,7 @@ export function UserRolesTab({ roles, onAddRole, onRemoveRole }: Props) {
                 <p className="text-[10px] font-bold text-primary mb-2">
                   Aperçu — permissions de « {newRole.replace(/_/g, " ")} »
                 </p>
-                <RolePermissionBreakdown role={newRole} />
+                <RolePermissionBreakdown role={newRole} dbMap={dbMap} />
               </motion.div>
             )}
           </div>

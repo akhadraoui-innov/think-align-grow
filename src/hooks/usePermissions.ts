@@ -374,6 +374,50 @@ export function getDomainCoverage(role: string, domainKey: string): { granted: n
 // ── SAAS ROLE LIST ──
 const SAAS_ROLES = ["super_admin", "customer_lead", "innovation_lead", "performance_lead", "product_actor"];
 
+// ── HOOK: DB-backed role permissions ─────────
+
+/**
+ * Fetches all role_permissions rows from the DB.
+ * Used by usePermissions for the current user and by the admin UI.
+ */
+export function useRolePermissionsFromDB() {
+  return useQuery({
+    queryKey: ["role-permissions-db"],
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("role_permissions")
+        .select("role, permission_key");
+      if (error) throw error;
+      // Build map role → permission_key[]
+      const map: Record<string, string[]> = {};
+      (data || []).forEach((row: any) => {
+        if (!map[row.role]) map[row.role] = [];
+        map[row.role].push(row.permission_key);
+      });
+      return map;
+    },
+  });
+}
+
+function getPermsFromMap(
+  dbMap: Record<string, string[]> | undefined,
+  roles: string[],
+): string[] {
+  const source = dbMap && Object.keys(dbMap).length > 0 ? dbMap : ROLE_PERMISSION_MAP;
+  const perms = new Set<string>();
+  roles.forEach(r => (source[r] || []).forEach(p => perms.add(p)));
+  return Array.from(perms);
+}
+
+export function getPermissionsForRoleFromDB(
+  dbMap: Record<string, string[]> | undefined,
+  role: string,
+): string[] {
+  const source = dbMap && Object.keys(dbMap).length > 0 ? dbMap : ROLE_PERMISSION_MAP;
+  return source[role] || [];
+}
+
 // ── HOOK ─────────────────────────────────────
 
 export interface Permissions {
@@ -400,7 +444,7 @@ export interface Permissions {
 export function usePermissions(): Permissions {
   const { user, loading: authLoading } = useAuth();
 
-  const { data: roles = [], isLoading } = useQuery({
+  const { data: roles = [], isLoading: rolesLoading } = useQuery({
     queryKey: ["user-roles", user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -413,7 +457,9 @@ export function usePermissions(): Permissions {
     },
   });
 
-  const allPerms = getPermissionsForRoles(roles as string[]);
+  const { data: dbMap, isLoading: dbLoading } = useRolePermissionsFromDB();
+
+  const allPerms = getPermsFromMap(dbMap, roles as string[]);
   const has = (perm: string) => allPerms.includes(perm);
   const hasAnyFn = (...perms: string[]) => perms.some(p => allPerms.includes(p));
 
@@ -428,7 +474,7 @@ export function usePermissions(): Permissions {
     permissions: allPerms,
     has,
     hasAny: hasAnyFn,
-    loading: authLoading || isLoading,
+    loading: authLoading || rolesLoading || dbLoading,
     // Legacy compat
     canManageOrgs: has("admin.orgs.view"),
     canManageUsers: has("admin.users.view"),
