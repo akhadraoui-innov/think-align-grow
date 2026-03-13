@@ -5,8 +5,9 @@ import { Shield, Plus, X, Check, ChevronDown, ChevronRight } from "lucide-react"
 import { useState } from "react";
 import { Constants } from "@/integrations/supabase/types";
 import {
-  getPermissionsForRole, PERMISSION_DOMAINS, PERMISSION_REGISTRY,
-  getDomainCoverage, type PermissionDomain,
+  getPermissionsForRoleFromDB, useRolePermissionsFromDB,
+  PERMISSION_DOMAINS, getDomainCoverage,
+  type PermissionDomain,
 } from "@/hooks/usePermissions";
 import { motion, AnimatePresence } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
