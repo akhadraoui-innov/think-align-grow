@@ -160,7 +160,7 @@ function UserDashboard() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { balance } = useCredits();
-  const { activeOrg, membership } = useActiveOrg();
+  const { activeOrg } = useActiveOrg();
 
   const xp = profile?.xp || 0;
   const level = Math.floor(xp / 100) + 1;
