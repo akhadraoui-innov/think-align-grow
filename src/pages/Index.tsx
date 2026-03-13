@@ -283,8 +283,8 @@ function UserDashboard() {
                   <Building2 className="h-4 w-4 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate text-foreground">{activeOrg.name}</p>
-                  <p className="text-[10px] text-muted-foreground capitalize">{membership?.role?.replace(/_/g, " ") || "Membre"}</p>
+                  <p className="text-sm font-semibold truncate text-foreground">{activeOrg.org_name}</p>
+                  <p className="text-[10px] text-muted-foreground capitalize">{activeOrg.role?.replace(/_/g, " ") || "Membre"}</p>
                 </div>
                 {orgToolkit && (
                   <button onClick={() => navigate("/explore")} className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1">
