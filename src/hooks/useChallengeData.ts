@@ -70,11 +70,37 @@ export function useChallengeTemplates(toolkitId?: string | undefined) {
       let query = supabase
         .from("challenge_templates")
         .select("*, toolkits(id, name, icon_emoji)")
-        .order("created_at");
+        .order("created_at", { ascending: false });
       if (toolkitId) {
         query = query.eq("toolkit_id", toolkitId);
       }
       const { data, error } = await query;
+      if (error) throw error;
+      return data as (ChallengeTemplate & { toolkits?: { id: string; name: string; icon_emoji: string | null } })[];
+    },
+  });
+}
+
+export function useOrgChallengeTemplates(orgId: string | null) {
+  return useQuery({
+    queryKey: ["org-challenge-templates", orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      // Get active toolkit IDs for this org
+      const { data: orgToolkits, error: otErr } = await supabase
+        .from("organization_toolkits")
+        .select("toolkit_id")
+        .eq("organization_id", orgId!)
+        .eq("is_active", true);
+      if (otErr) throw otErr;
+      const toolkitIds = (orgToolkits || []).map(ot => ot.toolkit_id);
+      if (toolkitIds.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from("challenge_templates")
+        .select("*, toolkits(id, name, icon_emoji)")
+        .in("toolkit_id", toolkitIds)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as (ChallengeTemplate & { toolkits?: { id: string; name: string; icon_emoji: string | null } })[];
     },
