@@ -186,3 +186,28 @@ Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `cu
 - ✅ Chat IA : alerte inline crédits insuffisants, input désactivé
 - ✅ Workshop/Challenge : coût affiché dans la dialog de création, bouton désactivé si insuffisant
 - ✅ Edge function `ai-coach` déployée avec prompt coach stratégique
+
+## Sprint 9 — COMPLÉTÉ ✅
+
+### Dashboard utilisateur (P0)
+- ✅ Page d'accueil (`/`) : landing guest vs dashboard authentifié
+- ✅ Dashboard : stats (XP, crédits, cartes vues, quiz), actions rapides, workshops récents, résumé (animés, favoris)
+
+### Profil enrichi (P0)
+- ✅ Tous les champs DB en édition : service, pôle, hiérarchie, manager, bio, LinkedIn, localisation, téléphone, email secondaire
+- ✅ Dialog d'édition organisé en 3 onglets (Identité, Pro, Contact)
+- ✅ Upload avatar avec storage bucket `avatars` (RLS : upload/delete propre user, lecture publique)
+- ✅ Affichage LinkedIn, localisation, détails professionnels sur le profil
+
+### Permissions admin UI (P1)
+- ✅ `AdminSidebar` filtre les entrées selon `usePermissions` (canManageOrgs, canManageUsers, canManageToolkits, etc.)
+- ✅ Chaque item sidebar conditionné par le rôle de l'utilisateur
+
+### Dashboard admin enrichi (P1)
+- ✅ Graphique croissance utilisateurs (6 mois, LineChart cumulative + nouveaux)
+- ✅ Top 5 utilisateurs par XP
+- ✅ Alertes : abonnements expirant dans 30 jours
+- ✅ Layout amélioré : 2 graphiques côte à côte + 3 colonnes (top users, alertes, activité)
+
+### Vue quotas (P1)
+- ✅ `OrgUsageTab` déjà fonctionnel : affichage quotas vs usage avec progress bars et alertes visuelles (>80%)
