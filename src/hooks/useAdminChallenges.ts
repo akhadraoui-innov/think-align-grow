@@ -10,7 +10,7 @@ export function useAdminChallenges() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("challenge_templates")
-        .select("*, toolkits(id, name, icon_emoji), challenge_subjects(id)")
+        .select("*, toolkits(id, name, icon_emoji, status), challenge_subjects(id)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;

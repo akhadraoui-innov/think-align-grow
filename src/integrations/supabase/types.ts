@@ -454,6 +454,42 @@ export type Database = {
           },
         ]
       }
+      challenge_template_toolkits: {
+        Row: {
+          created_at: string
+          id: string
+          template_id: string
+          toolkit_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          template_id: string
+          toolkit_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          template_id?: string
+          toolkit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_template_toolkits_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_template_toolkits_toolkit_id_fkey"
+            columns: ["toolkit_id"]
+            isOneToOne: false
+            referencedRelation: "toolkits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_templates: {
         Row: {
           created_at: string
