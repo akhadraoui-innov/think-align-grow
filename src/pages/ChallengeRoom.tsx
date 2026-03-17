@@ -1,11 +1,11 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Users, Pause, Play, Check, Lock, Pencil, Save, Wifi, Copy, Crown } from "lucide-react";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useWorkshopRoom } from "@/hooks/useWorkshop";
-import { useCards, usePillars, useToolkit } from "@/hooks/useToolkitData";
-import { useChallengeTemplates } from "@/hooks/useChallengeData";
+import { useCards, usePillars } from "@/hooks/useToolkitData";
+import { useChallengeTemplate } from "@/hooks/useChallengeData";
 import { useAuth } from "@/hooks/useAuth";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
 import { toast } from "sonner";
@@ -27,20 +27,21 @@ export default function ChallengeRoom() {
     completeWorkshop,
   } = useWorkshopRoom(id);
 
-  const { data: allCards } = useCards();
-  const { data: pillars } = usePillars();
-  const { data: toolkit } = useToolkit();
-  const { data: challengeTemplates } = useChallengeTemplates(toolkit?.id);
+  // Extract template_id from workshop config
+  const config = workshop?.config as any;
+  const templateId = config?.template_id as string | undefined;
+
+  // Fetch the specific template
+  const { data: template } = useChallengeTemplate(templateId);
+
+  // Derive toolkit_id from the resolved template
+  const toolkitId = template?.toolkit_id;
+
+  const { data: allCards } = useCards(toolkitId);
+  const { data: pillars } = usePillars(toolkitId);
 
   const [editMode, setEditMode] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (challengeTemplates && challengeTemplates.length > 0 && !selectedTemplateId) {
-      setSelectedTemplateId(challengeTemplates[0].id);
-    }
-  }, [challengeTemplates, selectedTemplateId]);
 
   const copyCode = () => {
     if (!workshop) return;
@@ -129,7 +130,6 @@ export default function ChallengeRoom() {
 
   const isCompleted = workshop.status === "completed";
   const isReadOnly = isCompleted && !editMode;
-  const template = challengeTemplates?.find(t => t.id === selectedTemplateId);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">

@@ -56,8 +56,8 @@ export function usePillars(toolkitIdOverride?: string) {
   });
 }
 
-export function useCards() {
-  const { data: pillars } = usePillars();
+export function useCards(toolkitIdOverride?: string) {
+  const { data: pillars } = usePillars(toolkitIdOverride);
   return useQuery({
     queryKey: ["cards", pillars?.map(p => p.id)],
     enabled: !!pillars?.length,

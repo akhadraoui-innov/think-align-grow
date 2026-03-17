@@ -158,9 +158,16 @@ export default function AdminDesignInnovation() {
       key: "toolkit",
       label: "Toolkit",
       render: (row: any) => (
-        <span className="text-sm">
-          {row.toolkits?.icon_emoji || "🚀"} {row.toolkits?.name || "—"}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm">
+            {row.toolkits?.icon_emoji || "🚀"} {row.toolkits?.name || "—"}
+          </span>
+          {row.toolkits?.status && (
+            <Badge variant="outline" className={`text-[9px] px-1 py-0 ${row.toolkits.status === "published" ? "bg-pillar-finance/10 text-pillar-finance border-pillar-finance/30" : "bg-muted text-muted-foreground border-border"}`}>
+              {row.toolkits.status === "published" ? "Publié" : "Brouillon"}
+            </Badge>
+          )}
+        </div>
       ),
     },
     {

@@ -81,6 +81,25 @@ export function useChallengeTemplates(toolkitId?: string | undefined) {
   });
 }
 
+/**
+ * Fetch a single challenge template by ID (used by ChallengeRoom).
+ */
+export function useChallengeTemplate(templateId: string | undefined) {
+  return useQuery({
+    queryKey: ["challenge-template", templateId],
+    enabled: !!templateId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("challenge_templates")
+        .select("*, toolkits(id, name, icon_emoji)")
+        .eq("id", templateId!)
+        .single();
+      if (error) throw error;
+      return data as ChallengeTemplate & { toolkits?: { id: string; name: string; icon_emoji: string | null } };
+    },
+  });
+}
+
 export function useOrgChallengeTemplates(orgId: string | null) {
   return useQuery({
     queryKey: ["org-challenge-templates", orgId],
@@ -96,10 +115,29 @@ export function useOrgChallengeTemplates(orgId: string | null) {
       const toolkitIds = (orgToolkits || []).map(ot => ot.toolkit_id);
       if (toolkitIds.length === 0) return [];
 
+      // Get templates linked via junction table OR via toolkit_id
+      const { data: junctionData, error: jErr } = await supabase
+        .from("challenge_template_toolkits")
+        .select("template_id")
+        .in("toolkit_id", toolkitIds);
+      if (jErr) throw jErr;
+      const junctionTemplateIds = [...new Set((junctionData || []).map(j => j.template_id))];
+
+      // Also get templates by direct toolkit_id for backward compat
+      const { data: directData, error: dErr } = await supabase
+        .from("challenge_templates")
+        .select("id")
+        .in("toolkit_id", toolkitIds);
+      if (dErr) throw dErr;
+      const directTemplateIds = (directData || []).map(d => d.id);
+
+      const allTemplateIds = [...new Set([...junctionTemplateIds, ...directTemplateIds])];
+      if (allTemplateIds.length === 0) return [];
+
       const { data, error } = await supabase
         .from("challenge_templates")
         .select("*, toolkits(id, name, icon_emoji)")
-        .in("toolkit_id", toolkitIds)
+        .in("id", allTemplateIds)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as (ChallengeTemplate & { toolkits?: { id: string; name: string; icon_emoji: string | null } })[];
