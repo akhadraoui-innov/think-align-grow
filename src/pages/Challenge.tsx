@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, LogIn, Users, Zap, ArrowRight, Crown, Clock, UserCheck, LayoutGrid, AlertCircle, Search } from "lucide-react";
+import { Plus, LogIn, Users, Zap, ArrowRight, Crown, Clock, UserCheck, LayoutGrid, AlertCircle, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +27,9 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 export default function Challenge() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { activeOrgId } = useActiveOrg();
+  const { activeOrgId, activeOrg, loading: orgLoading } = useActiveOrg();
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const [joinCode, setJoinCode] = useState("");
@@ -40,9 +40,12 @@ export default function Challenge() {
   const { data: toolkit } = useToolkit();
   
   // Fetch org-scoped templates, fallback to all if no org
-  const { data: orgTemplates } = useOrgChallengeTemplates(activeOrgId);
-  const { data: allTemplates } = useChallengeTemplates();
-  const challengeTemplates = activeOrgId ? orgTemplates : allTemplates;
+  const { data: orgTemplates, isLoading: orgTemplatesLoading } = useOrgChallengeTemplates(activeOrgId);
+  const { data: allTemplates, isLoading: allTemplatesLoading } = useChallengeTemplates();
+  
+  const isContextReady = !authLoading && !orgLoading;
+  const challengeTemplates = isContextReady && activeOrgId ? orgTemplates : isContextReady ? allTemplates : undefined;
+  const templatesLoading = activeOrgId ? orgTemplatesLoading : allTemplatesLoading;
 
   const { balance, hasCredits } = useCredits();
   const spendCredits = useSpendCredits();
@@ -63,6 +66,18 @@ export default function Challenge() {
     const config = w.config as any;
     return config?.type === "challenge";
   });
+
+  // Loading state: auth or org context not yet resolved
+  if (authLoading || orgLoading) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen flex flex-col items-center justify-center px-5 gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Chargement…</p>
+        </div>
+      </PageTransition>
+    );
+  }
 
   if (!user) {
     return (
@@ -214,6 +229,9 @@ export default function Challenge() {
           <DialogContent className="rounded-2xl border-border/50 bg-card backdrop-blur-xl max-h-[85vh] flex flex-col">
             <DialogHeader>
               <DialogTitle className="font-display font-black uppercase tracking-tight">Lancer un Challenge</DialogTitle>
+              {activeOrg && (
+                <p className="text-xs text-muted-foreground mt-1">Organisation : {activeOrg.org_name}</p>
+              )}
             </DialogHeader>
             <div className="space-y-4 pt-2 flex-1 min-h-0 flex flex-col">
               <p className="text-sm text-muted-foreground">
@@ -243,7 +261,12 @@ export default function Challenge() {
               </div>
               {/* Template list - scrollable */}
               <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 max-h-[40vh]">
-                {filteredTemplates.length > 0 ? (
+                {templatesLoading ? (
+                  <div className="flex flex-col items-center justify-center py-10 gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Chargement des challenges…</p>
+                  </div>
+                ) : filteredTemplates.length > 0 ? (
                   <div className="space-y-2">
                     {filteredTemplates.map(t => (
                       <button
@@ -256,7 +279,7 @@ export default function Challenge() {
                               return;
                             }
                           }
-                          await create(t.name, { type: "challenge", template_id: t.id });
+                          await create(t.name, { type: "challenge", template_id: t.id }, activeOrgId);
                           setCreateOpen(false);
                           setSearch("");
                         }}
