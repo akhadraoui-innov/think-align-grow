@@ -1,213 +1,130 @@
-# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
-## Vision produit
 
-Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
+## Audit - Challenge & Design Innovation: End-to-End Issues
 
-### L'organisation comme entité centrale
+### Critical Bug 1: ChallengeRoom uses WRONG template
 
-L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
+**File**: `src/pages/ChallengeRoom.tsx` (lines 33, 39-43, 132)
 
-- **Identité & branding** : nom, slug, logo, couleur primaire
-- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
-- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
-- **Coordonnées** : email, téléphone, site web
-- **Adresses** : multi-adresses (siège, sites, bureaux)
-- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
-- **Notes internes** : champ libre pour l'équipe SaaS
-- **Membres** avec rôles (Owner, Admin, Member, Guest…)
-- **Équipes** internes
-- **Toolkits** assignés et activés
-- **Abonnement** avec plan et quotas
-- **Workshops** réalisés
-- **Journal d'activité** (audit trail)
+The ChallengeRoom completely ignores `workshop.config.template_id`. Instead it:
+1. Calls `useToolkit()` with no args → gets the **first published toolkit** (arbitrary)
+2. Calls `useChallengeTemplates(toolkit?.id)` → gets templates for that ONE toolkit only
+3. Auto-selects the **first** template from the list (line 40-43)
 
-### Organisation plateforme : Growthinnov
+This means: no matter which challenge template the user chose when creating the session, the room always displays the first template of the first published toolkit. This is the primary reason new challenges "don't work".
 
-**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
-1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
-2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
+**Fix**: Read `workshop.config.template_id` directly and fetch that specific template + its structure. Remove `useToolkit()` and the broken auto-select logic.
 
-Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
+### Critical Bug 2: ChallengeRoom fetches cards from wrong toolkit
 
-Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
+**File**: `src/pages/ChallengeRoom.tsx` (lines 31-32)
 
-## Sprint 1 — COMPLÉTÉ ✅
+`useCards()` and `usePillars()` are also scoped to the first published toolkit (via `useToolkit()`). If the challenge uses cards from a different toolkit, the drag-and-drop board will show wrong cards or no cards at all.
 
-### Migration SQL
-- ✅ Enum `app_role` étendu : +9 valeurs
-- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
+**Fix**: Once we have the correct `template_id`, derive the `toolkit_id` from the template and pass it to `useCards(toolkitId)` and `usePillars(toolkitId)`.
 
-### Frontend Admin
-- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
-- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
+### Bug 3: Toolkit selection "reverts" in ChallengeInfoTab
 
-## Sprint 2 — COMPLÉTÉ ✅
+**File**: `src/components/admin/ChallengeInfoTab.tsx`
 
-### Dashboard avec données réelles
-- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
-- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
+The `useEffect` (line 32-40) resets the form from `template` prop on every re-render. After `handleSave` → `onUpdate()` → `invalidateAll()`, React Query refetches and the component re-renders with fresh data. If the update actually persisted, it should show the new value. Two possible sub-causes:
+- The update silently fails due to RLS (unlikely for saas_team)
+- The `useEffect` dependency `[template]` fires on every object reference change, resetting in-flight form state
 
-### Composant DataTable réutilisable
-- ✅ Recherche, tri par colonne, pagination, row click, slot actions
+**Fix**: Use a stable comparison (e.g. `template.id + template.toolkit_id`) as the useEffect dependency, or use a `lastSavedRef` to avoid resetting after save.
 
-### CRUD Organisations
-- ✅ useOrganizations + useOrganizationDetail hooks
-- ✅ Liste avec DataTable, recherche, tri, création via dialog
-- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
-- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
-- ✅ Route /admin/organizations/:id
-- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
+### Bug 4: Single toolkit_id column (no multi-toolkit support)
 
-## Sprint 3 — COMPLÉTÉ ✅
+**Schema**: `challenge_templates.toolkit_id` is a single UUID column (NOT NULL).
 
-### Gestion des utilisateurs (AdminUsers)
-- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
-- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
-- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
-- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
-- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
-- ✅ UserCreditsTab : solde, lifetime, historique des transactions
-- ✅ UserWorkshopsTab : workshops hébergés et participations
-- ✅ UserChallengesTab : performances quiz et challenges
-- ✅ UserCardsTab : suivi des vues et favoris
-- ✅ UserActivityTab : journal d'audit utilisateur
+The user expects to associate multiple toolkits per challenge template. This requires:
+1. New junction table `challenge_template_toolkits`
+2. Migrate existing `toolkit_id` data
+3. Keep `toolkit_id` as "primary toolkit" for backward compatibility (RLS, card loading)
+4. Multi-select UI in ChallengeInfoTab and creation wizard
+5. Update `/challenge` page filtering to match templates where ANY linked toolkit is active for the org
 
-### Hook usePermissions
-- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
+### Bug 5: RLS cascade blocks visibility
 
-### Hook useAdminUserDetail
-- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
+RLS on `challenge_subjects`, `challenge_slots` requires `toolkits.status = 'published'`. If a template's toolkit is `draft`, the challenge room will load but subjects/slots return empty — a silent failure with no error message.
 
-### Migration SQL Sprint 3
-- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
+---
 
-## Sprint 4 — COMPLÉTÉ ✅
+## Implementation Plan
 
-### Gestion des Toolkits
-- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
-- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
-- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
-- ✅ Fiche AdminToolkitDetail avec 7 onglets :
-  - Infos : nom, slug, emoji, description, statut, métadonnées
-  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
-  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
-  - Challenges : templates avec sujets et slots imbriqués
-  - Game Plans : plans avec étapes ordonnées
-  - Quiz : questions par pilier avec compteur d'options
-  - Organisations : ajout/retrait d'accès toolkit pour les orgs
-- ✅ Route /admin/toolkits/:id
+### Step 1: Fix ChallengeRoom template resolution (highest priority)
 
-### Gestion des Workshops (vue admin)
-- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
-- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
+In `ChallengeRoom.tsx`:
+- Extract `template_id` from `workshop?.config?.template_id`
+- Fetch the specific template: `useChallengeTemplates()` then find by id, OR create a dedicated `useChallengeTemplate(id)` hook
+- Derive `toolkit_id` from the resolved template
+- Pass that `toolkit_id` to `useCards(toolkitId)` and `usePillars(toolkitId)` (requires updating these hooks to accept an optional toolkit ID override)
+- Remove the broken `selectedTemplateId` state and auto-select useEffect
 
-## Sprint 4.2 — COMPLÉTÉ ✅
+### Step 2: Update useToolkitData hooks to accept toolkit ID
 
-### Nettoyage & dynamisation toolkit
-- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
-- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
-- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
-- ✅ Aucune migration DB nécessaire
+In `src/hooks/useToolkitData.ts`:
+- `useCards(toolkitId?)` and `usePillars(toolkitId?)` — if a toolkitId is passed, fetch cards/pillars for that specific toolkit instead of the default first-published one
 
-## Sprint 5 — COMPLÉTÉ ✅
+### Step 3: Fix ChallengeInfoTab toolkit update persistence
 
-### Facturation & Abonnements (AdminBilling)
-- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
-- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
-- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
-- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
-- ✅ Suppression plan avec confirmation AlertDialog
-- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
+In `ChallengeInfoTab.tsx`:
+- Change useEffect dependency from `[template]` to `[template.id]` or a serialized key
+- Add optimistic UI: after save success, don't re-trigger form reset until the refetched data arrives with the new value
 
-### Logs d'audit (AdminLogs)
-- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
-- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
-- ✅ Pagination server-side (25/page) avec compteur total
-- ✅ Détail metadata : dialog avec JSON formaté
-- ✅ Styles cohérents avec le design system existant
+### Step 4: Create multi-toolkit junction table
 
-## Sprint 6 — COMPLÉTÉ ✅
+Database migration:
+```sql
+CREATE TABLE challenge_template_toolkits (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  template_id uuid NOT NULL REFERENCES challenge_templates(id) ON DELETE CASCADE,
+  toolkit_id uuid NOT NULL REFERENCES toolkits(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(template_id, toolkit_id)
+);
 
-### Enrichissement logs
-- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
-- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
-- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
+ALTER TABLE challenge_template_toolkits ENABLE ROW LEVEL SECURITY;
 
-### Dashboard billing avancé
-- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
-- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
-- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
+-- Saas team full access
+CREATE POLICY "Saas team can manage" ON challenge_template_toolkits
+  FOR ALL TO authenticated USING (is_saas_team(auth.uid()))
+  WITH CHECK (is_saas_team(auth.uid()));
 
-## Sprint 7 — COMPLÉTÉ ✅
+-- Authenticated can view if at least one toolkit is published
+CREATE POLICY "View via published toolkit" ON challenge_template_toolkits
+  FOR SELECT TO authenticated USING (
+    EXISTS (SELECT 1 FROM toolkits t WHERE t.id = toolkit_id AND t.status = 'published')
+  );
 
-### Profil utilisateur authentifié
-- ✅ Page Profile détecte l'état de connexion (guest vs authentifié)
-- ✅ Vue authentifiée : avatar, display_name, job_title, department, email
-- ✅ Stats temps réel : XP, crédits, cartes vues, quiz complétés
-- ✅ Liste des organisations avec rôles
-- ✅ Dialog d'édition profil (display_name, job_title, department)
-- ✅ Bouton déconnexion
+-- Migrate existing data
+INSERT INTO challenge_template_toolkits (template_id, toolkit_id)
+SELECT id, toolkit_id FROM challenge_templates;
+```
 
-### Contexte multi-tenant
-- ✅ `OrgProvider` context avec `useActiveOrg` hook
-- ✅ Composant `OrgSwitcher` dans la sidebar (dropdown si multi-org, badge si mono-org)
-- ✅ Persistance de l'org active dans localStorage
-- ✅ Intégration dans `AppSidebar` footer
+### Step 5: Multi-select UI in admin
 
-### Persistance quiz
-- ✅ `QuizEngine` sauvegarde les scores dans `quiz_results` à la complétion
-- ✅ `Lab.tsx` charge le dernier résultat quiz depuis la DB au montage
-- ✅ Hydratation automatique du RadarChart et des badges depuis les données persistées
+- **ChallengeInfoTab**: Replace single `Select` with a multi-select (checkbox list or badge toggle). On save, upsert rows in `challenge_template_toolkits`. Keep `toolkit_id` column synced to the first selected toolkit (backward compat).
+- **AdminDesignInnovation creation wizard**: Allow selecting multiple toolkits in the Configuration step.
+- **AdminDesignInnovation list**: Show all associated toolkit names/emojis, not just one.
 
-### Liaison Workshop → Organisation
-- ✅ `useCreateWorkshop` accepte un `organizationId` optionnel
-- ✅ `Workshop.tsx` passe l'org active du contexte à la création
+### Step 6: Update /challenge filtering for multi-toolkit
 
-## Sprint 8 — COMPLÉTÉ ✅
+In `useOrgChallengeTemplates`:
+- Query `challenge_template_toolkits` joined with `organization_toolkits` to find templates where at least one linked toolkit is active for the org
+- Fallback: also check `challenge_templates.toolkit_id` for templates not yet migrated
 
-### Activation des crédits côté utilisateur
-- ✅ Fonction DB `spend_credits` atomique (SECURITY DEFINER, row lock, vérification solde)
-- ✅ Hook `useSpendCredits` pour débit sécurisé via RPC
-- ✅ Hook `useCredits` simplifié (lecture seule, invalidation via spend)
+### Step 7: Add toolkit status indicator in admin list
 
-### Débit réel sur les actions
-- ✅ **Coach IA** : 1 crédit par message, appel réel à l'IA via edge function `ai-coach` (Gemini 2.5 Flash)
-- ✅ **Création Workshop** : débit de `toolkit.credit_cost_workshop` crédits avant création
-- ✅ **Création Challenge** : débit de `toolkit.credit_cost_challenge` crédits avant lancement
+In `AdminDesignInnovation.tsx`:
+- Show a badge (published/draft) next to each toolkit name so admins immediately see why a challenge might be invisible to users.
 
-### Enforcement des quotas d'abonnement
-- ✅ Hook `useQuotas` : lecture quotas depuis `subscription_plans.quotas` via `organization_subscriptions`
-- ✅ Vérification `max_workshops` et `max_challenges` vs usage réel
-- ✅ Blocage UI avec messages explicites quand quota atteint
+### Files impacted
+- `src/pages/ChallengeRoom.tsx` — fix template resolution (Step 1)
+- `src/hooks/useToolkitData.ts` — parameterize cards/pillars by toolkit (Step 2)
+- `src/components/admin/ChallengeInfoTab.tsx` — fix useEffect + multi-select (Steps 3, 5)
+- `src/hooks/useChallengeData.ts` — org filtering via junction table (Step 6)
+- `src/pages/admin/AdminDesignInnovation.tsx` — multi-toolkit in creation + status badge (Steps 5, 7)
+- `src/hooks/useAdminChallenges.ts` — join junction table in queries (Step 5)
+- Database migration for junction table (Step 4)
 
-### UX crédits
-- ✅ Page IA : solde réel affiché, outils grisés si crédits insuffisants
-- ✅ Chat IA : alerte inline crédits insuffisants, input désactivé
-- ✅ Workshop/Challenge : coût affiché dans la dialog de création, bouton désactivé si insuffisant
-- ✅ Edge function `ai-coach` déployée avec prompt coach stratégique
-
-## Sprint 9 — COMPLÉTÉ ✅
-
-### Dashboard utilisateur (P0)
-- ✅ Page d'accueil (`/`) : landing guest vs dashboard authentifié
-- ✅ Dashboard : stats (XP, crédits, cartes vues, quiz), actions rapides, workshops récents, résumé (animés, favoris)
-
-### Profil enrichi (P0)
-- ✅ Tous les champs DB en édition : service, pôle, hiérarchie, manager, bio, LinkedIn, localisation, téléphone, email secondaire
-- ✅ Dialog d'édition organisé en 3 onglets (Identité, Pro, Contact)
-- ✅ Upload avatar avec storage bucket `avatars` (RLS : upload/delete propre user, lecture publique)
-- ✅ Affichage LinkedIn, localisation, détails professionnels sur le profil
-
-### Permissions admin UI (P1)
-- ✅ `AdminSidebar` filtre les entrées selon `usePermissions` (canManageOrgs, canManageUsers, canManageToolkits, etc.)
-- ✅ Chaque item sidebar conditionné par le rôle de l'utilisateur
-
-### Dashboard admin enrichi (P1)
-- ✅ Graphique croissance utilisateurs (6 mois, LineChart cumulative + nouveaux)
-- ✅ Top 5 utilisateurs par XP
-- ✅ Alertes : abonnements expirant dans 30 jours
-- ✅ Layout amélioré : 2 graphiques côte à côte + 3 colonnes (top users, alertes, activité)
-
-### Vue quotas (P1)
-- ✅ `OrgUsageTab` déjà fonctionnel : affichage quotas vs usage avec progress bars et alertes visuelles (>80%)
