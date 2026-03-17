@@ -38,16 +38,17 @@ export function useToolkit(slug?: string) {
   });
 }
 
-export function usePillars() {
+export function usePillars(toolkitIdOverride?: string) {
   const { data: toolkit } = useToolkit();
+  const toolkitId = toolkitIdOverride || toolkit?.id;
   return useQuery({
-    queryKey: ["pillars", toolkit?.id],
-    enabled: !!toolkit?.id,
+    queryKey: ["pillars", toolkitId],
+    enabled: !!toolkitId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pillars")
         .select("*")
-        .eq("toolkit_id", toolkit!.id)
+        .eq("toolkit_id", toolkitId!)
         .order("sort_order");
       if (error) throw error;
       return data;
