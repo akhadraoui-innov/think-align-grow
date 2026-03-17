@@ -17,7 +17,6 @@ import { useQuotas } from "@/hooks/useQuotas";
 import { useActiveOrg } from "@/contexts/OrgContext";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-import { toast } from "sonner";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   lobby: { label: "Lobby", className: "bg-blue-500/15 text-blue-400 border-blue-500/20" },
@@ -38,11 +37,10 @@ export default function Challenge() {
   const { join, loading: joining } = useJoinWorkshop();
   const { workshops, loading: loadingList } = useMyWorkshops();
   const { data: toolkit } = useToolkit();
-  
-  // Fetch org-scoped templates, fallback to all if no org
+
   const { data: orgTemplates, isLoading: orgTemplatesLoading } = useOrgChallengeTemplates(activeOrgId);
   const { data: allTemplates, isLoading: allTemplatesLoading } = useChallengeTemplates();
-  
+
   const isContextReady = !authLoading && !orgLoading;
   const challengeTemplates = isContextReady && activeOrgId ? orgTemplates : isContextReady ? allTemplates : undefined;
   const templatesLoading = activeOrgId ? orgTemplatesLoading : allTemplatesLoading;
@@ -52,22 +50,35 @@ export default function Challenge() {
   const { canCreateChallenge } = useQuotas();
   const challengeCost = toolkit?.credit_cost_challenge ?? 0;
 
-  // Filter by search
-  const filteredTemplates = (challengeTemplates || []).filter(t => {
+  const filteredTemplates = (challengeTemplates || []).filter((t) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return t.name.toLowerCase().includes(q) ||
+    return (
+      t.name.toLowerCase().includes(q) ||
       t.description?.toLowerCase().includes(q) ||
-      (t as any).toolkits?.name?.toLowerCase().includes(q);
+      (t as any).toolkits?.name?.toLowerCase().includes(q)
+    );
   });
 
-  // Filter workshops that are challenge-type (config.type === "challenge")
-  const challengeWorkshops = workshops.filter(w => {
+  const challengeWorkshops = workshops.filter((w) => {
     const config = w.config as any;
     return config?.type === "challenge";
   });
 
-  // Loading state: auth or org context not yet resolved
+  const launchTemplate = async (template: (typeof filteredTemplates)[number]) => {
+    if (challengeCost > 0) {
+      try {
+        await spendCredits.mutateAsync({ amount: challengeCost, description: `Challenge – ${template.name}` });
+      } catch {
+        return;
+      }
+    }
+
+    await create(template.name, { type: "challenge", template_id: template.id }, activeOrgId);
+    setCreateOpen(false);
+    setSearch("");
+  };
+
   if (authLoading || orgLoading) {
     return (
       <PageTransition>
@@ -100,32 +111,24 @@ export default function Challenge() {
   return (
     <PageTransition>
       <div className="min-h-screen px-5 pt-8 pb-24 max-w-3xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="h-2 w-2 rounded-full bg-pillar-finance animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
               Diagnostic Stratégique
             </span>
           </div>
-          <h1 className="font-display font-black text-3xl uppercase tracking-tight leading-none">
-            Challenge
-          </h1>
+          <h1 className="font-display font-black text-3xl uppercase tracking-tight leading-none">Challenge</h1>
           <p className="text-sm text-muted-foreground mt-2">
             Lancez un challenge structuré pour diagnostiquer et prioriser vos enjeux stratégiques.
           </p>
         </motion.div>
 
-        {/* Quick Actions */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 gap-3 mb-8"
+          className="grid grid-cols-2 gap-3 mb-6"
         >
           <button
             onClick={() => setCreateOpen(true)}
@@ -156,12 +159,62 @@ export default function Challenge() {
           </button>
         </motion.div>
 
-        {/* My Challenges */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="mb-8">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h2 className="font-display font-bold text-xs uppercase tracking-widest text-muted-foreground">
+              Challenges disponibles
+            </h2>
+            {activeOrg && <Badge variant="outline">{activeOrg.org_name}</Badge>}
+          </div>
+
+          {templatesLoading ? (
+            <div className="rounded-2xl border border-border/50 bg-card/40 p-6 flex items-center justify-center gap-3 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Chargement des challenges…
+            </div>
+          ) : filteredTemplates.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+              <LayoutGrid className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">Aucun challenge disponible</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                {activeOrg ? `Aucun template visible pour ${activeOrg.org_name}.` : "Aucun template publié pour le moment."}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredTemplates.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setCreateOpen(true)}
+                  className="w-full text-left rounded-2xl border border-border/50 bg-card/50 p-4 hover:border-pillar-finance/30 hover:bg-card transition-all"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-pillar-finance/10 flex items-center justify-center shrink-0">
+                      <LayoutGrid className="h-5 w-5 text-pillar-finance" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="font-display font-bold text-sm">{t.name}</div>
+                        {t.difficulty && <Badge variant="outline">{t.difficulty}</Badge>}
+                      </div>
+                      {(t as any).toolkits?.name && (
+                        <div className="text-[10px] text-muted-foreground/70 mt-1">
+                          {(t as any).toolkits.icon_emoji} {(t as any).toolkits.name}
+                        </div>
+                      )}
+                      {t.description && (
+                        <div className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{t.description}</div>
+                      )}
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
           <h2 className="font-display font-bold text-xs uppercase tracking-widest text-muted-foreground mb-4">
             Mes challenges
           </h2>
@@ -224,14 +277,11 @@ export default function Challenge() {
           )}
         </motion.div>
 
-        {/* Create Challenge Dialog */}
         <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) setSearch(""); }}>
           <DialogContent className="rounded-2xl border-border/50 bg-card backdrop-blur-xl max-h-[85vh] flex flex-col">
             <DialogHeader>
               <DialogTitle className="font-display font-black uppercase tracking-tight">Lancer un Challenge</DialogTitle>
-              {activeOrg && (
-                <p className="text-xs text-muted-foreground mt-1">Organisation : {activeOrg.org_name}</p>
-              )}
+              {activeOrg && <p className="text-xs text-muted-foreground mt-1">Organisation : {activeOrg.org_name}</p>}
             </DialogHeader>
             <div className="space-y-4 pt-2 flex-1 min-h-0 flex flex-col">
               <p className="text-sm text-muted-foreground">
@@ -249,7 +299,6 @@ export default function Challenge() {
                   <span>Quota de challenges atteint pour votre abonnement</span>
                 </div>
               )}
-              {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -259,7 +308,6 @@ export default function Challenge() {
                   className="pl-9 rounded-xl bg-secondary border-border h-9 text-sm"
                 />
               </div>
-              {/* Template list - scrollable */}
               <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 max-h-[40vh]">
                 {templatesLoading ? (
                   <div className="flex flex-col items-center justify-center py-10 gap-3">
@@ -268,21 +316,10 @@ export default function Challenge() {
                   </div>
                 ) : filteredTemplates.length > 0 ? (
                   <div className="space-y-2">
-                    {filteredTemplates.map(t => (
+                    {filteredTemplates.map((t) => (
                       <button
                         key={t.id}
-                        onClick={async () => {
-                          if (challengeCost > 0) {
-                            try {
-                              await spendCredits.mutateAsync({ amount: challengeCost, description: `Challenge – ${t.name}` });
-                            } catch {
-                              return;
-                            }
-                          }
-                          await create(t.name, { type: "challenge", template_id: t.id }, activeOrgId);
-                          setCreateOpen(false);
-                          setSearch("");
-                        }}
+                        onClick={() => launchTemplate(t)}
                         disabled={creating || (challengeCost > 0 && !hasCredits(challengeCost)) || !canCreateChallenge}
                         className="w-full text-left rounded-xl border border-border p-4 hover:border-pillar-finance/30 hover:bg-pillar-finance/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -316,7 +353,6 @@ export default function Challenge() {
           </DialogContent>
         </Dialog>
 
-        {/* Join Dialog */}
         <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
           <DialogContent className="rounded-2xl border-border/50 bg-card backdrop-blur-xl">
             <DialogHeader>
@@ -337,7 +373,10 @@ export default function Challenge() {
                 />
               </div>
               <Button
-                onClick={() => { join(joinCode); setJoinOpen(false); }}
+                onClick={() => {
+                  join(joinCode);
+                  setJoinOpen(false);
+                }}
                 disabled={joinCode.length !== 6 || joining}
                 className="w-full font-black uppercase tracking-wider rounded-xl h-11"
               >
