@@ -241,7 +241,7 @@ export default function AdminAcademyPathDetail() {
                         <p className="text-sm font-medium">{mod.title}</p>
                         <p className="text-xs text-muted-foreground truncate">{mod.description}</p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
                         <Badge variant="outline" className="text-[10px]">
                           {moduleTypeLabel[mod.module_type] || mod.module_type}
                         </Badge>
@@ -251,6 +251,12 @@ export default function AdminAcademyPathDetail() {
                         <Badge variant={mod.status === "published" ? "default" : "secondary"} className="text-[10px]">
                           {mod.status}
                         </Badge>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Générer contenu IA" onClick={(e) => { e.stopPropagation(); genContent.mutate(mod.id); }}>
+                          <FileText className="h-3.5 w-3.5 text-primary" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Générer quiz IA" onClick={(e) => { e.stopPropagation(); genQuiz.mutate(mod.id); }}>
+                          <HelpCircle className="h-3.5 w-3.5 text-primary" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditModule(mod)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
