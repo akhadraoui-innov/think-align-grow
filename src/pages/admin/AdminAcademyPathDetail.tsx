@@ -587,7 +587,7 @@ export default function AdminAcademyPathDetail() {
                     <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${batchProgress.total > 0 ? (batchProgress.current / batchProgress.total) * 100 : 0}%` }} />
                   </div>
                 </div>
-              )
+              )}
 
               {pathModules.length === 0 ? (
                 <Card className="border-dashed border-2">
