@@ -5,7 +5,8 @@ import {
   ArrowLeft, Plus, Trash2, Save, BookOpen, Pencil, Sparkles, Loader2,
   FileText, HelpCircle, ChevronDown, ChevronRight, Users, BarChart3,
   Clock, Award, Target, Bot, Dumbbell, GraduationCap, CheckCircle2,
-  AlertTriangle, RefreshCw, Info
+  AlertTriangle, RefreshCw, Info, Eye, Lightbulb, Link2, ListOrdered,
+  PenTool, Theater
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +23,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
-import ReactMarkdown from "react-markdown";
+import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
+
+const quizTypeConfig: Record<string, { icon: any; label: string; color: string; bg: string }> = {
+  mcq: { icon: HelpCircle, label: "QCM", color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30" },
+  true_false: { icon: CheckCircle2, label: "Vrai / Faux", color: "text-emerald-600", bg: "bg-emerald-100 dark:bg-emerald-900/30" },
+  ordering: { icon: ListOrdered, label: "Ordonner", color: "text-purple-600", bg: "bg-purple-100 dark:bg-purple-900/30" },
+  matching: { icon: Link2, label: "Associer", color: "text-cyan-600", bg: "bg-cyan-100 dark:bg-cyan-900/30" },
+  fill_blank: { icon: PenTool, label: "Compléter", color: "text-amber-600", bg: "bg-amber-100 dark:bg-amber-900/30" },
+  scenario: { icon: Theater, label: "Scénario", color: "text-rose-600", bg: "bg-rose-100 dark:bg-rose-900/30" },
+};
 
 interface ModuleForm {
   title: string;
