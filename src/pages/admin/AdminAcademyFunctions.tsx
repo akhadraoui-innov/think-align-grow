@@ -1,7 +1,7 @@
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Plus, ArrowLeft, Pencil, Trash2, Save, Sparkles, Loader2, MessageSquare, Wand2, Building2, Target, ArrowRight, Check, Lightbulb, UserCheck, GraduationCap, Cpu, BarChart3, Wrench } from "lucide-react";
+import { Briefcase, Plus, ArrowLeft, Pencil, Trash2, Save, Sparkles, Loader2, MessageSquare, Wand2, Building2, Target, ArrowRight, Check, Lightbulb, UserCheck, GraduationCap, Cpu, BarChart3, Wrench, Search, LayoutGrid, Table2 as TableIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
