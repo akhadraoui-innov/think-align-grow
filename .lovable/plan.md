@@ -1,237 +1,144 @@
 
 
-# Academy — Module de Formation intégré
+# Audit de l'Academy actuelle & Plan de refonte "Best-of-Class"
 
-## Vision
+## Diagnostic brutal
 
-Un LMS (Learning Management System) complet, intégré au front existant (sidebar user + admin) mais avec un **schéma DB isolé** (tables préfixées `academy_`) et des **edge functions dédiées** pour faciliter la réutilisation sur d'autres projets.
+### Ce qui existe
 
-## Architecture données (tables `academy_*`)
+| Couche | Verdict |
+|--------|---------|
+| **DB** | 14 tables correctes, bien structurées. Solide. |
+| **Edge function** | 1 seule (`academy-generate`), 3 actions basiques, prompts plats, modèle flash (le moins cher), aucun streaming, aucun feedback progressif. |
+| **Admin** | CRUD fonctionnel mais 100% formulaires/listes. Aucune preview, aucun workflow guidé, aucune intelligence. |
+| **Learner UX** | Catalogue = liste de cards. Module = dump de markdown brut (avec `dangerouslySetInnerHTML` sans parser markdown). Pas de quiz interactif, pas d'exercice, pas de practice IA, pas de progression, pas d'inscription, pas de certificat. |
+| **Tables inutilisées** | `academy_exercises`, `academy_practices`, `academy_progress`, `academy_enrollments`, `academy_certificates`, `academy_campaign_targets` — toutes vides de code front. |
 
-```text
-academy_personae              → Profils cibles (persona marketing/pédagogique)
-academy_paths                 → Parcours de formation (séquence de modules)
-academy_path_modules          → Junction parcours ↔ modules (ordre)
-academy_modules               → Unité pédagogique (titre, objectifs, durée)
-academy_contents              → Contenu d'un module (texte, vidéo, slide, markdown)
-academy_quizzes               → Quiz rattaché à un module
-academy_quiz_questions        → Questions d'un quiz (QCM, vrai/faux, libre)
-academy_exercises             → Exercices pratiques (consigne, critères)
-academy_practices             → Sessions de pratique IA (prompt, scénario, config)
-academy_campaigns             → Campagnes de formation (dates, cibles, parcours)
-academy_campaign_targets      → Junction campagne ↔ personae/orgs/users
-academy_enrollments           → Inscription d'un user à un parcours
-academy_progress              → Progression par module (statut, score, timestamps)
-academy_certificates          → Certificats générés à la fin d'un parcours
-```
+### Ce qui manque fondamentalement
 
-### Relations clés
+1. **L'IA comme compagnon** : Aujourd'hui l'IA est un générateur one-shot qu'on déclenche et qu'on oublie. Aucune interaction, aucun coaching, aucun feedback adaptatif.
 
-```text
-Persona ←── Campaign Targets ──→ Campaign ──→ Path
-                                                │
-                                          Path Modules (ordered)
-                                                │
-                                              Module
-                                           ┌────┼────┐
-                                        Content Quiz Exercise/Practice
+2. **L'expérience apprenant** : C'est un lecteur de texte. Pas de progression visuelle, pas d'interaction, pas de gamification, pas de pratique.
 
-User ──→ Enrollment ──→ Path
-User ──→ Progress ──→ Module (score, completed_at)
-User ──→ Certificate ──→ Path
-```
+3. **La qualité de génération** : Prompts basiques, modèle flash, pas de chaîne de raffinement. On est loin du "best-of-class".
 
-## Schéma DB détaillé
+4. **Le markdown n'est même pas rendu** : `dangerouslySetInnerHTML` sur du markdown brut sans conversion HTML = le markdown s'affiche en texte plat.
 
-### `academy_personae`
-| Colonne | Type |
-|---------|------|
-| id | uuid PK |
-| name | text |
-| description | text |
-| avatar_url | text |
-| characteristics | jsonb (seniority, department, goals, pain_points) |
-| organization_id | uuid nullable (scope org ou global) |
-| created_by | uuid |
-| generation_mode | text ('manual' / 'ai') |
-| status | text ('draft' / 'published') |
+---
 
-### `academy_paths`
-| Colonne | Type |
-|---------|------|
-| id | uuid PK |
-| name | text |
-| description | text |
-| difficulty | text |
-| estimated_hours | numeric |
-| tags | jsonb |
-| persona_id | uuid nullable FK |
-| organization_id | uuid nullable |
-| status | text ('draft' / 'published' / 'archived') |
-| generation_mode | text |
-| certificate_enabled | boolean |
+## Plan de refonte — "Academy 2.0"
 
-### `academy_modules`
-| Colonne | Type |
-|---------|------|
-| id | uuid PK |
-| title | text |
-| description | text |
-| objectives | jsonb (array of strings) |
-| estimated_minutes | int |
-| sort_order | int |
-| module_type | text ('lesson' / 'quiz' / 'exercise' / 'practice') |
-| status | text |
-| generation_mode | text |
+### Phase A — Expérience Apprenant immersive (priorité absolue)
 
-### `academy_contents`
-| Colonne | Type |
-|---------|------|
-| id | uuid PK |
-| module_id | uuid FK |
-| content_type | text ('markdown' / 'video' / 'slides' / 'embed') |
-| body | text (markdown/HTML) |
-| media_url | text nullable |
-| sort_order | int |
-| generation_mode | text |
+**1. Module Viewer interactif** (`AcademyModule.tsx` — refonte complète)
+- Installer `react-markdown` + `remark-gfm` pour le rendu markdown correct
+- Layout immersif : sidebar de progression (étapes du module) + zone contenu principale
+- Navigation inter-sections avec transitions animées (framer-motion, déjà dans le projet)
+- Barre de progression en haut qui avance au scroll/navigation
+- Bouton "Marquer comme terminé" qui enregistre dans `academy_progress`
+- Affichage adaptatif selon `module_type` : contenu pour lesson, quiz interactif pour quiz, consigne + soumission pour exercise, chat IA pour practice
 
-### `academy_quizzes` + `academy_quiz_questions`
-Structure similaire aux `quiz_questions` existants mais scopée Academy, avec support de types variés : QCM, vrai/faux, texte libre, association, ordonnancement.
+**2. Quiz interactif** (nouveau composant `AcademyQuiz.tsx`)
+- Fetch des questions depuis `academy_quizzes` + `academy_quiz_questions`
+- Navigation question par question avec animation
+- QCM avec sélection visuelle (cards cliquables, pas des radio buttons)
+- Vrai/faux avec toggle stylisé
+- Feedback immédiat après chaque réponse : explication + animation correct/incorrect
+- Score final avec radar chart des compétences (composant `RadarChart` déjà existant)
+- Enregistrement du score dans `academy_progress`
 
-### `academy_exercises`
-| Colonne | Type |
-|---------|------|
-| id | uuid PK |
-| module_id | uuid FK |
-| title | text |
-| instructions | text (markdown) |
-| evaluation_criteria | jsonb |
-| expected_output_type | text ('text' / 'file' / 'url') |
-| ai_evaluation_enabled | boolean |
+**3. Practice IA — Chat de coaching** (nouveau composant `AcademyPractice.tsx`)
+- Chat streaming avec l'IA (pattern identique à `ChatInterface.tsx` existant)
+- L'IA joue un rôle défini par `academy_practices.system_prompt` et `scenario`
+- Compteur d'échanges (max_exchanges)
+- À la fin de la session : l'IA évalue la performance selon `evaluation_rubric`
+- Score et feedback enregistrés dans `academy_progress`
+- Nouvelle edge function `academy-practice` avec streaming SSE
 
-### `academy_practices`
-| Colonne | Type |
-|---------|------|
-| id | uuid PK |
-| module_id | uuid FK |
-| title | text |
-| scenario | text (contexte métier) |
-| system_prompt | text (personnalité de l'IA coach) |
-| evaluation_rubric | jsonb (critères de scoring) |
-| max_exchanges | int |
-| difficulty | text |
+**4. Exercice avec évaluation IA** (nouveau composant `AcademyExercise.tsx`)
+- Affichage de la consigne en markdown riche
+- Zone de soumission (textarea ou upload selon `expected_output_type`)
+- Bouton "Soumettre pour évaluation"
+- L'IA évalue selon `evaluation_criteria` et retourne un feedback structuré
+- Score + feedback stockés dans `academy_progress`
+- Nouvelle action dans `academy-generate` : `evaluate-exercise`
 
-### `academy_campaigns`
-| Colonne | Type |
-|---------|------|
-| id | uuid PK |
-| name | text |
-| description | text |
-| path_id | uuid FK |
-| organization_id | uuid FK |
-| starts_at | timestamptz |
-| ends_at | timestamptz nullable |
-| status | text ('draft' / 'active' / 'completed') |
-| reminder_config | jsonb |
+**5. Parcours avec progression** (`AcademyPath.tsx` — refonte)
+- Timeline verticale immersive au lieu d'une simple liste
+- Chaque module affiche : icône type, statut (locked/available/in_progress/completed), score
+- Progression globale en pourcentage avec barre animée
+- Modules verrouillés tant que le précédent n'est pas terminé (progression séquentielle)
+- Bouton "S'inscrire" qui crée un `academy_enrollment`
+- Certificat de fin de parcours quand tous les modules sont complétés
 
-### `academy_enrollments` + `academy_progress`
-Tracking individuel : inscription, avancement module par module, scores, temps passé.
+**6. Catalogue enrichi** (`Academy.tsx` — refonte)
+- Cards de parcours avec illustration gradient générée par les couleurs du parcours
+- Filtres : difficulté, durée, tags
+- Barre de recherche
+- Section "En cours" avec progression en temps réel
+- Section "Recommandés" basée sur le persona de l'utilisateur
 
-## Edge Functions dédiées
+### Phase B — IA Compagnon dans l'Admin
 
-| Fonction | Rôle |
-|----------|------|
-| `academy-generate-persona` | Génère un persona à partir d'un brief (poste, secteur, enjeux) |
-| `academy-generate-path` | Crée un parcours complet (modules, contenus, quiz) à partir d'un persona + objectifs |
-| `academy-generate-content` | Génère le contenu d'un module (leçon markdown, slides) |
-| `academy-generate-quiz` | Crée un quiz avec questions variées à partir du contenu d'un module |
-| `academy-generate-exercise` | Génère un exercice pratique avec critères d'évaluation |
-| `academy-evaluate-exercise` | Évalue une soumission d'exercice par IA |
-| `academy-practice-chat` | Chat IA pour les sessions de pratique (prompt coaching) |
-| `academy-evaluate-practice` | Scoring d'une session de pratique terminée |
+**7. Génération IA de niveau supérieur**
+- Passer de `gemini-3-flash-preview` à `google/gemini-2.5-pro` pour la génération de contenu (raisonnement complexe)
+- Chaîne de raffinement en 3 passes : Structure → Contenu → Relecture critique
+- Streaming SSE pour montrer la progression en temps réel dans l'admin
+- Génération de persona par IA : brief libre → persona structuré avec caractéristiques, scénarios, objectifs
+- Génération d'exercices avec critères d'évaluation calibrés
+- Génération de scénarios de practice avec rubrique de scoring
 
-Chaque fonction utilise le Lovable AI Gateway avec des prompts système spécialisés et du structured output (tool calling) pour garantir la rigueur.
+**8. Preview live dans l'admin**
+- Onglet "Aperçu" dans `AdminAcademyPathDetail` qui rend le parcours tel que l'apprenant le verra
+- Preview du contenu markdown en temps réel pendant l'édition
+- Preview du quiz interactif pour tester avant publication
 
-## Permissions (domaine dédié)
+### Phase C — Edge Functions enrichies
 
-Nouveau domaine `academy` dans `permission_domains` + `permission_definitions` :
+**9. `academy-practice` (nouvelle)**
+- Streaming SSE pour le chat de coaching
+- System prompt dynamique depuis `academy_practices`
+- Compteur d'échanges côté serveur
+- Évaluation automatique en fin de session
 
-```text
-academy.paths.view       — Voir les parcours
-academy.paths.create     — Créer un parcours
-academy.paths.edit       — Modifier un parcours
-academy.modules.manage   — Gérer les modules
-academy.campaigns.view   — Voir les campagnes
-academy.campaigns.manage — Gérer les campagnes
-academy.content.create   — Créer du contenu
-academy.content.ai       — Utiliser la génération IA
-academy.analytics.view   — Voir les statistiques
-academy.certificates.manage — Gérer les certificats
-```
+**10. Actions supplémentaires dans `academy-generate`**
+- `generate-persona` : brief → persona structuré
+- `generate-exercise` : module → exercice avec critères
+- `generate-practice` : module → scénario + rubrique
+- `evaluate-exercise` : soumission → feedback structuré
+- `evaluate-practice` : historique chat → score + feedback
 
-+ Insertion dans `role_permissions` pour les rôles existants.
+### Fichiers impactés
 
-## Intégration Front
+**Nouveaux composants :**
+- `src/components/academy/AcademyQuiz.tsx`
+- `src/components/academy/AcademyPractice.tsx`
+- `src/components/academy/AcademyExercise.tsx`
+- `src/components/academy/AcademyProgress.tsx`
+- `src/components/academy/ModuleViewer.tsx`
 
-### Sidebar User (AppSidebar)
-Nouvelle section "Academy" :
-- `/academy` — Mes formations (enrollments + progression)
-- `/academy/catalog` — Catalogue des parcours disponibles
+**Refontes :**
+- `src/pages/Academy.tsx` — catalogue immersif
+- `src/pages/AcademyPath.tsx` — timeline avec progression
+- `src/pages/AcademyModule.tsx` — viewer multi-type
+- `src/pages/admin/AdminAcademyPathDetail.tsx` — preview + génération enrichie
 
-### Sidebar Admin (AdminSidebar)
-Nouvelle section "Academy" :
-- `/admin/academy` — Dashboard Academy
-- `/admin/academy/personae` — Gestion des personae
-- `/admin/academy/paths` — Parcours de formation
-- `/admin/academy/campaigns` — Campagnes
-- `/admin/academy/content` — Bibliothèque de contenu
+**Edge functions :**
+- `supabase/functions/academy-generate/index.ts` — upgrade modèle + nouvelles actions
+- `supabase/functions/academy-practice/index.ts` — nouveau, streaming
 
-### Pages à créer
+**Dépendances :**
+- `react-markdown` + `remark-gfm` (rendu markdown)
 
-**User :**
-- `src/pages/Academy.tsx` — Liste des parcours inscrits + catalogue
-- `src/pages/AcademyPath.tsx` — Vue d'un parcours (modules, progression)
-- `src/pages/AcademyModule.tsx` — Consommation d'un module (contenu + quiz/exercice/practice)
+### Ordre d'implémentation recommandé
 
-**Admin :**
-- `src/pages/admin/AdminAcademy.tsx` — Dashboard + liste
-- `src/pages/admin/AdminAcademyPathDetail.tsx` — Détail/édition d'un parcours
-- `src/pages/admin/AdminAcademyPersonae.tsx` — Gestion des personae
-- `src/pages/admin/AdminAcademyCampaigns.tsx` — Campagnes
-
-## Plan d'implémentation (phases)
-
-### Phase 1 — Fondations (DB + navigation)
-- Migration SQL : 14 tables academy_* avec RLS
-- Permissions : domaine + définitions + assignation rôles
-- Routes + sidebar user/admin
-- Pages squelettes
-
-### Phase 2 — Gestion manuelle (admin)
-- CRUD Personae, Parcours, Modules, Contenus
-- CRUD Quiz + Questions
-- CRUD Exercices + Practices
-- CRUD Campagnes
-
-### Phase 3 — Génération IA
-- Edge functions de génération (persona, parcours, contenu, quiz, exercice)
-- UI "Générer par IA" dans chaque section admin
-- Streaming pour la génération de parcours complets
-
-### Phase 4 — Expérience apprenant
-- Inscription à un parcours
-- Navigation module par module
-- Quiz interactif
-- Soumission d'exercices + évaluation IA
-- Practice chat (session de prompt coaching)
-- Progression + certificats
-
-### Phase 5 — Campagnes + Analytics
-- Lancement de campagnes ciblées
-- Tableaux de bord de progression
-- Rappels et relances
-
-## Démarrage recommandé
-
-Commencer par la **Phase 1** : migration SQL des 14 tables + permissions + routes. C'est le socle sans lequel rien ne fonctionne. Cela représente ~1 migration SQL conséquente + modifications de 4-5 fichiers front (App.tsx, AppSidebar, AdminSidebar, pages squelettes).
+1. Installer `react-markdown`, corriger le rendu markdown dans `AcademyModule`
+2. Créer le quiz interactif (`AcademyQuiz`)
+3. Créer le practice chat (`AcademyPractice` + edge function)
+4. Créer l'exercice évalué (`AcademyExercise`)
+5. Refondre `AcademyModule` en viewer multi-type
+6. Refondre `AcademyPath` avec timeline + progression
+7. Refondre `Academy` avec catalogue immersif
+8. Upgrader la génération IA (modèle pro, chaîne de raffinement, streaming)
+9. Ajouter les actions IA manquantes (persona, exercice, practice, évaluation)
 
