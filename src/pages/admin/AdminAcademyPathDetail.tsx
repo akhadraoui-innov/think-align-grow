@@ -129,8 +129,9 @@ export default function AdminAcademyPathDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("academy_quizzes")
-        .select("*, academy_quiz_questions(id)")
-        .in("module_id", moduleIds);
+        .select("*, academy_quiz_questions(*)")
+        .in("module_id", moduleIds)
+        .order("sort_order", { referencedTable: "academy_quiz_questions" });
       if (error) throw error;
       return data || [];
     },
