@@ -44,6 +44,9 @@ export default function AdminAcademyPaths() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<PathForm>(emptyForm);
 
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiForm, setAiForm] = useState({ name: "", description: "", difficulty: "intermediate", module_count: 5, persona_id: "" });
+
   const { data: paths = [], isLoading } = useQuery({
     queryKey: ["admin-academy-paths"],
     queryFn: async () => {
