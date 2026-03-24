@@ -281,6 +281,106 @@ export type Database = {
           },
         ]
       }
+      academy_function_users: {
+        Row: {
+          assigned_at: string
+          custom_context: Json
+          function_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          custom_context?: Json
+          function_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          custom_context?: Json
+          function_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_function_users_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "academy_functions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_functions: {
+        Row: {
+          ai_use_cases: Json
+          company_size: string | null
+          created_at: string
+          created_by: string
+          department: string | null
+          description: string
+          generation_mode: string
+          id: string
+          industry: string | null
+          kpis: Json
+          name: string
+          organization_id: string | null
+          responsibilities: Json
+          seniority: string | null
+          status: string
+          tools_used: Json
+          updated_at: string
+        }
+        Insert: {
+          ai_use_cases?: Json
+          company_size?: string | null
+          created_at?: string
+          created_by: string
+          department?: string | null
+          description?: string
+          generation_mode?: string
+          id?: string
+          industry?: string | null
+          kpis?: Json
+          name: string
+          organization_id?: string | null
+          responsibilities?: Json
+          seniority?: string | null
+          status?: string
+          tools_used?: Json
+          updated_at?: string
+        }
+        Update: {
+          ai_use_cases?: Json
+          company_size?: string | null
+          created_at?: string
+          created_by?: string
+          department?: string | null
+          description?: string
+          generation_mode?: string
+          id?: string
+          industry?: string | null
+          kpis?: Json
+          name?: string
+          organization_id?: string | null
+          responsibilities?: Json
+          seniority?: string | null
+          status?: string
+          tools_used?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_functions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_modules: {
         Row: {
           created_at: string
@@ -364,6 +464,7 @@ export type Database = {
           description: string
           difficulty: string | null
           estimated_hours: number | null
+          function_id: string | null
           generation_mode: string
           id: string
           name: string
@@ -380,6 +481,7 @@ export type Database = {
           description?: string
           difficulty?: string | null
           estimated_hours?: number | null
+          function_id?: string | null
           generation_mode?: string
           id?: string
           name: string
@@ -396,6 +498,7 @@ export type Database = {
           description?: string
           difficulty?: string | null
           estimated_hours?: number | null
+          function_id?: string | null
           generation_mode?: string
           id?: string
           name?: string
@@ -406,6 +509,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "academy_paths_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "academy_functions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "academy_paths_organization_id_fkey"
             columns: ["organization_id"]

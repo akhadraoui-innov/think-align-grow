@@ -2,7 +2,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Users, Route, Megaphone, BookOpen, Plus } from "lucide-react";
+import { GraduationCap, Users, Route, Megaphone, BookOpen, Plus, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -42,8 +42,17 @@ export default function AdminAcademy() {
     },
   });
 
+  const { data: functionCount = 0 } = useQuery({
+    queryKey: ["admin-academy-function-count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("academy_functions" as any).select("id", { count: "exact", head: true });
+      return count || 0;
+    },
+  });
+
   const stats = [
     { label: "Parcours", value: pathCount, icon: Route, color: "text-primary" },
+    { label: "Fonctions", value: functionCount, icon: Briefcase, color: "text-pillar-business" },
     { label: "Personae", value: personaeCount, icon: Users, color: "text-pillar-thinking" },
     { label: "Campagnes", value: campaignCount, icon: Megaphone, color: "text-pillar-impact" },
     { label: "Inscriptions", value: enrollmentCount, icon: GraduationCap, color: "text-pillar-relations" },
@@ -60,7 +69,7 @@ export default function AdminAcademy() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {stats.map(s => (
             <Card key={s.label}>
               <CardContent className="p-4 flex items-center gap-3">
@@ -75,12 +84,19 @@ export default function AdminAcademy() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/admin/academy/functions")}>
+            <CardContent className="p-6 text-center space-y-2">
+              <Briefcase className="h-8 w-8 mx-auto text-pillar-business" />
+              <p className="font-semibold text-sm">Fonctions</p>
+              <p className="text-xs text-muted-foreground">Rôles organisationnels</p>
+            </CardContent>
+          </Card>
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/admin/academy/personae")}>
             <CardContent className="p-6 text-center space-y-2">
               <Users className="h-8 w-8 mx-auto text-pillar-thinking" />
               <p className="font-semibold text-sm">Personae</p>
-              <p className="text-xs text-muted-foreground">Gérer les profils cibles</p>
+              <p className="text-xs text-muted-foreground">Profils comportementaux</p>
             </CardContent>
           </Card>
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/admin/academy/paths")}>

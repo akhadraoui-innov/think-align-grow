@@ -41,6 +41,8 @@ serve(async (req) => {
       return await generateExercise(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-practice") {
       return await generatePractice(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-function") {
+      return await generateFunction(supabase, user.id, params, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
@@ -696,6 +698,84 @@ Le scénario doit inclure :
   if (error) throw error;
 
   return new Response(JSON.stringify({ success: true, practice_id: practice.id }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+// ─── Generate Function (organizational role) ─────────────────────────
+
+async function generateFunction(supabase: any, userId: string, params: any, apiKey: string, cors: any) {
+  const { brief, mode = "guided", organization_id = null } = params;
+  if (!brief) throw new Error("Missing brief");
+
+  const systemPrompt = `Tu es un expert en design organisationnel et en transformation digitale.
+Tu crées des fiches de fonction détaillées pour un LMS de formation professionnelle.
+Chaque fiche doit décrire le rôle organisationnel : responsabilités, outils, KPIs, et surtout les cas d'usage concrets de l'IA pour cette fonction.
+Réponds UNIQUEMENT via l'outil fourni.`;
+
+  const userPrompt = `Crée une fiche fonction complète à partir de ce brief :
+
+${brief}
+
+La fiche doit inclure :
+- Nom exact du poste
+- Description synthétique du rôle et de son importance stratégique
+- Département et niveau de séniorité
+- Secteur d'activité et taille d'entreprise typique
+- 5-8 responsabilités clés
+- 3-6 outils/technologies utilisés
+- 3-5 KPIs de performance
+- 4-6 cas d'usage IA concrets et actionnables pour cette fonction`;
+
+  const tools = [{
+    type: "function",
+    function: {
+      name: "create_function",
+      description: "Create a detailed organizational function record",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          description: { type: "string" },
+          department: { type: "string" },
+          seniority: { type: "string" },
+          industry: { type: "string" },
+          company_size: { type: "string" },
+          responsibilities: { type: "array", items: { type: "string" } },
+          tools_used: { type: "array", items: { type: "string" } },
+          kpis: { type: "array", items: { type: "string" } },
+          ai_use_cases: { type: "array", items: { type: "string" } },
+        },
+        required: ["name", "description", "responsibilities", "ai_use_cases"],
+      },
+    },
+  }];
+
+  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_function" } }, "google/gemini-2.5-pro");
+
+  const { data: function_record, error } = await supabase
+    .from("academy_functions")
+    .insert({
+      name: result.name,
+      description: result.description,
+      department: result.department || null,
+      seniority: result.seniority || null,
+      industry: result.industry || null,
+      company_size: result.company_size || null,
+      responsibilities: result.responsibilities || [],
+      tools_used: result.tools_used || [],
+      kpis: result.kpis || [],
+      ai_use_cases: result.ai_use_cases || [],
+      status: "draft",
+      generation_mode: "ai",
+      created_by: userId,
+      organization_id,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+
+  return new Response(JSON.stringify({ success: true, function_record }), {
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
