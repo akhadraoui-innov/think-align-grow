@@ -6,7 +6,7 @@ import {
   FileText, HelpCircle, ChevronDown, ChevronRight, Users, BarChart3,
   Clock, Award, Target, Bot, Dumbbell, GraduationCap, CheckCircle2,
   AlertTriangle, RefreshCw, Info, Eye, Lightbulb, Link2, ListOrdered,
-  PenTool, Theater
+  PenTool, Theater, Image, Zap
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -313,6 +313,74 @@ export default function AdminAcademyPathDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const genIllustrations = useMutation({
+    mutationFn: async (moduleId: string) => {
+      toast.info("Génération des illustrations...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-illustrations", module_id: moduleId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["admin-path-contents", id] });
+      toast.success(`${data.illustration_count} illustration(s) générée(s)`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, step: "" });
+
+  const batchGenerateAll = async () => {
+    if (pathModules.length === 0) return;
+    setBatchGenerating(true);
+    const modules = pathModules.map((pm: any) => pm.academy_modules).filter(Boolean);
+    const total = modules.length * 3; // content + quiz + illustrations per module
+    let current = 0;
+
+    try {
+      for (const mod of modules) {
+        // Generate content
+        current++;
+        setBatchProgress({ current, total, step: `Contenu: ${mod.title}` });
+        try {
+          await supabase.functions.invoke("academy-generate", {
+            body: { action: "generate-content", module_id: mod.id },
+          });
+        } catch (e: any) { console.error("Content gen error:", e); }
+
+        // Generate quiz
+        current++;
+        setBatchProgress({ current, total, step: `Quiz: ${mod.title}` });
+        try {
+          await supabase.functions.invoke("academy-generate", {
+            body: { action: "generate-quiz", module_id: mod.id, question_count: 6 },
+          });
+        } catch (e: any) { console.error("Quiz gen error:", e); }
+
+        // Generate illustrations
+        current++;
+        setBatchProgress({ current, total, step: `Illustrations: ${mod.title}` });
+        try {
+          await supabase.functions.invoke("academy-generate", {
+            body: { action: "generate-illustrations", module_id: mod.id },
+          });
+        } catch (e: any) { console.error("Illustration gen error:", e); }
+      }
+
+      qc.invalidateQueries({ queryKey: ["admin-path-contents", id] });
+      qc.invalidateQueries({ queryKey: ["admin-path-quizzes", id] });
+      toast.success("Génération complète terminée !");
+    } catch (e: any) {
+      toast.error(`Erreur batch: ${e.message}`);
+    } finally {
+      setBatchGenerating(false);
+      setBatchProgress({ current: 0, total: 0, step: "" });
+    }
+  };
+
   const updatePathInfo = useMutation({
     mutationFn: async () => {
       if (!infoForm) return;
@@ -492,10 +560,34 @@ export default function AdminAcademyPathDetail() {
             <TabsContent value="modules" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Parcours pédagogique</h2>
-                <Button size="sm" onClick={openCreateModule}>
-                  <Plus className="h-4 w-4 mr-1" /> Ajouter un module
-                </Button>
+                <div className="flex items-center gap-2">
+                  {pathModules.length > 0 && (
+                    <Button size="sm" variant="outline" onClick={batchGenerateAll} disabled={batchGenerating}
+                      className="border-primary/30 text-primary">
+                      {batchGenerating ? (
+                        <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> {batchProgress.step} ({batchProgress.current}/{batchProgress.total})</>
+                      ) : (
+                        <><Zap className="h-3.5 w-3.5 mr-1" /> Tout générer (contenu + quiz + illustrations)</>
+                      )}
+                    </Button>
+                  )}
+                  <Button size="sm" onClick={openCreateModule}>
+                    <Plus className="h-4 w-4 mr-1" /> Ajouter un module
+                  </Button>
+                </div>
               </div>
+              {batchGenerating && (
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm font-medium">{batchProgress.step}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{batchProgress.current}/{batchProgress.total}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${batchProgress.total > 0 ? (batchProgress.current / batchProgress.total) * 100 : 0}%` }} />
+                  </div>
+                </div>
+              )}
 
               {pathModules.length === 0 ? (
                 <Card className="border-dashed border-2">
@@ -600,6 +692,13 @@ export default function AdminAcademyPathDetail() {
                                       {genQuiz.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <HelpCircle className="h-3.5 w-3.5 mr-1" />}
                                       {questionCount > 0 ? "Régénérer quiz" : "Générer quiz"}
                                     </Button>
+                                    {hasContent && (
+                                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); genIllustrations.mutate(mod.id); }}
+                                        disabled={genIllustrations.isPending}>
+                                        {genIllustrations.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Image className="h-3.5 w-3.5 mr-1" />}
+                                        Illustrations
+                                      </Button>
+                                    )}
                                     <div className="flex-1" />
                                     <Button size="sm" variant="ghost" onClick={() => openEditModule(mod)}>
                                       <Pencil className="h-3.5 w-3.5 mr-1" /> Éditer
