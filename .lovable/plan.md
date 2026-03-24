@@ -1,99 +1,105 @@
 
 
-# Refonte UX Premium — Academy Admin Dashboard
+# Refonte Parcours de Formation — Critique et plan révisé
 
-## Diagnostic
+## Auto-critique du plan précédent
 
-Les pages Academy admin sont fonctionnelles mais basiques : cards plates, pas de detail pages dediees, edit inline via dialogs, pas de vues alternatives, pas de panels riches, pas de stats visuelles. Le dashboard est une grille de compteurs sans graphiques. La cartographie utilise des lignes SVG brutes sans polish. Les fonctions n'ont pas de page detail dediee — juste un dialog edit.
+Le plan précédent reste dans une logique CRUD améliorée : ajouter des filtres, des badges, des tabs. C'est insuffisant. Voici les vrais problèmes :
 
-## Principe directeur
+1. **Le contenu est invisible** — On ne voit JAMAIS le body des leçons, les questions des quiz, les exercices. On voit des titres de modules dans des cards plates. Pour un outil de formation, c'est un échec fondamental.
 
-- **Detail pages dediees** plutot que dialogs d'edition (clic sur une fonction → page `/admin/academy/functions/:id` avec tabs, panels, collapsibles)
-- **Dashboard = command center** avec vrais graphiques (recharts), KPIs animés, heatmap de couverture
-- **Cartographie** : nodes stylisés avec gradient, courbes bezier au lieu de lignes droites, mini-radar sur les personae, filtrage interactif
-- **Chaque liste** : toggle grille/tableau, barre de recherche + filtres, tri
+2. **Pas de parcours visuel** — Un parcours de formation a une narration, une progression. L'UI actuelle est une liste numérotée. On ne comprend pas le flow pédagogique, les pré-requis, les embranchements.
+
+3. **Le module est une boîte noire** — Cliquer sur un module ne fait rien. Pas de page module, pas d'expansion, pas de preview. On peut juste "générer du contenu" sans voir ce qui a été généré.
+
+4. **Zéro intelligence métier** — Pas de taux de complétion par module, pas de score moyen, pas de temps passé. Pas de lien visible vers la fonction et le persona ciblés. Pas de contexte pédagogique.
+
+5. **Les dialogs sont étriquées** — max-w-lg pour créer un parcours ou un module. C'est petit et cheap comparé aux dialogs 3 modes de Functions/Personae.
+
+## Principes de la refonte
+
+- **Content-first** : chaque module doit pouvoir s'expanser inline pour montrer son contenu (leçon markdown, questions quiz, brief exercice)
+- **Flow pédagogique visible** : timeline verticale avec connecteurs, types de modules iconisés, preview du contenu
+- **Module = entité riche** : clic sur un module → expansion collapsible inline avec le contenu complet, pas une nouvelle page
+- **Création IA 3 modes** : comme Functions et Personae, le parcours doit avoir les 3 modes (guidé, corporate, chat)
+- **Stats métier intégrées** : dans le header du path detail, dans chaque module (si contenu généré, si quiz généré, nb questions, nb inscrits ayant complété ce module)
 
 ## Plan d'implémentation
 
-### 1. Dashboard Academy (`AdminAcademy.tsx`) — Refonte complète
+### 1. Page détail `AdminAcademyPathDetail.tsx` — Refonte complète
 
-- Header hero avec gradient subtle + titre + sous-titre + CTA "Nouveau parcours"
-- **KPI row** (6 cards) : compteurs animés (AnimatedCounter existant), micro-sparklines
-- **Section graphiques** (2 colonnes) :
-  - Gauche : bar chart horizontal "Parcours par difficulté" + "Modules par type" (recharts)
-  - Droite : heatmap mini "Couverture Fonctions × Personae" (grille colorée)
-- **Section activité** : timeline verticale stylisée (dot + ligne) au lieu de liste plate
-- **Quick actions** : cards compactes avec hover lift, suppression du style "navigation rapide" basique
+**Hero header premium** :
+- Gradient bg par difficulté (vert débutant, bleu intermédiaire, violet avancé)
+- Titre, description, badges (statut, difficulté, certificat)
+- Liens cliquables vers Fonction cible et Persona cible (naviguer vers leur page détail)
+- Stats bar : modules count, contenu généré %, quiz générés %, durée totale, inscrits (count `academy_enrollments`)
 
-### 2. Cartographie (`AdminAcademyMap.tsx`) — Polish premium
+**Tabs** (4 onglets) :
+- **Modules** (défaut) — La pièce maîtresse
+- **Informations** — Formulaire inline éditable
+- **Inscriptions** — Liste des enrollments
+- **Statistiques** — Agrégats de progression
 
-- **Flow view** : remplacer `<line>` par `<path>` bezier curves, nodes avec gradient bg + shadow, icone dans chaque node, counter de liens
-- **Nodes enrichis** : fonctions montrent département en badge coloré, personae montrent mini radar (5 traits en SVG inline petit), parcours montrent difficulté + nb modules, campagnes montrent dates
-- **Matrice** : cellules avec couleur d'intensité (plus il y a de parcours, plus la couleur est intense), hover tooltip
-- **Header** : stats inline (total nodes, total links, couverture %)
-- **Filtrage** : barre de filtre par statut, par département, searchbar
+**Tab Modules — Timeline avec content preview** :
 
-### 3. Pages detail dediees — Fonctions, Personae
+Chaque module = un bloc dans une timeline verticale connectée (ligne verticale + dots numérotés). Chaque bloc affiche :
+- Icone type (BookOpen leçon, HelpCircle quiz, Dumbbell exercice, Bot pratique IA)
+- Titre + description courte
+- Badges : statut, durée, type
+- Indicateurs de contenu : "✓ Contenu généré (3 sections)" ou "⚠ Pas de contenu", "✓ Quiz (5 questions)" ou "—"
+- **Collapsible** : clic sur le module pour l'expanser et voir :
+  - Le body markdown de `academy_contents` (rendu avec ReactMarkdown)
+  - Les questions du quiz de `academy_quizzes` + `academy_quiz_questions`
+  - Actions inline : régénérer contenu, régénérer quiz, éditer module, supprimer
+- Requêtes : fetch `academy_contents` et `academy_quizzes` + `academy_quiz_questions` pour tous les module_ids du path
 
-**Nouvelle route** : `/admin/academy/functions/:id` → `AdminAcademyFunctionDetail.tsx`
-- Header avec icone gradient + nom + badges (département, séniorité, statut)
-- **Tabs** : Informations | Responsabilités & KPIs | IA & Outils | Parcours liés
-- Tab Infos : formulaire inline editable (pas dialog)
-- Tab Responsabilités : listes éditables avec chips
-- Tab IA : cas d'usage avec cards
-- Tab Parcours : liste des parcours liés avec liens
+**Tab Informations** :
+- Formulaire inline (pas de dialog) : nom, description, difficulté, heures, statut, certificat
+- Sélecteurs Fonction et Persona avec preview du nom sélectionné
+- Tags éditables
+- Bouton Save sticky en bas
 
-**Refonte liste Fonctions** (`AdminAcademyFunctions.tsx`) :
-- Toggle vue grille/tableau
-- Searchbar + filtres département/séniorité/statut
-- Clic sur card → navigate vers detail page (plus de dialog edit)
-- Cards enrichies : gradient subtle par département
+**Tab Inscriptions** :
+- Count des enrollments, table simple (user, date, statut, progression)
 
-**Refonte liste Personae** (`AdminAcademyPersonae.tsx`) :
-- Toggle vue grille/tableau
-- Clic sur card → Sheet panel lateral (600px) avec radar, tags, textes descriptifs en sections collapsibles
-- Suppression du dialog edit inline, remplacement par panel editable
+**Tab Statistiques** :
+- Taux complétion global, par module
+- Score moyen quiz
+- Temps moyen passé
 
-### 4. Parcours & Campagnes — Enrichissement
+### 2. Page liste `AdminAcademyPaths.tsx` — Enrichissement
 
-**Parcours** (`AdminAcademyPaths.tsx`) :
-- Toggle grille/tableau
-- Cards avec progress bar (nb modules / total), badges fonction + persona targets
-- Searchbar + filtres difficulté/statut
+**Header** : stats inline (total, publiés, brouillons, heures cumulées)
 
-**Campagnes** (`AdminAcademyCampaigns.tsx`) :
-- Vue timeline : barre horizontale par campagne (starts_at → ends_at) avec couleur par statut
-- Vue liste enrichie : cards avec countdown / jours restants
+**Toggle vue grille/tableau** :
+- **Grille** : cards enrichies avec gradient par difficulté, progress bar modules, badges Fonction + Persona, indicateurs de contenu (modules avec contenu vs sans)
+- **Tableau** : DataTable premium
 
-### 5. Tracking (`AdminAcademyTracking.tsx`) — DataTable premium
+**Création IA 3 modes** : remplacer le dialog basique par le pattern 3 modes (guidé, corporate, chat) comme Functions et Personae. Dialog large (max-w-4xl).
+- Mode guidé : étapes visuelles (objectif → public → difficulté → nb modules → preview)
+- Mode corporate : coller un brief pédagogique, l'IA structure
+- Mode chat : conversation libre
 
-- DataTable avec headers sticky backdrop-blur (pattern existant du projet)
-- Lignes zébrées, avatar placeholder pour users
-- Sparkline de progression par user
-- Filtres multiples (parcours, statut, organisation)
-- Stats agrégées en haut (taux complétion, score moyen, temps moyen)
+**Searchbar + filtres** : par difficulté, statut, fonction, persona
+
+### 3. Requêtes enrichies
+
+Dans PathDetail, fetch en parallèle :
+- `academy_contents` WHERE module_id IN (module_ids) — pour preview contenu
+- `academy_quizzes` WHERE module_id IN (module_ids) — pour savoir si quiz existe
+- `academy_quiz_questions` count par quiz — pour le badge "5 questions"
+- `academy_enrollments` count WHERE path_id — pour stats header
+- `academy_functions` pour le nom de la fonction liée
+- `academy_personae` pour le nom du persona lié
 
 ### Fichiers impactés
 
-**Nouveaux :**
-- `src/pages/admin/AdminAcademyFunctionDetail.tsx`
-
-**Refonte majeure :**
-- `src/pages/admin/AdminAcademy.tsx` (dashboard command center)
-- `src/pages/admin/AdminAcademyMap.tsx` (bezier curves, nodes enrichis, filtres)
-- `src/pages/admin/AdminAcademyFunctions.tsx` (grille/table toggle, search, navigate to detail)
-- `src/pages/admin/AdminAcademyPersonae.tsx` (Sheet panel, grille/table)
-- `src/pages/admin/AdminAcademyPaths.tsx` (grille/table, search, filtres)
-- `src/pages/admin/AdminAcademyCampaigns.tsx` (timeline view)
-- `src/pages/admin/AdminAcademyTracking.tsx` (DataTable premium)
-- `src/App.tsx` (route function detail)
+**Refonte majeure** :
+- `src/pages/admin/AdminAcademyPathDetail.tsx` — hero, tabs, timeline avec collapsible content preview, stats
+- `src/pages/admin/AdminAcademyPaths.tsx` — grille/table, creation IA 3 modes, filtres, search, stats header
 
 ### Ordre
 
-1. Dashboard (impact visuel immédiat)
-2. Cartographie (pièce maitresse)
-3. Fonctions (liste + detail page)
-4. Personae (Sheet panel)
-5. Parcours + Campagnes
-6. Tracking
+1. PathDetail (valeur maximale — on voit enfin le contenu)
+2. Paths liste (3 modes IA, filtres, vues)
 
