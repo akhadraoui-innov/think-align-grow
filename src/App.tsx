@@ -78,6 +78,7 @@ function AnimatedRoutes() {
           <Route path="/admin/academy" element={<AdminAcademy />} />
           <Route path="/admin/academy/personae" element={<AdminAcademyPersonae />} />
           <Route path="/admin/academy/paths" element={<AdminAcademyPaths />} />
+          <Route path="/admin/academy/paths/:id" element={<AdminAcademyPathDetail />} />
           <Route path="/admin/academy/campaigns" element={<AdminAcademyCampaigns />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
