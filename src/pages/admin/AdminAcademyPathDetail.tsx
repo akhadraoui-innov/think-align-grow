@@ -6,7 +6,7 @@ import {
   FileText, HelpCircle, ChevronDown, ChevronRight, Users, BarChart3,
   Clock, Award, Target, Bot, Dumbbell, GraduationCap, CheckCircle2,
   AlertTriangle, RefreshCw, Info, Eye, Lightbulb, Link2, ListOrdered,
-  PenTool, Theater
+  PenTool, Theater, Image, Zap
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
