@@ -57,7 +57,7 @@ export function AcademyQuiz({ moduleId, enrollmentId, onComplete }: AcademyQuizP
         .eq("quiz_id", quiz!.id)
         .order("sort_order");
       if (error) throw error;
-      return (data || []) as QuizQuestion[];
+      return (data || []) as unknown as QuizQuestion[];
     },
   });
 
