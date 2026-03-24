@@ -230,7 +230,7 @@ export default function AdminAcademyCampaigns() {
             </div>
             <div className="space-y-1.5">
               <Label>Parcours de formation</Label>
-              <Select value={form.path_id} onValueChange={v => setForm({ ...form, path_id: v })}>
+              <Select value={form.path_id || "none"} onValueChange={v => setForm({ ...form, path_id: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="Choisir un parcours" /></SelectTrigger>
                 <SelectContent>
                   {paths.map((p: any) => (
