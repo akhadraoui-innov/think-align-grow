@@ -1,7 +1,7 @@
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Route, Plus, ArrowLeft, Pencil, Trash2, Save, Clock, BookOpen } from "lucide-react";
+import { Route, Plus, ArrowLeft, Pencil, Trash2, Save, Clock, BookOpen, Sparkles, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
