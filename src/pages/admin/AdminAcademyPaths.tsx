@@ -285,7 +285,7 @@ export default function AdminAcademyPaths() {
               <Select value={form.persona_id} onValueChange={v => setForm({ ...form, persona_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Aucun (global)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun (global)</SelectItem>
+                  <SelectItem value="none">Aucun (global)</SelectItem>
                   {personae.map((p: any) => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
