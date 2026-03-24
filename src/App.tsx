@@ -31,6 +31,13 @@ import AdminLogs from "./pages/admin/AdminLogs";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminOrganizationDetail from "./pages/admin/AdminOrganizationDetail";
 import AdminUserDetail from "./pages/admin/AdminUserDetail";
+import Academy from "./pages/Academy";
+import AcademyPath from "./pages/AcademyPath";
+import AcademyModule from "./pages/AcademyModule";
+import AdminAcademy from "./pages/admin/AdminAcademy";
+import AdminAcademyPersonae from "./pages/admin/AdminAcademyPersonae";
+import AdminAcademyPaths from "./pages/admin/AdminAcademyPaths";
+import AdminAcademyCampaigns from "./pages/admin/AdminAcademyCampaigns";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +58,9 @@ function AnimatedRoutes() {
           <Route path="/workshop/:id" element={<WorkshopRoom />} />
           <Route path="/challenge" element={<Challenge />} />
           <Route path="/challenge/:id" element={<ChallengeRoom />} />
+          <Route path="/academy" element={<Academy />} />
+          <Route path="/academy/path/:id" element={<AcademyPath />} />
+          <Route path="/academy/module/:id" element={<AcademyModule />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/organizations" element={<AdminOrganizations />} />
           <Route path="/admin/organizations/:id" element={<AdminOrganizationDetail />} />
@@ -64,6 +74,10 @@ function AnimatedRoutes() {
           <Route path="/admin/billing" element={<AdminBilling />} />
           <Route path="/admin/logs" element={<AdminLogs />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/admin/academy" element={<AdminAcademy />} />
+          <Route path="/admin/academy/personae" element={<AdminAcademyPersonae />} />
+          <Route path="/admin/academy/paths" element={<AdminAcademyPaths />} />
+          <Route path="/admin/academy/campaigns" element={<AdminAcademyCampaigns />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

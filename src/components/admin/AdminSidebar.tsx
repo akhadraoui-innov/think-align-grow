@@ -4,7 +4,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import {
-  LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb,
+  LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb, GraduationCap,
   CreditCard, ScrollText, Settings, ArrowLeft, Sparkles,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -23,6 +23,7 @@ export function AdminSidebar() {
     { path: "/admin/toolkits", icon: Layers, label: "Toolkits", show: perms.has("admin.toolkits.view") },
     { path: "/admin/workshops", icon: Presentation, label: "Workshops", show: perms.has("admin.workshops.view") },
     { path: "/admin/design-innovation", icon: Lightbulb, label: "Design Innovation", show: perms.has("admin.challenges.view") },
+    { path: "/admin/academy", icon: GraduationCap, label: "Academy", show: perms.has("academy.paths.view") },
   ];
 
   const systemItems = [

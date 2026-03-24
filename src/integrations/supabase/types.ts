@@ -14,6 +14,647 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_campaign_targets: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          target_id: string
+          target_type?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_campaign_targets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "academy_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          ends_at: string | null
+          id: string
+          name: string
+          organization_id: string
+          path_id: string
+          reminder_config: Json
+          starts_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string
+          ends_at?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          path_id: string
+          reminder_config?: Json
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          ends_at?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          path_id?: string
+          reminder_config?: Json
+          starts_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_campaigns_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "academy_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_certificates: {
+        Row: {
+          certificate_data: Json
+          enrollment_id: string
+          id: string
+          issued_at: string
+          path_id: string
+          user_id: string
+        }
+        Insert: {
+          certificate_data?: Json
+          enrollment_id: string
+          id?: string
+          issued_at?: string
+          path_id: string
+          user_id: string
+        }
+        Update: {
+          certificate_data?: Json
+          enrollment_id?: string
+          id?: string
+          issued_at?: string
+          path_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_certificates_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_certificates_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "academy_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_contents: {
+        Row: {
+          body: string
+          content_type: string
+          created_at: string
+          generation_mode: string
+          id: string
+          media_url: string | null
+          module_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          content_type?: string
+          created_at?: string
+          generation_mode?: string
+          id?: string
+          media_url?: string | null
+          module_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          content_type?: string
+          created_at?: string
+          generation_mode?: string
+          id?: string
+          media_url?: string | null
+          module_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_contents_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_enrollments: {
+        Row: {
+          campaign_id: string | null
+          completed_at: string | null
+          enrolled_at: string
+          id: string
+          path_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          completed_at?: string | null
+          enrolled_at?: string
+          id?: string
+          path_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          completed_at?: string | null
+          enrolled_at?: string
+          id?: string
+          path_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_enrollments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "academy_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_enrollments_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "academy_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_exercises: {
+        Row: {
+          ai_evaluation_enabled: boolean
+          created_at: string
+          evaluation_criteria: Json
+          expected_output_type: string
+          generation_mode: string
+          id: string
+          instructions: string
+          module_id: string
+          title: string
+        }
+        Insert: {
+          ai_evaluation_enabled?: boolean
+          created_at?: string
+          evaluation_criteria?: Json
+          expected_output_type?: string
+          generation_mode?: string
+          id?: string
+          instructions?: string
+          module_id: string
+          title: string
+        }
+        Update: {
+          ai_evaluation_enabled?: boolean
+          created_at?: string
+          evaluation_criteria?: Json
+          expected_output_type?: string
+          generation_mode?: string
+          id?: string
+          instructions?: string
+          module_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_exercises_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_modules: {
+        Row: {
+          created_at: string
+          description: string
+          estimated_minutes: number | null
+          generation_mode: string
+          id: string
+          module_type: string
+          objectives: Json
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          estimated_minutes?: number | null
+          generation_mode?: string
+          id?: string
+          module_type?: string
+          objectives?: Json
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          estimated_minutes?: number | null
+          generation_mode?: string
+          id?: string
+          module_type?: string
+          objectives?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      academy_path_modules: {
+        Row: {
+          id: string
+          module_id: string
+          path_id: string
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          module_id: string
+          path_id: string
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          module_id?: string
+          path_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_path_modules_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_path_modules_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "academy_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_paths: {
+        Row: {
+          certificate_enabled: boolean
+          created_at: string
+          created_by: string
+          description: string
+          difficulty: string | null
+          estimated_hours: number | null
+          generation_mode: string
+          id: string
+          name: string
+          organization_id: string | null
+          persona_id: string | null
+          status: string
+          tags: Json
+          updated_at: string
+        }
+        Insert: {
+          certificate_enabled?: boolean
+          created_at?: string
+          created_by: string
+          description?: string
+          difficulty?: string | null
+          estimated_hours?: number | null
+          generation_mode?: string
+          id?: string
+          name: string
+          organization_id?: string | null
+          persona_id?: string | null
+          status?: string
+          tags?: Json
+          updated_at?: string
+        }
+        Update: {
+          certificate_enabled?: boolean
+          created_at?: string
+          created_by?: string
+          description?: string
+          difficulty?: string | null
+          estimated_hours?: number | null
+          generation_mode?: string
+          id?: string
+          name?: string
+          organization_id?: string | null
+          persona_id?: string | null
+          status?: string
+          tags?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_paths_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_paths_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "academy_personae"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_personae: {
+        Row: {
+          avatar_url: string | null
+          characteristics: Json
+          created_at: string
+          created_by: string
+          description: string
+          generation_mode: string
+          id: string
+          name: string
+          organization_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          characteristics?: Json
+          created_at?: string
+          created_by: string
+          description?: string
+          generation_mode?: string
+          id?: string
+          name: string
+          organization_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          characteristics?: Json
+          created_at?: string
+          created_by?: string
+          description?: string
+          generation_mode?: string
+          id?: string
+          name?: string
+          organization_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_personae_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_practices: {
+        Row: {
+          created_at: string
+          difficulty: string | null
+          evaluation_rubric: Json
+          generation_mode: string
+          id: string
+          max_exchanges: number
+          module_id: string
+          scenario: string
+          system_prompt: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty?: string | null
+          evaluation_rubric?: Json
+          generation_mode?: string
+          id?: string
+          max_exchanges?: number
+          module_id: string
+          scenario?: string
+          system_prompt?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: string | null
+          evaluation_rubric?: Json
+          generation_mode?: string
+          id?: string
+          max_exchanges?: number
+          module_id?: string
+          scenario?: string
+          system_prompt?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_practices_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_progress: {
+        Row: {
+          completed_at: string | null
+          enrollment_id: string
+          id: string
+          metadata: Json
+          module_id: string
+          score: number | null
+          started_at: string | null
+          status: string
+          time_spent_seconds: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          enrollment_id: string
+          id?: string
+          metadata?: Json
+          module_id: string
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          time_spent_seconds?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          enrollment_id?: string
+          id?: string
+          metadata?: Json
+          module_id?: string
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          time_spent_seconds?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_progress_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_quiz_questions: {
+        Row: {
+          correct_answer: Json
+          explanation: string | null
+          id: string
+          options: Json
+          points: number
+          question: string
+          question_type: string
+          quiz_id: string
+          sort_order: number
+        }
+        Insert: {
+          correct_answer?: Json
+          explanation?: string | null
+          id?: string
+          options?: Json
+          points?: number
+          question: string
+          question_type?: string
+          quiz_id: string
+          sort_order?: number
+        }
+        Update: {
+          correct_answer?: Json
+          explanation?: string | null
+          id?: string
+          options?: Json
+          points?: number
+          question?: string
+          question_type?: string
+          quiz_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "academy_quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_quizzes: {
+        Row: {
+          created_at: string
+          description: string
+          generation_mode: string
+          id: string
+          module_id: string
+          passing_score: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          generation_mode?: string
+          id?: string
+          module_id: string
+          passing_score?: number
+          title?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          generation_mode?: string
+          id?: string
+          module_id?: string
+          passing_score?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_quizzes_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_logs: {
         Row: {
           action: string
