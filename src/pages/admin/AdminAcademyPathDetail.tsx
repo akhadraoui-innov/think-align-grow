@@ -137,6 +137,32 @@ export default function AdminAcademyPathDetail() {
     },
   });
 
+  const { data: exercises = [] } = useQuery({
+    queryKey: ["admin-path-exercises", id],
+    enabled: moduleIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("academy_exercises")
+        .select("*")
+        .in("module_id", moduleIds);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: practices = [] } = useQuery({
+    queryKey: ["admin-path-practices", id],
+    enabled: moduleIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("academy_practices")
+        .select("*")
+        .in("module_id", moduleIds);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const { data: enrollmentCount = 0 } = useQuery({
     queryKey: ["admin-path-enrollment-count", id],
     enabled: !!id,
@@ -196,10 +222,14 @@ export default function AdminAcademyPathDetail() {
   // ─── Helpers ────────────────────────────────────────────────
   const getModuleContents = (moduleId: string) => contents.filter((c: any) => c.module_id === moduleId);
   const getModuleQuiz = (moduleId: string) => quizzes.find((q: any) => q.module_id === moduleId);
+  const getModuleExercise = (moduleId: string) => exercises.find((e: any) => e.module_id === moduleId);
+  const getModulePractice = (moduleId: string) => practices.find((p: any) => p.module_id === moduleId);
   const getModuleProgress = (moduleId: string) => progress.filter((p: any) => p.module_id === moduleId);
 
   const modulesWithContent = moduleIds.filter((mid: string) => contents.some((c: any) => c.module_id === mid)).length;
   const modulesWithQuiz = moduleIds.filter((mid: string) => quizzes.some((q: any) => q.module_id === mid)).length;
+  const modulesWithExercise = moduleIds.filter((mid: string) => exercises.some((e: any) => e.module_id === mid)).length;
+  const modulesWithPractice = moduleIds.filter((mid: string) => practices.some((p: any) => p.module_id === mid)).length;
   const totalDuration = pathModules.reduce((sum: number, pm: any) => sum + (pm.academy_modules?.estimated_minutes || 0), 0);
   const completedProgress = progress.filter((p: any) => p.status === "completed");
   const avgScore = completedProgress.length > 0
@@ -330,6 +360,40 @@ export default function AdminAcademyPathDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const genExercise = useMutation({
+    mutationFn: async (moduleId: string) => {
+      toast.info("Génération de l'exercice...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-exercise", module_id: moduleId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-path-exercises", id] });
+      toast.success("Exercice généré");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const genPractice = useMutation({
+    mutationFn: async (moduleId: string) => {
+      toast.info("Génération de la pratique IA...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-practice", module_id: moduleId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-path-practices", id] });
+      toast.success("Pratique IA générée");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, step: "" });
 
@@ -337,7 +401,7 @@ export default function AdminAcademyPathDetail() {
     if (pathModules.length === 0) return;
     setBatchGenerating(true);
     const modules = pathModules.map((pm: any) => pm.academy_modules).filter(Boolean);
-    const total = modules.length * 3; // content + quiz + illustrations per module
+    const total = modules.length * 5; // content + quiz + illustrations + exercise + practice per module
     let current = 0;
 
     try {
@@ -368,10 +432,30 @@ export default function AdminAcademyPathDetail() {
             body: { action: "generate-illustrations", module_id: mod.id },
           });
         } catch (e: any) { console.error("Illustration gen error:", e); }
+
+        // Generate exercise
+        current++;
+        setBatchProgress({ current, total, step: `Exercice: ${mod.title}` });
+        try {
+          await supabase.functions.invoke("academy-generate", {
+            body: { action: "generate-exercise", module_id: mod.id },
+          });
+        } catch (e: any) { console.error("Exercise gen error:", e); }
+
+        // Generate practice
+        current++;
+        setBatchProgress({ current, total, step: `Pratique IA: ${mod.title}` });
+        try {
+          await supabase.functions.invoke("academy-generate", {
+            body: { action: "generate-practice", module_id: mod.id },
+          });
+        } catch (e: any) { console.error("Practice gen error:", e); }
       }
 
       qc.invalidateQueries({ queryKey: ["admin-path-contents", id] });
       qc.invalidateQueries({ queryKey: ["admin-path-quizzes", id] });
+      qc.invalidateQueries({ queryKey: ["admin-path-exercises", id] });
+      qc.invalidateQueries({ queryKey: ["admin-path-practices", id] });
       toast.success("Génération complète terminée !");
     } catch (e: any) {
       toast.error(`Erreur batch: ${e.message}`);
@@ -567,7 +651,7 @@ export default function AdminAcademyPathDetail() {
                       {batchGenerating ? (
                         <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> {batchProgress.step} ({batchProgress.current}/{batchProgress.total})</>
                       ) : (
-                        <><Zap className="h-3.5 w-3.5 mr-1" /> Tout générer (contenu + quiz + illustrations)</>
+                        <><Zap className="h-3.5 w-3.5 mr-1" /> Tout générer</>
                       )}
                     </Button>
                   )}
@@ -613,10 +697,14 @@ export default function AdminAcademyPathDetail() {
                       const TypeIcon = typeConf.icon;
                       const modContents = getModuleContents(mod.id);
                       const modQuiz = getModuleQuiz(mod.id);
+                      const modExercise = getModuleExercise(mod.id);
+                      const modPractice = getModulePractice(mod.id);
                       const modProgress = getModuleProgress(mod.id);
                       const isExpanded = expandedModules.has(mod.id);
                       const hasContent = modContents.length > 0;
                       const questionCount = modQuiz?.academy_quiz_questions?.length || 0;
+                      const hasExercise = !!modExercise;
+                      const hasPractice = !!modPractice;
                       const completedCount = modProgress.filter((p: any) => p.status === "completed").length;
 
                       return (
@@ -668,6 +756,16 @@ export default function AdminAcademyPathDetail() {
                                             {completedCount} complété{completedCount > 1 ? "s" : ""}
                                           </span>
                                         )}
+                                        {hasExercise && (
+                                          <span className="text-[10px] text-emerald-600 flex items-center gap-1">
+                                            <CheckCircle2 className="h-3 w-3" /> Exercice
+                                          </span>
+                                        )}
+                                        {hasPractice && (
+                                          <span className="text-[10px] text-emerald-600 flex items-center gap-1">
+                                            <CheckCircle2 className="h-3 w-3" /> Pratique IA
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-1 shrink-0">
@@ -699,6 +797,16 @@ export default function AdminAcademyPathDetail() {
                                         Illustrations
                                       </Button>
                                     )}
+                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); genExercise.mutate(mod.id); }}
+                                      disabled={genExercise.isPending}>
+                                      {genExercise.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Dumbbell className="h-3.5 w-3.5 mr-1" />}
+                                      {hasExercise ? "Régénérer exercice" : "Générer exercice"}
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); genPractice.mutate(mod.id); }}
+                                      disabled={genPractice.isPending}>
+                                      {genPractice.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Bot className="h-3.5 w-3.5 mr-1" />}
+                                      {hasPractice ? "Régénérer pratique" : "Générer pratique"}
+                                    </Button>
                                     <div className="flex-1" />
                                     <Button size="sm" variant="ghost" onClick={() => openEditModule(mod)}>
                                       <Pencil className="h-3.5 w-3.5 mr-1" /> Éditer
@@ -871,10 +979,69 @@ export default function AdminAcademyPathDetail() {
                                     </div>
                                   )}
 
-                                  {!hasContent && questionCount === 0 && (
+                                  {/* Exercise preview */}
+                                  {hasExercise && modExercise && (
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Exercice — {modExercise.title}</h4>
+                                        {modExercise.ai_evaluation_enabled && <Badge variant="secondary" className="text-[10px]">Évaluation IA</Badge>}
+                                      </div>
+                                      <div className="rounded-xl border bg-background overflow-hidden">
+                                        <div className="p-4 space-y-3">
+                                          <div className="prose prose-sm max-w-none dark:prose-invert text-xs">
+                                            <EnrichedMarkdown content={modExercise.instructions || ""} />
+                                          </div>
+                                          {(modExercise.evaluation_criteria as any[])?.length > 0 && (
+                                            <div className="rounded-lg bg-muted/30 p-3 space-y-1">
+                                              <p className="text-[10px] font-semibold text-muted-foreground uppercase">Critères d'évaluation</p>
+                                              {(modExercise.evaluation_criteria as any[]).map((c: any, i: number) => (
+                                                <p key={i} className="text-xs text-muted-foreground">• {typeof c === "string" ? c : c.label || c.criterion || JSON.stringify(c)}</p>
+                                              ))}
+                                            </div>
+                                          )}
+                                          <p className="text-[10px] text-muted-foreground">Type de rendu : {modExercise.expected_output_type || "text"}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Practice preview */}
+                                  {hasPractice && modPractice && (
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pratique IA — {modPractice.title}</h4>
+                                        {modPractice.difficulty && <Badge variant="outline" className="text-[10px]">{modPractice.difficulty}</Badge>}
+                                        <Badge variant="secondary" className="text-[10px]">{modPractice.max_exchanges} échanges max</Badge>
+                                      </div>
+                                      <div className="rounded-xl border bg-background overflow-hidden">
+                                        <div className="p-4 space-y-3">
+                                          <div>
+                                            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Scénario</p>
+                                            <p className="text-xs text-muted-foreground">{modPractice.scenario || "—"}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">System Prompt</p>
+                                            <div className="rounded-lg bg-muted/30 p-3 text-xs font-mono max-h-32 overflow-y-auto whitespace-pre-wrap">
+                                              {modPractice.system_prompt || "—"}
+                                            </div>
+                                          </div>
+                                          {(modPractice.evaluation_rubric as any[])?.length > 0 && (
+                                            <div className="rounded-lg bg-muted/30 p-3 space-y-1">
+                                              <p className="text-[10px] font-semibold text-muted-foreground uppercase">Grille d'évaluation</p>
+                                              {(Array.isArray(modPractice.evaluation_rubric) ? modPractice.evaluation_rubric : []).map((r: any, i: number) => (
+                                                <p key={i} className="text-xs text-muted-foreground">• {typeof r === "string" ? r : r.label || r.criterion || JSON.stringify(r)}</p>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {!hasContent && questionCount === 0 && !hasExercise && !hasPractice && (
                                     <div className="text-center py-6 text-muted-foreground">
                                       <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                                      <p className="text-xs">Aucun contenu généré. Utilisez les boutons ci-dessus pour générer le contenu et/ou le quiz.</p>
+                                      <p className="text-xs">Aucun contenu généré. Utilisez les boutons ci-dessus pour générer.</p>
                                     </div>
                                   )}
                                 </CardContent>
