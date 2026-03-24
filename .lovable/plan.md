@@ -1,103 +1,78 @@
 
 
-# Refonte Persona vs Fonction — Architecture séparée
+# Plan consolidé : Enrichissement Personae + Seed Data complet
 
-## Votre analyse est juste
+## Contexte
 
-Vous avez raison sur le fond : ce qui est aujourd'hui stocké dans `academy_personae` (seniority, department, industry, company_size) décrit des **fonctions organisationnelles**, pas des personas comportementaux.
+Les tables `academy_personae` et `academy_functions` sont vides (0 rows). La table `academy_personae` manque les colonnes `parent_persona_id` et `tags`. L'edge function `generate-persona` utilise encore l'ancien schema (seniority, department, goals) au lieu du schema comportemental. Les archétypes dans le front ont des noms trop familiers.
 
-**Fonction** = ce que fait la personne (poste, département, séniorité, industrie, outils utilisés, KPIs)  
-**Persona** = comment elle apprend et réagit (maturité digitale, appétence au changement, niveau d'initiative, style d'apprentissage, appréhensions face à l'IA)
+## Etape 1 — Migration SQL
 
-Deux DRH peuvent être un "Explorateur audacieux" ou un "Prudent méthodique" — même fonction, personas radicalement différents.
+Ajouter `parent_persona_id` (uuid FK self-referencing, nullable) et `tags` (jsonb, default `'[]'`) a `academy_personae`.
 
-**Ma nuance** : le contexte organisationnel (secteur, taille, enjeux) devrait être pré-configuré par l'admin au niveau de l'organisation ou de la fonction, pas entièrement délégué à l'utilisateur. L'onboarding IA enrichit et personnalise, mais ne part pas de zéro.
+## Etape 2 — Refonte `generate-persona` dans `academy-generate`
 
----
+Réécrire le prompt et le tool schema pour produire des personae **comportementaux** avec :
+- 10 traits numériques (les 5 existants + `collaboration_preference`, `autonomy_level`, `risk_tolerance`, `data_literacy`, `feedback_receptivity`)
+- Tags comportementaux : `habits`, `communication_style`, `decision_patterns`, `tech_relationship`, `objections_type`, `engagement_triggers`, `blockers`
+- Champs textuels : `typical_day`, `ai_relationship_summary`, `ideal_learning_journey`, `coaching_approach`, `success_indicators`
+- Noms corporate (pas de "Sceptique Résistant")
 
-## Plan d'implémentation
+Ajouter action `derive-persona` pour décliner un persona générique vers une org.
 
-### 1. Nouvelle table `academy_functions`
+## Etape 3 — Refonte `AdminAcademyPersonae.tsx`
 
-Contient les données organisationnelles actuellement mal placées dans personae :
+- Renommer les archétypes en corporate : "Précurseur Digital", "Décideur Orienté Résultats", "Méthodique Structuré", "Profil en Observation", "Leader Transformationnel", "Professionnel sous Contrainte"
+- Radar chart 10 axes
+- Sections tags éditables (chips)
+- Champs textuels enrichis dans l'éditeur
+- Filtre Génériques / par Org
+- Bouton "Décliner pour une organisation"
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid | PK |
-| name | text | Ex: "Directeur des Opérations" |
-| description | text | Résumé du rôle |
-| department | text | Département |
-| seniority | text | Niveau hiérarchique |
-| industry | text | Secteur d'activité |
-| company_size | text | Taille entreprise |
-| responsibilities | jsonb | Liste des responsabilités clés |
-| tools_used | jsonb | Outils/technologies utilisés |
-| kpis | jsonb | Indicateurs de performance |
-| ai_use_cases | jsonb | Cas d'usage IA pertinents pour cette fonction |
-| organization_id | uuid? | Scope org optionnel |
-| status | text | draft/published |
-| generation_mode | text | manual/ai |
-| created_by | uuid | |
+## Etape 4 — Seed 20 fonctions
 
-### 2. Refondre `academy_personae` en profil comportemental pur
+Insertion directe via SQL des 20 fonctions organisationnelles avec payloads JSONB complets (responsibilities, tools_used, kpis, ai_use_cases). Couvrant : DG, COO, DRH, CMO, CFO, DSI, Responsable Innovation, Data/IA, Formation, Chef Projet Digital, Manager Commercial, Supply Chain, Juriste, Contrôleur de Gestion, Qualité, Relation Client, Communication Interne, Achats, Manager Proximité, Consultant Transformation. Tous status = published.
 
-Vider `characteristics` de tout ce qui est fonction et le remplacer par :
+## Etape 5 — Seed 6 personae
 
-| Attribut dans characteristics | Description |
-|-------------------------------|-------------|
-| digital_maturity | 1-5 : niveau de maturité numérique |
-| ai_apprehension | 1-5 : niveau d'appréhension face à l'IA |
-| experimentation_level | 1-5 : propension à expérimenter |
-| initiative_level | 1-5 : autonomie dans l'apprentissage |
-| change_appetite | 1-5 : appétence au changement |
-| learning_style | visual / reading / doing / discussing |
-| time_availability | micro (15min) / short (30min) / medium (1h) / intensive (2h+) |
-| motivation_drivers | string[] : reconnaissance, montée en compétences, curiosité, obligation... |
-| resistance_patterns | string[] : "manque de temps", "ça ne marche pas dans mon métier"... |
-| preferred_format | autonome / guidé / coaching / groupe |
+Insertion des 6 archétypes comportementaux corporate avec les 10 traits, tous les tags, et tous les champs textuels :
+1. Le Précurseur Digital
+2. Le Décideur Orienté Résultats
+3. Le Méthodique Structuré
+4. Le Profil en Observation
+5. Le Leader Transformationnel
+6. Le Professionnel sous Contrainte
 
-### 3. Table de liaison `academy_function_users`
+Tous status = published, organization_id = null (génériques).
 
-| Colonne | Type |
-|---------|------|
-| user_id | uuid |
-| function_id | uuid |
-| custom_context | jsonb | Contexte enrichi par l'utilisateur via onboarding IA |
-| assigned_at | timestamp |
+## Etape 6 — Seed 4 parcours complets avec modules
 
-### 4. Admin : deux sections séparées
+4 parcours avec double ciblage (function_id + persona_id) et 4-6 modules chacun :
+1. "Cadrer la Stratégie IA pour le COMEX" → DG + Leader Transformationnel
+2. "Intégrer l'IA dans les Processus RH" → DRH + Décideur Orienté Résultats
+3. "L'IA au Service du Manager de Terrain" → Manager Proximité + Professionnel sous Contrainte
+4. "Premiers Pas avec l'IA Générative" → (all) + Méthodique Structuré
 
-- **Fonctions** (`/admin/academy/functions`) : CRUD + génération IA des fonctions avec les 3 modes (guidé, corporate, chat) — récupère tout le code actuel des personae qui concerne seniority/department/industry
-- **Personae** (`/admin/academy/personae`) : refonte vers des profils comportementaux. Cards avec radar chart (maturity, apprehension, experimentation, initiative, change). Génération IA basée sur des archétypes comportementaux, pas des fiches de poste.
+~20 modules au total avec types variés (lesson, quiz, exercise, practice).
 
-### 5. Parcours liés à Fonction + Persona
+## Etape 7 — Seed 3 campagnes
 
-- `academy_paths.persona_id` reste (profil comportemental ciblé)
-- Ajouter `academy_paths.function_id` (fonction ciblée)
-- Un parcours peut cibler "DRH" (fonction) + "Prudent méthodique" (persona) = contenu adapté au métier ET au style d'apprentissage
+Liées aux parcours, à l'org Growthinnov, avec dates réalistes Q2-Q3 2026.
 
-### 6. Onboarding apprenant (futur)
+## Fichiers impactés
 
-- L'utilisateur est affecté à une fonction par l'admin
-- Lors du premier accès Academy, quiz comportemental IA (5-7 questions) pour déterminer son persona
-- L'IA enrichit le contexte utilisateur dans `academy_function_users.custom_context`
+- **Migration SQL** : ALTER academy_personae (parent_persona_id, tags)
+- **Edge function** : `supabase/functions/academy-generate/index.ts` (refonte generate-persona + derive-persona)
+- **Front** : `src/pages/admin/AdminAcademyPersonae.tsx` (radar 10 axes, tags, corporate names, org filter, derive button)
+- **Data seed** : ~7 INSERT statements via insert tool
 
-### Fichiers impactés
+## Ordre
 
-- **Migration SQL** : `academy_functions`, `academy_function_users`, alter `academy_paths` (add `function_id`)
-- **Nouveau** : `src/pages/admin/AdminAcademyFunctions.tsx`
-- **Refonte** : `src/pages/admin/AdminAcademyPersonae.tsx` (comportemental pur)
-- **Mise à jour** : `src/pages/admin/AdminAcademyPaths.tsx` (double ciblage)
-- **Mise à jour** : `src/pages/admin/AdminAcademy.tsx` (compteur fonctions)
-- **Route** : `src/App.tsx` (nouvelle route admin)
-- **Sidebar** : `src/components/admin/AdminSidebar.tsx` (lien Fonctions)
-- **Edge function** : `academy-generate` (action `generate-function`)
-
-### Ordre
-
-1. Migration SQL (table + RLS)
-2. Admin Fonctions (CRUD + IA, 3 modes)
-3. Refonte Admin Personae (radar comportemental)
-4. Mise à jour Parcours (double ciblage)
-5. Onboarding apprenant (phase ultérieure)
+1. Migration SQL
+2. Edge function refonte
+3. Front AdminAcademyPersonae
+4. Seed 20 fonctions
+5. Seed 6 personae
+6. Seed 4 parcours + modules
+7. Seed 3 campagnes
 
