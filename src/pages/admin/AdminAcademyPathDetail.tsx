@@ -432,10 +432,30 @@ export default function AdminAcademyPathDetail() {
             body: { action: "generate-illustrations", module_id: mod.id },
           });
         } catch (e: any) { console.error("Illustration gen error:", e); }
+
+        // Generate exercise
+        current++;
+        setBatchProgress({ current, total, step: `Exercice: ${mod.title}` });
+        try {
+          await supabase.functions.invoke("academy-generate", {
+            body: { action: "generate-exercise", module_id: mod.id },
+          });
+        } catch (e: any) { console.error("Exercise gen error:", e); }
+
+        // Generate practice
+        current++;
+        setBatchProgress({ current, total, step: `Pratique IA: ${mod.title}` });
+        try {
+          await supabase.functions.invoke("academy-generate", {
+            body: { action: "generate-practice", module_id: mod.id },
+          });
+        } catch (e: any) { console.error("Practice gen error:", e); }
       }
 
       qc.invalidateQueries({ queryKey: ["admin-path-contents", id] });
       qc.invalidateQueries({ queryKey: ["admin-path-quizzes", id] });
+      qc.invalidateQueries({ queryKey: ["admin-path-exercises", id] });
+      qc.invalidateQueries({ queryKey: ["admin-path-practices", id] });
       toast.success("Génération complète terminée !");
     } catch (e: any) {
       toast.error(`Erreur batch: ${e.message}`);
