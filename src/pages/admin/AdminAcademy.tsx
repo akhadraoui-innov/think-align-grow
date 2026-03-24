@@ -2,7 +2,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Users, Route, Megaphone, BookOpen, Plus } from "lucide-react";
+import { GraduationCap, Users, Route, Megaphone, BookOpen, Plus, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";

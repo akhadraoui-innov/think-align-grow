@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb, GraduationCap,
-  CreditCard, ScrollText, Settings, ArrowLeft, Sparkles,
+  CreditCard, ScrollText, Settings, ArrowLeft, Sparkles, Briefcase,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 
