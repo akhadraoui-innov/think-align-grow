@@ -4,7 +4,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import {
-  LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb,
+  LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb, GraduationCap,
   CreditCard, ScrollText, Settings, ArrowLeft, Sparkles,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
