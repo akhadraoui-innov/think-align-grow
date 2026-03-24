@@ -282,10 +282,10 @@ export default function AdminAcademyPaths() {
             </div>
             <div className="space-y-1.5">
               <Label>Persona cible</Label>
-              <Select value={form.persona_id} onValueChange={v => setForm({ ...form, persona_id: v })}>
+              <Select value={form.persona_id || "none"} onValueChange={v => setForm({ ...form, persona_id: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="Aucun (global)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun (global)</SelectItem>
+                  <SelectItem value="none">Aucun (global)</SelectItem>
                   {personae.map((p: any) => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
@@ -352,10 +352,10 @@ export default function AdminAcademyPaths() {
               </div>
               <div className="space-y-1.5">
                 <Label>Persona</Label>
-                <Select value={aiForm.persona_id} onValueChange={v => setAiForm({ ...aiForm, persona_id: v })}>
+                <Select value={aiForm.persona_id || "none"} onValueChange={v => setAiForm({ ...aiForm, persona_id: v === "none" ? "" : v })}>
                   <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucun</SelectItem>
+                    <SelectItem value="none">Aucun</SelectItem>
                     {personae.map((p: any) => (
                       <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                     ))}
