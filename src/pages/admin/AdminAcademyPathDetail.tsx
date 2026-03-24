@@ -651,7 +651,7 @@ export default function AdminAcademyPathDetail() {
                       {batchGenerating ? (
                         <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> {batchProgress.step} ({batchProgress.current}/{batchProgress.total})</>
                       ) : (
-                        <><Zap className="h-3.5 w-3.5 mr-1" /> Tout générer (contenu + quiz + illustrations)</>
+                        <><Zap className="h-3.5 w-3.5 mr-1" /> Tout générer</>
                       )}
                     </Button>
                   )}
