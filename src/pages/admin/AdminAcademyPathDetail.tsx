@@ -692,6 +692,13 @@ export default function AdminAcademyPathDetail() {
                                       {genQuiz.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <HelpCircle className="h-3.5 w-3.5 mr-1" />}
                                       {questionCount > 0 ? "Régénérer quiz" : "Générer quiz"}
                                     </Button>
+                                    {hasContent && (
+                                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); genIllustrations.mutate(mod.id); }}
+                                        disabled={genIllustrations.isPending}>
+                                        {genIllustrations.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Image className="h-3.5 w-3.5 mr-1" />}
+                                        Illustrations
+                                      </Button>
+                                    )}
                                     <div className="flex-1" />
                                     <Button size="sm" variant="ghost" onClick={() => openEditModule(mod)}>
                                       <Pencil className="h-3.5 w-3.5 mr-1" /> Éditer
