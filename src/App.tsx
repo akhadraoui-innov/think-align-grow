@@ -38,6 +38,7 @@ import AdminAcademy from "./pages/admin/AdminAcademy";
 import AdminAcademyPersonae from "./pages/admin/AdminAcademyPersonae";
 import AdminAcademyPaths from "./pages/admin/AdminAcademyPaths";
 import AdminAcademyCampaigns from "./pages/admin/AdminAcademyCampaigns";
+import AdminAcademyPathDetail from "./pages/admin/AdminAcademyPathDetail";
 
 const queryClient = new QueryClient();
 
