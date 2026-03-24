@@ -40,6 +40,8 @@ import AdminAcademyPaths from "./pages/admin/AdminAcademyPaths";
 import AdminAcademyCampaigns from "./pages/admin/AdminAcademyCampaigns";
 import AdminAcademyPathDetail from "./pages/admin/AdminAcademyPathDetail";
 import AdminAcademyFunctions from "./pages/admin/AdminAcademyFunctions";
+import AdminAcademyMap from "./pages/admin/AdminAcademyMap";
+import AdminAcademyTracking from "./pages/admin/AdminAcademyTracking";
 
 const queryClient = new QueryClient();
 

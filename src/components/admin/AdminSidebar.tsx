@@ -5,9 +5,21 @@ import {
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb, GraduationCap,
-  CreditCard, ScrollText, Settings, ArrowLeft, Sparkles, Briefcase,
+  CreditCard, ScrollText, Settings, ArrowLeft, Sparkles, Briefcase, Route, UserCircle,
+  Megaphone, Map, BarChart3, ChevronDown,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+const academySubItems = [
+  { path: "/admin/academy", icon: LayoutDashboard, label: "Vue d'ensemble", exact: true },
+  { path: "/admin/academy/map", icon: Map, label: "Cartographie" },
+  { path: "/admin/academy/functions", icon: Briefcase, label: "Fonctions" },
+  { path: "/admin/academy/personae", icon: UserCircle, label: "Personae" },
+  { path: "/admin/academy/paths", icon: Route, label: "Parcours" },
+  { path: "/admin/academy/campaigns", icon: Megaphone, label: "Campagnes" },
+  { path: "/admin/academy/tracking", icon: BarChart3, label: "Suivi" },
+];
 
 export function AdminSidebar() {
   const { state } = useSidebar();
@@ -16,6 +28,8 @@ export function AdminSidebar() {
   const navigate = useNavigate();
   const perms = usePermissions();
 
+  const isAcademyRoute = location.pathname.startsWith("/admin/academy");
+
   const mainItems = [
     { path: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true, show: perms.has("admin.dashboard.view") },
     { path: "/admin/organizations", icon: Building2, label: "Organisations", show: perms.has("admin.orgs.view") },
@@ -23,7 +37,6 @@ export function AdminSidebar() {
     { path: "/admin/toolkits", icon: Layers, label: "Toolkits", show: perms.has("admin.toolkits.view") },
     { path: "/admin/workshops", icon: Presentation, label: "Workshops", show: perms.has("admin.workshops.view") },
     { path: "/admin/design-innovation", icon: Lightbulb, label: "Design Innovation", show: perms.has("admin.challenges.view") },
-    { path: "/admin/academy", icon: GraduationCap, label: "Academy", show: perms.has("academy.paths.view") },
   ];
 
   const systemItems = [
@@ -34,11 +47,12 @@ export function AdminSidebar() {
 
   const visibleMain = mainItems.filter(i => i.show);
   const visibleSystem = systemItems.filter(i => i.show);
+  const showAcademy = perms.has("academy.paths.view");
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
 
-  const renderItem = (item: typeof mainItems[0]) => {
+  const renderItem = (item: { path: string; icon: any; label: string; exact?: boolean }) => {
     const active = isActive(item.path, item.exact);
     const Icon = item.icon;
     return (
@@ -87,6 +101,59 @@ export function AdminSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>{visibleMain.map(renderItem)}</SidebarMenu>
             </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Academy collapsible group */}
+        {showAcademy && (
+          <SidebarGroup>
+            <Collapsible defaultOpen={isAcademyRoute} open={collapsed ? false : undefined}>
+              <CollapsibleTrigger asChild>
+                <button
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                    isAcademyRoute
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }`}
+                  onClick={(e) => {
+                    if (collapsed) {
+                      e.preventDefault();
+                      navigate("/admin/academy");
+                    }
+                  }}
+                >
+                  <GraduationCap className="h-4 w-4 shrink-0" />
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1 text-left">Academy</span>
+                      <ChevronDown className="h-3 w-3 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                    </>
+                  )}
+                </button>
+              </CollapsibleTrigger>
+              {!collapsed && (
+                <CollapsibleContent className="pl-4 mt-1 space-y-0.5">
+                  {academySubItems.map(sub => {
+                    const active = isActive(sub.path, sub.exact);
+                    const SubIcon = sub.icon;
+                    return (
+                      <button
+                        key={sub.path}
+                        onClick={() => navigate(sub.path)}
+                        className={`flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                          active
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        }`}
+                      >
+                        <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                        <span>{sub.label}</span>
+                      </button>
+                    );
+                  })}
+                </CollapsibleContent>
+              )}
+            </Collapsible>
           </SidebarGroup>
         )}
 
