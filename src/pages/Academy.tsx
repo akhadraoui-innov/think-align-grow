@@ -1,5 +1,5 @@
 import { PageTransition } from "@/components/ui/PageTransition";
-import { GraduationCap, BookOpen, Trophy, ArrowRight, Search, Clock, Filter, PlayCircle, Sparkles, TrendingUp, Users, Star, ChevronRight } from "lucide-react";
+import { GraduationCap, BookOpen, Trophy, ArrowRight, Search, Clock, Filter, PlayCircle, Sparkles, TrendingUp, Users, Star, ChevronRight, LayoutDashboard } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
