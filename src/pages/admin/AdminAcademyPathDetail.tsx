@@ -613,36 +613,161 @@ export default function AdminAcademyPathDetail() {
                                   {hasContent && (
                                     <div className="space-y-3">
                                       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contenu du module</h4>
-                                      {modContents.map((c: any, ci: number) => (
-                                        <div key={c.id} className="rounded-lg border bg-background p-4">
-                                          <div className="flex items-center gap-2 mb-2">
-                                            <Badge variant="outline" className="text-[10px]">Section {ci + 1}</Badge>
-                                            <Badge variant="outline" className="text-[10px]">{c.content_type}</Badge>
+                                      {modContents.map((c: any, ci: number) => {
+                                        const contentId = `content-${c.id}`;
+                                        const isFullView = expandedModules.has(contentId);
+                                        return (
+                                          <div key={c.id} className="rounded-xl border bg-background overflow-hidden">
+                                            <div className="flex items-center gap-2 px-4 py-2.5 border-b bg-muted/30">
+                                              <Badge variant="outline" className="text-[10px]">Section {ci + 1}</Badge>
+                                              <Badge variant="outline" className="text-[10px]">{c.content_type}</Badge>
+                                              <span className="text-[10px] text-muted-foreground ml-auto">{(c.body?.length || 0).toLocaleString()} car.</span>
+                                            </div>
+                                            <div className={`p-4 ${!isFullView ? "max-h-96 overflow-y-auto" : ""}`}>
+                                              <EnrichedMarkdown content={c.body || ""} />
+                                            </div>
+                                            {c.body?.length > 500 && (
+                                              <button
+                                                onClick={(e) => { e.stopPropagation(); toggleModule(contentId); }}
+                                                className="w-full text-center py-2 border-t text-xs text-primary hover:bg-muted/30 transition-colors font-medium"
+                                              >
+                                                {isFullView ? "Réduire ↑" : "Voir tout le contenu ↓"}
+                                              </button>
+                                            )}
                                           </div>
-                                          <div className="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed max-h-48 overflow-y-auto">
-                                            <ReactMarkdown>{c.body?.slice(0, 1000) || ""}</ReactMarkdown>
-                                          </div>
-                                          {c.body?.length > 1000 && (
-                                            <p className="text-[10px] text-muted-foreground mt-2 italic">... contenu tronqué ({c.body.length} caractères)</p>
-                                          )}
-                                        </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   )}
 
-                                  {/* Quiz preview */}
+                                  {/* Quiz preview enrichi */}
                                   {modQuiz && questionCount > 0 && (
                                     <div className="space-y-3">
-                                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quiz — {modQuiz.title}</h4>
-                                      <div className="grid gap-2">
-                                        {(modQuiz.academy_quiz_questions || []).map((q: any, qi: number) => (
-                                          <div key={q.id} className="rounded-lg border bg-background p-3">
-                                            <p className="text-xs font-medium">
-                                              <span className="text-muted-foreground mr-1">Q{qi + 1}.</span>
-                                              {typeof q.question === "string" ? q.question : JSON.stringify(q.question)}
-                                            </p>
-                                          </div>
-                                        ))}
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quiz — {modQuiz.title}</h4>
+                                        <Badge variant="secondary" className="text-[10px]">{questionCount} questions</Badge>
+                                        <Badge variant="outline" className="text-[10px]">Seuil : {modQuiz.passing_score}%</Badge>
+                                      </div>
+                                      <div className="space-y-2">
+                                        {(modQuiz.academy_quiz_questions || []).map((q: any, qi: number) => {
+                                          const qType = quizTypeConfig[q.question_type] || quizTypeConfig.mcq;
+                                          const QIcon = qType.icon;
+                                          const questionExpandId = `quiz-q-${q.id}`;
+                                          const isQExpanded = expandedModules.has(questionExpandId);
+                                          const options = q.options || {};
+                                          const correctAnswer = q.correct_answer;
+                                          const hint = typeof options === "object" && options.hint ? options.hint : null;
+
+                                          return (
+                                            <div key={q.id} className="rounded-xl border bg-background overflow-hidden">
+                                              <button
+                                                onClick={(e) => { e.stopPropagation(); toggleModule(questionExpandId); }}
+                                                className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-muted/20 transition-colors"
+                                              >
+                                                <div className={`flex items-center justify-center h-7 w-7 rounded-lg shrink-0 ${qType.bg}`}>
+                                                  <QIcon className={`h-3.5 w-3.5 ${qType.color}`} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="flex items-center gap-2 mb-0.5">
+                                                    <span className="text-[10px] font-bold text-muted-foreground">Q{qi + 1}</span>
+                                                    <Badge className={`text-[9px] px-1.5 py-0 ${qType.bg} ${qType.color} border-0`}>{qType.label}</Badge>
+                                                    <span className="text-[10px] text-muted-foreground">{q.points || 1} pt{(q.points || 1) > 1 ? "s" : ""}</span>
+                                                  </div>
+                                                  <p className="text-xs font-medium line-clamp-2">{q.question}</p>
+                                                </div>
+                                                {isQExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 mt-1" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />}
+                                              </button>
+
+                                              {isQExpanded && (
+                                                <div className="px-4 pb-4 pt-1 border-t space-y-3 bg-muted/10">
+                                                  {/* Options display by type */}
+                                                  {(q.question_type === "mcq" || q.question_type === "true_false") && Array.isArray(options.choices || options) && (
+                                                    <div className="space-y-1.5">
+                                                      <p className="text-[10px] font-semibold text-muted-foreground uppercase">Options</p>
+                                                      {(options.choices || options).map((opt: any, oi: number) => {
+                                                        const optLabel = typeof opt === "string" ? opt : opt.label || opt.text || JSON.stringify(opt);
+                                                        const isCorrect = Array.isArray(correctAnswer) ? correctAnswer.includes(oi) || correctAnswer.includes(optLabel) : correctAnswer === oi || correctAnswer === optLabel || correctAnswer === opt;
+                                                        return (
+                                                          <div key={oi} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs border ${isCorrect ? "border-emerald-500/50 bg-emerald-500/10" : "border-transparent bg-muted/30"}`}>
+                                                            {isCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                                                            <span className={isCorrect ? "font-medium" : ""}>{optLabel}</span>
+                                                          </div>
+                                                        );
+                                                      })}
+                                                    </div>
+                                                  )}
+
+                                                  {q.question_type === "ordering" && Array.isArray(options.items || options) && (
+                                                    <div className="space-y-1.5">
+                                                      <p className="text-[10px] font-semibold text-muted-foreground uppercase">Ordre correct</p>
+                                                      {(Array.isArray(correctAnswer) ? correctAnswer : options.items || options).map((item: any, oi: number) => (
+                                                        <div key={oi} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs border bg-muted/20">
+                                                          <span className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">{oi + 1}</span>
+                                                          <span>{typeof item === "string" ? item : item.label || JSON.stringify(item)}</span>
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  )}
+
+                                                  {q.question_type === "matching" && (
+                                                    <div className="space-y-1.5">
+                                                      <p className="text-[10px] font-semibold text-muted-foreground uppercase">Paires</p>
+                                                      {(Array.isArray(correctAnswer) ? correctAnswer : options.pairs || []).map((pair: any, pi: number) => (
+                                                        <div key={pi} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs border bg-muted/20">
+                                                          <span className="font-medium">{pair.left || pair[0]}</span>
+                                                          <Link2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                                                          <span>{pair.right || pair[1]}</span>
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  )}
+
+                                                  {q.question_type === "fill_blank" && (
+                                                    <div className="space-y-1.5">
+                                                      <p className="text-[10px] font-semibold text-muted-foreground uppercase">Réponse attendue</p>
+                                                      <div className="rounded-lg px-3 py-2 text-xs border bg-emerald-500/10 border-emerald-500/50 font-medium">
+                                                        {Array.isArray(correctAnswer) ? correctAnswer.join(" / ") : String(correctAnswer)}
+                                                      </div>
+                                                    </div>
+                                                  )}
+
+                                                  {q.question_type === "scenario" && (
+                                                    <div className="space-y-1.5">
+                                                      <p className="text-[10px] font-semibold text-muted-foreground uppercase">Scénario</p>
+                                                      {options.context && <p className="text-xs text-muted-foreground italic rounded-lg bg-muted/30 p-3">{options.context}</p>}
+                                                      {Array.isArray(options.choices) && options.choices.map((opt: any, oi: number) => {
+                                                        const optLabel = typeof opt === "string" ? opt : opt.label || opt.text || JSON.stringify(opt);
+                                                        const isCorrect = correctAnswer === oi || correctAnswer === optLabel;
+                                                        return (
+                                                          <div key={oi} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs border ${isCorrect ? "border-emerald-500/50 bg-emerald-500/10" : "border-transparent bg-muted/30"}`}>
+                                                            {isCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />}
+                                                            <span className={isCorrect ? "font-medium" : ""}>{optLabel}</span>
+                                                          </div>
+                                                        );
+                                                      })}
+                                                    </div>
+                                                  )}
+
+                                                  {/* Hint */}
+                                                  {hint && (
+                                                    <div className="flex items-start gap-2 rounded-lg bg-amber-500/5 border border-amber-500/20 p-3">
+                                                      <Lightbulb className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                                      <p className="text-xs text-amber-700 dark:text-amber-400">{hint}</p>
+                                                    </div>
+                                                  )}
+
+                                                  {/* Explanation */}
+                                                  {q.explanation && (
+                                                    <div className="rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
+                                                      <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase mb-1">Explication</p>
+                                                      <p className="text-xs text-blue-700 dark:text-blue-300">{q.explanation}</p>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
                                       </div>
                                     </div>
                                   )}
