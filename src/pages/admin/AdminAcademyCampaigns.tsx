@@ -243,7 +243,7 @@ export default function AdminAcademyCampaigns() {
             </div>
             <div className="space-y-1.5">
               <Label>Organisation</Label>
-              <Select value={form.organization_id} onValueChange={v => setForm({ ...form, organization_id: v })}>
+              <Select value={form.organization_id || "none"} onValueChange={v => setForm({ ...form, organization_id: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="Choisir une organisation" /></SelectTrigger>
                 <SelectContent>
                   {orgs.map((o: any) => (
