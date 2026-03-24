@@ -1,213 +1,237 @@
-# PRD Complet — Hack & Show : Plateforme SaaS de Workshops Stratégiques
 
-## Vision produit
 
-Hack & Show est une plateforme SaaS B2B multi-tenant de workshops stratégiques.
+# Academy — Module de Formation intégré
 
-### L'organisation comme entité centrale
+## Vision
 
-L'**organisation** est le pilier du modèle de données. Chaque action (workshops, challenges, toolkits, abonnements, crédits) s'inscrit dans le contexte d'une organisation. Une organisation possède :
+Un LMS (Learning Management System) complet, intégré au front existant (sidebar user + admin) mais avec un **schéma DB isolé** (tables préfixées `academy_`) et des **edge functions dédiées** pour faciliter la réutilisation sur d'autres projets.
 
-- **Identité & branding** : nom, slug, logo, couleur primaire
-- **Informations légales** : SIRET, TVA intracommunautaire, secteur d'activité
-- **Structure** : appartenance à un groupe, lien filiale/parent (self-referencing)
-- **Coordonnées** : email, téléphone, site web
-- **Adresses** : multi-adresses (siège, sites, bureaux)
-- **Contacts & mapping décisionnel** : contacts avec niveau de décision (Décideur, Prescripteur, Influenceur, Utilisateur, Sponsor), poste, direction
-- **Notes internes** : champ libre pour l'équipe SaaS
-- **Membres** avec rôles (Owner, Admin, Member, Guest…)
-- **Équipes** internes
-- **Toolkits** assignés et activés
-- **Abonnement** avec plan et quotas
-- **Workshops** réalisés
-- **Journal d'activité** (audit trail)
+## Architecture données (tables `academy_*`)
 
-### Organisation plateforme : Growthinnov
+```text
+academy_personae              → Profils cibles (persona marketing/pédagogique)
+academy_paths                 → Parcours de formation (séquence de modules)
+academy_path_modules          → Junction parcours ↔ modules (ordre)
+academy_modules               → Unité pédagogique (titre, objectifs, durée)
+academy_contents              → Contenu d'un module (texte, vidéo, slide, markdown)
+academy_quizzes               → Quiz rattaché à un module
+academy_quiz_questions        → Questions d'un quiz (QCM, vrai/faux, libre)
+academy_exercises             → Exercices pratiques (consigne, critères)
+academy_practices             → Sessions de pratique IA (prompt, scénario, config)
+academy_campaigns             → Campagnes de formation (dates, cibles, parcours)
+academy_campaign_targets      → Junction campagne ↔ personae/orgs/users
+academy_enrollments           → Inscription d'un user à un parcours
+academy_progress              → Progression par module (statut, score, timestamps)
+academy_certificates          → Certificats générés à la fin d'un parcours
+```
 
-**Growthinnov** est l'organisation spéciale marquée `is_platform_owner = true`. Elle est à la fois :
-1. **L'éditeur SaaS** qui développe et exploite la plateforme Hack & Show
-2. **Un client** qui utilise la plateforme pour ses propres workshops et challenges
+### Relations clés
 
-Seuls les **super_admin** peuvent modifier le flag `is_platform_owner`. Une seule organisation peut porter ce flag à la fois.
+```text
+Persona ←── Campaign Targets ──→ Campaign ──→ Path
+                                                │
+                                          Path Modules (ordered)
+                                                │
+                                              Module
+                                           ┌────┼────┐
+                                        Content Quiz Exercise/Practice
 
-Les membres de l'organisation plateforme ayant un rôle SaaS (`super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) accèdent au back-office d'administration.
+User ──→ Enrollment ──→ Path
+User ──→ Progress ──→ Module (score, completed_at)
+User ──→ Certificate ──→ Path
+```
 
-## Sprint 1 — COMPLÉTÉ ✅
+## Schéma DB détaillé
 
-### Migration SQL
-- ✅ Enum `app_role` étendu : +9 valeurs
-- ✅ 8 nouvelles tables, colonnes ajoutées, fonctions SECURITY DEFINER, RLS complètes
+### `academy_personae`
+| Colonne | Type |
+|---------|------|
+| id | uuid PK |
+| name | text |
+| description | text |
+| avatar_url | text |
+| characteristics | jsonb (seniority, department, goals, pain_points) |
+| organization_id | uuid nullable (scope org ou global) |
+| created_by | uuid |
+| generation_mode | text ('manual' / 'ai') |
+| status | text ('draft' / 'published') |
 
-### Frontend Admin
-- ✅ useAdminRole, AdminGuard, AdminSidebar, AdminShell
-- ✅ 9 pages admin placeholder + routes + lien conditionnel sidebar
+### `academy_paths`
+| Colonne | Type |
+|---------|------|
+| id | uuid PK |
+| name | text |
+| description | text |
+| difficulty | text |
+| estimated_hours | numeric |
+| tags | jsonb |
+| persona_id | uuid nullable FK |
+| organization_id | uuid nullable |
+| status | text ('draft' / 'published' / 'archived') |
+| generation_mode | text |
+| certificate_enabled | boolean |
 
-## Sprint 2 — COMPLÉTÉ ✅
+### `academy_modules`
+| Colonne | Type |
+|---------|------|
+| id | uuid PK |
+| title | text |
+| description | text |
+| objectives | jsonb (array of strings) |
+| estimated_minutes | int |
+| sort_order | int |
+| module_type | text ('lesson' / 'quiz' / 'exercise' / 'practice') |
+| status | text |
+| generation_mode | text |
 
-### Dashboard avec données réelles
-- ✅ useAdminStats hook : counts orgs/users/workshops/credits, activité récente, graphique hebdo
-- ✅ Dashboard : 4 StatsCards live, BarChart recharts (sessions/semaine), liste activité récente
+### `academy_contents`
+| Colonne | Type |
+|---------|------|
+| id | uuid PK |
+| module_id | uuid FK |
+| content_type | text ('markdown' / 'video' / 'slides' / 'embed') |
+| body | text (markdown/HTML) |
+| media_url | text nullable |
+| sort_order | int |
+| generation_mode | text |
 
-### Composant DataTable réutilisable
-- ✅ Recherche, tri par colonne, pagination, row click, slot actions
+### `academy_quizzes` + `academy_quiz_questions`
+Structure similaire aux `quiz_questions` existants mais scopée Academy, avec support de types variés : QCM, vrai/faux, texte libre, association, ordonnancement.
 
-### CRUD Organisations
-- ✅ useOrganizations + useOrganizationDetail hooks
-- ✅ Liste avec DataTable, recherche, tri, création via dialog
-- ✅ Fiche détaillée avec 8 onglets : Infos, Membres, Équipes, Toolkits, Abonnement, Workshops, Usage, Activité
-- ✅ Onglet Infos enrichi : stats, branding, légal, structure/groupe/filiale, coordonnées, adresses multi, contacts avec mapping décisionnel, notes internes, zone danger
-- ✅ Route /admin/organizations/:id
-- ✅ Flag `is_platform_owner` sur organisations (Growthinnov = éditeur SaaS)
+### `academy_exercises`
+| Colonne | Type |
+|---------|------|
+| id | uuid PK |
+| module_id | uuid FK |
+| title | text |
+| instructions | text (markdown) |
+| evaluation_criteria | jsonb |
+| expected_output_type | text ('text' / 'file' / 'url') |
+| ai_evaluation_enabled | boolean |
 
-## Sprint 3 — COMPLÉTÉ ✅
+### `academy_practices`
+| Colonne | Type |
+|---------|------|
+| id | uuid PK |
+| module_id | uuid FK |
+| title | text |
+| scenario | text (contexte métier) |
+| system_prompt | text (personnalité de l'IA coach) |
+| evaluation_rubric | jsonb (critères de scoring) |
+| max_exchanges | int |
+| difficulty | text |
 
-### Gestion des utilisateurs (AdminUsers)
-- ✅ Liste complète avec DataTable : display_name, email, rôle(s), organisation(s), statut, XP, crédits, dernière connexion
-- ✅ Fiche utilisateur détaillée avec 8 onglets : Infos, Rôles, Organisations, Crédits, Workshops, Challenges, Cartes, Activité
-- ✅ UserInfoTab riche : identité professionnelle, poste, département, service, pôle, niveau hiérarchique, manager (dropdown/saisie libre), coordonnées, intérêts (tags JSONB), objectifs (tags JSONB), bio, LinkedIn, localisation
-- ✅ UserOrgsTab : ajout/retrait d'organisations avec dialog, sélection de rôle, navigation vers fiche org
-- ✅ UserRolesTab : attribution de rôles plateforme avec légende complète
-- ✅ UserCreditsTab : solde, lifetime, historique des transactions
-- ✅ UserWorkshopsTab : workshops hébergés et participations
-- ✅ UserChallengesTab : performances quiz et challenges
-- ✅ UserCardsTab : suivi des vues et favoris
-- ✅ UserActivityTab : journal d'audit utilisateur
+### `academy_campaigns`
+| Colonne | Type |
+|---------|------|
+| id | uuid PK |
+| name | text |
+| description | text |
+| path_id | uuid FK |
+| organization_id | uuid FK |
+| starts_at | timestamptz |
+| ends_at | timestamptz nullable |
+| status | text ('draft' / 'active' / 'completed') |
+| reminder_config | jsonb |
 
-### Hook usePermissions
-- ✅ Permissions granulaires par rôle avec booléens (canManageOrgs, canManageUsers, canManageToolkits, canViewBilling, canManageWorkshops, etc.)
+### `academy_enrollments` + `academy_progress`
+Tracking individuel : inscription, avancement module par module, scores, temps passé.
 
-### Hook useAdminUserDetail
-- ✅ 9 requêtes parallèles + 6 mutations (updateProfile, addRole, removeRole, adjustCredits, addToOrganization, removeFromOrganization)
+## Edge Functions dédiées
 
-### Migration SQL Sprint 3
-- ✅ Profils enrichis : job_title, department, service, pole, hierarchy_level, manager_user_id, manager_name, bio, interests, objectives, linkedin_url, location, email, phone
+| Fonction | Rôle |
+|----------|------|
+| `academy-generate-persona` | Génère un persona à partir d'un brief (poste, secteur, enjeux) |
+| `academy-generate-path` | Crée un parcours complet (modules, contenus, quiz) à partir d'un persona + objectifs |
+| `academy-generate-content` | Génère le contenu d'un module (leçon markdown, slides) |
+| `academy-generate-quiz` | Crée un quiz avec questions variées à partir du contenu d'un module |
+| `academy-generate-exercise` | Génère un exercice pratique avec critères d'évaluation |
+| `academy-evaluate-exercise` | Évalue une soumission d'exercice par IA |
+| `academy-practice-chat` | Chat IA pour les sessions de pratique (prompt coaching) |
+| `academy-evaluate-practice` | Scoring d'une session de pratique terminée |
 
-## Sprint 4 — COMPLÉTÉ ✅
+Chaque fonction utilise le Lovable AI Gateway avec des prompts système spécialisés et du structured output (tool calling) pour garantir la rigueur.
 
-### Gestion des Toolkits
-- ✅ useAdminToolkits hook : liste + counts (piliers/cartes par toolkit) + mutations CRUD
-- ✅ useAdminToolkitDetail hook : toolkit + piliers + cartes + challenges + game plans + quiz + org accès
-- ✅ Page AdminToolkits : DataTable (nom, slug, statut, nb piliers, nb cartes, date), création via dialog
-- ✅ Fiche AdminToolkitDetail avec 7 onglets :
-  - Infos : nom, slug, emoji, description, statut, métadonnées
-  - Piliers : liste avec CRUD inline (nom, slug, couleur, icône, ordre)
-  - Cartes : groupées par pilier, affichage titre/phase/objectif/KPI + bouton import edge function
-  - Challenges : templates avec sujets et slots imbriqués
-  - Game Plans : plans avec étapes ordonnées
-  - Quiz : questions par pilier avec compteur d'options
-  - Organisations : ajout/retrait d'accès toolkit pour les orgs
-- ✅ Route /admin/toolkits/:id
+## Permissions (domaine dédié)
 
-### Gestion des Workshops (vue admin)
-- ✅ useAdminWorkshops hook : liste avec jointures profiles (host) + organizations + participant counts
-- ✅ Page AdminWorkshops : DataTable (nom, code, statut, animateur, organisation, participants, date)
+Nouveau domaine `academy` dans `permission_domains` + `permission_definitions` :
 
-## Sprint 4.2 — COMPLÉTÉ ✅
+```text
+academy.paths.view       — Voir les parcours
+academy.paths.create     — Créer un parcours
+academy.paths.edit       — Modifier un parcours
+academy.modules.manage   — Gérer les modules
+academy.campaigns.view   — Voir les campagnes
+academy.campaigns.manage — Gérer les campagnes
+academy.content.create   — Créer du contenu
+academy.content.ai       — Utiliser la génération IA
+academy.analytics.view   — Voir les statistiques
+academy.certificates.manage — Gérer les certificats
+```
 
-### Nettoyage & dynamisation toolkit
-- ✅ Suppression du slug hardcodé `TOOLKIT_SLUG` — `useToolkit()` récupère désormais le premier toolkit publié dynamiquement
-- ✅ Suppression des fichiers mock inutilisés (`mockCards.ts`, `mockQuiz.ts`)
-- ✅ Dynamisation des helpers visuels : `getPillarGradient()` et `getPillarIconName()` acceptent les valeurs DB (`color`, `icon_name`) avec fallback sur les maps legacy
-- ✅ Aucune migration DB nécessaire
++ Insertion dans `role_permissions` pour les rôles existants.
 
-## Sprint 5 — COMPLÉTÉ ✅
+## Intégration Front
 
-### Facturation & Abonnements (AdminBilling)
-- ✅ `useAdminBilling` hook : plans CRUD, subscriptions list with joins, credit stats
-- ✅ Page AdminBilling avec 3 sections : stats crédits, plans d'abonnement (CRUD), abonnements actifs
-- ✅ Dialog création/édition plan : nom, prix, quotas (JSONB), features (toggles), statut, ordre
-- ✅ Dialog création/édition abonnement : select org, select plan, statut, dates
-- ✅ Suppression plan avec confirmation AlertDialog
-- ✅ RLS ajoutée : saas team SELECT + INSERT sur `credit_transactions`
+### Sidebar User (AppSidebar)
+Nouvelle section "Academy" :
+- `/academy` — Mes formations (enrollments + progression)
+- `/academy/catalog` — Catalogue des parcours disponibles
 
-### Logs d'audit (AdminLogs)
-- ✅ `useAdminLogs` hook : filtres dynamiques, pagination server-side, jointure organizations
-- ✅ Page AdminLogs avec filtres : action, type entité, organisation, dates, recherche texte
-- ✅ Pagination server-side (25/page) avec compteur total
-- ✅ Détail metadata : dialog avec JSON formaté
-- ✅ Styles cohérents avec le design system existant
+### Sidebar Admin (AdminSidebar)
+Nouvelle section "Academy" :
+- `/admin/academy` — Dashboard Academy
+- `/admin/academy/personae` — Gestion des personae
+- `/admin/academy/paths` — Parcours de formation
+- `/admin/academy/campaigns` — Campagnes
+- `/admin/academy/content` — Bibliothèque de contenu
 
-## Sprint 6 — COMPLÉTÉ ✅
+### Pages à créer
 
-### Enrichissement logs
-- ✅ Résolution `user_id` → `display_name` via batch-query `profiles` (requête secondaire post-fetch)
-- ✅ Affichage du nom utilisateur lisible dans la colonne "Utilisateur" des logs
-- ✅ Export CSV des logs filtrés (jusqu'à 5000 entrées) avec résolution des noms
+**User :**
+- `src/pages/Academy.tsx` — Liste des parcours inscrits + catalogue
+- `src/pages/AcademyPath.tsx` — Vue d'un parcours (modules, progression)
+- `src/pages/AcademyModule.tsx` — Consommation d'un module (contenu + quiz/exercice/practice)
 
-### Dashboard billing avancé
-- ✅ Graphique BarChart recharts : crédits distribués vs dépensés sur 6 mois
-- ✅ Nouvel onglet "Crédits par organisation" : table avec earned/spent/balance par org
-- ✅ Agrégation via jointure `credit_transactions` → `organization_members` → `organizations`
+**Admin :**
+- `src/pages/admin/AdminAcademy.tsx` — Dashboard + liste
+- `src/pages/admin/AdminAcademyPathDetail.tsx` — Détail/édition d'un parcours
+- `src/pages/admin/AdminAcademyPersonae.tsx` — Gestion des personae
+- `src/pages/admin/AdminAcademyCampaigns.tsx` — Campagnes
 
-## Sprint 7 — COMPLÉTÉ ✅
+## Plan d'implémentation (phases)
 
-### Profil utilisateur authentifié
-- ✅ Page Profile détecte l'état de connexion (guest vs authentifié)
-- ✅ Vue authentifiée : avatar, display_name, job_title, department, email
-- ✅ Stats temps réel : XP, crédits, cartes vues, quiz complétés
-- ✅ Liste des organisations avec rôles
-- ✅ Dialog d'édition profil (display_name, job_title, department)
-- ✅ Bouton déconnexion
+### Phase 1 — Fondations (DB + navigation)
+- Migration SQL : 14 tables academy_* avec RLS
+- Permissions : domaine + définitions + assignation rôles
+- Routes + sidebar user/admin
+- Pages squelettes
 
-### Contexte multi-tenant
-- ✅ `OrgProvider` context avec `useActiveOrg` hook
-- ✅ Composant `OrgSwitcher` dans la sidebar (dropdown si multi-org, badge si mono-org)
-- ✅ Persistance de l'org active dans localStorage
-- ✅ Intégration dans `AppSidebar` footer
+### Phase 2 — Gestion manuelle (admin)
+- CRUD Personae, Parcours, Modules, Contenus
+- CRUD Quiz + Questions
+- CRUD Exercices + Practices
+- CRUD Campagnes
 
-### Persistance quiz
-- ✅ `QuizEngine` sauvegarde les scores dans `quiz_results` à la complétion
-- ✅ `Lab.tsx` charge le dernier résultat quiz depuis la DB au montage
-- ✅ Hydratation automatique du RadarChart et des badges depuis les données persistées
+### Phase 3 — Génération IA
+- Edge functions de génération (persona, parcours, contenu, quiz, exercice)
+- UI "Générer par IA" dans chaque section admin
+- Streaming pour la génération de parcours complets
 
-### Liaison Workshop → Organisation
-- ✅ `useCreateWorkshop` accepte un `organizationId` optionnel
-- ✅ `Workshop.tsx` passe l'org active du contexte à la création
+### Phase 4 — Expérience apprenant
+- Inscription à un parcours
+- Navigation module par module
+- Quiz interactif
+- Soumission d'exercices + évaluation IA
+- Practice chat (session de prompt coaching)
+- Progression + certificats
 
-## Sprint 8 — COMPLÉTÉ ✅
+### Phase 5 — Campagnes + Analytics
+- Lancement de campagnes ciblées
+- Tableaux de bord de progression
+- Rappels et relances
 
-### Activation des crédits côté utilisateur
-- ✅ Fonction DB `spend_credits` atomique (SECURITY DEFINER, row lock, vérification solde)
-- ✅ Hook `useSpendCredits` pour débit sécurisé via RPC
-- ✅ Hook `useCredits` simplifié (lecture seule, invalidation via spend)
+## Démarrage recommandé
 
-### Débit réel sur les actions
-- ✅ **Coach IA** : 1 crédit par message, appel réel à l'IA via edge function `ai-coach` (Gemini 2.5 Flash)
-- ✅ **Création Workshop** : débit de `toolkit.credit_cost_workshop` crédits avant création
-- ✅ **Création Challenge** : débit de `toolkit.credit_cost_challenge` crédits avant lancement
+Commencer par la **Phase 1** : migration SQL des 14 tables + permissions + routes. C'est le socle sans lequel rien ne fonctionne. Cela représente ~1 migration SQL conséquente + modifications de 4-5 fichiers front (App.tsx, AppSidebar, AdminSidebar, pages squelettes).
 
-### Enforcement des quotas d'abonnement
-- ✅ Hook `useQuotas` : lecture quotas depuis `subscription_plans.quotas` via `organization_subscriptions`
-- ✅ Vérification `max_workshops` et `max_challenges` vs usage réel
-- ✅ Blocage UI avec messages explicites quand quota atteint
-
-### UX crédits
-- ✅ Page IA : solde réel affiché, outils grisés si crédits insuffisants
-- ✅ Chat IA : alerte inline crédits insuffisants, input désactivé
-- ✅ Workshop/Challenge : coût affiché dans la dialog de création, bouton désactivé si insuffisant
-- ✅ Edge function `ai-coach` déployée avec prompt coach stratégique
-
-## Sprint 9 — COMPLÉTÉ ✅
-
-### Dashboard utilisateur (P0)
-- ✅ Page d'accueil (`/`) : landing guest vs dashboard authentifié
-- ✅ Dashboard : stats (XP, crédits, cartes vues, quiz), actions rapides, workshops récents, résumé (animés, favoris)
-
-### Profil enrichi (P0)
-- ✅ Tous les champs DB en édition : service, pôle, hiérarchie, manager, bio, LinkedIn, localisation, téléphone, email secondaire
-- ✅ Dialog d'édition organisé en 3 onglets (Identité, Pro, Contact)
-- ✅ Upload avatar avec storage bucket `avatars` (RLS : upload/delete propre user, lecture publique)
-- ✅ Affichage LinkedIn, localisation, détails professionnels sur le profil
-
-### Permissions admin UI (P1)
-- ✅ `AdminSidebar` filtre les entrées selon `usePermissions` (canManageOrgs, canManageUsers, canManageToolkits, etc.)
-- ✅ Chaque item sidebar conditionné par le rôle de l'utilisateur
-
-### Dashboard admin enrichi (P1)
-- ✅ Graphique croissance utilisateurs (6 mois, LineChart cumulative + nouveaux)
-- ✅ Top 5 utilisateurs par XP
-- ✅ Alertes : abonnements expirant dans 30 jours
-- ✅ Layout amélioré : 2 graphiques côte à côte + 3 colonnes (top users, alertes, activité)
-
-### Vue quotas (P1)
-- ✅ `OrgUsageTab` déjà fonctionnel : affichage quotas vs usage avec progress bars et alertes visuelles (>80%)
