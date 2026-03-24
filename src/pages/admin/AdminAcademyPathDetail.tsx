@@ -138,7 +138,35 @@ export default function AdminAcademyPathDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  function openCreateModule() {
+  const genContent = useMutation({
+    mutationFn: async (moduleId: string) => {
+      toast.info("Génération du contenu en cours...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-content", module_id: moduleId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => toast.success(`${data.section_count} sections de contenu générées`),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const genQuiz = useMutation({
+    mutationFn: async (moduleId: string) => {
+      toast.info("Génération du quiz en cours...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-quiz", module_id: moduleId, question_count: 5 },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => toast.success(`Quiz généré avec ${data.question_count} questions`),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+
     setEditModuleId(null);
     setModuleForm(emptyModule);
     setModuleOpen(true);
