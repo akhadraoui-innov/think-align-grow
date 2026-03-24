@@ -282,7 +282,7 @@ export default function AdminAcademyPaths() {
             </div>
             <div className="space-y-1.5">
               <Label>Persona cible</Label>
-              <Select value={form.persona_id} onValueChange={v => setForm({ ...form, persona_id: v })}>
+              <Select value={form.persona_id || "none"} onValueChange={v => setForm({ ...form, persona_id: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="Aucun (global)" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Aucun (global)</SelectItem>
