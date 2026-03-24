@@ -35,6 +35,7 @@ import Academy from "./pages/Academy";
 import AcademyPath from "./pages/AcademyPath";
 import AcademyModule from "./pages/AcademyModule";
 import AcademyDashboard from "./pages/AcademyDashboard";
+import AcademyCertificates from "./pages/AcademyCertificates";
 import AdminAcademy from "./pages/admin/AdminAcademy";
 import AdminAcademyPersonae from "./pages/admin/AdminAcademyPersonae";
 import AdminAcademyPaths from "./pages/admin/AdminAcademyPaths";
