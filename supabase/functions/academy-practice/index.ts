@@ -17,18 +17,26 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const { practice_id, messages, evaluate } = await req.json();
+    const { practice_id, messages, evaluate, system_override } = await req.json();
     if (!practice_id) throw new Error("Missing practice_id");
 
-    // Fetch practice config
-    const { data: practice, error: pErr } = await supabase
-      .from("academy_practices")
-      .select("*")
-      .eq("id", practice_id)
-      .single();
-    if (pErr || !practice) throw new Error("Practice not found");
+    let systemPrompt: string;
+    let rubric: any[] = [];
 
-    const systemPrompt = practice.system_prompt || `Tu es un coach pédagogique bienveillant et exigeant. Guide l'apprenant avec des questions pertinentes, donne du feedback constructif, et aide-le à progresser.`;
+    if (practice_id === "__persona_chat__" && system_override) {
+      // Ad-hoc chat mode (e.g. persona creation assistant)
+      systemPrompt = system_override;
+    } else {
+      // Fetch practice config
+      const { data: practice, error: pErr } = await supabase
+        .from("academy_practices")
+        .select("*")
+        .eq("id", practice_id)
+        .single();
+      if (pErr || !practice) throw new Error("Practice not found");
+      systemPrompt = practice.system_prompt || `Tu es un coach pédagogique bienveillant et exigeant. Guide l'apprenant avec des questions pertinentes, donne du feedback constructif, et aide-le à progresser.`;
+      rubric = practice.evaluation_rubric || [];
+    }
 
     const aiMessages: any[] = [
       { role: "system", content: systemPrompt },
