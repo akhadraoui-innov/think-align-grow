@@ -31,6 +31,13 @@ import AdminLogs from "./pages/admin/AdminLogs";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminOrganizationDetail from "./pages/admin/AdminOrganizationDetail";
 import AdminUserDetail from "./pages/admin/AdminUserDetail";
+import Academy from "./pages/Academy";
+import AcademyPath from "./pages/AcademyPath";
+import AcademyModule from "./pages/AcademyModule";
+import AdminAcademy from "./pages/admin/AdminAcademy";
+import AdminAcademyPersonae from "./pages/admin/AdminAcademyPersonae";
+import AdminAcademyPaths from "./pages/admin/AdminAcademyPaths";
+import AdminAcademyCampaigns from "./pages/admin/AdminAcademyCampaigns";
 
 const queryClient = new QueryClient();
 
