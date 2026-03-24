@@ -959,3 +959,116 @@ La fiche doit inclure :
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
+
+// ─── Generate illustrations for a module ─────────────────────────────
+
+async function generateIllustrations(supabase: any, params: any, apiKey: string, cors: any) {
+  const { module_id } = params;
+  if (!module_id) throw new Error("Missing module_id");
+
+  // Fetch module content
+  const { data: contents, error: contErr } = await supabase
+    .from("academy_contents")
+    .select("id, body, sort_order")
+    .eq("module_id", module_id)
+    .order("sort_order");
+  if (contErr) throw contErr;
+  if (!contents?.length) throw new Error("No content to illustrate — generate content first");
+
+  const { data: mod } = await supabase
+    .from("academy_modules")
+    .select("title")
+    .eq("id", module_id)
+    .single();
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  let illustrationCount = 0;
+
+  // Generate 1 illustration for each content section (max 3)
+  const sectionsToIllustrate = contents.slice(0, 3);
+
+  for (const section of sectionsToIllustrate) {
+    // Extract the first heading and key concept from the section
+    const firstHeading = section.body.match(/^##?\s+(.+)/m)?.[1] || mod?.title || "Concept";
+    const bodyPreview = section.body.replace(/[>#*_`\[\]|]/g, "").slice(0, 300);
+
+    // Step 1: Ask text AI for a good image prompt
+    const promptResult = await callAI(
+      apiKey,
+      "You are an expert at writing concise image generation prompts for professional training illustrations. Output ONLY the prompt text, nothing else.",
+      `Write a concise image generation prompt for a professional training illustration about: "${firstHeading}". Context: ${bodyPreview.slice(0, 200)}. Style: clean modern flat illustration, corporate colors (blue/teal/orange accents), white background, suitable for a professional e-learning platform. No text in the image.`,
+      undefined,
+      undefined,
+      "google/gemini-2.5-flash-lite"
+    );
+
+    const imagePrompt = typeof promptResult === "string" ? promptResult.trim() : firstHeading;
+
+    // Step 2: Generate the image
+    try {
+      const imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3.1-flash-image-preview",
+          messages: [{ role: "user", content: imagePrompt }],
+          modalities: ["image", "text"],
+        }),
+      });
+
+      if (!imgResp.ok) {
+        console.error("Image generation failed:", imgResp.status);
+        continue;
+      }
+
+      const imgData = await imgResp.json();
+      const base64Url = imgData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (!base64Url) {
+        console.error("No image in response");
+        continue;
+      }
+
+      // Step 3: Upload to storage
+      const base64Data = base64Url.replace(/^data:image\/\w+;base64,/, "");
+      const imageBytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+      const fileName = `${module_id}/${section.id}_${Date.now()}.png`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("academy-assets")
+        .upload(fileName, imageBytes, { contentType: "image/png", upsert: true });
+
+      if (uploadErr) {
+        console.error("Upload error:", uploadErr);
+        continue;
+      }
+
+      const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}`;
+
+      // Step 4: Inject illustration into content body
+      const illustrationMd = `\n\n![${firstHeading}](${publicUrl})\n\n`;
+      // Insert after the first heading in the section
+      const headingMatch = section.body.match(/^(##?\s+.+\n)/m);
+      let updatedBody: string;
+      if (headingMatch) {
+        const insertPos = section.body.indexOf(headingMatch[0]) + headingMatch[0].length;
+        updatedBody = section.body.slice(0, insertPos) + illustrationMd + section.body.slice(insertPos);
+      } else {
+        updatedBody = illustrationMd + section.body;
+      }
+
+      await supabase
+        .from("academy_contents")
+        .update({ body: updatedBody })
+        .eq("id", section.id);
+
+      illustrationCount++;
+    } catch (imgErr) {
+      console.error("Illustration generation error:", imgErr);
+      continue;
+    }
+  }
+
+  return new Response(JSON.stringify({ success: true, illustration_count: illustrationCount }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
