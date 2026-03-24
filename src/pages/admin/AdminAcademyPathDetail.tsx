@@ -222,10 +222,14 @@ export default function AdminAcademyPathDetail() {
   // ─── Helpers ────────────────────────────────────────────────
   const getModuleContents = (moduleId: string) => contents.filter((c: any) => c.module_id === moduleId);
   const getModuleQuiz = (moduleId: string) => quizzes.find((q: any) => q.module_id === moduleId);
+  const getModuleExercise = (moduleId: string) => exercises.find((e: any) => e.module_id === moduleId);
+  const getModulePractice = (moduleId: string) => practices.find((p: any) => p.module_id === moduleId);
   const getModuleProgress = (moduleId: string) => progress.filter((p: any) => p.module_id === moduleId);
 
   const modulesWithContent = moduleIds.filter((mid: string) => contents.some((c: any) => c.module_id === mid)).length;
   const modulesWithQuiz = moduleIds.filter((mid: string) => quizzes.some((q: any) => q.module_id === mid)).length;
+  const modulesWithExercise = moduleIds.filter((mid: string) => exercises.some((e: any) => e.module_id === mid)).length;
+  const modulesWithPractice = moduleIds.filter((mid: string) => practices.some((p: any) => p.module_id === mid)).length;
   const totalDuration = pathModules.reduce((sum: number, pm: any) => sum + (pm.academy_modules?.estimated_minutes || 0), 0);
   const completedProgress = progress.filter((p: any) => p.status === "completed");
   const avgScore = completedProgress.length > 0
