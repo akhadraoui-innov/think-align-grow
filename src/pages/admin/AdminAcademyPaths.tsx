@@ -148,6 +148,35 @@ export default function AdminAcademyPaths() {
     setEditId(null);
   }
 
+  const generateAI = useMutation({
+    mutationFn: async () => {
+      const personaDesc = aiForm.persona_id
+        ? personae.find((p: any) => p.id === aiForm.persona_id)?.name || ""
+        : "";
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: {
+          action: "generate-path",
+          name: aiForm.name,
+          description: aiForm.description,
+          difficulty: aiForm.difficulty,
+          module_count: aiForm.module_count,
+          persona_id: aiForm.persona_id || null,
+          persona_description: personaDesc,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
+      toast.success(`Parcours généré avec ${data.module_count} modules`);
+      setAiOpen(false);
+      if (data.path_id) navigate(`/admin/academy/paths/${data.path_id}`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
