@@ -233,7 +233,7 @@ export default function AdminAcademyCampaigns() {
               <Select value={form.path_id || "none"} onValueChange={v => setForm({ ...form, path_id: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="Choisir un parcours" /></SelectTrigger>
                 <SelectContent>
-                  {paths.map((p: any) => (
+                  <SelectItem value="none">— Choisir —</SelectItem>
                     <SelectItem key={p.id} value={p.id}>
                       {p.name} {p.status !== "published" && `(${p.status})`}
                     </SelectItem>
