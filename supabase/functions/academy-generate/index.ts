@@ -451,3 +451,251 @@ ${submission}
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
+
+// ─── Generate Persona ────────────────────────────────────────────────
+
+async function generatePersona(supabase: any, userId: string, params: any, apiKey: string, cors: any) {
+  const { brief, mode = "guided", organization_id = null } = params;
+  if (!brief) throw new Error("Missing brief");
+
+  const systemPrompt = `Tu es un expert en ingénierie pédagogique et en design de formation professionnelle.
+Tu crées des personae détaillés et réalistes pour des parcours de formation.
+Chaque persona doit être actionnable : suffisamment précis pour guider la conception d'un parcours adapté.
+Tu dois penser à :
+- Le contexte professionnel réel (industrie, taille d'entreprise, enjeux sectoriels)
+- Les compétences actuelles vs souhaitées (gap analysis)
+- Les contraintes d'apprentissage (temps, format, prérequis)
+- Les motivations et freins à la formation
+- Les cas d'usage concrets où la formation sera appliquée
+Réponds UNIQUEMENT via l'outil fourni.`;
+
+  const userPrompt = `Crée un persona de formation complet à partir de ce brief :
+
+${brief}
+
+Le persona doit inclure :
+- Un nom de rôle précis et professionnel
+- Une description riche du contexte et des enjeux
+- Niveau de séniorité (Junior, Confirmé, Senior, Expert, C-Level)
+- Département / fonction
+- 3-5 objectifs de formation prioritaires
+- 3-5 points de douleur / frustrations actuelles
+- 2-3 scénarios d'usage concrets de la formation
+- Prérequis recommandés
+- Format d'apprentissage préféré (micro-learning, immersif, hybride)
+- Indicateurs de succès mesurables`;
+
+  const tools = [{
+    type: "function",
+    function: {
+      name: "create_persona",
+      description: "Create a detailed training persona",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Role name (e.g. 'Directeur Commercial PME')" },
+          description: { type: "string", description: "Rich description of context and challenges" },
+          characteristics: {
+            type: "object",
+            properties: {
+              seniority: { type: "string" },
+              department: { type: "string" },
+              goals: { type: "array", items: { type: "string" } },
+              pain_points: { type: "array", items: { type: "string" } },
+              scenarios: { type: "array", items: { type: "string" } },
+              prerequisites: { type: "array", items: { type: "string" } },
+              learning_format: { type: "string" },
+              success_metrics: { type: "array", items: { type: "string" } },
+              industry: { type: "string" },
+              company_size: { type: "string" },
+            },
+            required: ["seniority", "department", "goals", "pain_points"],
+          },
+        },
+        required: ["name", "description", "characteristics"],
+      },
+    },
+  }];
+
+  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_persona" } }, "google/gemini-2.5-pro");
+
+  const { data: persona, error } = await supabase
+    .from("academy_personae")
+    .insert({
+      name: result.name,
+      description: result.description,
+      characteristics: result.characteristics,
+      status: "draft",
+      generation_mode: "ai",
+      created_by: userId,
+      organization_id,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+
+  return new Response(JSON.stringify({ success: true, persona }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+// ─── Generate Exercise for a module ──────────────────────────────────
+
+async function generateExercise(supabase: any, params: any, apiKey: string, cors: any) {
+  const { module_id } = params;
+  if (!module_id) throw new Error("Missing module_id");
+
+  const { data: mod, error: modErr } = await supabase
+    .from("academy_modules").select("*").eq("id", module_id).single();
+  if (modErr || !mod) throw new Error("Module not found");
+
+  const { data: contents } = await supabase
+    .from("academy_contents").select("body").eq("module_id", module_id).order("sort_order");
+  const contentText = (contents || []).map((c: any) => c.body).join("\n\n").slice(0, 4000);
+
+  const systemPrompt = `Tu es un concepteur d'exercices pédagogiques expert.
+Tu crées des exercices pratiques, exigeants et formateurs, avec des critères d'évaluation précis et objectifs.
+Réponds UNIQUEMENT via l'outil fourni.`;
+
+  const userPrompt = `Crée un exercice pratique pour ce module :
+Titre : ${mod.title}
+Description : ${mod.description}
+Objectifs : ${JSON.stringify(mod.objectives)}
+${contentText ? `Contenu :\n${contentText}` : ""}
+
+L'exercice doit :
+- Être concret et applicable
+- Avoir des instructions claires en markdown
+- Définir 3-5 critères d'évaluation précis avec pondération`;
+
+  const tools = [{
+    type: "function",
+    function: {
+      name: "create_exercise",
+      description: "Create a practical exercise with evaluation criteria",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          instructions: { type: "string", description: "Markdown instructions" },
+          expected_output_type: { type: "string", enum: ["text", "file", "code"] },
+          evaluation_criteria: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                criterion: { type: "string" },
+                weight: { type: "number" },
+                description: { type: "string" },
+              },
+              required: ["criterion", "weight"],
+            },
+          },
+        },
+        required: ["title", "instructions", "evaluation_criteria"],
+      },
+    },
+  }];
+
+  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_exercise" } }, "google/gemini-2.5-pro");
+
+  const { data: exercise, error } = await supabase
+    .from("academy_exercises")
+    .insert({
+      module_id,
+      title: result.title,
+      instructions: result.instructions,
+      expected_output_type: result.expected_output_type || "text",
+      evaluation_criteria: result.evaluation_criteria,
+      ai_evaluation_enabled: true,
+      generation_mode: "ai",
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+
+  return new Response(JSON.stringify({ success: true, exercise_id: exercise.id }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+// ─── Generate Practice scenario for a module ─────────────────────────
+
+async function generatePractice(supabase: any, params: any, apiKey: string, cors: any) {
+  const { module_id } = params;
+  if (!module_id) throw new Error("Missing module_id");
+
+  const { data: mod, error: modErr } = await supabase
+    .from("academy_modules").select("*").eq("id", module_id).single();
+  if (modErr || !mod) throw new Error("Module not found");
+
+  const systemPrompt = `Tu es un expert en simulation pédagogique et coaching IA.
+Tu conçois des scénarios de pratique immersifs où l'apprenant interagit avec une IA qui joue un rôle.
+Le scénario doit être réaliste, engageant, et évaluer des compétences concrètes.
+Réponds UNIQUEMENT via l'outil fourni.`;
+
+  const userPrompt = `Crée un scénario de pratique IA pour ce module :
+Titre : ${mod.title}
+Description : ${mod.description}
+Objectifs : ${JSON.stringify(mod.objectives)}
+
+Le scénario doit inclure :
+- Un contexte de mise en situation réaliste
+- Un rôle précis pour l'IA (ex: client difficile, manager exigeant, investisseur)
+- Un system prompt détaillé pour guider le comportement de l'IA
+- 3-5 critères d'évaluation avec barème
+- Un nombre d'échanges adapté (5-15)`;
+
+  const tools = [{
+    type: "function",
+    function: {
+      name: "create_practice",
+      description: "Create an AI practice scenario",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          scenario: { type: "string", description: "Context description shown to the learner" },
+          system_prompt: { type: "string", description: "System prompt for the AI role" },
+          max_exchanges: { type: "number" },
+          difficulty: { type: "string", enum: ["beginner", "intermediate", "advanced"] },
+          evaluation_rubric: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                criterion: { type: "string" },
+                weight: { type: "number" },
+                description: { type: "string" },
+              },
+              required: ["criterion", "weight"],
+            },
+          },
+        },
+        required: ["title", "scenario", "system_prompt", "max_exchanges", "evaluation_rubric"],
+      },
+    },
+  }];
+
+  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_practice" } }, "google/gemini-2.5-pro");
+
+  const { data: practice, error } = await supabase
+    .from("academy_practices")
+    .insert({
+      module_id,
+      title: result.title,
+      scenario: result.scenario,
+      system_prompt: result.system_prompt,
+      max_exchanges: result.max_exchanges || 10,
+      difficulty: result.difficulty || "intermediate",
+      evaluation_rubric: result.evaluation_rubric,
+      generation_mode: "ai",
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+
+  return new Response(JSON.stringify({ success: true, practice_id: practice.id }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
