@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { ArrowLeft, BookOpen, Clock, GraduationCap, HelpCircle, FileText, MessageSquare, Lock, CheckCircle2, PlayCircle } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock, GraduationCap, HelpCircle, FileText, MessageSquare, Lock, CheckCircle2, PlayCircle, Target, Users, Award, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,21 +9,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 const moduleTypeIcons: Record<string, any> = {
-  lesson: BookOpen,
-  quiz: HelpCircle,
-  exercise: FileText,
-  practice: MessageSquare,
+  lesson: BookOpen, quiz: HelpCircle, exercise: FileText, practice: MessageSquare,
 };
-
 const moduleTypeLabels: Record<string, string> = {
-  lesson: "Leçon",
-  quiz: "Quiz",
-  exercise: "Exercice",
-  practice: "Pratique IA",
+  lesson: "Leçon", quiz: "Quiz", exercise: "Exercice", practice: "Pratique IA",
 };
 
 export default function AcademyPath() {
@@ -31,6 +25,7 @@ export default function AcademyPath() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [expandedObjectives, setExpandedObjectives] = useState(false);
 
   const { data: path, isLoading } = useQuery({
     queryKey: ["academy-path", id],
@@ -38,7 +33,7 @@ export default function AcademyPath() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("academy_paths")
-        .select("*")
+        .select("*, academy_functions!academy_paths_function_id_fkey(name), academy_personae!academy_paths_persona_id_fkey(name)")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -60,42 +55,38 @@ export default function AcademyPath() {
     },
   });
 
-  // User enrollment
   const { data: enrollment } = useQuery({
     queryKey: ["academy-enrollment", id, user?.id],
     enabled: !!id && !!user,
     queryFn: async () => {
       const { data } = await supabase
-        .from("academy_enrollments")
-        .select("*")
-        .eq("path_id", id!)
-        .eq("user_id", user!.id)
-        .maybeSingle();
+        .from("academy_enrollments").select("*").eq("path_id", id!).eq("user_id", user!.id).maybeSingle();
       return data;
     },
   });
 
-  // User progress for all modules in this path
   const { data: progressList = [] } = useQuery({
     queryKey: ["academy-progress", enrollment?.id],
     enabled: !!enrollment,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("academy_progress")
-        .select("*")
-        .eq("enrollment_id", enrollment!.id);
+      const { data } = await supabase.from("academy_progress").select("*").eq("enrollment_id", enrollment!.id);
       return data || [];
+    },
+  });
+
+  const { data: enrollmentCount = 0 } = useQuery({
+    queryKey: ["academy-path-enrollment-count", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { count } = await supabase.from("academy_enrollments").select("id", { count: "exact", head: true }).eq("path_id", id!);
+      return count || 0;
     },
   });
 
   const enrollMutation = useMutation({
     mutationFn: async () => {
       if (!user || !id) throw new Error("Missing data");
-      const { error } = await supabase.from("academy_enrollments").insert({
-        path_id: id,
-        user_id: user.id,
-        status: "active",
-      });
+      const { error } = await supabase.from("academy_enrollments").insert({ path_id: id, user_id: user.id, status: "active" });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -111,6 +102,23 @@ export default function AcademyPath() {
   const totalModules = modules.length;
   const progressPct = totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
 
+  // Aggregate objectives from all modules
+  const allObjectives = modules.reduce((acc: string[], pm: any) => {
+    const objs = (pm.academy_modules?.objectives as string[]) || [];
+    return [...acc, ...objs];
+  }, []);
+  const uniqueObjectives = [...new Set(allObjectives)].slice(0, 8);
+
+  // Estimated time
+  const totalMinutes = modules.reduce((s: number, pm: any) => s + (pm.academy_modules?.estimated_minutes || 0), 0);
+  const totalHoursCalc = Math.round(totalMinutes / 60 * 10) / 10;
+
+  // Find first incomplete module for CTA
+  const firstIncomplete = modules.find((pm: any) => {
+    const p = progressMap.get(pm.module_id) as any;
+    return !p || p.status !== "completed";
+  });
+
   if (isLoading) {
     return (
       <PageTransition>
@@ -118,6 +126,7 @@ export default function AcademyPath() {
           <div className="animate-pulse space-y-4">
             <div className="h-6 bg-muted rounded w-1/3" />
             <div className="h-4 bg-muted rounded w-2/3" />
+            <div className="h-48 bg-muted rounded" />
           </div>
         </div>
       </PageTransition>
@@ -144,51 +153,124 @@ export default function AcademyPath() {
           <ArrowLeft className="h-4 w-4 mr-2" /> Retour à l'Academy
         </Button>
 
-        {/* Hero */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border p-8">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20">
-                <GraduationCap className="h-6 w-6 text-primary" />
+        {/* ═══ HERO ═══ */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border"
+        >
+          <div className="p-8 space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20 shrink-0">
+                <GraduationCap className="h-7 w-7 text-primary" />
               </div>
-              <div>
-                <h1 className="text-2xl font-display font-bold">{path.name}</h1>
-                <p className="text-sm text-muted-foreground">{path.description}</p>
+              <div className="flex-1">
+                <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight">{path.name}</h1>
+                <p className="text-muted-foreground mt-1.5 leading-relaxed">{path.description}</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              {path.difficulty && <Badge variant="secondary">{path.difficulty}</Badge>}
-              {path.estimated_hours && path.estimated_hours > 0 && (
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" /> {String(path.estimated_hours)}h estimées
-                </span>
+
+            {/* Meta chips */}
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              {path.difficulty && (
+                <Badge variant="secondary" className="capitalize">{path.difficulty}</Badge>
               )}
-              <span className="flex items-center gap-1">
+              {(path as any).academy_functions && (
+                <Badge variant="outline" className="text-xs">{(path as any).academy_functions.name}</Badge>
+              )}
+              {(path as any).academy_personae && (
+                <Badge variant="outline" className="text-xs">{(path as any).academy_personae.name}</Badge>
+              )}
+              <span className="flex items-center gap-1.5 text-muted-foreground">
                 <BookOpen className="h-3.5 w-3.5" /> {totalModules} modules
               </span>
+              {totalHoursCalc > 0 && (
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" /> {totalHoursCalc}h
+                </span>
+              )}
+              {enrollmentCount > 0 && (
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Users className="h-3.5 w-3.5" /> {enrollmentCount} inscrits
+                </span>
+              )}
             </div>
 
             {/* Enrollment + progress */}
             {user && !enrollment && (
-              <Button onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending} className="mt-4">
-                <PlayCircle className="h-4 w-4 mr-2" /> S'inscrire au parcours
+              <Button onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending} size="lg" className="gap-2 shadow-lg">
+                <PlayCircle className="h-5 w-5" /> S'inscrire au parcours
               </Button>
             )}
 
             {enrollment && (
-              <div className="mt-4 space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium">Progression</span>
-                  <span className="text-muted-foreground">{completedCount}/{totalModules} modules · {progressPct}%</span>
+                  <span className="text-muted-foreground">{completedCount}/{totalModules} · {progressPct}%</span>
                 </div>
                 <Progress value={progressPct} className="h-3" />
+                {progressPct === 100 && (
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
+                    <Award className="h-5 w-5" /> Parcours terminé ! Félicitations 🎉
+                  </motion.div>
+                )}
+                {progressPct < 100 && firstIncomplete && (
+                  <Button
+                    size="sm"
+                    onClick={() => navigate(`/academy/module/${firstIncomplete.module_id}?pathId=${id}`)}
+                    className="gap-2"
+                  >
+                    <PlayCircle className="h-4 w-4" /> Continuer
+                  </Button>
+                )}
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Timeline */}
-        <section className="space-y-1">
+        {/* ═══ OBJECTIVES ═══ */}
+        {uniqueObjectives.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card>
+              <CardContent className="p-6">
+                <button
+                  onClick={() => setExpandedObjectives(!expandedObjectives)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <h2 className="text-sm font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" /> Ce que vous allez apprendre
+                  </h2>
+                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expandedObjectives && "rotate-180")} />
+                </button>
+                <AnimatePresence>
+                  {(expandedObjectives || uniqueObjectives.length <= 4) && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-4">
+                        {uniqueObjectives.map((obj, i) => (
+                          <div key={i} className="flex items-start gap-2.5 p-2 rounded-lg">
+                            <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                            <span className="text-sm text-muted-foreground">{obj}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* ═══ SYLLABUS TIMELINE ═══ */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-display font-bold">Programme</h2>
+
           {modules.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="p-6 text-center text-muted-foreground text-sm">
@@ -197,7 +279,6 @@ export default function AcademyPath() {
             </Card>
           ) : (
             <div className="relative">
-              {/* Vertical line */}
               <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-border" />
 
               {modules.map((pm: any, idx: number) => {
@@ -210,6 +291,7 @@ export default function AcademyPath() {
                 const isAvailable = !enrollment || idx === 0 || prevCompleted;
                 const isLocked = enrollment && !isAvailable;
                 const Icon = moduleTypeIcons[mod.module_type] || BookOpen;
+                const objectives = (mod.objectives as string[]) || [];
 
                 return (
                   <motion.div
@@ -233,34 +315,50 @@ export default function AcademyPath() {
 
                     <Card
                       className={cn(
-                        "transition-all",
+                        "transition-all overflow-hidden",
                         isLocked && "opacity-50",
                         !isLocked && "hover:shadow-md cursor-pointer",
                       )}
                       onClick={() => !isLocked && navigate(`/academy/module/${pm.module_id}?pathId=${id}`)}
                     >
-                      <CardContent className="p-4 flex items-center gap-4">
-                        <div className={cn(
-                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                          isCompleted ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
-                        )}>
-                          <Icon className="h-5 w-5" />
+                      <CardContent className="p-4 space-y-2">
+                        <div className="flex items-center gap-4">
+                          <div className={cn(
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                            isCompleted ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+                          )}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold">{mod.title}</p>
+                              {isStarted && <Badge variant="outline" className="text-[10px] text-primary">En cours</Badge>}
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2">{mod.description}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge variant="outline" className="text-[10px]">
+                              {moduleTypeLabels[mod.module_type] || mod.module_type}
+                            </Badge>
+                            {mod.estimated_minutes && (
+                              <span className="text-[10px] text-muted-foreground">{mod.estimated_minutes}min</span>
+                            )}
+                            {isCompleted && progress?.score != null && (
+                              <Badge className="text-[10px]">{progress.score}%</Badge>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold">{mod.title}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">{mod.description}</p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="outline" className="text-[10px]">
-                            {moduleTypeLabels[mod.module_type] || mod.module_type}
-                          </Badge>
-                          {mod.estimated_minutes && (
-                            <span className="text-[10px] text-muted-foreground">{mod.estimated_minutes}min</span>
-                          )}
-                          {isCompleted && progress?.score != null && (
-                            <Badge className="text-[10px]">{progress.score}%</Badge>
-                          )}
-                        </div>
+
+                        {/* Module objectives preview */}
+                        {objectives.length > 0 && !isLocked && (
+                          <div className="flex flex-wrap gap-1.5 pl-14">
+                            {objectives.slice(0, 3).map((obj, i) => (
+                              <span key={i} className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                                {obj}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   </motion.div>

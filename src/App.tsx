@@ -34,6 +34,7 @@ import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import Academy from "./pages/Academy";
 import AcademyPath from "./pages/AcademyPath";
 import AcademyModule from "./pages/AcademyModule";
+import AcademyDashboard from "./pages/AcademyDashboard";
 import AdminAcademy from "./pages/admin/AdminAcademy";
 import AdminAcademyPersonae from "./pages/admin/AdminAcademyPersonae";
 import AdminAcademyPaths from "./pages/admin/AdminAcademyPaths";
@@ -64,6 +65,7 @@ function AnimatedRoutes() {
           <Route path="/challenge" element={<Challenge />} />
           <Route path="/challenge/:id" element={<ChallengeRoom />} />
           <Route path="/academy" element={<Academy />} />
+          <Route path="/academy/dashboard" element={<AcademyDashboard />} />
           <Route path="/academy/path/:id" element={<AcademyPath />} />
           <Route path="/academy/module/:id" element={<AcademyModule />} />
           <Route path="/admin" element={<AdminDashboard />} />
