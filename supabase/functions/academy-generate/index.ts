@@ -45,6 +45,8 @@ serve(async (req) => {
       return await generatePractice(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-function") {
       return await generateFunction(supabase, user.id, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-illustrations") {
+      return await generateIllustrations(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
