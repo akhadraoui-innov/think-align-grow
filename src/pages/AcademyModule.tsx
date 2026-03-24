@@ -385,6 +385,3 @@ Reste focalisé sur le sujet du module. Réponds en français.`,
   );
 }
 
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
-}
