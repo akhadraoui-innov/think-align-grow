@@ -230,9 +230,10 @@ export default function AdminAcademyCampaigns() {
             </div>
             <div className="space-y-1.5">
               <Label>Parcours de formation</Label>
-              <Select value={form.path_id} onValueChange={v => setForm({ ...form, path_id: v })}>
+              <Select value={form.path_id || "none"} onValueChange={v => setForm({ ...form, path_id: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="Choisir un parcours" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">— Choisir —</SelectItem>
                   {paths.map((p: any) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name} {p.status !== "published" && `(${p.status})`}
@@ -243,9 +244,10 @@ export default function AdminAcademyCampaigns() {
             </div>
             <div className="space-y-1.5">
               <Label>Organisation</Label>
-              <Select value={form.organization_id} onValueChange={v => setForm({ ...form, organization_id: v })}>
+              <Select value={form.organization_id || "none"} onValueChange={v => setForm({ ...form, organization_id: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="Choisir une organisation" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">— Choisir —</SelectItem>
                   {orgs.map((o: any) => (
                     <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                   ))}

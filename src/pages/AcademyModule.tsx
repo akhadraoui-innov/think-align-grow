@@ -1,27 +1,31 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { ArrowLeft, BookOpen, HelpCircle, FileText, MessageSquare, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, BookOpen, HelpCircle, FileText, MessageSquare, CheckCircle2, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AcademyQuiz } from "@/components/academy/AcademyQuiz";
 import { AcademyExercise } from "@/components/academy/AcademyExercise";
 import { AcademyPractice } from "@/components/academy/AcademyPractice";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 export default function AcademyModule() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const pathId = searchParams.get("pathId");
   const navigate = useNavigate();
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState("content");
+  const [isCompleting, setIsCompleting] = useState(false);
+  const startTimeRef = useRef(Date.now());
 
   const { data: module, isLoading } = useQuery({
     queryKey: ["academy-module", id],
@@ -51,7 +55,55 @@ export default function AcademyModule() {
     },
   });
 
-  // Check if module has quiz/exercise/practice
+  // Enrollment for this path
+  const { data: enrollment } = useQuery({
+    queryKey: ["academy-enrollment-for-module", pathId, user?.id],
+    enabled: !!pathId && !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("academy_enrollments")
+        .select("*")
+        .eq("path_id", pathId!)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  // Current progress for this module
+  const { data: currentProgress } = useQuery({
+    queryKey: ["academy-module-progress", enrollment?.id, id],
+    enabled: !!enrollment && !!id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("academy_progress")
+        .select("*")
+        .eq("enrollment_id", enrollment!.id)
+        .eq("module_id", id!)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  // Sibling modules for navigation
+  const { data: pathModules = [] } = useQuery({
+    queryKey: ["academy-path-modules-nav", pathId],
+    enabled: !!pathId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("academy_path_modules")
+        .select("module_id, sort_order, academy_modules(title)")
+        .eq("path_id", pathId!)
+        .order("sort_order");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const currentIndex = pathModules.findIndex((pm: any) => pm.module_id === id);
+  const nextModule = currentIndex >= 0 && currentIndex < pathModules.length - 1 ? pathModules[currentIndex + 1] : null;
+  const prevModule = currentIndex > 0 ? pathModules[currentIndex - 1] : null;
+
   const { data: hasQuiz } = useQuery({
     queryKey: ["academy-has-quiz", id],
     enabled: !!id,
@@ -87,6 +139,55 @@ export default function AcademyModule() {
       return (count || 0) > 0;
     },
   });
+
+  // Reset timer on module change
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+  }, [id]);
+
+  const saveProgress = async (score: number | null, status: string = "completed") => {
+    if (!enrollment || !id || !user) return;
+    const timeSpent = Math.round((Date.now() - startTimeRef.current) / 1000);
+    
+    const payload = {
+      enrollment_id: enrollment.id,
+      module_id: id,
+      user_id: user.id,
+      status,
+      score,
+      time_spent_seconds: timeSpent,
+      ...(status === "completed" ? { completed_at: new Date().toISOString() } : {}),
+      ...(status === "in_progress" && !currentProgress ? { started_at: new Date().toISOString() } : {}),
+    };
+
+    if (currentProgress) {
+      await supabase.from("academy_progress").update({
+        status: payload.status,
+        score: payload.score,
+        time_spent_seconds: (currentProgress as any).time_spent_seconds + timeSpent,
+        ...(status === "completed" ? { completed_at: new Date().toISOString() } : {}),
+      }).eq("id", (currentProgress as any).id);
+    } else {
+      await supabase.from("academy_progress").insert(payload);
+    }
+
+    qc.invalidateQueries({ queryKey: ["academy-module-progress"] });
+    qc.invalidateQueries({ queryKey: ["academy-progress"] });
+  };
+
+  const handleMarkComplete = async () => {
+    setIsCompleting(true);
+    try {
+      await saveProgress(100, "completed");
+      toast.success("Module marqué comme terminé !");
+    } catch {
+      toast.error("Erreur lors de la sauvegarde");
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  const isCompleted = (currentProgress as any)?.status === "completed";
 
   const moduleTypeIcon = {
     lesson: <BookOpen className="h-5 w-5" />,
@@ -129,13 +230,25 @@ export default function AcademyModule() {
     { id: "practice", label: "Pratique IA", icon: <MessageSquare className="h-4 w-4" />, show: !!hasPractice },
   ].filter(t => t.show);
 
+  const navigateToModule = (pm: any) => {
+    navigate(`/academy/module/${pm.module_id}?pathId=${pathId}`);
+  };
+
   return (
     <PageTransition>
       <div className="container max-w-4xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1 as any)}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Retour
+        <Button variant="ghost" size="sm" onClick={() => pathId ? navigate(`/academy/path/${pathId}`) : navigate(-1 as any)}>
+          <ArrowLeft className="h-4 w-4 mr-2" /> {pathId ? "Retour au parcours" : "Retour"}
         </Button>
+
+        {/* Module position in path */}
+        {pathId && pathModules.length > 0 && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            Module {currentIndex + 1}/{pathModules.length}
+            {isCompleted && <CheckCircle2 className="h-3.5 w-3.5 text-primary ml-1" />}
+          </div>
+        )}
 
         <div className="space-y-3">
           <div className="flex items-center gap-3">
@@ -181,7 +294,10 @@ export default function AcademyModule() {
               <TabsContent value="quiz" className="mt-6">
                 <AcademyQuiz
                   moduleId={id!}
+                  enrollmentId={enrollment?.id}
                   onComplete={(score, total) => {
+                    const pct = Math.round((score / total) * 100);
+                    saveProgress(pct, "completed");
                     toast.success(`Quiz terminé : ${score}/${total} points`);
                   }}
                 />
@@ -192,7 +308,9 @@ export default function AcademyModule() {
               <TabsContent value="exercise" className="mt-6">
                 <AcademyExercise
                   moduleId={id!}
+                  enrollmentId={enrollment?.id}
                   onComplete={(score) => {
+                    saveProgress(score, "completed");
                     toast.success(`Exercice évalué : ${score}/100`);
                   }}
                 />
@@ -203,7 +321,9 @@ export default function AcademyModule() {
               <TabsContent value="practice" className="mt-6">
                 <AcademyPractice
                   moduleId={id!}
+                  enrollmentId={enrollment?.id}
                   onComplete={(score) => {
+                    saveProgress(score, "completed");
                     toast.success(`Session terminée : ${score}/100`);
                   }}
                 />
@@ -213,13 +333,48 @@ export default function AcademyModule() {
         ) : (
           <div className="mt-6">
             {tabs[0]?.id === "quiz" ? (
-              <AcademyQuiz moduleId={id!} onComplete={(s, t) => toast.success(`Quiz terminé : ${s}/${t}`)} />
+              <AcademyQuiz moduleId={id!} enrollmentId={enrollment?.id} onComplete={(s, t) => { saveProgress(Math.round((s/t)*100), "completed"); toast.success(`Quiz terminé : ${s}/${t}`); }} />
             ) : tabs[0]?.id === "exercise" ? (
-              <AcademyExercise moduleId={id!} onComplete={s => toast.success(`Score : ${s}/100`)} />
+              <AcademyExercise moduleId={id!} enrollmentId={enrollment?.id} onComplete={s => { saveProgress(s, "completed"); toast.success(`Score : ${s}/100`); }} />
             ) : tabs[0]?.id === "practice" ? (
-              <AcademyPractice moduleId={id!} onComplete={s => toast.success(`Score : ${s}/100`)} />
+              <AcademyPractice moduleId={id!} enrollmentId={enrollment?.id} onComplete={s => { saveProgress(s, "completed"); toast.success(`Score : ${s}/100`); }} />
             ) : (
               <ContentView contents={contents} />
+            )}
+          </div>
+        )}
+
+        {/* Mark as complete for lessons */}
+        {enrollment && !isCompleted && (contents.length > 0 || module.module_type === "lesson") && (
+          <div className="flex justify-center pt-4">
+            <Button onClick={handleMarkComplete} disabled={isCompleting} size="lg" className="gap-2">
+              <Check className="h-4 w-4" /> Marquer comme terminé
+            </Button>
+          </div>
+        )}
+
+        {isCompleted && (
+          <div className="flex items-center justify-center gap-2 text-sm text-primary font-medium pt-2">
+            <CheckCircle2 className="h-4 w-4" /> Module terminé
+          </div>
+        )}
+
+        {/* Inter-module navigation */}
+        {pathId && pathModules.length > 1 && (
+          <div className="flex items-center justify-between pt-6 border-t">
+            {prevModule ? (
+              <Button variant="outline" size="sm" onClick={() => navigateToModule(prevModule)}>
+                <ArrowLeft className="h-4 w-4 mr-2" /> Module précédent
+              </Button>
+            ) : <div />}
+            {nextModule ? (
+              <Button size="sm" onClick={() => navigateToModule(nextModule)}>
+                Module suivant <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            ) : (
+              <Button size="sm" variant="secondary" onClick={() => navigate(`/academy/path/${pathId}`)}>
+                Voir le parcours <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
             )}
           </div>
         )}

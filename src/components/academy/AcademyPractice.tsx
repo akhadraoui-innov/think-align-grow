@@ -24,6 +24,16 @@ interface Message {
   content: string;
 }
 
+function parseEvaluationFromContent(content: string): { score: number; feedback: string } | null {
+  const match = content.match(/```evaluation\s*\n?([\s\S]*?)```/);
+  if (!match) return null;
+  try {
+    const parsed = JSON.parse(match[1].trim());
+    if (typeof parsed.score === "number") return parsed;
+  } catch {}
+  return null;
+}
+
 export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyPracticeProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -49,7 +59,6 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isStreaming]);
 
-  // Initialize with scenario context
   useEffect(() => {
     if (practice?.scenario && messages.length === 0) {
       setMessages([{
@@ -111,7 +120,6 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
 
       if (!resp.body) throw new Error("No response body");
 
-      // Stream SSE
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let assistantContent = "";
@@ -135,12 +143,6 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
 
           try {
             const parsed = JSON.parse(jsonStr);
-            // Check for evaluation data
-            if (parsed.evaluation) {
-              setEvaluation(parsed.evaluation);
-              onComplete?.(parsed.evaluation.score);
-              continue;
-            }
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) {
               assistantContent += content;
@@ -156,6 +158,24 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
             textBuffer = line + "\n" + textBuffer;
             break;
           }
+        }
+      }
+
+      // After stream ends, parse evaluation from the assistant's final message
+      if (isLastExchange && assistantContent) {
+        const evalResult = parseEvaluationFromContent(assistantContent);
+        if (evalResult) {
+          setEvaluation(evalResult);
+          onComplete?.(evalResult.score);
+          // Clean the evaluation block from displayed message
+          const cleanedContent = assistantContent.replace(/```evaluation\s*\n?[\s\S]*?```/, "").trim();
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last?.role === "assistant") {
+              return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: cleanedContent || assistantContent } : m);
+            }
+            return prev;
+          });
         }
       }
     } catch (e: any) {
