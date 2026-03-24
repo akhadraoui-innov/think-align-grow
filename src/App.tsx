@@ -38,6 +38,7 @@ import AdminAcademy from "./pages/admin/AdminAcademy";
 import AdminAcademyPersonae from "./pages/admin/AdminAcademyPersonae";
 import AdminAcademyPaths from "./pages/admin/AdminAcademyPaths";
 import AdminAcademyCampaigns from "./pages/admin/AdminAcademyCampaigns";
+import AdminAcademyPathDetail from "./pages/admin/AdminAcademyPathDetail";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +78,7 @@ function AnimatedRoutes() {
           <Route path="/admin/academy" element={<AdminAcademy />} />
           <Route path="/admin/academy/personae" element={<AdminAcademyPersonae />} />
           <Route path="/admin/academy/paths" element={<AdminAcademyPaths />} />
+          <Route path="/admin/academy/paths/:id" element={<AdminAcademyPathDetail />} />
           <Route path="/admin/academy/campaigns" element={<AdminAcademyCampaigns />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
