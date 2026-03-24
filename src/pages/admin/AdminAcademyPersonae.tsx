@@ -1,7 +1,7 @@
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Plus, ArrowLeft, Pencil, Trash2, Save, Sparkles, Loader2, MessageSquare, Wand2, Building2, ArrowRight, Check, Lightbulb, UserCheck, Brain, Heart, Zap, Eye, RefreshCw } from "lucide-react";
+import { Plus, ArrowLeft, Pencil, Trash2, Save, Sparkles, Loader2, MessageSquare, Wand2, Building2, ArrowRight, Lightbulb, UserCheck, Brain, Heart, Zap, RefreshCw, Eye, Copy, Filter, Globe, Users as UsersIcon, HandshakeIcon, ShieldCheck, BarChart3, Ear } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -24,24 +24,28 @@ import remarkGfm from "remark-gfm";
 // ─── Types ───────────────────────────────────────────────────────────
 
 interface BehavioralTraits {
-  digital_maturity: number;
-  ai_apprehension: number;
-  experimentation_level: number;
-  initiative_level: number;
-  change_appetite: number;
-  learning_style: string;
-  time_availability: string;
-  preferred_format: string;
-  motivation_drivers: string[];
-  resistance_patterns: string[];
+  digital_maturity: number; ai_apprehension: number; experimentation_level: number;
+  initiative_level: number; change_appetite: number;
+  collaboration_preference: number; autonomy_level: number; risk_tolerance: number;
+  data_literacy: number; feedback_receptivity: number;
+  learning_style: string; time_availability: string; preferred_format: string;
+  motivation_drivers: string[]; resistance_patterns: string[];
+  habits: string[]; communication_style: string[]; decision_patterns: string[];
+  tech_relationship: string[]; objections_type: string[]; engagement_triggers: string[]; blockers: string[];
+  typical_day: string; ai_relationship_summary: string; ideal_learning_journey: string;
+  coaching_approach: string; success_indicators: string;
 }
 
 const defaultTraits: BehavioralTraits = {
   digital_maturity: 3, ai_apprehension: 3, experimentation_level: 3,
-  initiative_level: 3, change_appetite: 3,
-  learning_style: "doing", time_availability: "short",
-  preferred_format: "guidé",
+  initiative_level: 3, change_appetite: 3, collaboration_preference: 3,
+  autonomy_level: 3, risk_tolerance: 3, data_literacy: 3, feedback_receptivity: 3,
+  learning_style: "doing", time_availability: "short", preferred_format: "guidé",
   motivation_drivers: [], resistance_patterns: [],
+  habits: [], communication_style: [], decision_patterns: [],
+  tech_relationship: [], objections_type: [], engagement_triggers: [], blockers: [],
+  typical_day: "", ai_relationship_summary: "", ideal_learning_journey: "",
+  coaching_approach: "", success_indicators: "",
 };
 
 type CreationMode = "guided" | "corporate" | "chat";
@@ -53,29 +57,29 @@ const modes: { id: CreationMode; label: string; desc: string; icon: any; gradien
 ];
 
 const traitLabels = [
-  { key: "digital_maturity", label: "Maturité digitale", icon: Zap, low: "Novice", high: "Expert" },
-  { key: "ai_apprehension", label: "Appréhension IA", icon: Brain, low: "Serein", high: "Anxieux" },
-  { key: "experimentation_level", label: "Expérimentation", icon: RefreshCw, low: "Prudent", high: "Aventurier" },
-  { key: "initiative_level", label: "Initiative", icon: Lightbulb, low: "Suiveur", high: "Autonome" },
-  { key: "change_appetite", label: "Appétence au changement", icon: Heart, low: "Conservateur", high: "Transformateur" },
+  { key: "digital_maturity", label: "Maturité digitale", icon: Zap, low: "Novice", high: "Expert", short: "MATU" },
+  { key: "ai_apprehension", label: "Appréhension IA", icon: Brain, low: "Serein", high: "Anxieux", short: "APPR" },
+  { key: "experimentation_level", label: "Expérimentation", icon: RefreshCw, low: "Prudent", high: "Aventurier", short: "EXPE" },
+  { key: "initiative_level", label: "Initiative", icon: Lightbulb, low: "Suiveur", high: "Autonome", short: "INIT" },
+  { key: "change_appetite", label: "Appétence changement", icon: Heart, low: "Conservateur", high: "Transformateur", short: "CHAN" },
+  { key: "collaboration_preference", label: "Collaboration", icon: HandshakeIcon, low: "Solo", high: "Collectif", short: "COLL" },
+  { key: "autonomy_level", label: "Autonomie", icon: UserCheck, low: "Encadré", high: "Autonome", short: "AUTO" },
+  { key: "risk_tolerance", label: "Tolérance risque", icon: ShieldCheck, low: "Aversion", high: "Preneur", short: "RISK" },
+  { key: "data_literacy", label: "Littératie data", icon: BarChart3, low: "Aucune", high: "Data-driven", short: "DATA" },
+  { key: "feedback_receptivity", label: "Réceptivité feedback", icon: Ear, low: "Défensif", high: "Demandeur", short: "FEED" },
 ];
 
-// ─── Radar mini chart for traits ─────────────────────────────────────
+// ─── Radar 10 axes ───────────────────────────────────────────────────
 
-function TraitRadar({ traits, size = 120 }: { traits: BehavioralTraits; size?: number }) {
-  const cx = size / 2;
-  const cy = size / 2;
-  const maxR = size * 0.38;
-  const keys = traitLabels.map(t => t.key);
-  const n = keys.length;
-
+function TraitRadar({ traits, size = 140 }: { traits: BehavioralTraits; size?: number }) {
+  const cx = size / 2, cy = size / 2, maxR = size * 0.36;
+  const n = traitLabels.length;
   const getPoint = (i: number, v: number) => {
     const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
     const r = (v / 5) * maxR;
     return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
   };
-
-  const pts = keys.map((k, i) => getPoint(i, (traits as any)[k] || 3));
+  const pts = traitLabels.map((t, i) => getPoint(i, (traits as any)[t.key] || 3));
   const path = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
 
   return (
@@ -83,15 +87,38 @@ function TraitRadar({ traits, size = 120 }: { traits: BehavioralTraits; size?: n
       {[1, 2, 3, 4, 5].map(v => (
         <polygon key={v} points={Array.from({ length: n }, (_, i) => { const p = getPoint(i, v); return `${p.x},${p.y}`; }).join(" ")} fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" opacity={0.3} />
       ))}
-      <motion.path d={path} fill="hsl(var(--primary) / 0.15)" stroke="hsl(var(--primary))" strokeWidth="2" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, type: "spring" }} style={{ transformOrigin: `${cx}px ${cy}px` }} />
-      {pts.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="3" fill="hsl(var(--primary))" />
-      ))}
-      {keys.map((k, i) => {
-        const p = getPoint(i, 6.2);
-        return <text key={k} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fill="hsl(var(--muted-foreground))" fontSize="7" fontWeight="600">{traitLabels[i].label.slice(0, 4).toUpperCase()}</text>;
+      {traitLabels.map((_, i) => {
+        const p = getPoint(i, 5);
+        return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="hsl(var(--border))" strokeWidth="0.3" opacity={0.2} />;
+      })}
+      <motion.path d={path} fill="hsl(var(--primary) / 0.15)" stroke="hsl(var(--primary))" strokeWidth="1.5" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, type: "spring" }} style={{ transformOrigin: `${cx}px ${cy}px` }} />
+      {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="2.5" fill="hsl(var(--primary))" />)}
+      {traitLabels.map((t, i) => {
+        const p = getPoint(i, 6.5);
+        return <text key={t.key} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fill="hsl(var(--muted-foreground))" fontSize="6" fontWeight="600">{t.short}</text>;
       })}
     </svg>
+  );
+}
+
+// ─── Tags chip editor ────────────────────────────────────────────────
+
+function TagsEditor({ label, tags, onChange }: { label: string; tags: string[]; onChange: (t: string[]) => void }) {
+  const [input, setInput] = useState("");
+  const add = () => { if (input.trim() && !tags.includes(input.trim())) { onChange([...tags, input.trim()]); setInput(""); } };
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{label}</Label>
+      <div className="flex flex-wrap gap-1 min-h-[28px]">
+        {tags.map((t, i) => (
+          <Badge key={i} variant="secondary" className="text-[10px] gap-1 cursor-pointer hover:bg-destructive/10" onClick={() => onChange(tags.filter((_, j) => j !== i))}>{t} ×</Badge>
+        ))}
+      </div>
+      <div className="flex gap-1">
+        <Input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); add(); } }} placeholder="Ajouter..." className="h-7 text-xs flex-1" />
+        <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={add}>+</Button>
+      </div>
+    </div>
   );
 }
 
@@ -103,9 +130,14 @@ export default function AdminAcademyPersonae() {
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState<{ name: string; description: string; status: string; characteristics: BehavioralTraits }>({ name: "", description: "", status: "draft", characteristics: defaultTraits });
+  const [form, setForm] = useState<{ name: string; description: string; status: string; tags: string[]; characteristics: BehavioralTraits }>({ name: "", description: "", status: "draft", tags: [], characteristics: { ...defaultTraits } });
   const [createOpen, setCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState<CreationMode | null>(null);
+  const [filter, setFilter] = useState<"all" | "generic" | "org">("all");
+  const [deriveOpen, setDeriveOpen] = useState(false);
+  const [deriveParentId, setDeriveParentId] = useState<string | null>(null);
+  const [deriveOrgId, setDeriveOrgId] = useState("");
+  const [isDeriving, setIsDeriving] = useState(false);
 
   const { data: personae = [], isLoading } = useQuery({
     queryKey: ["admin-academy-personae"],
@@ -116,13 +148,28 @@ export default function AdminAcademyPersonae() {
     },
   });
 
+  const { data: orgs = [] } = useQuery({
+    queryKey: ["admin-orgs-list"],
+    queryFn: async () => {
+      const { data } = await supabase.from("organizations").select("id, name").order("name");
+      return data || [];
+    },
+  });
+
+  const filteredPersonae = personae.filter((p: any) => {
+    if (filter === "generic") return !p.organization_id;
+    if (filter === "org") return !!p.organization_id;
+    return true;
+  });
+
   const upsert = useMutation({
     mutationFn: async () => {
+      const payload: any = { name: form.name, description: form.description, status: form.status, characteristics: form.characteristics as any, tags: form.tags as any };
       if (editId) {
-        const { error } = await supabase.from("academy_personae").update({ name: form.name, description: form.description, status: form.status, characteristics: form.characteristics as any }).eq("id", editId);
+        const { error } = await supabase.from("academy_personae").update(payload).eq("id", editId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("academy_personae").insert({ name: form.name, description: form.description, status: form.status, characteristics: form.characteristics as any, created_by: user!.id, generation_mode: "manual" });
+        const { error } = await supabase.from("academy_personae").insert({ ...payload, created_by: user!.id, generation_mode: "manual" });
         if (error) throw error;
       }
     },
@@ -136,11 +183,25 @@ export default function AdminAcademyPersonae() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const handleDerive = async () => {
+    if (!deriveParentId || !deriveOrgId) return;
+    setIsDeriving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "derive-persona", parent_persona_id: deriveParentId, organization_id: deriveOrgId } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Persona décliné : "${data.persona.name}"`);
+      qc.invalidateQueries({ queryKey: ["admin-academy-personae"] });
+      setDeriveOpen(false);
+    } catch (e: any) { toast.error(e.message); } finally { setIsDeriving(false); }
+  };
+
   function openEdit(p: any) {
     setEditId(p.id);
     const chars = p.characteristics || {};
     setForm({
       name: p.name, description: p.description || "", status: p.status,
+      tags: (p as any).tags || [],
       characteristics: { ...defaultTraits, ...chars },
     });
     setEditOpen(true);
@@ -156,57 +217,72 @@ export default function AdminAcademyPersonae() {
             <Button variant="ghost" size="icon" onClick={() => navigate("/admin/academy")}><ArrowLeft className="h-4 w-4" /></Button>
             <Brain className="h-5 w-5 text-primary" />
             <h1 className="text-lg font-display font-bold">Personae comportementaux</h1>
-            <Badge variant="secondary">{personae.length}</Badge>
+            <Badge variant="secondary">{filteredPersonae.length}</Badge>
           </div>
-          <Button size="sm" onClick={() => { setCreateMode(null); setCreateOpen(true); }} className="gap-2"><Plus className="h-4 w-4" /> Nouveau persona</Button>
+          <div className="flex items-center gap-2">
+            <div className="flex bg-muted rounded-lg p-0.5">
+              {([["all", "Tous"], ["generic", "Génériques"], ["org", "Par org"]] as const).map(([v, l]) => (
+                <button key={v} onClick={() => setFilter(v)} className={cn("px-3 py-1 text-xs rounded-md transition-all", filter === v ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground")}>{l}</button>
+              ))}
+            </div>
+            <Button size="sm" onClick={() => { setCreateMode(null); setCreateOpen(true); }} className="gap-2"><Plus className="h-4 w-4" /> Nouveau persona</Button>
+          </div>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{[1,2,3].map(i => <Card key={i} className="animate-pulse"><CardContent className="p-5"><div className="h-24 bg-muted rounded" /></CardContent></Card>)}</div>
-        ) : personae.length === 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{[1,2,3].map(i => <Card key={i} className="animate-pulse"><CardContent className="p-5"><div className="h-32 bg-muted rounded" /></CardContent></Card>)}</div>
+        ) : filteredPersonae.length === 0 ? (
           <Card className="border-dashed"><CardContent className="p-12 text-center text-muted-foreground">
             <Brain className="h-10 w-10 mx-auto mb-4 opacity-30" />
             <p className="text-sm font-medium">Aucun persona comportemental</p>
-            <p className="text-xs mt-1 max-w-md mx-auto">Les personae décrivent comment les apprenants réagissent, apprennent et s'adaptent — pas leur poste. Un même poste peut avoir des personae très différents.</p>
+            <p className="text-xs mt-1 max-w-md mx-auto">Les personae décrivent comment les apprenants réagissent, apprennent et s'adaptent — pas leur poste.</p>
             <Button size="sm" className="mt-4 gap-2" onClick={() => { setCreateMode(null); setCreateOpen(true); }}><Sparkles className="h-4 w-4" /> Créer un persona</Button>
           </CardContent></Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {personae.map((p: any) => {
+            {filteredPersonae.map((p: any) => {
               const chars = { ...defaultTraits, ...(p.characteristics || {}) };
+              const orgName = p.organization_id ? orgs.find((o: any) => o.id === p.organization_id)?.name : null;
+              const pTags: string[] = (p as any).tags || [];
               return (
                 <Card key={p.id} className="hover:shadow-md transition-all group">
                   <CardContent className="p-5 space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-sm">{p.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm">{p.name}</p>
+                          {p.parent_persona_id && <Badge variant="outline" className="text-[9px]"><Copy className="h-2.5 w-2.5 mr-0.5" />Déclinaison</Badge>}
+                        </div>
                         <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{p.description}</p>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                        {!p.organization_id && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Décliner pour une org" onClick={() => { setDeriveParentId(p.id); setDeriveOrgId(""); setDeriveOpen(true); }}><Copy className="h-3.5 w-3.5" /></Button>
+                        )}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove.mutate(p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <TraitRadar traits={chars} size={100} />
-                      <div className="flex-1 space-y-1">
-                        {traitLabels.map(t => (
-                          <div key={t.key} className="flex items-center gap-2">
-                            <span className="text-[10px] text-muted-foreground w-12 truncate">{t.label.split(" ")[0]}</span>
-                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="flex items-center gap-3">
+                      <TraitRadar traits={chars} size={110} />
+                      <div className="flex-1 space-y-0.5">
+                        {traitLabels.slice(0, 6).map(t => (
+                          <div key={t.key} className="flex items-center gap-1.5">
+                            <span className="text-[9px] text-muted-foreground w-10 truncate">{t.short}</span>
+                            <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
                               <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${((chars as any)[t.key] / 5) * 100}%` }} />
                             </div>
-                            <span className="text-[10px] font-semibold w-4 text-right">{(chars as any)[t.key]}</span>
+                            <span className="text-[9px] font-semibold w-3 text-right">{(chars as any)[t.key]}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {chars.learning_style && <Badge variant="outline" className="text-[10px]">🎯 {chars.learning_style}</Badge>}
-                      {chars.preferred_format && <Badge variant="outline" className="text-[10px]">📐 {chars.preferred_format}</Badge>}
-                      {chars.time_availability && <Badge variant="outline" className="text-[10px]">⏱ {chars.time_availability}</Badge>}
-                      <Badge variant={p.status === "published" ? "default" : "secondary"} className="text-[10px]">{p.status}</Badge>
-                      <Badge variant="outline" className="text-[10px] gap-1">{p.generation_mode === "ai" ? <><Sparkles className="h-2.5 w-2.5" /> IA</> : "Manuel"}</Badge>
+                    <div className="flex flex-wrap gap-1">
+                      {orgName ? <Badge variant="outline" className="text-[9px] gap-1"><Building2 className="h-2.5 w-2.5" />{orgName}</Badge> : <Badge variant="outline" className="text-[9px] gap-1"><Globe className="h-2.5 w-2.5" />Générique</Badge>}
+                      {chars.learning_style && <Badge variant="outline" className="text-[9px]">🎯 {chars.learning_style}</Badge>}
+                      {chars.preferred_format && <Badge variant="outline" className="text-[9px]">📐 {chars.preferred_format}</Badge>}
+                      <Badge variant={p.status === "published" ? "default" : "secondary"} className="text-[9px]">{p.status}</Badge>
+                      {pTags.slice(0, 3).map((t: string) => <Badge key={t} variant="outline" className="text-[9px]">{t}</Badge>)}
                     </div>
                   </CardContent>
                 </Card>
@@ -216,32 +292,51 @@ export default function AdminAcademyPersonae() {
         )}
       </div>
 
-      {/* Create Dialog */}
       <CreatePersonaDialog open={createOpen} onOpenChange={setCreateOpen} mode={createMode} onModeChange={setCreateMode} userId={user?.id || ""} onSuccess={() => { qc.invalidateQueries({ queryKey: ["admin-academy-personae"] }); setCreateOpen(false); }} />
+
+      {/* Derive Dialog */}
+      <Dialog open={deriveOpen} onOpenChange={setDeriveOpen}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Copy className="h-4 w-4 text-primary" /> Décliner pour une organisation</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">L'IA adaptera les habitudes, objections et déclencheurs au contexte de l'organisation.</p>
+          <Select value={deriveOrgId} onValueChange={setDeriveOrgId}>
+            <SelectTrigger><SelectValue placeholder="Choisir une organisation" /></SelectTrigger>
+            <SelectContent>{orgs.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+          </Select>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setDeriveOpen(false)}>Annuler</Button>
+            <Button onClick={handleDerive} disabled={!deriveOrgId || isDeriving} className="gap-1.5">{isDeriving ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="h-3.5 w-3.5" /> Décliner</>}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-2xl rounded-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="flex items-center gap-2"><Pencil className="h-4 w-4 text-primary" /> Modifier le persona</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5"><Label>Nom</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex: L'Explorateur Audacieux" /></div>
-            <div className="space-y-1.5"><Label>Description</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Profil comportemental face à l'apprentissage et l'IA..." /></div>
-            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5 col-span-2"><Label>Nom</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+              <div className="space-y-1.5 col-span-2"><Label>Description</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} /></div>
+            </div>
+
             <div className="space-y-3 p-4 rounded-xl bg-muted/30 border">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Traits comportementaux</p>
-              {traitLabels.map(t => (
-                <div key={t.key} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs flex items-center gap-1.5"><t.icon className="h-3.5 w-3.5" /> {t.label}</Label>
-                    <span className="text-xs font-semibold">{(form.characteristics as any)[t.key]}/5</span>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Traits comportementaux (10 axes)</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                {traitLabels.map(t => (
+                  <div key={t.key} className="space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[11px] flex items-center gap-1"><t.icon className="h-3 w-3" /> {t.label}</Label>
+                      <span className="text-[11px] font-semibold">{(form.characteristics as any)[t.key]}/5</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] text-muted-foreground w-14">{t.low}</span>
+                      <Slider value={[(form.characteristics as any)[t.key]]} onValueChange={([v]) => updateTrait(t.key, v)} min={1} max={5} step={1} className="flex-1" />
+                      <span className="text-[9px] text-muted-foreground w-16 text-right">{t.high}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-muted-foreground w-16">{t.low}</span>
-                    <Slider value={[(form.characteristics as any)[t.key]]} onValueChange={([v]) => updateTrait(t.key, v)} min={1} max={5} step={1} className="flex-1" />
-                    <span className="text-[10px] text-muted-foreground w-20 text-right">{t.high}</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
@@ -264,6 +359,31 @@ export default function AdminAcademyPersonae() {
                 </Select>
               </div>
             </div>
+
+            <div className="space-y-3 p-4 rounded-xl bg-muted/30 border">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tags comportementaux</p>
+              <div className="grid grid-cols-2 gap-3">
+                <TagsEditor label="Habitudes" tags={form.characteristics.habits || []} onChange={v => updateTrait("habits", v)} />
+                <TagsEditor label="Style de communication" tags={form.characteristics.communication_style || []} onChange={v => updateTrait("communication_style", v)} />
+                <TagsEditor label="Patterns de décision" tags={form.characteristics.decision_patterns || []} onChange={v => updateTrait("decision_patterns", v)} />
+                <TagsEditor label="Relation à la tech" tags={form.characteristics.tech_relationship || []} onChange={v => updateTrait("tech_relationship", v)} />
+                <TagsEditor label="Types d'objections" tags={form.characteristics.objections_type || []} onChange={v => updateTrait("objections_type", v)} />
+                <TagsEditor label="Déclencheurs d'engagement" tags={form.characteristics.engagement_triggers || []} onChange={v => updateTrait("engagement_triggers", v)} />
+                <TagsEditor label="Blockers" tags={form.characteristics.blockers || []} onChange={v => updateTrait("blockers", v)} />
+                <TagsEditor label="Motivations" tags={form.characteristics.motivation_drivers || []} onChange={v => updateTrait("motivation_drivers", v)} />
+              </div>
+            </div>
+
+            <div className="space-y-3 p-4 rounded-xl bg-muted/30 border">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contextes textuels</p>
+              <div className="space-y-2">
+                <div className="space-y-1"><Label className="text-xs">Journée type</Label><Textarea value={form.characteristics.typical_day || ""} onChange={e => updateTrait("typical_day", e.target.value)} rows={2} className="text-xs" /></div>
+                <div className="space-y-1"><Label className="text-xs">Approche coaching recommandée</Label><Textarea value={form.characteristics.coaching_approach || ""} onChange={e => updateTrait("coaching_approach", e.target.value)} rows={2} className="text-xs" /></div>
+                <div className="space-y-1"><Label className="text-xs">Indicateurs de succès</Label><Textarea value={form.characteristics.success_indicators || ""} onChange={e => updateTrait("success_indicators", e.target.value)} rows={2} className="text-xs" /></div>
+              </div>
+            </div>
+
+            <TagsEditor label="Tags de catégorisation" tags={form.tags} onChange={v => setForm(f => ({ ...f, tags: v }))} />
 
             <div className="space-y-1.5"><Label>Statut</Label>
               <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
@@ -323,15 +443,15 @@ function CreatePersonaDialog({ open, onOpenChange, mode, onModeChange, userId, o
   );
 }
 
-// ─── Guided Mode (behavioral archetypes) ─────────────────────────────
+// ─── Guided Mode (corporate archetypes) ──────────────────────────────
 
 const archetypes = [
-  { id: "explorer", label: "🚀 Explorateur Audacieux", desc: "Curieux, proactif, premier à tester les outils IA", traits: { digital_maturity: 5, ai_apprehension: 1, experimentation_level: 5, initiative_level: 5, change_appetite: 5, learning_style: "doing", preferred_format: "autonome" } },
-  { id: "pragmatic", label: "🎯 Pragmatique Efficace", desc: "Veut des résultats concrets, pas de théorie", traits: { digital_maturity: 3, ai_apprehension: 2, experimentation_level: 3, initiative_level: 4, change_appetite: 3, learning_style: "doing", preferred_format: "guidé" } },
-  { id: "skeptic", label: "🤔 Sceptique Méthodique", desc: "Prudent, veut des preuves, adopte lentement", traits: { digital_maturity: 3, ai_apprehension: 4, experimentation_level: 2, initiative_level: 3, change_appetite: 2, learning_style: "reading", preferred_format: "coaching" } },
-  { id: "anxious", label: "😰 Inquiet Réticent", desc: "Peur du remplacement, résistance au changement", traits: { digital_maturity: 2, ai_apprehension: 5, experimentation_level: 1, initiative_level: 2, change_appetite: 1, learning_style: "discussing", preferred_format: "groupe" } },
-  { id: "delegator", label: "👔 Décideur Stratégique", desc: "Veut comprendre pour décider, pas pour faire", traits: { digital_maturity: 3, ai_apprehension: 2, experimentation_level: 2, initiative_level: 4, change_appetite: 4, learning_style: "visual", preferred_format: "coaching" } },
-  { id: "champion", label: "💡 Champion Digital", desc: "Évangéliste tech, influence ses pairs", traits: { digital_maturity: 5, ai_apprehension: 1, experimentation_level: 5, initiative_level: 5, change_appetite: 5, learning_style: "doing", preferred_format: "autonome" } },
+  { id: "precursor", label: "🚀 Le Précurseur Digital", desc: "Early adopter enthousiaste, teste et évangélise les outils IA", traits: { digital_maturity: 5, ai_apprehension: 1, experimentation_level: 5, initiative_level: 5, change_appetite: 5, collaboration_preference: 4, autonomy_level: 5, risk_tolerance: 5, data_literacy: 4, feedback_receptivity: 4, learning_style: "doing", preferred_format: "autonome" } },
+  { id: "results", label: "🎯 Le Décideur Orienté Résultats", desc: "Pragmatique, veut du ROI mesurable, pas de gadget", traits: { digital_maturity: 3, ai_apprehension: 2, experimentation_level: 3, initiative_level: 4, change_appetite: 3, collaboration_preference: 3, autonomy_level: 4, risk_tolerance: 3, data_literacy: 4, feedback_receptivity: 4, learning_style: "doing", preferred_format: "guidé" } },
+  { id: "methodical", label: "📋 Le Méthodique Structuré", desc: "Prudent, veut des preuves et un cadre clair avant d'avancer", traits: { digital_maturity: 2, ai_apprehension: 4, experimentation_level: 2, initiative_level: 2, change_appetite: 2, collaboration_preference: 3, autonomy_level: 2, risk_tolerance: 2, data_literacy: 3, feedback_receptivity: 3, learning_style: "reading", preferred_format: "guidé" } },
+  { id: "observer", label: "👁️ Le Profil en Observation", desc: "Attend de voir, réticent mais pas hostile, besoin de réassurance", traits: { digital_maturity: 1, ai_apprehension: 5, experimentation_level: 1, initiative_level: 1, change_appetite: 1, collaboration_preference: 4, autonomy_level: 1, risk_tolerance: 1, data_literacy: 1, feedback_receptivity: 2, learning_style: "discussing", preferred_format: "groupe" } },
+  { id: "leader", label: "💎 Le Leader Transformationnel", desc: "Voit l'IA comme levier stratégique, porte la vision", traits: { digital_maturity: 4, ai_apprehension: 1, experimentation_level: 4, initiative_level: 5, change_appetite: 5, collaboration_preference: 5, autonomy_level: 4, risk_tolerance: 4, data_literacy: 4, feedback_receptivity: 5, learning_style: "visual", preferred_format: "coaching" } },
+  { id: "constrained", label: "⏳ Le Professionnel sous Contrainte", desc: "Pas le temps, surchargé, veut de l'immédiat et du concret", traits: { digital_maturity: 2, ai_apprehension: 3, experimentation_level: 2, initiative_level: 3, change_appetite: 3, collaboration_preference: 2, autonomy_level: 3, risk_tolerance: 2, data_literacy: 2, feedback_receptivity: 3, learning_style: "doing", preferred_format: "guidé" } },
 ];
 
 function GuidedPersonaMode({ userId, onSuccess, onBack }: { userId: string; onSuccess: () => void; onBack: () => void }) {
@@ -340,30 +460,15 @@ function GuidedPersonaMode({ userId, onSuccess, onBack }: { userId: string; onSu
   const [traits, setTraits] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleSelect = (id: string) => {
-    setSelected(id);
-    const arch = archetypes.find(a => a.id === id);
-    if (arch) setTraits({ ...arch.traits });
-  };
+  const handleSelect = (id: string) => { setSelected(id); setTraits({ ...archetypes.find(a => a.id === id)!.traits }); };
 
   const handleGenerate = async () => {
     if (!selected || !traits) return;
     setIsGenerating(true);
     try {
       const arch = archetypes.find(a => a.id === selected)!;
-      const brief = `Archétype : ${arch.label}
-Description : ${arch.desc}
-Traits comportementaux :
-- Maturité digitale : ${traits.digital_maturity}/5
-- Appréhension IA : ${traits.ai_apprehension}/5
-- Expérimentation : ${traits.experimentation_level}/5
-- Initiative : ${traits.initiative_level}/5
-- Appétence au changement : ${traits.change_appetite}/5
-- Style : ${traits.learning_style}
-- Format : ${traits.preferred_format}
-
-Crée un persona comportemental (PAS une fiche de poste). Focus sur : comment cette personne apprend, réagit face à la nouveauté, interagit avec l'IA, et quels sont ses freins et motivations profondes.`;
-
+      const traitLines = traitLabels.map(t => `- ${t.label} : ${traits[t.key]}/5`).join("\n");
+      const brief = `Archétype : ${arch.label}\nDescription : ${arch.desc}\nTraits :\n${traitLines}\n- Style : ${traits.learning_style}\n- Format : ${traits.preferred_format}\n\nCrée un persona COMPORTEMENTAL corporate. Nom professionnel (pas familier). Inclus habitudes, objections, déclencheurs, journée type, approche coaching.`;
       const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-persona", brief, mode: "guided" } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -388,15 +493,15 @@ Crée un persona comportemental (PAS une fiche de poste). Focus sur : comment ce
             </div>
           </>
         ) : (
-          <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ajustez les traits</p>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ajustez les 10 traits</p>
             {traitLabels.map(t => (
-              <div key={t.key} className="space-y-1">
-                <div className="flex items-center justify-between"><Label className="text-xs">{t.label}</Label><span className="text-xs font-semibold">{traits[t.key]}/5</span></div>
+              <div key={t.key} className="space-y-0.5">
+                <div className="flex items-center justify-between"><Label className="text-[11px]">{t.label}</Label><span className="text-[11px] font-semibold">{traits[t.key]}/5</span></div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground w-14">{t.low}</span>
+                  <span className="text-[9px] text-muted-foreground w-14">{t.low}</span>
                   <Slider value={[traits[t.key]]} onValueChange={([v]) => setTraits({ ...traits, [t.key]: v })} min={1} max={5} step={1} className="flex-1" />
-                  <span className="text-[10px] text-muted-foreground w-20 text-right">{t.high}</span>
+                  <span className="text-[9px] text-muted-foreground w-16 text-right">{t.high}</span>
                 </div>
               </div>
             ))}
@@ -408,14 +513,10 @@ Crée un persona comportemental (PAS une fiche de poste). Focus sur : comment ce
         {!customizing ? (
           <div className="flex gap-2">
             {selected && <Button variant="outline" size="sm" onClick={() => setCustomizing(true)}>Personnaliser</Button>}
-            <Button size="sm" onClick={handleGenerate} disabled={!selected || isGenerating} className="gap-1.5 min-w-[160px]">
-              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="h-3.5 w-3.5" /> Générer le persona</>}
-            </Button>
+            <Button size="sm" onClick={handleGenerate} disabled={!selected || isGenerating} className="gap-1.5 min-w-[160px]">{isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="h-3.5 w-3.5" /> Générer le persona</>}</Button>
           </div>
         ) : (
-          <Button size="sm" onClick={handleGenerate} disabled={isGenerating} className="gap-1.5 min-w-[160px]">
-            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="h-3.5 w-3.5" /> Générer</>}
-          </Button>
+          <Button size="sm" onClick={handleGenerate} disabled={isGenerating} className="gap-1.5 min-w-[160px]">{isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="h-3.5 w-3.5" /> Générer</>}</Button>
         )}
       </div>
     </motion.div>
@@ -431,7 +532,7 @@ function CorporatePersonaMode({ userId, onSuccess, onBack }: { userId: string; o
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-persona", brief: `Crée un persona COMPORTEMENTAL (pas une fiche de poste) basé sur :\n\n${brief.trim()}\n\nFocus : maturité digitale, appréhension IA, style d'apprentissage, freins, motivations.`, mode: "corporate" } });
+      const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-persona", brief: `Crée un persona COMPORTEMENTAL corporate :\n\n${brief.trim()}\n\nFocus : 10 traits numériques, habitudes, objections, déclencheurs, journée type, approche coaching. Nom professionnel.`, mode: "corporate" } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast.success(`Persona "${data.persona.name}" créé !`);
@@ -444,9 +545,9 @@ function CorporatePersonaMode({ userId, onSuccess, onBack }: { userId: string; o
       <div className="px-6 py-6 space-y-4">
         <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/5 to-emerald-500/5 border space-y-2">
           <div className="flex items-center gap-2"><Brain className="h-4 w-4 text-primary" /><span className="text-xs font-semibold">Brief Comportemental</span></div>
-          <p className="text-xs text-muted-foreground">Décrivez les comportements observés dans votre entreprise face à l'IA et au digital. L'IA créera un profil comportemental structuré.</p>
+          <p className="text-xs text-muted-foreground">Décrivez les comportements observés. L'IA créera un profil comportemental structuré avec 10 traits, des tags et des textes de contexte.</p>
         </div>
-        <Textarea value={brief} onChange={e => setBrief(e.target.value)} placeholder={`Exemple :\n\nDans notre direction commerciale, on observe un groupe de managers (40-50 ans) qui :\n- Utilisent encore Excel pour tout, refusent les outils CRM avancés\n- Sont très compétents dans leur domaine mais méfiants envers l'IA\n- Disent "ça ne marchera jamais pour notre métier"\n- Préfèrent les formations en présentiel avec des cas concrets\n- Se sentent menacés par les jeunes recrues plus tech-savvy`} className="min-h-[260px] resize-y text-sm" disabled={isGenerating} />
+        <Textarea value={brief} onChange={e => setBrief(e.target.value)} placeholder={`Exemple :\n\nDans notre direction commerciale, on observe un groupe de managers (40-50 ans) qui :\n- Utilisent encore Excel pour tout\n- Sont compétents mais méfiants envers l'IA\n- Disent "ça ne marchera jamais pour notre métier"\n- Préfèrent les formations en présentiel avec des cas concrets`} className="min-h-[260px] resize-y text-sm" disabled={isGenerating} />
       </div>
       <div className="px-6 py-4 border-t bg-muted/30 flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 text-muted-foreground"><ArrowLeft className="h-3.5 w-3.5" /> Retour</Button>
@@ -463,7 +564,7 @@ interface ChatMsg { id: string; role: "user" | "assistant"; content: string; }
 function ChatPersonaMode({ userId, onSuccess, onBack }: { userId: string; onSuccess: () => void; onBack: () => void }) {
   const [messages, setMessages] = useState<ChatMsg[]>([{
     id: "welcome", role: "assistant",
-    content: `👋 Bonjour ! Je vais vous aider à définir un **persona comportemental**.\n\nUn persona, ce n'est pas un poste — c'est un **profil d'apprentissage** :\n- Comment réagit-il face à la nouveauté ?\n- Quel est son rapport au digital et à l'IA ?\n- Qu'est-ce qui le motive ou le freine ?\n\nDécrivez-moi les **comportements** que vous observez chez un groupe d'apprenants. 🎯`
+    content: `👋 Bonjour ! Je vais vous aider à définir un **persona comportemental corporate**.\n\nUn persona, ce n'est pas un poste — c'est un **profil d'apprentissage** :\n- Comment réagit-il face à la nouveauté ?\n- Quel est son rapport au digital et à l'IA ?\n- Qu'est-ce qui le motive ou le freine ?\n\nDécrivez-moi les **comportements** que vous observez. 🎯`
   }]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -487,12 +588,12 @@ function ChatPersonaMode({ userId, onSuccess, onBack }: { userId: string; onSucc
           practice_id: "__persona_chat__",
           messages: allMsgs.filter(m => m.id !== "welcome").map(m => ({ role: m.role, content: m.content })),
           evaluate: false,
-          system_override: `Tu es un expert en psychologie de l'apprentissage et en adoption de l'IA.
-Tu aides à créer des PERSONAE COMPORTEMENTAUX (pas des fiches de poste).
-Pose des questions sur : maturité digitale, appréhension IA, style d'apprentissage, freins, motivations, rapport au changement.
+          system_override: `Tu es un expert en psychologie organisationnelle et en adoption de l'IA.
+Tu aides à créer des PERSONAE COMPORTEMENTAUX CORPORATE (pas des fiches de poste).
+Pose des questions sur : maturité digitale, appréhension IA, style d'apprentissage, habitudes, objections, déclencheurs.
 Après 3-4 échanges, propose un profil structuré. Si validé, réponds avec :
 \`\`\`persona_brief
-[description comportementale complète]
+[description comportementale complète avec traits, habitudes, objections, déclencheurs]
 \`\`\``
         }),
       });
@@ -529,7 +630,7 @@ Après 3-4 échanges, propose un profil structuré. Si validé, réponds avec :
 
       const briefMatch = content.match(/```persona_brief\s*\n?([\s\S]*?)```/);
       if (briefMatch) {
-        const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-persona", brief: `Crée un persona COMPORTEMENTAL :\n\n${briefMatch[1].trim()}`, mode: "chat" } });
+        const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-persona", brief: `Crée un persona COMPORTEMENTAL corporate :\n\n${briefMatch[1].trim()}`, mode: "chat" } });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
         toast.success(`Persona "${data.persona.name}" créé !`);

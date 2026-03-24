@@ -543,7 +543,9 @@ export type Database = {
           id: string
           name: string
           organization_id: string | null
+          parent_persona_id: string | null
           status: string
+          tags: Json
           updated_at: string
         }
         Insert: {
@@ -556,7 +558,9 @@ export type Database = {
           id?: string
           name: string
           organization_id?: string | null
+          parent_persona_id?: string | null
           status?: string
+          tags?: Json
           updated_at?: string
         }
         Update: {
@@ -569,7 +573,9 @@ export type Database = {
           id?: string
           name?: string
           organization_id?: string | null
+          parent_persona_id?: string | null
           status?: string
+          tags?: Json
           updated_at?: string
         }
         Relationships: [
@@ -578,6 +584,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_personae_parent_persona_id_fkey"
+            columns: ["parent_persona_id"]
+            isOneToOne: false
+            referencedRelation: "academy_personae"
             referencedColumns: ["id"]
           },
         ]

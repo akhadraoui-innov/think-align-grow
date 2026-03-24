@@ -37,6 +37,8 @@ serve(async (req) => {
       return await evaluateExercise(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-persona") {
       return await generatePersona(supabase, user.id, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "derive-persona") {
+      return await derivePersona(supabase, user.id, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-exercise") {
       return await generateExercise(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-practice") {
@@ -454,67 +456,73 @@ ${submission}
   });
 }
 
-// ─── Generate Persona ────────────────────────────────────────────────
+// ─── Generate Persona (behavioral archetype) ────────────────────────
 
 async function generatePersona(supabase: any, userId: string, params: any, apiKey: string, cors: any) {
   const { brief, mode = "guided", organization_id = null } = params;
   if (!brief) throw new Error("Missing brief");
 
-  const systemPrompt = `Tu es un expert en ingénierie pédagogique et en design de formation professionnelle.
-Tu crées des personae détaillés et réalistes pour des parcours de formation.
-Chaque persona doit être actionnable : suffisamment précis pour guider la conception d'un parcours adapté.
-Tu dois penser à :
-- Le contexte professionnel réel (industrie, taille d'entreprise, enjeux sectoriels)
-- Les compétences actuelles vs souhaitées (gap analysis)
-- Les contraintes d'apprentissage (temps, format, prérequis)
-- Les motivations et freins à la formation
-- Les cas d'usage concrets où la formation sera appliquée
+  const systemPrompt = `Tu es un expert en psychologie organisationnelle et en ingénierie pédagogique.
+Tu crées des PERSONAE COMPORTEMENTAUX — pas des fiches de poste. Un persona décrit COMMENT une personne apprend, réagit face au changement, et interagit avec la technologie. Deux personnes du même poste peuvent avoir des personas radicalement différents.
+
+Les noms doivent être CORPORATE et professionnels, jamais familiers ou caricaturaux.
+Exemples : "Le Précurseur Digital", "Le Décideur Orienté Résultats", "Le Méthodique Structuré", "Le Leader Transformationnel".
+
+Tu dois produire un profil riche avec :
+- 10 traits numériques (1-5)
+- Des tags comportementaux détaillés (habitudes, style de communication, patterns de décision, relation à la tech, types d'objections, déclencheurs d'engagement, blockers)
+- Des textes de contexte (journée type, relation à l'IA, parcours idéal, approche coaching, indicateurs de succès)
+
 Réponds UNIQUEMENT via l'outil fourni.`;
 
-  const userPrompt = `Crée un persona de formation complet à partir de ce brief :
-
-${brief}
-
-Le persona doit inclure :
-- Un nom de rôle précis et professionnel
-- Une description riche du contexte et des enjeux
-- Niveau de séniorité (Junior, Confirmé, Senior, Expert, C-Level)
-- Département / fonction
-- 3-5 objectifs de formation prioritaires
-- 3-5 points de douleur / frustrations actuelles
-- 2-3 scénarios d'usage concrets de la formation
-- Prérequis recommandés
-- Format d'apprentissage préféré (micro-learning, immersif, hybride)
-- Indicateurs de succès mesurables`;
+  const userPrompt = `Crée un persona comportemental complet à partir de ce brief :\n\n${brief}`;
 
   const tools = [{
     type: "function",
     function: {
       name: "create_persona",
-      description: "Create a detailed training persona",
+      description: "Create a detailed behavioral persona for learning design",
       parameters: {
         type: "object",
         properties: {
-          name: { type: "string", description: "Role name (e.g. 'Directeur Commercial PME')" },
-          description: { type: "string", description: "Rich description of context and challenges" },
+          name: { type: "string", description: "Corporate professional name (e.g. 'Le Précurseur Digital')" },
+          description: { type: "string", description: "Rich 2-3 paragraph behavioral description" },
+          tags: { type: "array", items: { type: "string" }, description: "Categorization tags (e.g. 'tech-savvy', 'change-leader')" },
           characteristics: {
             type: "object",
             properties: {
-              seniority: { type: "string" },
-              department: { type: "string" },
-              goals: { type: "array", items: { type: "string" } },
-              pain_points: { type: "array", items: { type: "string" } },
-              scenarios: { type: "array", items: { type: "string" } },
-              prerequisites: { type: "array", items: { type: "string" } },
-              learning_format: { type: "string" },
-              success_metrics: { type: "array", items: { type: "string" } },
-              industry: { type: "string" },
-              company_size: { type: "string" },
+              digital_maturity: { type: "number", minimum: 1, maximum: 5 },
+              ai_apprehension: { type: "number", minimum: 1, maximum: 5 },
+              experimentation_level: { type: "number", minimum: 1, maximum: 5 },
+              initiative_level: { type: "number", minimum: 1, maximum: 5 },
+              change_appetite: { type: "number", minimum: 1, maximum: 5 },
+              collaboration_preference: { type: "number", minimum: 1, maximum: 5 },
+              autonomy_level: { type: "number", minimum: 1, maximum: 5 },
+              risk_tolerance: { type: "number", minimum: 1, maximum: 5 },
+              data_literacy: { type: "number", minimum: 1, maximum: 5 },
+              feedback_receptivity: { type: "number", minimum: 1, maximum: 5 },
+              learning_style: { type: "string", enum: ["visual", "reading", "doing", "discussing"] },
+              time_availability: { type: "string", enum: ["micro", "short", "medium", "intensive"] },
+              preferred_format: { type: "string", enum: ["autonome", "guidé", "coaching", "groupe"] },
+              motivation_drivers: { type: "array", items: { type: "string" } },
+              resistance_patterns: { type: "array", items: { type: "string" } },
+              habits: { type: "array", items: { type: "string" } },
+              communication_style: { type: "array", items: { type: "string" } },
+              decision_patterns: { type: "array", items: { type: "string" } },
+              tech_relationship: { type: "array", items: { type: "string" } },
+              objections_type: { type: "array", items: { type: "string" } },
+              engagement_triggers: { type: "array", items: { type: "string" } },
+              blockers: { type: "array", items: { type: "string" } },
+              typical_day: { type: "string" },
+              ai_relationship_summary: { type: "string" },
+              ideal_learning_journey: { type: "string" },
+              coaching_approach: { type: "string" },
+              success_indicators: { type: "string" },
             },
-            required: ["seniority", "department", "goals", "pain_points"],
+            required: ["digital_maturity", "ai_apprehension", "experimentation_level", "initiative_level", "change_appetite", "collaboration_preference", "autonomy_level", "risk_tolerance", "data_literacy", "feedback_receptivity", "learning_style", "time_availability", "preferred_format", "motivation_drivers", "resistance_patterns", "habits", "communication_style", "typical_day", "coaching_approach", "success_indicators"],
           },
         },
-        required: ["name", "description", "characteristics"],
+        required: ["name", "description", "tags", "characteristics"],
       },
     },
   }];
@@ -527,6 +535,7 @@ Le persona doit inclure :
       name: result.name,
       description: result.description,
       characteristics: result.characteristics,
+      tags: result.tags || [],
       status: "draft",
       generation_mode: "ai",
       created_by: userId,
@@ -537,6 +546,73 @@ Le persona doit inclure :
   if (error) throw error;
 
   return new Response(JSON.stringify({ success: true, persona }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+// ─── Derive Persona for an organization ──────────────────────────────
+
+async function derivePersona(supabase: any, userId: string, params: any, apiKey: string, cors: any) {
+  const { parent_persona_id, organization_id } = params;
+  if (!parent_persona_id || !organization_id) throw new Error("Missing parent_persona_id or organization_id");
+
+  const { data: parent, error: pErr } = await supabase
+    .from("academy_personae").select("*").eq("id", parent_persona_id).single();
+  if (pErr || !parent) throw new Error("Parent persona not found");
+
+  const { data: org } = await supabase
+    .from("organizations").select("name, sector").eq("id", organization_id).single();
+
+  const systemPrompt = `Tu es un expert en adaptation pédagogique.
+Tu reçois un persona comportemental générique et tu dois le décliner pour une organisation spécifique.
+Conserve la structure et les traits principaux mais adapte : les habitudes, les objections, les déclencheurs, les exemples de journée type, au contexte sectoriel et organisationnel.
+Réponds UNIQUEMENT via l'outil fourni.`;
+
+  const userPrompt = `Décline ce persona générique pour l'organisation "${org?.name || 'inconnue'}" (secteur: ${org?.sector || 'non spécifié'}).
+
+Persona générique : ${parent.name}
+Description : ${parent.description}
+Caractéristiques actuelles : ${JSON.stringify(parent.characteristics)}
+
+Adapte les habitudes, objections, déclencheurs d'engagement, journée type, approche coaching au contexte de cette organisation.`;
+
+  const tools = [{
+    type: "function",
+    function: {
+      name: "derive_persona",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          description: { type: "string" },
+          tags: { type: "array", items: { type: "string" } },
+          characteristics: { type: "object" },
+        },
+        required: ["name", "description", "characteristics"],
+      },
+    },
+  }];
+
+  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "derive_persona" } }, "google/gemini-2.5-pro");
+
+  const { data: derived, error } = await supabase
+    .from("academy_personae")
+    .insert({
+      name: result.name,
+      description: result.description,
+      characteristics: { ...parent.characteristics, ...result.characteristics },
+      tags: result.tags || parent.tags || [],
+      parent_persona_id,
+      status: "draft",
+      generation_mode: "ai",
+      created_by: userId,
+      organization_id,
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+
+  return new Response(JSON.stringify({ success: true, persona: derived }), {
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
