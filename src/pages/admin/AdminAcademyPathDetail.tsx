@@ -979,10 +979,69 @@ export default function AdminAcademyPathDetail() {
                                     </div>
                                   )}
 
-                                  {!hasContent && questionCount === 0 && (
+                                  {/* Exercise preview */}
+                                  {hasExercise && modExercise && (
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Exercice — {modExercise.title}</h4>
+                                        {modExercise.ai_evaluation_enabled && <Badge variant="secondary" className="text-[10px]">Évaluation IA</Badge>}
+                                      </div>
+                                      <div className="rounded-xl border bg-background overflow-hidden">
+                                        <div className="p-4 space-y-3">
+                                          <div className="prose prose-sm max-w-none dark:prose-invert text-xs">
+                                            <EnrichedMarkdown content={modExercise.instructions || ""} />
+                                          </div>
+                                          {(modExercise.evaluation_criteria as any[])?.length > 0 && (
+                                            <div className="rounded-lg bg-muted/30 p-3 space-y-1">
+                                              <p className="text-[10px] font-semibold text-muted-foreground uppercase">Critères d'évaluation</p>
+                                              {(modExercise.evaluation_criteria as any[]).map((c: any, i: number) => (
+                                                <p key={i} className="text-xs text-muted-foreground">• {typeof c === "string" ? c : c.label || c.criterion || JSON.stringify(c)}</p>
+                                              ))}
+                                            </div>
+                                          )}
+                                          <p className="text-[10px] text-muted-foreground">Type de rendu : {modExercise.expected_output_type || "text"}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Practice preview */}
+                                  {hasPractice && modPractice && (
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pratique IA — {modPractice.title}</h4>
+                                        {modPractice.difficulty && <Badge variant="outline" className="text-[10px]">{modPractice.difficulty}</Badge>}
+                                        <Badge variant="secondary" className="text-[10px]">{modPractice.max_exchanges} échanges max</Badge>
+                                      </div>
+                                      <div className="rounded-xl border bg-background overflow-hidden">
+                                        <div className="p-4 space-y-3">
+                                          <div>
+                                            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Scénario</p>
+                                            <p className="text-xs text-muted-foreground">{modPractice.scenario || "—"}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">System Prompt</p>
+                                            <div className="rounded-lg bg-muted/30 p-3 text-xs font-mono max-h-32 overflow-y-auto whitespace-pre-wrap">
+                                              {modPractice.system_prompt || "—"}
+                                            </div>
+                                          </div>
+                                          {(modPractice.evaluation_rubric as any[])?.length > 0 && (
+                                            <div className="rounded-lg bg-muted/30 p-3 space-y-1">
+                                              <p className="text-[10px] font-semibold text-muted-foreground uppercase">Grille d'évaluation</p>
+                                              {(Array.isArray(modPractice.evaluation_rubric) ? modPractice.evaluation_rubric : []).map((r: any, i: number) => (
+                                                <p key={i} className="text-xs text-muted-foreground">• {typeof r === "string" ? r : r.label || r.criterion || JSON.stringify(r)}</p>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {!hasContent && questionCount === 0 && !hasExercise && !hasPractice && (
                                     <div className="text-center py-6 text-muted-foreground">
                                       <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                                      <p className="text-xs">Aucun contenu généré. Utilisez les boutons ci-dessus pour générer le contenu et/ou le quiz.</p>
+                                      <p className="text-xs">Aucun contenu généré. Utilisez les boutons ci-dessus pour générer.</p>
                                     </div>
                                   )}
                                 </CardContent>
