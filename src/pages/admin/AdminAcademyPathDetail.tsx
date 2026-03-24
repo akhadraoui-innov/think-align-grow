@@ -401,7 +401,7 @@ export default function AdminAcademyPathDetail() {
     if (pathModules.length === 0) return;
     setBatchGenerating(true);
     const modules = pathModules.map((pm: any) => pm.academy_modules).filter(Boolean);
-    const total = modules.length * 3; // content + quiz + illustrations per module
+    const total = modules.length * 5; // content + quiz + illustrations + exercise + practice per module
     let current = 0;
 
     try {
