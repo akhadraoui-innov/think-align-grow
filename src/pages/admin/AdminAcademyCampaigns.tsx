@@ -246,7 +246,7 @@ export default function AdminAcademyCampaigns() {
               <Select value={form.organization_id || "none"} onValueChange={v => setForm({ ...form, organization_id: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue placeholder="Choisir une organisation" /></SelectTrigger>
                 <SelectContent>
-                  {orgs.map((o: any) => (
+                  <SelectItem value="none">— Choisir —</SelectItem>
                     <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                   ))}
                 </SelectContent>

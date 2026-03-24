@@ -237,7 +237,7 @@ export default function AcademyPath() {
                         isLocked && "opacity-50",
                         !isLocked && "hover:shadow-md cursor-pointer",
                       )}
-                      onClick={() => !isLocked && navigate(`/academy/module/${pm.module_id}`)}
+                      onClick={() => !isLocked && navigate(`/academy/module/${pm.module_id}?pathId=${id}`)}
                     >
                       <CardContent className="p-4 flex items-center gap-4">
                         <div className={cn(
