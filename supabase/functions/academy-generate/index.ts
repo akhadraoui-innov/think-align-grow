@@ -47,9 +47,9 @@ serve(async (req) => {
   }
 });
 
-async function callAI(apiKey: string, systemPrompt: string, userPrompt: string, tools?: any[], toolChoice?: any) {
+async function callAI(apiKey: string, systemPrompt: string, userPrompt: string, tools?: any[], toolChoice?: any, model?: string) {
   const body: any = {
-    model: "google/gemini-3-flash-preview",
+    model: model || "google/gemini-2.5-flash",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
