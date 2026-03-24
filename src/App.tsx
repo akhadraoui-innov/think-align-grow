@@ -65,6 +65,7 @@ function AnimatedRoutes() {
           <Route path="/challenge" element={<Challenge />} />
           <Route path="/challenge/:id" element={<ChallengeRoom />} />
           <Route path="/academy" element={<Academy />} />
+          <Route path="/academy/dashboard" element={<AcademyDashboard />} />
           <Route path="/academy/path/:id" element={<AcademyPath />} />
           <Route path="/academy/module/:id" element={<AcademyModule />} />
           <Route path="/admin" element={<AdminDashboard />} />
