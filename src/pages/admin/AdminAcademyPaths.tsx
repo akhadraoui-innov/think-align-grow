@@ -316,6 +316,63 @@ export default function AdminAcademyPaths() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* AI Generation Dialog */}
+      <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" /> Générer un parcours par IA
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Nom du parcours</Label>
+              <Input value={aiForm.name} onChange={e => setAiForm({ ...aiForm, name: e.target.value })} placeholder="Ex: L'IA au service de la stratégie commerciale" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Description / Brief</Label>
+              <Textarea value={aiForm.description} onChange={e => setAiForm({ ...aiForm, description: e.target.value })} rows={3} placeholder="Décrivez les objectifs, le contexte, le public cible..." />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label>Difficulté</Label>
+                <Select value={aiForm.difficulty} onValueChange={v => setAiForm({ ...aiForm, difficulty: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beginner">Débutant</SelectItem>
+                    <SelectItem value="intermediate">Intermédiaire</SelectItem>
+                    <SelectItem value="advanced">Avancé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Nb modules</Label>
+                <Input type="number" min={3} max={12} value={aiForm.module_count} onChange={e => setAiForm({ ...aiForm, module_count: Number(e.target.value) })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Persona</Label>
+                <Select value={aiForm.persona_id} onValueChange={v => setAiForm({ ...aiForm, persona_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Aucun</SelectItem>
+                    {personae.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setAiOpen(false)}>Annuler</Button>
+              <Button onClick={() => generateAI.mutate()} disabled={!aiForm.name || !aiForm.description || generateAI.isPending}>
+                {generateAI.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                {generateAI.isPending ? "Génération en cours..." : "Générer le parcours"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminShell>
   );
 }
