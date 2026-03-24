@@ -360,6 +360,40 @@ export default function AdminAcademyPathDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const genExercise = useMutation({
+    mutationFn: async (moduleId: string) => {
+      toast.info("Génération de l'exercice...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-exercise", module_id: moduleId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-path-exercises", id] });
+      toast.success("Exercice généré");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const genPractice = useMutation({
+    mutationFn: async (moduleId: string) => {
+      toast.info("Génération de la pratique IA...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-practice", module_id: moduleId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-path-practices", id] });
+      toast.success("Pratique IA générée");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, step: "" });
 
