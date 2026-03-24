@@ -189,9 +189,14 @@ export default function AdminAcademyPaths() {
             <h1 className="text-lg font-display font-bold">Parcours de formation</h1>
             <Badge variant="secondary">{paths.length}</Badge>
           </div>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" /> Nouveau parcours
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setAiOpen(true)}>
+              <Sparkles className="h-4 w-4 mr-2" /> Générer par IA
+            </Button>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-2" /> Nouveau parcours
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
