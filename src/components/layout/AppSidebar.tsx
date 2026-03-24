@@ -34,6 +34,10 @@ const workshopItems = [
   { path: "/challenge", icon: LayoutGrid, label: "Challenges", exact: true },
 ];
 
+const academyItems = [
+  { path: "/academy", icon: GraduationCap, label: "Mes formations", exact: true },
+];
+
 interface AppSidebarProps {
   onCommandPalette?: () => void;
 }
