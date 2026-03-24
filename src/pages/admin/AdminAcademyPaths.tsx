@@ -1,7 +1,7 @@
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Route, Plus, ArrowLeft, Pencil, Trash2, Save, Clock, BookOpen } from "lucide-react";
+import { Route, Plus, ArrowLeft, Pencil, Trash2, Save, Clock, BookOpen, Sparkles, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -43,6 +43,9 @@ export default function AdminAcademyPaths() {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<PathForm>(emptyForm);
+
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiForm, setAiForm] = useState({ name: "", description: "", difficulty: "intermediate", module_count: 5, persona_id: "" });
 
   const { data: paths = [], isLoading } = useQuery({
     queryKey: ["admin-academy-paths"],
@@ -145,6 +148,35 @@ export default function AdminAcademyPaths() {
     setEditId(null);
   }
 
+  const generateAI = useMutation({
+    mutationFn: async () => {
+      const personaDesc = aiForm.persona_id
+        ? personae.find((p: any) => p.id === aiForm.persona_id)?.name || ""
+        : "";
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: {
+          action: "generate-path",
+          name: aiForm.name,
+          description: aiForm.description,
+          difficulty: aiForm.difficulty,
+          module_count: aiForm.module_count,
+          persona_id: aiForm.persona_id || null,
+          persona_description: personaDesc,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
+      toast.success(`Parcours généré avec ${data.module_count} modules`);
+      setAiOpen(false);
+      if (data.path_id) navigate(`/admin/academy/paths/${data.path_id}`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
@@ -157,9 +189,14 @@ export default function AdminAcademyPaths() {
             <h1 className="text-lg font-display font-bold">Parcours de formation</h1>
             <Badge variant="secondary">{paths.length}</Badge>
           </div>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" /> Nouveau parcours
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setAiOpen(true)}>
+              <Sparkles className="h-4 w-4 mr-2" /> Générer par IA
+            </Button>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-2" /> Nouveau parcours
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -274,6 +311,63 @@ export default function AdminAcademyPaths() {
               <Button variant="outline" onClick={closeDialog}>Annuler</Button>
               <Button onClick={() => upsert.mutate()} disabled={!form.name || upsert.isPending}>
                 <Save className="h-4 w-4 mr-2" /> {editId ? "Mettre à jour" : "Créer"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Generation Dialog */}
+      <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" /> Générer un parcours par IA
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Nom du parcours</Label>
+              <Input value={aiForm.name} onChange={e => setAiForm({ ...aiForm, name: e.target.value })} placeholder="Ex: L'IA au service de la stratégie commerciale" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Description / Brief</Label>
+              <Textarea value={aiForm.description} onChange={e => setAiForm({ ...aiForm, description: e.target.value })} rows={3} placeholder="Décrivez les objectifs, le contexte, le public cible..." />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label>Difficulté</Label>
+                <Select value={aiForm.difficulty} onValueChange={v => setAiForm({ ...aiForm, difficulty: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beginner">Débutant</SelectItem>
+                    <SelectItem value="intermediate">Intermédiaire</SelectItem>
+                    <SelectItem value="advanced">Avancé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Nb modules</Label>
+                <Input type="number" min={3} max={12} value={aiForm.module_count} onChange={e => setAiForm({ ...aiForm, module_count: Number(e.target.value) })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Persona</Label>
+                <Select value={aiForm.persona_id} onValueChange={v => setAiForm({ ...aiForm, persona_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Aucun</SelectItem>
+                    {personae.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setAiOpen(false)}>Annuler</Button>
+              <Button onClick={() => generateAI.mutate()} disabled={!aiForm.name || !aiForm.description || generateAI.isPending}>
+                {generateAI.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                {generateAI.isPending ? "Génération en cours..." : "Générer le parcours"}
               </Button>
             </div>
           </div>

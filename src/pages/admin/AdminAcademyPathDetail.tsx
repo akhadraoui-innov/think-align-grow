@@ -1,7 +1,7 @@
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus, Trash2, Save, GripVertical, BookOpen, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, BookOpen, Pencil, Sparkles, Loader2, FileText, HelpCircle } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -138,6 +138,34 @@ export default function AdminAcademyPathDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const genContent = useMutation({
+    mutationFn: async (moduleId: string) => {
+      toast.info("Génération du contenu en cours...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-content", module_id: moduleId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => toast.success(`${data.section_count} sections de contenu générées`),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const genQuiz = useMutation({
+    mutationFn: async (moduleId: string) => {
+      toast.info("Génération du quiz en cours...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-quiz", module_id: moduleId, question_count: 5 },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => toast.success(`Quiz généré avec ${data.question_count} questions`),
+    onError: (e: any) => toast.error(e.message),
+  });
+
   function openCreateModule() {
     setEditModuleId(null);
     setModuleForm(emptyModule);
@@ -241,7 +269,7 @@ export default function AdminAcademyPathDetail() {
                         <p className="text-sm font-medium">{mod.title}</p>
                         <p className="text-xs text-muted-foreground truncate">{mod.description}</p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
                         <Badge variant="outline" className="text-[10px]">
                           {moduleTypeLabel[mod.module_type] || mod.module_type}
                         </Badge>
@@ -251,6 +279,12 @@ export default function AdminAcademyPathDetail() {
                         <Badge variant={mod.status === "published" ? "default" : "secondary"} className="text-[10px]">
                           {mod.status}
                         </Badge>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Générer contenu IA" onClick={(e) => { e.stopPropagation(); genContent.mutate(mod.id); }}>
+                          <FileText className="h-3.5 w-3.5 text-primary" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Générer quiz IA" onClick={(e) => { e.stopPropagation(); genQuiz.mutate(mod.id); }}>
+                          <HelpCircle className="h-3.5 w-3.5 text-primary" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditModule(mod)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
