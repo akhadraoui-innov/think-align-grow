@@ -248,6 +248,7 @@ export default function AdminAcademyCampaigns() {
                 <SelectTrigger><SelectValue placeholder="Choisir une organisation" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">— Choisir —</SelectItem>
+                  {orgs.map((o: any) => (
                     <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                   ))}
                 </SelectContent>
