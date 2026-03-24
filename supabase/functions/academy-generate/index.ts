@@ -33,6 +33,8 @@ serve(async (req) => {
       return await generateContent(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-quiz") {
       return await generateQuiz(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "evaluate-exercise") {
+      return await evaluateExercise(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
@@ -45,9 +47,9 @@ serve(async (req) => {
   }
 });
 
-async function callAI(apiKey: string, systemPrompt: string, userPrompt: string, tools?: any[], toolChoice?: any) {
+async function callAI(apiKey: string, systemPrompt: string, userPrompt: string, tools?: any[], toolChoice?: any, model?: string) {
   const body: any = {
-    model: "google/gemini-3-flash-preview",
+    model: model || "google/gemini-2.5-flash",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
@@ -369,6 +371,77 @@ Les questions doivent :
   }
 
   return new Response(JSON.stringify({ success: true, quiz_id: quiz.id, question_count: result.questions.length }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+// ─── Evaluate exercise submission ────────────────────────────────────
+
+async function evaluateExercise(supabase: any, params: any, apiKey: string, cors: any) {
+  const { exercise_id, module_id, submission } = params;
+  if (!exercise_id || !submission) throw new Error("Missing exercise_id or submission");
+
+  const { data: exercise, error: exErr } = await supabase
+    .from("academy_exercises")
+    .select("*")
+    .eq("id", exercise_id)
+    .single();
+  if (exErr || !exercise) throw new Error("Exercise not found");
+
+  const { data: mod } = await supabase
+    .from("academy_modules")
+    .select("title, description, objectives")
+    .eq("id", module_id)
+    .single();
+
+  const criteria = exercise.evaluation_criteria || [];
+
+  const systemPrompt = `Tu es un évaluateur pédagogique expert, exigeant mais bienveillant.
+Tu évalues les soumissions d'exercices de formation professionnelle.
+Tu donnes un feedback structuré, actionnable et encourageant.
+Réponds UNIQUEMENT via l'outil fourni.`;
+
+  const userPrompt = `Évalue cette soumission d'exercice.
+
+Module : ${mod?.title || ""}
+Description : ${mod?.description || ""}
+Objectifs : ${JSON.stringify(mod?.objectives || [])}
+
+Exercice : ${exercise.title}
+Consigne : ${exercise.instructions}
+Critères d'évaluation : ${JSON.stringify(criteria)}
+
+--- SOUMISSION DE L'APPRENANT ---
+${submission}
+--- FIN DE LA SOUMISSION ---
+
+Évalue en donnant :
+- Un score de 0 à 100
+- Les points forts (2-4)
+- Les axes d'amélioration (2-4)
+- Un résumé bienveillant et constructif`;
+
+  const tools = [{
+    type: "function",
+    function: {
+      name: "evaluate_submission",
+      description: "Evaluate a learner's exercise submission",
+      parameters: {
+        type: "object",
+        properties: {
+          score: { type: "number", description: "Score from 0 to 100" },
+          strengths: { type: "array", items: { type: "string" }, description: "Strong points" },
+          improvements: { type: "array", items: { type: "string" }, description: "Areas for improvement" },
+          summary: { type: "string", description: "Overall feedback summary" },
+        },
+        required: ["score", "strengths", "improvements", "summary"],
+      },
+    },
+  }];
+
+  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "evaluate_submission" } }, "google/gemini-2.5-pro");
+
+  return new Response(JSON.stringify({ success: true, feedback: result }), {
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
