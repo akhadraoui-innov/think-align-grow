@@ -697,10 +697,14 @@ export default function AdminAcademyPathDetail() {
                       const TypeIcon = typeConf.icon;
                       const modContents = getModuleContents(mod.id);
                       const modQuiz = getModuleQuiz(mod.id);
+                      const modExercise = getModuleExercise(mod.id);
+                      const modPractice = getModulePractice(mod.id);
                       const modProgress = getModuleProgress(mod.id);
                       const isExpanded = expandedModules.has(mod.id);
                       const hasContent = modContents.length > 0;
                       const questionCount = modQuiz?.academy_quiz_questions?.length || 0;
+                      const hasExercise = !!modExercise;
+                      const hasPractice = !!modPractice;
                       const completedCount = modProgress.filter((p: any) => p.status === "completed").length;
 
                       return (
