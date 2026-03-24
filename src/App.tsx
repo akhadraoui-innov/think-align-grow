@@ -91,6 +91,7 @@ function AnimatedRoutes() {
           <Route path="/admin/academy/functions/:id" element={<AdminAcademyFunctionDetail />} />
           <Route path="/admin/academy/map" element={<AdminAcademyMap />} />
           <Route path="/admin/academy/tracking" element={<AdminAcademyTracking />} />
+          <Route path="/admin/academy/modules/:id" element={<AdminAcademyModuleDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
