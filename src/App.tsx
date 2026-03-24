@@ -74,6 +74,10 @@ function AnimatedRoutes() {
           <Route path="/admin/billing" element={<AdminBilling />} />
           <Route path="/admin/logs" element={<AdminLogs />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/admin/academy" element={<AdminAcademy />} />
+          <Route path="/admin/academy/personae" element={<AdminAcademyPersonae />} />
+          <Route path="/admin/academy/paths" element={<AdminAcademyPaths />} />
+          <Route path="/admin/academy/campaigns" element={<AdminAcademyCampaigns />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
