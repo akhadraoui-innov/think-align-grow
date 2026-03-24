@@ -1,7 +1,7 @@
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Plus, ArrowLeft, Pencil, Trash2, Save, Sparkles, Loader2, MessageSquare, Wand2, Building2, Target, ArrowRight, Check, Lightbulb, UserCheck, GraduationCap, Cpu, BarChart3, Wrench } from "lucide-react";
+import { Briefcase, Plus, ArrowLeft, Pencil, Trash2, Save, Sparkles, Loader2, MessageSquare, Wand2, Building2, Target, ArrowRight, Check, Lightbulb, UserCheck, GraduationCap, Cpu, BarChart3, Wrench, Search, LayoutGrid, Table2 as TableIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -78,32 +78,69 @@ export default function AdminAcademyFunctions() {
     setEditOpen(true);
   }
 
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [deptFilter, setDeptFilter] = useState("all");
+
+  const departments = [...new Set(functions.map((f: any) => f.department).filter(Boolean))];
+  const filtered = functions.filter((f: any) => {
+    if (searchTerm && !f.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (deptFilter !== "all" && f.department !== deptFilter) return false;
+    return true;
+  });
+
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate("/admin/academy")}><ArrowLeft className="h-4 w-4" /></Button>
-            <Briefcase className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-display font-bold">Fonctions</h1>
-            <Badge variant="secondary">{functions.length}</Badge>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 shadow-md">
+              <Briefcase className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-display font-bold">Fonctions</h1>
+              <p className="text-xs text-muted-foreground">{functions.length} rôles organisationnels</p>
+            </div>
           </div>
           <Button size="sm" onClick={() => { setCreateMode(null); setCreateOpen(true); }} className="gap-2"><Plus className="h-4 w-4" /> Nouvelle fonction</Button>
         </div>
 
+        {/* Filters bar */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Rechercher…" className="pl-8 h-8 text-xs" />
+          </div>
+          <Select value={deptFilter} onValueChange={setDeptFilter}>
+            <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue placeholder="Département" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous départements</SelectItem>
+              {departments.map(d => <SelectItem key={d} value={d!}>{d}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <div className="flex bg-muted rounded-lg p-0.5 ml-auto">
+            <button onClick={() => setViewMode("grid")} className={cn("px-2.5 py-1 text-xs rounded-md transition-all", viewMode === "grid" ? "bg-background shadow-sm font-medium" : "text-muted-foreground")}>
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => setViewMode("table")} className={cn("px-2.5 py-1 text-xs rounded-md transition-all", viewMode === "table" ? "bg-background shadow-sm font-medium" : "text-muted-foreground")}>
+              <TableIcon className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{[1,2,3,4].map(i => <Card key={i} className="animate-pulse"><CardContent className="p-5"><div className="h-20 bg-muted rounded" /></CardContent></Card>)}</div>
-        ) : functions.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <Card className="border-dashed"><CardContent className="p-12 text-center text-muted-foreground">
             <Briefcase className="h-10 w-10 mx-auto mb-4 opacity-30" />
-            <p className="text-sm font-medium">Aucune fonction créée</p>
-            <p className="text-xs mt-1 max-w-sm mx-auto">Les fonctions décrivent les rôles organisationnels : poste, département, responsabilités, cas d'usage IA.</p>
+            <p className="text-sm font-medium">Aucune fonction trouvée</p>
             <Button size="sm" className="mt-4 gap-2" onClick={() => { setCreateMode(null); setCreateOpen(true); }}><Sparkles className="h-4 w-4" /> Créer une fonction</Button>
           </CardContent></Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {functions.map((f: any) => (
-              <Card key={f.id} className="hover:shadow-md transition-all group">
+        ) : viewMode === "grid" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((f: any) => (
+              <Card key={f.id} className="hover:shadow-md transition-all group cursor-pointer" onClick={() => navigate(`/admin/academy/functions/${f.id}`)}>
                 <CardContent className="p-5 space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -114,79 +151,63 @@ export default function AdminAcademyFunctions() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(f)}><Pencil className="h-3.5 w-3.5" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove.mutate(f.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); remove.mutate(f.id); }}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {f.seniority && <Badge variant="outline" className="text-[10px]">{f.seniority}</Badge>}
                     {f.department && <Badge variant="outline" className="text-[10px]">{f.department}</Badge>}
-                    {f.industry && <Badge variant="outline" className="text-[10px]">{f.industry}</Badge>}
-                    {f.company_size && <Badge variant="outline" className="text-[10px]">{f.company_size}</Badge>}
+                    {f.seniority && <Badge variant="outline" className="text-[10px]">{f.seniority}</Badge>}
                     <Badge variant={f.status === "published" ? "default" : "secondary"} className="text-[10px]">{f.status}</Badge>
-                    <Badge variant="outline" className="text-[10px] gap-1">
-                      {f.generation_mode === "ai" ? <><Sparkles className="h-2.5 w-2.5" /> IA</> : "Manuel"}
-                    </Badge>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    {(f.responsibilities as string[])?.length > 0 && (
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Responsabilités</p>
-                        <ul className="space-y-0.5">{(f.responsibilities as string[]).slice(0,3).map((r: string, i: number) => (
-                          <li key={i} className="text-[11px] text-muted-foreground flex items-start gap-1"><Target className="h-3 w-3 mt-0.5 shrink-0 text-primary" /><span className="line-clamp-1">{r}</span></li>
-                        ))}</ul>
-                      </div>
-                    )}
-                    {(f.ai_use_cases as string[])?.length > 0 && (
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Cas d'usage IA</p>
-                        <ul className="space-y-0.5">{(f.ai_use_cases as string[]).slice(0,3).map((c: string, i: number) => (
-                          <li key={i} className="text-[11px] text-muted-foreground flex items-start gap-1"><Cpu className="h-3 w-3 mt-0.5 shrink-0 text-violet-500" /><span className="line-clamp-1">{c}</span></li>
-                        ))}</ul>
-                      </div>
-                    )}
-                  </div>
+                  {(f.ai_use_cases as string[])?.length > 0 && (
+                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <Cpu className="h-3 w-3 text-violet-500" />
+                      <span>{(f.ai_use_cases as string[]).length} cas d'usage IA</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
           </div>
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/30">
+                      <th className="text-left p-3 font-medium text-muted-foreground">Nom</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Département</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Séniorité</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Statut</th>
+                      <th className="text-right p-3 font-medium text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {filtered.map((f: any) => (
+                      <tr key={f.id} className="hover:bg-muted/50 cursor-pointer" onClick={() => navigate(`/admin/academy/functions/${f.id}`)}>
+                        <td className="p-3">
+                          <p className="font-medium">{f.name}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{f.description}</p>
+                        </td>
+                        <td className="p-3 text-muted-foreground">{f.department || "—"}</td>
+                        <td className="p-3 text-muted-foreground">{f.seniority || "—"}</td>
+                        <td className="p-3"><Badge variant={f.status === "published" ? "default" : "secondary"} className="text-[10px]">{f.status}</Badge></td>
+                        <td className="p-3 text-right">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); remove.mutate(f.id); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
 
       {/* Create Dialog */}
       <CreateFunctionDialog open={createOpen} onOpenChange={setCreateOpen} mode={createMode} onModeChange={setCreateMode} userId={user?.id || ""} onSuccess={() => { qc.invalidateQueries({ queryKey: ["admin-academy-functions"] }); setCreateOpen(false); }} />
-
-      {/* Edit Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-2xl rounded-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Pencil className="h-4 w-4 text-primary" /> Modifier la fonction</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5 col-span-2"><Label>Nom du poste</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-              <div className="space-y-1.5 col-span-2"><Label>Description</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} /></div>
-              <div className="space-y-1.5"><Label>Département</Label><Input value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Séniorité</Label><Input value={form.seniority} onChange={e => setForm({ ...form, seniority: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Industrie</Label><Input value={form.industry} onChange={e => setForm({ ...form, industry: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Taille entreprise</Label><Input value={form.company_size} onChange={e => setForm({ ...form, company_size: e.target.value })} /></div>
-            </div>
-            <div className="space-y-1.5"><Label>Responsabilités (une par ligne)</Label><Textarea value={(form.responsibilities || []).join("\n")} onChange={e => setForm({ ...form, responsibilities: e.target.value.split("\n").filter(Boolean) })} rows={3} /></div>
-            <div className="space-y-1.5"><Label>Outils utilisés (un par ligne)</Label><Textarea value={(form.tools_used || []).join("\n")} onChange={e => setForm({ ...form, tools_used: e.target.value.split("\n").filter(Boolean) })} rows={2} /></div>
-            <div className="space-y-1.5"><Label>KPIs (un par ligne)</Label><Textarea value={(form.kpis || []).join("\n")} onChange={e => setForm({ ...form, kpis: e.target.value.split("\n").filter(Boolean) })} rows={2} /></div>
-            <div className="space-y-1.5"><Label>Cas d'usage IA (un par ligne)</Label><Textarea value={(form.ai_use_cases || []).join("\n")} onChange={e => setForm({ ...form, ai_use_cases: e.target.value.split("\n").filter(Boolean) })} rows={2} /></div>
-            <div className="space-y-1.5">
-              <Label>Statut</Label>
-              <Select value={form.status || "draft"} onValueChange={v => setForm({ ...form, status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="draft">Brouillon</SelectItem><SelectItem value="published">Publié</SelectItem></SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setEditOpen(false)}>Annuler</Button>
-              <Button onClick={() => upsert.mutate()} disabled={!form.name || upsert.isPending}><Save className="h-4 w-4 mr-2" /> Mettre à jour</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </AdminShell>
   );
 }

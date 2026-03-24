@@ -40,6 +40,7 @@ import AdminAcademyPaths from "./pages/admin/AdminAcademyPaths";
 import AdminAcademyCampaigns from "./pages/admin/AdminAcademyCampaigns";
 import AdminAcademyPathDetail from "./pages/admin/AdminAcademyPathDetail";
 import AdminAcademyFunctions from "./pages/admin/AdminAcademyFunctions";
+import AdminAcademyFunctionDetail from "./pages/admin/AdminAcademyFunctionDetail";
 import AdminAcademyMap from "./pages/admin/AdminAcademyMap";
 import AdminAcademyTracking from "./pages/admin/AdminAcademyTracking";
 
@@ -84,6 +85,7 @@ function AnimatedRoutes() {
           <Route path="/admin/academy/paths/:id" element={<AdminAcademyPathDetail />} />
           <Route path="/admin/academy/campaigns" element={<AdminAcademyCampaigns />} />
           <Route path="/admin/academy/functions" element={<AdminAcademyFunctions />} />
+          <Route path="/admin/academy/functions/:id" element={<AdminAcademyFunctionDetail />} />
           <Route path="/admin/academy/map" element={<AdminAcademyMap />} />
           <Route path="/admin/academy/tracking" element={<AdminAcademyTracking />} />
           <Route path="*" element={<NotFound />} />
