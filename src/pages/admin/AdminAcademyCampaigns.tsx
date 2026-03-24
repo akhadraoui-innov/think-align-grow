@@ -234,6 +234,7 @@ export default function AdminAcademyCampaigns() {
                 <SelectTrigger><SelectValue placeholder="Choisir un parcours" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">— Choisir —</SelectItem>
+                  {paths.map((p: any) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name} {p.status !== "published" && `(${p.status})`}
                     </SelectItem>
