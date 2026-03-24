@@ -166,7 +166,7 @@ export default function AdminAcademyPathDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
-
+  function openCreateModule() {
     setEditModuleId(null);
     setModuleForm(emptyModule);
     setModuleOpen(true);
