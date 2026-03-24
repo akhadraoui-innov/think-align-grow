@@ -1,144 +1,143 @@
 
 
-# Audit de l'Academy actuelle & Plan de refonte "Best-of-Class"
+# Audit complet Academy — Constats et Plan d'evolution
 
-## Diagnostic brutal
+## Ce qui fonctionne
 
-### Ce qui existe
+| Composant | Statut |
+|-----------|--------|
+| DB (14 tables) | OK, bien structurées, RLS en place |
+| Admin CRUD (Personae, Paths, Modules, Campaigns) | OK, fonctionnel |
+| AI Generation (path, content, quiz, evaluate-exercise) | OK, edge functions déployées |
+| Learner: Catalogue + filtres + recherche | OK |
+| Learner: Parcours timeline + enrollment + progression | OK |
+| Learner: Module viewer multi-type (tabs content/quiz/exercise/practice) | OK |
+| Learner: Quiz interactif (animated, feedback, score) | OK |
+| Learner: Practice IA streaming SSE | OK |
+| Learner: Exercise avec evaluation IA | OK |
+| Markdown rendering (react-markdown + remark-gfm) | OK, corrigé |
 
-| Couche | Verdict |
-|--------|---------|
-| **DB** | 14 tables correctes, bien structurées. Solide. |
-| **Edge function** | 1 seule (`academy-generate`), 3 actions basiques, prompts plats, modèle flash (le moins cher), aucun streaming, aucun feedback progressif. |
-| **Admin** | CRUD fonctionnel mais 100% formulaires/listes. Aucune preview, aucun workflow guidé, aucune intelligence. |
-| **Learner UX** | Catalogue = liste de cards. Module = dump de markdown brut (avec `dangerouslySetInnerHTML` sans parser markdown). Pas de quiz interactif, pas d'exercice, pas de practice IA, pas de progression, pas d'inscription, pas de certificat. |
-| **Tables inutilisées** | `academy_exercises`, `academy_practices`, `academy_progress`, `academy_enrollments`, `academy_certificates`, `academy_campaign_targets` — toutes vides de code front. |
+## Bugs et problemes identifiés
 
-### Ce qui manque fondamentalement
+### Bug 1 — Progress jamais enregistré
+Le quiz, l'exercice et la pratique appellent `onComplete` mais **aucun ne persiste dans `academy_progress`**. Le composant parent (`AcademyModule.tsx`) ne fait qu'afficher un toast. L'enrollment, les scores, le statut "completed" ne sont jamais écrits en base.
 
-1. **L'IA comme compagnon** : Aujourd'hui l'IA est un générateur one-shot qu'on déclenche et qu'on oublie. Aucune interaction, aucun coaching, aucun feedback adaptatif.
+**Impact** : la progression affichée dans `AcademyPath` reste a 0% meme apres avoir tout fait. Le certificat ne peut jamais se déclencher.
 
-2. **L'expérience apprenant** : C'est un lecteur de texte. Pas de progression visuelle, pas d'interaction, pas de gamification, pas de pratique.
+### Bug 2 — Pas de lien enrollment → module dans AcademyModule
+`AcademyModule.tsx` ne reçoit pas et ne récupère pas l'`enrollmentId` du parcours. Les composants enfants (`AcademyQuiz`, `AcademyExercise`, `AcademyPractice`) ont bien un prop `enrollmentId` optionnel mais il n'est jamais passé.
 
-3. **La qualité de génération** : Prompts basiques, modèle flash, pas de chaîne de raffinement. On est loin du "best-of-class".
+### Bug 3 — Practice: evaluation JSON jamais parsée
+Dans `AcademyPractice.tsx`, le code cherche `parsed.evaluation` dans le stream SSE, mais la edge function `academy-practice` ne renvoie jamais un objet `evaluation` — elle renvoie le flux SSE brut de l'IA. L'évaluation est censée etre dans le dernier message sous forme de bloc markdown `\`\`\`evaluation {...}\`\`\``, mais le front ne le parse pas. Donc l'évaluation de fin de session ne fonctionne pas.
 
-4. **Le markdown n'est même pas rendu** : `dangerouslySetInnerHTML` sur du markdown brut sans conversion HTML = le markdown s'affiche en texte plat.
+### Bug 4 — Campagnes: Select vide possible
+`AdminAcademyCampaigns.tsx` lignes 233/246 : si `form.path_id` ou `form.organization_id` est vide string, le Select n'a pas de valeur par défaut, ce qui peut causer le meme bug Radix qu'on a corrigé ailleurs.
 
----
+### Bug 5 — Pas de gestion d'erreur dans AcademyExercise
+Si la edge function `evaluate-exercise` renvoie une erreur structurée (rate limited, credits exhausted), le front ne la traite pas specifiquement — toast générique "Erreur lors de l'évaluation".
 
-## Plan de refonte — "Academy 2.0"
+### Bug 6 — Modules orphelins en suppression
+`AdminAcademyPathDetail` supprime le lien `academy_path_modules` mais pas le module lui-meme. Les modules restent orphelins en base.
 
-### Phase A — Expérience Apprenant immersive (priorité absolue)
+## Ce qui manque fonctionnellement
 
-**1. Module Viewer interactif** (`AcademyModule.tsx` — refonte complète)
-- Installer `react-markdown` + `remark-gfm` pour le rendu markdown correct
-- Layout immersif : sidebar de progression (étapes du module) + zone contenu principale
-- Navigation inter-sections avec transitions animées (framer-motion, déjà dans le projet)
-- Barre de progression en haut qui avance au scroll/navigation
-- Bouton "Marquer comme terminé" qui enregistre dans `academy_progress`
-- Affichage adaptatif selon `module_type` : contenu pour lesson, quiz interactif pour quiz, consigne + soumission pour exercise, chat IA pour practice
+### Learner
+1. **Pas de sauvegarde de progression** — rien n'est persisté
+2. **Pas de "Marquer comme terminé"** pour les leçons (contenu pur)
+3. **Pas de certificat** — la table existe mais aucun code
+4. **Navigation entre modules** — depuis un module, pas de bouton "Module suivant"
+5. **Pas de temps passé** tracké (`time_spent_seconds` dans progress)
 
-**2. Quiz interactif** (nouveau composant `AcademyQuiz.tsx`)
-- Fetch des questions depuis `academy_quizzes` + `academy_quiz_questions`
-- Navigation question par question avec animation
-- QCM avec sélection visuelle (cards cliquables, pas des radio buttons)
-- Vrai/faux avec toggle stylisé
-- Feedback immédiat après chaque réponse : explication + animation correct/incorrect
-- Score final avec radar chart des compétences (composant `RadarChart` déjà existant)
-- Enregistrement du score dans `academy_progress`
+### Admin
+6. **Pas de génération IA pour exercices ni practices** — les boutons n'existent pas dans `AdminAcademyPathDetail`
+7. **Pas de gestion du contenu des modules** — on génère du contenu par IA mais on ne peut pas le voir/éditer dans l'admin
+8. **Pas de preview** — l'admin ne peut pas voir ce que l'apprenant verra
+9. **Pas de génération IA de persona** — CRUD manuel seulement
+10. **Pas de statistiques** — le dashboard admin montre des compteurs mais aucune analytics (taux de complétion, scores moyens, temps passé)
+11. **Pas de drag-and-drop** pour réordonner les modules
 
-**3. Practice IA — Chat de coaching** (nouveau composant `AcademyPractice.tsx`)
-- Chat streaming avec l'IA (pattern identique à `ChatInterface.tsx` existant)
-- L'IA joue un rôle défini par `academy_practices.system_prompt` et `scenario`
-- Compteur d'échanges (max_exchanges)
-- À la fin de la session : l'IA évalue la performance selon `evaluation_rubric`
-- Score et feedback enregistrés dans `academy_progress`
-- Nouvelle edge function `academy-practice` avec streaming SSE
+## Plan d'implémentation — Corrections + Evolutions
 
-**4. Exercice avec évaluation IA** (nouveau composant `AcademyExercise.tsx`)
-- Affichage de la consigne en markdown riche
-- Zone de soumission (textarea ou upload selon `expected_output_type`)
-- Bouton "Soumettre pour évaluation"
-- L'IA évalue selon `evaluation_criteria` et retourne un feedback structuré
-- Score + feedback stockés dans `academy_progress`
-- Nouvelle action dans `academy-generate` : `evaluate-exercise`
+### Phase 1 — Corrections critiques (faire fonctionner le circuit)
 
-**5. Parcours avec progression** (`AcademyPath.tsx` — refonte)
-- Timeline verticale immersive au lieu d'une simple liste
-- Chaque module affiche : icône type, statut (locked/available/in_progress/completed), score
-- Progression globale en pourcentage avec barre animée
-- Modules verrouillés tant que le précédent n'est pas terminé (progression séquentielle)
-- Bouton "S'inscrire" qui crée un `academy_enrollment`
-- Certificat de fin de parcours quand tous les modules sont complétés
+**1.1 Persister la progression**
+- Dans `AcademyModule.tsx` : récupérer l'enrollment via le path_id du module
+- Après completion d'un quiz/exercise/practice : upsert dans `academy_progress` avec score, status "completed", completed_at
+- Ajouter un bouton "Marquer comme terminé" pour les leçons
+- Invalider les queries de progression
 
-**6. Catalogue enrichi** (`Academy.tsx` — refonte)
-- Cards de parcours avec illustration gradient générée par les couleurs du parcours
-- Filtres : difficulté, durée, tags
-- Barre de recherche
-- Section "En cours" avec progression en temps réel
-- Section "Recommandés" basée sur le persona de l'utilisateur
+**1.2 Fixer le parsing de l'évaluation Practice**
+- Dans `AcademyPractice.tsx` : après la fin du stream, parser le dernier message assistant pour extraire le bloc ```evaluation {...}```
+- Ou mieux : modifier `academy-practice` edge function pour envoyer un event SSE custom `data: {"evaluation": {...}}` après avoir parsé la réponse de l'IA
 
-### Phase B — IA Compagnon dans l'Admin
+**1.3 Navigation inter-modules**
+- Ajouter un bouton "Module suivant" en bas de `AcademyModule`
+- Nécessite de passer le path_id et la liste des modules en contexte
 
-**7. Génération IA de niveau supérieur**
-- Passer de `gemini-3-flash-preview` à `google/gemini-2.5-pro` pour la génération de contenu (raisonnement complexe)
-- Chaîne de raffinement en 3 passes : Structure → Contenu → Relecture critique
-- Streaming SSE pour montrer la progression en temps réel dans l'admin
-- Génération de persona par IA : brief libre → persona structuré avec caractéristiques, scénarios, objectifs
-- Génération d'exercices avec critères d'évaluation calibrés
-- Génération de scénarios de practice avec rubrique de scoring
+**1.4 Fixes Select vides dans Campaigns**
+- Appliquer le pattern `value="none"` comme déjà fait dans Paths
 
-**8. Preview live dans l'admin**
-- Onglet "Aperçu" dans `AdminAcademyPathDetail` qui rend le parcours tel que l'apprenant le verra
-- Preview du contenu markdown en temps réel pendant l'édition
-- Preview du quiz interactif pour tester avant publication
+### Phase 2 — Enrichissement Admin
 
-### Phase C — Edge Functions enrichies
+**2.1 Gestion du contenu dans les modules**
+- Ajouter un onglet "Contenu" dans le détail d'un module admin
+- CRUD des sections de contenu (markdown editor avec preview live)
+- CRUD des questions de quiz
+- CRUD des exercices avec critères
 
-**9. `academy-practice` (nouvelle)**
-- Streaming SSE pour le chat de coaching
-- System prompt dynamique depuis `academy_practices`
-- Compteur d'échanges côté serveur
-- Évaluation automatique en fin de session
+**2.2 Boutons IA manquants**
+- Générer exercice IA par module
+- Générer practice IA par module
+- Générer persona par IA (brief → persona structuré)
+- Nouvelles actions dans `academy-generate` : `generate-exercise`, `generate-practice`, `generate-persona`
 
-**10. Actions supplémentaires dans `academy-generate`**
-- `generate-persona` : brief → persona structuré
-- `generate-exercise` : module → exercice avec critères
-- `generate-practice` : module → scénario + rubrique
-- `evaluate-exercise` : soumission → feedback structuré
-- `evaluate-practice` : historique chat → score + feedback
+**2.3 Analytics Dashboard**
+- Taux d'inscription par parcours
+- Taux de complétion
+- Scores moyens par module
+- Temps passé moyen
+
+### Phase 3 — UX & UI Evolutions
+
+**3.1 Certificats**
+- Détecter quand tous les modules d'un parcours sont complétés
+- Générer et stocker un certificat dans `academy_certificates`
+- Page de visualisation du certificat (partageable)
+
+**3.2 Module content editor riche dans l'admin**
+- Markdown editor avec toolbar (gras, italique, titres, listes, code)
+- Split view : édition à gauche, preview à droite
+- Support upload d'images/vidéos
+
+**3.3 Réordonnement drag-and-drop des modules**
+- Utiliser le pattern existant dans le projet (le Workshop a déjà du drag)
+
+**3.4 Amélioration du catalogue user**
+- Tags cliquables pour filtrer
+- Indicateur de popularité (nombre d'inscrits)
+- Tri par durée / difficulté / récence
 
 ### Fichiers impactés
 
-**Nouveaux composants :**
-- `src/components/academy/AcademyQuiz.tsx`
-- `src/components/academy/AcademyPractice.tsx`
-- `src/components/academy/AcademyExercise.tsx`
-- `src/components/academy/AcademyProgress.tsx`
-- `src/components/academy/ModuleViewer.tsx`
+**Corrections :**
+- `src/pages/AcademyModule.tsx` — progression + navigation
+- `src/components/academy/AcademyPractice.tsx` — parsing évaluation
+- `supabase/functions/academy-practice/index.ts` — event évaluation
+- `src/pages/admin/AdminAcademyCampaigns.tsx` — fix Select
 
-**Refontes :**
-- `src/pages/Academy.tsx` — catalogue immersif
-- `src/pages/AcademyPath.tsx` — timeline avec progression
-- `src/pages/AcademyModule.tsx` — viewer multi-type
-- `src/pages/admin/AdminAcademyPathDetail.tsx` — preview + génération enrichie
+**Enrichissements :**
+- `src/pages/admin/AdminAcademyPathDetail.tsx` — content management + boutons IA
+- `supabase/functions/academy-generate/index.ts` — nouvelles actions
+- `src/pages/admin/AdminAcademy.tsx` — analytics
+- `src/pages/admin/AdminAcademyPersonae.tsx` — génération IA
 
-**Edge functions :**
-- `supabase/functions/academy-generate/index.ts` — upgrade modèle + nouvelles actions
-- `supabase/functions/academy-practice/index.ts` — nouveau, streaming
+**Nouveaux :**
+- `src/pages/AcademyCertificate.tsx` — vue certificat
 
-**Dépendances :**
-- `react-markdown` + `remark-gfm` (rendu markdown)
+### Ordre recommandé
 
-### Ordre d'implémentation recommandé
-
-1. Installer `react-markdown`, corriger le rendu markdown dans `AcademyModule`
-2. Créer le quiz interactif (`AcademyQuiz`)
-3. Créer le practice chat (`AcademyPractice` + edge function)
-4. Créer l'exercice évalué (`AcademyExercise`)
-5. Refondre `AcademyModule` en viewer multi-type
-6. Refondre `AcademyPath` avec timeline + progression
-7. Refondre `Academy` avec catalogue immersif
-8. Upgrader la génération IA (modèle pro, chaîne de raffinement, streaming)
-9. Ajouter les actions IA manquantes (persona, exercice, practice, évaluation)
+1. Phase 1 (corrections) — indispensable pour que le circuit fonctionne
+2. Phase 2.1 + 2.2 (admin content + IA) — rend l'admin productif
+3. Phase 3.1 (certificats) — boucle la valeur apprenant
+4. Phase 2.3 + 3.2-3.4 (analytics + polish)
 
