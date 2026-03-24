@@ -797,6 +797,16 @@ export default function AdminAcademyPathDetail() {
                                         Illustrations
                                       </Button>
                                     )}
+                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); genExercise.mutate(mod.id); }}
+                                      disabled={genExercise.isPending}>
+                                      {genExercise.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Dumbbell className="h-3.5 w-3.5 mr-1" />}
+                                      {hasExercise ? "Régénérer exercice" : "Générer exercice"}
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); genPractice.mutate(mod.id); }}
+                                      disabled={genPractice.isPending}>
+                                      {genPractice.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Bot className="h-3.5 w-3.5 mr-1" />}
+                                      {hasPractice ? "Régénérer pratique" : "Générer pratique"}
+                                    </Button>
                                     <div className="flex-1" />
                                     <Button size="sm" variant="ghost" onClick={() => openEditModule(mod)}>
                                       <Pencil className="h-3.5 w-3.5 mr-1" /> Éditer
