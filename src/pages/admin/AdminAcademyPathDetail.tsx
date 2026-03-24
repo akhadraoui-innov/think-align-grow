@@ -313,6 +313,74 @@ export default function AdminAcademyPathDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const genIllustrations = useMutation({
+    mutationFn: async (moduleId: string) => {
+      toast.info("Génération des illustrations...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-illustrations", module_id: moduleId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["admin-path-contents", id] });
+      toast.success(`${data.illustration_count} illustration(s) générée(s)`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, step: "" });
+
+  const batchGenerateAll = async () => {
+    if (pathModules.length === 0) return;
+    setBatchGenerating(true);
+    const modules = pathModules.map((pm: any) => pm.academy_modules).filter(Boolean);
+    const total = modules.length * 3; // content + quiz + illustrations per module
+    let current = 0;
+
+    try {
+      for (const mod of modules) {
+        // Generate content
+        current++;
+        setBatchProgress({ current, total, step: `Contenu: ${mod.title}` });
+        try {
+          await supabase.functions.invoke("academy-generate", {
+            body: { action: "generate-content", module_id: mod.id },
+          });
+        } catch (e: any) { console.error("Content gen error:", e); }
+
+        // Generate quiz
+        current++;
+        setBatchProgress({ current, total, step: `Quiz: ${mod.title}` });
+        try {
+          await supabase.functions.invoke("academy-generate", {
+            body: { action: "generate-quiz", module_id: mod.id, question_count: 6 },
+          });
+        } catch (e: any) { console.error("Quiz gen error:", e); }
+
+        // Generate illustrations
+        current++;
+        setBatchProgress({ current, total, step: `Illustrations: ${mod.title}` });
+        try {
+          await supabase.functions.invoke("academy-generate", {
+            body: { action: "generate-illustrations", module_id: mod.id },
+          });
+        } catch (e: any) { console.error("Illustration gen error:", e); }
+      }
+
+      qc.invalidateQueries({ queryKey: ["admin-path-contents", id] });
+      qc.invalidateQueries({ queryKey: ["admin-path-quizzes", id] });
+      toast.success("Génération complète terminée !");
+    } catch (e: any) {
+      toast.error(`Erreur batch: ${e.message}`);
+    } finally {
+      setBatchGenerating(false);
+      setBatchProgress({ current: 0, total: 0, step: "" });
+    }
+  };
+
   const updatePathInfo = useMutation({
     mutationFn: async () => {
       if (!infoForm) return;
