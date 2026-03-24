@@ -44,6 +44,7 @@ import AdminAcademyFunctions from "./pages/admin/AdminAcademyFunctions";
 import AdminAcademyFunctionDetail from "./pages/admin/AdminAcademyFunctionDetail";
 import AdminAcademyMap from "./pages/admin/AdminAcademyMap";
 import AdminAcademyTracking from "./pages/admin/AdminAcademyTracking";
+import AdminAcademyModuleDetail from "./pages/admin/AdminAcademyModuleDetail";
 
 const queryClient = new QueryClient();
 
