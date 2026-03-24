@@ -1,57 +1,80 @@
 
 
-# Refonte PPTX — Style BCG × Atlassian
+# Heeplab PPTX v3 — BCG Style + Contenu Rédactionnel Premium
 
 ## Problème
 
-Le deck actuel est surchargé : fonds navy, trop de texte, trop de sections par slide. Un deck BCG est l'inverse — fonds blancs, 1 message par slide, typographie aérée, données isolées visuellement.
+Les versions précédentes avaient du texte générique, des bullet points creux, des placeholders. Le contenu doit être rédigé comme un deck BCG : argumenté, chiffré, avec une narration stratégique.
 
-## Direction visuelle
+## Approche
 
-- **Fond** : blanc pur `FFFFFF` partout, sauf cover et back cover (navy `0F1729`)
-- **Texte** : charcoal `2D3748` (titres), gris `64748B` (corps)
-- **Accent unique** : coral `E8613C` pour les chiffres clés, barres, highlights
-- **Accent secondaire** : bleu doux `3B82F6` pour les icones et liens
-- **Lignes** : gris très léger `E2E8F0` pour séparateurs
-- **Typo** : Georgia 36pt titres, Calibri Light 14pt corps
-- **Règle BCG** : max 3 éléments visuels par slide, 1 takeaway par slide
-- **Images IA art** : conservées mais utilisées en petit format (accent visuel coin bas-droit), pas en plein fond
+1. **Rédiger le contenu complet** de chaque slide via IA (prompts dédiés par slide) avant de générer le PPTX
+2. **Capturer des screenshots** réels des pages admin pour les mockups
+3. **Générer 6 images IA art** en grand format
+4. **Assembler le PPTX** avec layouts variés (8 types) et contenu premium
 
-## Structure révisée (~30 slides)
+## Pipeline
 
-### Core (1-14)
-1. **Cover** — fond navy, "heeplab" blanc 60pt, baseline petit, 1 image IA art en overlay transparent
-2. **Le constat** — fond blanc, 3 stats en grand (72pt coral) avec légendes grises
-3. **Notre vision** — 1 phrase en Georgia 28pt centrée, rien d'autre
-4. **3 piliers** — 3 colonnes épurées : icone cercle + titre bold + 2 lignes description
-5. **Dashboard** — screenshot centré avec ombre légère, titre simple au-dessus
-6. **20 Fonctions** — grille 4×5 minimaliste (nom + département en petit)
-7. **6 Profils** — 6 cards blanches avec bordure gauche coral, nom + 1 ligne
-8. **Cartographie** — screenshot centré, légende en dessous
-9. **Parcours** — schéma linéaire horizontal 5 étapes (cercles + flèches)
-10. **Contenu IA** — 2 colonnes : gauche = exemple callout stylisé, droite = description
-11. **Quiz 6 types** — grille 2×3 : icone + nom du type + 1 ligne
-12. **Déploiement** — flow horizontal 4 étapes (icones minimalistes)
-13. **Pourquoi Heeplab** — 4 stats en grand format (nombre coral + texte gris)
-14. **Contact** — fond navy, coordonnées centrées, image IA art petit format
+### Etape 1 : Rédaction du contenu (via AI gateway)
 
-### Annexes (15-30) — même principe épuré
-Chaque annexe : titre en haut, 1 screenshot ou schéma centré, 3-5 bullet points max, fond blanc.
+Générer un document JSON structuré avec le texte complet de chaque slide :
+- **Slide 2 "Le constat"** : stats sourcées (marché formation corporate 2025, taux d'échec des programmes classiques, gap compétences IA), paragraphes argumentés
+- **Slide 3 "Vision"** : proposition de valeur rédigée, pas un slogan
+- **Slide 5 "3 piliers"** : description de 4-5 lignes par pilier avec bénéfices concrets
+- **Slides produit (6-12)** : chaque feature décrite avec le problème qu'elle résout, comment elle fonctionne, quel résultat mesurable
+- **Slide 13 "Pourquoi Heeplab"** : 4 différenciateurs argumentés avec stats d'impact
+- **Annexes (15-30)** : descriptions techniques complètes de chaque module, pas des bullet points creux
 
-15-18. Toolkits (liste, détail 7 onglets, IA chat)
-19-20. Design Innovation
-21-26. Academy (dashboard, carto, fonctions, personae, parcours, contenu/quiz)
-27-28. Campagnes & Suivi
-29. Organisations & Utilisateurs
-30. **Back cover** — fond navy, logo, baseline
+Prompt system : "Tu es un consultant senior BCG spécialisé en EdTech et transformation digitale. Tu rédiges le contenu d'une présentation corporate pour Heeplab, plateforme SaaS de formation IA. Ton style : précis, factuel, argumenté, zéro bullshit. Chaque affirmation est étayée par un chiffre ou un mécanisme concret."
 
-## Exécution
+### Etape 2 : Captures d'écran (7 pages admin)
 
-1. Réécrire le script pptxgenjs avec fond blanc, espacement généreux, max 3 éléments/slide
-2. Réutiliser les 6 images IA art existantes en format réduit (accent, pas fond)
-3. Réutiliser les screenshots existants
-4. Générer le PPTX v2
-5. QA visuelle complète
+Via browser : Dashboard, Toolkits, Toolkit Detail, Academy, Map, Functions, Personae, Path Detail
 
-**Output** : `/mnt/documents/Heeplab_Presentation_Premium_v2.pptx`
+### Etape 3 : Images IA art (6 images)
+
+Via AI gateway `--image` : abstractions corporate (neural networks, transformation, growth)
+
+### Etape 4 : Script pptxgenjs
+
+30 slides avec 8 layouts alternés, fond blanc dominant, images IA en grand (split layout 50%), screenshots centrés, texte rédigé complet.
+
+Signature : "heeplab — by Growthinnov — Ammar Khadraoui"
+
+## Structure des slides avec contenu type
+
+| # | Slide | Contenu attendu |
+|---|-------|----------------|
+| 1 | Cover | Logo heeplab, baseline, image IA art fond |
+| 2 | Le constat | 3 stats marché (ex: "67% des programmes de formation échouent à produire un changement comportemental mesurable — McKinsey 2024"), paragraphe de contexte |
+| 3 | Vision | "Heeplab transforme la formation corporate en expérience adaptative..." — texte de 5-6 lignes argumenté |
+| 4 | Divider | "La plateforme" |
+| 5 | 3 piliers | Toolkits (structuration stratégique), Design Innovation (mise en situation), Academy (formation adaptative) — 4 lignes chacun |
+| 6 | Dashboard | Screenshot + description des KPIs temps réel, alertes proactives |
+| 7 | 20 Fonctions | Grille + texte expliquant la granularité métier (responsabilités, KPIs, use cases IA par fonction) |
+| 8 | 6 Profils | Description du modèle comportemental 10 axes, adaptation pédagogique par profil |
+| 9 | Cartographie | Screenshot + texte sur la vue relationnelle Fonctions→Personae→Parcours→Campagnes |
+| 10 | Parcours | Flow 5 étapes + texte sur la personnalisation par niveau/fonction/persona |
+| 11 | Contenu IA | Exemples concrets de callouts (À retenir, Le saviez-vous, Attention), schémas ASCII, adaptation au niveau |
+| 12 | Quiz 6 types | Description de chaque type (QCM, Vrai/Faux, Ordonner, Associer, Compléter, Scénario) avec mécanique pédagogique |
+| 13 | Pourquoi Heeplab | 4 différenciateurs : IA générative contextuelle, granularité métier, adaptive learning, déploiement en 48h |
+| 14 | Contact | Coordonnées complètes, CTA |
+| 15-30 | Annexes | Textes techniques complets par module (Toolkit 7 onglets, IA Chat, Challenge 4 onglets, Academy 6 sections, Orgs, Users, Rôles) |
+
+## Fichiers
+
+- Contenu JSON : `/tmp/heeplab_content.json`
+- Script PPTX : `/tmp/generate_v3_pptx.js`
+- Output : `/mnt/documents/Heeplab_Presentation_Premium_v3.pptx`
+- QA : conversion PDF → images → inspection slide par slide
+
+## Ordre d'exécution
+
+1. Rédiger le contenu complet via AI gateway → JSON
+2. Capturer 8 screenshots via browser
+3. Générer 6 images IA art
+4. Ecrire le script pptxgenjs avec layouts variés + contenu intégré
+5. Générer le PPTX
+6. QA visuelle complète (PDF → images → inspection)
+7. Corrections et re-génération si nécessaire
 
