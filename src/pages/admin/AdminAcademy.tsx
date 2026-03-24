@@ -84,12 +84,19 @@ export default function AdminAcademy() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/admin/academy/functions")}>
+            <CardContent className="p-6 text-center space-y-2">
+              <Briefcase className="h-8 w-8 mx-auto text-pillar-business" />
+              <p className="font-semibold text-sm">Fonctions</p>
+              <p className="text-xs text-muted-foreground">Rôles organisationnels</p>
+            </CardContent>
+          </Card>
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/admin/academy/personae")}>
             <CardContent className="p-6 text-center space-y-2">
               <Users className="h-8 w-8 mx-auto text-pillar-thinking" />
               <p className="font-semibold text-sm">Personae</p>
-              <p className="text-xs text-muted-foreground">Gérer les profils cibles</p>
+              <p className="text-xs text-muted-foreground">Profils comportementaux</p>
             </CardContent>
           </Card>
           <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/admin/academy/paths")}>
