@@ -1,16 +1,16 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, MessageSquare, Award, Loader2 } from "lucide-react";
+import { Send, Sparkles, MessageSquare, Award, Loader2, Bot, Lightbulb, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
+import { EnrichedMarkdown } from "./EnrichedMarkdown";
 
 interface AcademyPracticeProps {
   moduleId: string;
@@ -22,6 +22,7 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  timestamp: Date;
 }
 
 function parseEvaluationFromContent(content: string): { score: number; feedback: string } | null {
@@ -34,11 +35,19 @@ function parseEvaluationFromContent(content: string): { score: number; feedback:
   return null;
 }
 
+const SUGGESTION_PROMPTS = [
+  "Pouvez-vous me donner un exemple concret ?",
+  "Comment appliquer cela dans un contexte professionnel ?",
+  "Quels sont les pièges à éviter ?",
+  "Pouvez-vous me challenger sur ce point ?",
+];
+
 export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyPracticeProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [evaluation, setEvaluation] = useState<any>(null);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: practice } = useQuery({
@@ -65,6 +74,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
         id: "intro",
         role: "assistant",
         content: practice.scenario,
+        timestamp: new Date(),
       }]);
     }
   }, [practice]);
@@ -82,19 +92,21 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
   const exchangeCount = messages.filter(m => m.role === "user").length;
   const maxExchanges = practice.max_exchanges || 10;
   const isFinished = exchangeCount >= maxExchanges || !!evaluation;
+  const progressPct = Math.round((exchangeCount / maxExchanges) * 100);
 
-  const handleSend = async () => {
-    if (!input.trim() || isStreaming || isFinished) return;
+  const handleSend = async (text?: string) => {
+    const msgText = text || input.trim();
+    if (!msgText || isStreaming || isFinished) return;
 
-    const userMsg: Message = { id: `u-${Date.now()}`, role: "user", content: input.trim() };
+    const userMsg: Message = { id: `u-${Date.now()}`, role: "user", content: msgText, timestamp: new Date() };
     const allMessages = [...messages, userMsg];
     setMessages(allMessages);
     setInput("");
     setIsStreaming(true);
+    setShowSuggestions(false);
 
     try {
       const isLastExchange = exchangeCount + 1 >= maxExchanges;
-
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/academy-practice`;
 
       const resp = await fetch(CHAT_URL, {
@@ -105,10 +117,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
         },
         body: JSON.stringify({
           practice_id: practice.id,
-          messages: allMessages.filter(m => m.id !== "intro").map(m => ({
-            role: m.role,
-            content: m.content,
-          })),
+          messages: allMessages.filter(m => m.id !== "intro").map(m => ({ role: m.role, content: m.content })),
           evaluate: isLastExchange,
         }),
       });
@@ -117,7 +126,6 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
         const errData = await resp.json().catch(() => ({}));
         throw new Error(errData.error || "Erreur de communication");
       }
-
       if (!resp.body) throw new Error("No response body");
 
       const reader = resp.body.getReader();
@@ -151,7 +159,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
                 if (last?.role === "assistant" && last.id.startsWith("a-")) {
                   return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
                 }
-                return [...prev, { id: `a-${Date.now()}`, role: "assistant", content: assistantContent }];
+                return [...prev, { id: `a-${Date.now()}`, role: "assistant", content: assistantContent, timestamp: new Date() }];
               });
             }
           } catch {
@@ -161,13 +169,11 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
         }
       }
 
-      // After stream ends, parse evaluation from the assistant's final message
       if (isLastExchange && assistantContent) {
         const evalResult = parseEvaluationFromContent(assistantContent);
         if (evalResult) {
           setEvaluation(evalResult);
           onComplete?.(evalResult.score);
-          // Clean the evaluation block from displayed message
           const cleanedContent = assistantContent.replace(/```evaluation\s*\n?[\s\S]*?```/, "").trim();
           setMessages(prev => {
             const last = prev[prev.length - 1];
@@ -178,28 +184,61 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
           });
         }
       }
+
+      // Show suggestions after AI responds
+      if (!isLastExchange) {
+        setTimeout(() => setShowSuggestions(true), 500);
+      }
     } catch (e: any) {
       console.error(e);
-      toast.error(e.message || "Erreur lors de la communication");
+      toast.error(e.message || "Erreur de communication");
     } finally {
       setIsStreaming(false);
     }
   };
 
+  const handleReset = () => {
+    setMessages([{
+      id: "intro",
+      role: "assistant",
+      content: practice.scenario,
+      timestamp: new Date(),
+    }]);
+    setEvaluation(null);
+    setShowSuggestions(true);
+  };
+
   return (
-    <div className="flex flex-col h-[600px] border rounded-xl overflow-hidden bg-background">
+    <div className="flex flex-col h-[650px] border rounded-2xl overflow-hidden bg-background shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">{practice.title}</span>
-          {practice.difficulty && (
-            <Badge variant="secondary" className="text-[10px]">{practice.difficulty}</Badge>
-          )}
+      <div className="px-4 py-3 border-b bg-gradient-to-r from-violet-500/5 to-purple-500/5">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-sm">
+              <Bot className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <span className="text-sm font-bold">{practice.title}</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {practice.difficulty && (
+                  <Badge variant="secondary" className="text-[9px] h-4">{practice.difficulty}</Badge>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-[10px]">
+              {exchangeCount}/{maxExchanges}
+            </Badge>
+            {!isFinished && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleReset}>
+                <RotateCcw className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
-        <Badge variant="outline" className="text-xs">
-          {exchangeCount}/{maxExchanges} échanges
-        </Badge>
+        {/* Progress bar */}
+        <Progress value={progressPct} className="h-1.5" />
       </div>
 
       {/* Messages */}
@@ -212,33 +251,70 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
               animate={{ opacity: 1, y: 0 }}
               className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
             >
-              <div className={cn(
-                "max-w-[80%] rounded-2xl px-4 py-3 text-sm",
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-muted rounded-bl-md"
-              )}>
-                {msg.role === "assistant" ? (
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+              <div className="flex items-start gap-2 max-w-[85%]">
+                {msg.role === "assistant" && (
+                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shrink-0 mt-1 shadow-sm">
+                    <Bot className="h-3.5 w-3.5 text-white" />
                   </div>
-                ) : (
-                  <p>{msg.content}</p>
                 )}
+                <div className={cn(
+                  "rounded-2xl px-4 py-3 text-sm",
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-br-md"
+                    : "bg-muted/60 rounded-bl-md"
+                )}>
+                  {msg.role === "assistant" ? (
+                    <div className="prose prose-sm max-w-none dark:prose-invert [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
+                      <EnrichedMarkdown content={msg.content} />
+                    </div>
+                  ) : (
+                    <p>{msg.content}</p>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}
         </AnimatePresence>
 
+        {/* Typing indicator */}
         {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex justify-start"
-          >
-            <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+            <div className="flex items-start gap-2">
+              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shrink-0 shadow-sm">
+                <Bot className="h-3.5 w-3.5 text-white" />
+              </div>
+              <div className="bg-muted/60 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
+                <div className="flex gap-1">
+                  {[0, 1, 2].map(i => (
+                    <motion.div
+                      key={i}
+                      className="h-2 w-2 rounded-full bg-muted-foreground/40"
+                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
+                      transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* Suggestions */}
+        {showSuggestions && !isStreaming && !isFinished && exchangeCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-wrap gap-1.5 pt-2"
+          >
+            {SUGGESTION_PROMPTS.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => handleSend(s)}
+                className="text-[11px] px-3 py-1.5 rounded-full border bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+              >
+                <Lightbulb className="h-3 w-3" /> {s}
+              </button>
+            ))}
           </motion.div>
         )}
       </div>
@@ -248,34 +324,62 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mx-4 mb-4 p-4 rounded-xl border bg-gradient-to-r from-primary/5 to-primary/10"
+          className="mx-4 mb-4"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <Award className="h-5 w-5 text-primary" />
-            <span className="font-semibold">Évaluation de la session</span>
-            <Badge className="ml-auto">{evaluation.score}/100</Badge>
+          <div className={cn(
+            "p-5 rounded-2xl border shadow-sm",
+            evaluation.score >= 80 ? "bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-emerald-200" :
+            evaluation.score >= 50 ? "bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200" :
+            "bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-950/20 dark:to-pink-950/20 border-red-200"
+          )}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className={cn(
+                "h-12 w-12 rounded-xl flex items-center justify-center shadow-md",
+                evaluation.score >= 80 ? "bg-gradient-to-br from-emerald-500 to-teal-500" :
+                evaluation.score >= 50 ? "bg-gradient-to-br from-amber-500 to-orange-500" :
+                "bg-gradient-to-br from-red-500 to-pink-500"
+              )}>
+                <Award className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold">
+                  {evaluation.score >= 80 ? "Session excellente ! 🎉" :
+                   evaluation.score >= 50 ? "Bonne progression ! 💪" :
+                   "Continuez à pratiquer 📚"}
+                </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <Progress value={evaluation.score} className="h-2 flex-1 max-w-[120px]" />
+                  <Badge className="text-xs">{evaluation.score}/100</Badge>
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">{evaluation.feedback}</p>
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" size="sm" onClick={handleReset} className="flex-1">
+                <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Recommencer
+              </Button>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">{evaluation.feedback}</p>
         </motion.div>
       )}
 
       {/* Input */}
       {!isFinished && (
-        <div className="p-4 border-t bg-muted/20">
+        <div className="p-4 border-t bg-muted/10">
           <div className="flex gap-2">
             <Textarea
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               placeholder="Votre message..."
-              className="min-h-[44px] max-h-[120px] resize-none"
+              className="min-h-[44px] max-h-[120px] resize-none rounded-xl"
               disabled={isStreaming}
             />
             <Button
               size="icon"
-              onClick={handleSend}
+              onClick={() => handleSend()}
               disabled={!input.trim() || isStreaming}
-              className="shrink-0 h-11 w-11"
+              className="shrink-0 h-11 w-11 rounded-xl"
             >
               <Send className="h-4 w-4" />
             </Button>
