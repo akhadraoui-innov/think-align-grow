@@ -756,6 +756,16 @@ export default function AdminAcademyPathDetail() {
                                             {completedCount} complété{completedCount > 1 ? "s" : ""}
                                           </span>
                                         )}
+                                        {hasExercise && (
+                                          <span className="text-[10px] text-emerald-600 flex items-center gap-1">
+                                            <CheckCircle2 className="h-3 w-3" /> Exercice
+                                          </span>
+                                        )}
+                                        {hasPractice && (
+                                          <span className="text-[10px] text-emerald-600 flex items-center gap-1">
+                                            <CheckCircle2 className="h-3 w-3" /> Pratique IA
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-1 shrink-0">
