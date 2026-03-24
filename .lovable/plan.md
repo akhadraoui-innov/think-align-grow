@@ -1,91 +1,57 @@
 
 
-# Heeplab — Présentation Corporate Premium PPTX
+# Refonte PPTX — Style BCG × Atlassian
 
-## Design Philosophy : "Orbital Precision"
+## Problème
 
-Un mouvement visuel où chaque élément est placé avec la rigueur d'un ingénieur spatial et la sensibilité d'un directeur artistique. Formes géométriques pures, aplats de couleur profonds (navy `0F1729`, coral signature `E8613C`, blanc cassé), typographie fine et espacée. Les images IA art servent d'ancres émotionnelles — abstractions lumineuses évoquant la transformation, le cerveau, les réseaux neuronaux — sans jamais être illustratives. Le texte est rare, monumental ou microscopique, jamais entre les deux.
+Le deck actuel est surchargé : fonds navy, trop de texte, trop de sections par slide. Un deck BCG est l'inverse — fonds blancs, 1 message par slide, typographie aérée, données isolées visuellement.
 
-## Pipeline
+## Direction visuelle
 
-1. **Design philosophy** → `/mnt/documents/heeplab_philosophy.md`
-2. **Générer 6-8 images IA artistiques** via `google/gemini-3-pro-image-preview` (abstractions corporate : neural networks, growth, transformation, learning pathways)
-3. **Capturer 6+ screenshots** des pages admin clés (Dashboard, Map, Toolkit Detail, Path Detail, Functions, Personae)
-4. **Générer le PPTX** via pptxgenjs (~35 slides)
-5. **QA visuelle** via LibreOffice → PDF → images → inspection
+- **Fond** : blanc pur `FFFFFF` partout, sauf cover et back cover (navy `0F1729`)
+- **Texte** : charcoal `2D3748` (titres), gris `64748B` (corps)
+- **Accent unique** : coral `E8613C` pour les chiffres clés, barres, highlights
+- **Accent secondaire** : bleu doux `3B82F6` pour les icones et liens
+- **Lignes** : gris très léger `E2E8F0` pour séparateurs
+- **Typo** : Georgia 36pt titres, Calibri Light 14pt corps
+- **Règle BCG** : max 3 éléments visuels par slide, 1 takeaway par slide
+- **Images IA art** : conservées mais utilisées en petit format (accent visuel coin bas-droit), pas en plein fond
 
-## Structure des slides (~35)
+## Structure révisée (~30 slides)
 
 ### Core (1-14)
-1. **Cover** — "heeplab" en grand, baseline "by Growthinnov — Ammar Khadraoui", image IA abstraite plein fond
-2. **Le constat** — Chiffres marché formation IA entreprise, image IA art
-3. **Notre vision** — Proposition de valeur en 1 phrase monumentale
-4. **3 piliers** — Toolkits / Design Innovation / Academy, icones + descriptions courtes
-5. **Dashboard plateforme** — Screenshot + callouts
-6. **20 Fonctions métier** — Screenshot + description
-7. **6 Profils comportementaux** — Radar visuel, noms corporate
-8. **Cartographie relationnelle** — Screenshot map + description
-9. **Parcours sur mesure** — Timeline visuelle, screenshot path detail
-10. **Contenu IA Premium** — Exemples callouts 💡📜⚠️, screenshot contenu
-11. **Quiz interactifs 6 types** — Icones par type, description
-12. **Déploiement & Campagnes** — Workflow visuel
-13. **Pourquoi Heeplab** — 4 différenciateurs avec stats
-14. **Contact / CTA** — Coordonnées, image IA art
+1. **Cover** — fond navy, "heeplab" blanc 60pt, baseline petit, 1 image IA art en overlay transparent
+2. **Le constat** — fond blanc, 3 stats en grand (72pt coral) avec légendes grises
+3. **Notre vision** — 1 phrase en Georgia 28pt centrée, rien d'autre
+4. **3 piliers** — 3 colonnes épurées : icone cercle + titre bold + 2 lignes description
+5. **Dashboard** — screenshot centré avec ombre légère, titre simple au-dessus
+6. **20 Fonctions** — grille 4×5 minimaliste (nom + département en petit)
+7. **6 Profils** — 6 cards blanches avec bordure gauche coral, nom + 1 ligne
+8. **Cartographie** — screenshot centré, légende en dessous
+9. **Parcours** — schéma linéaire horizontal 5 étapes (cercles + flèches)
+10. **Contenu IA** — 2 colonnes : gauche = exemple callout stylisé, droite = description
+11. **Quiz 6 types** — grille 2×3 : icone + nom du type + 1 ligne
+12. **Déploiement** — flow horizontal 4 étapes (icones minimalistes)
+13. **Pourquoi Heeplab** — 4 stats en grand format (nombre coral + texte gris)
+14. **Contact** — fond navy, coordonnées centrées, image IA art petit format
 
-### Annexes détaillées (15-35)
-15. **Annexe : Admin Dashboard** — KPIs, graphiques Recharts, alertes
-16. **Annexe : Toolkits — Liste** — DataTable, création manuelle 3 étapes, génération IA SSE
-17. **Annexe : Toolkit — Page détail** — 7 onglets (Infos, Piliers, Cartes, Challenges, Game Plans, Quiz, Organisations)
-18. **Annexe : Toolkit — IA Chat** — Dialog conversationnel, prompts suggérés, Gemini Pro
-19. **Annexe : Design Innovation — Liste** — Templates, création 3 étapes
-20. **Annexe : Challenge — Page détail** — 4 onglets (Infos, Sujets/Slots, Sessions, Analyses)
-21. **Annexe : Academy — Command Center** — 6 KPIs, bar chart, heatmap, timeline
-22. **Annexe : Academy — Cartographie** — Flow 4 colonnes, filtres, panel latéral
-23. **Annexe : Academy — Fonctions** — 3 modes création IA, page détail tabs
-24. **Annexe : Academy — Personae** — 10 traits radar, tags, textes, déclinaison org
-25. **Annexe : Academy — Parcours liste** — Grille/tableau, filtres, stats
-26. **Annexe : Academy — Parcours détail** — Timeline modules, preview contenu/quiz, batch génération
-27. **Annexe : Academy — Contenu IA** — Prompts pro, EnrichedMarkdown, illustrations
-28. **Annexe : Academy — Quiz 6 types** — MCQ, Vrai/Faux, Ordonner, Associer, Compléter, Scénario
-29. **Annexe : Academy — Campagnes** — CRUD, timeline, organisations
-30. **Annexe : Academy — Suivi** — DataTable, KPIs, progression
-31. **Annexe : Organisations** — 8 onglets détaillés
-32. **Annexe : Utilisateurs** — 8 onglets, profils, activité
-33. **Annexe : Rôles & Permissions** — Matrice, comparaison
-34. **Annexe : Paramètres IA** — Prompts, modèles, configurations
-35. **Back cover** — Logo, baseline, image IA art
+### Annexes (15-30) — même principe épuré
+Chaque annexe : titre en haut, 1 screenshot ou schéma centré, 3-5 bullet points max, fond blanc.
 
-## Images IA artistiques (6-8)
+15-18. Toolkits (liste, détail 7 onglets, IA chat)
+19-20. Design Innovation
+21-26. Academy (dashboard, carto, fonctions, personae, parcours, contenu/quiz)
+27-28. Campagnes & Suivi
+29. Organisations & Utilisateurs
+30. **Back cover** — fond navy, logo, baseline
 
-Prompts pour `google/gemini-3-pro-image-preview` :
-1. Abstract neural network with warm coral and deep navy tones, corporate art, minimalist
-2. Human silhouette merging with data streams, transformation metaphor, dark background
-3. Geometric learning pathway with glowing nodes, abstract corporate art
-4. Brain-like organic structure with technological elements, warm lighting
-5. Abstract growth visualization, ascending geometric forms, coral accent
-6. Network of connected minds, collaborative intelligence, dark elegant
+## Exécution
 
-## Palette
+1. Réécrire le script pptxgenjs avec fond blanc, espacement généreux, max 3 éléments/slide
+2. Réutiliser les 6 images IA art existantes en format réduit (accent, pas fond)
+3. Réutiliser les screenshots existants
+4. Générer le PPTX v2
+5. QA visuelle complète
 
-- **Navy profond** : `0F1729`
-- **Coral signature** : `E8613C`
-- **Blanc cassé** : `F8F7F4`
-- **Gris texte** : `94A3B8`
-- **Accent violet** : `7C5CFC`
-
-## Typographie
-
-- Titres : Georgia Bold (système PPTX)
-- Corps : Calibri Light
-- Accents : Calibri uppercase tracking large
-
-## Étapes d'exécution
-
-1. Écrire `heeplab_philosophy.md` dans `/mnt/documents/`
-2. Capturer screenshots des pages admin via browser (Dashboard, Toolkit Detail, Map, Path Detail, Functions, Personae)
-3. Générer les 6 images IA art via edge function ou script
-4. Écrire le script pptxgenjs complet (~35 slides) dans `/tmp/`
-5. Générer le PPTX dans `/mnt/documents/`
-6. Convertir en PDF → images pour QA
-7. Inspecter chaque slide, corriger, re-générer
+**Output** : `/mnt/documents/Heeplab_Presentation_Premium_v2.pptx`
 
