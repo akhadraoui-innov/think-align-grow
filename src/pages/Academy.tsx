@@ -192,6 +192,9 @@ export default function Academy() {
                   <PlayCircle className="h-5 w-5 text-primary" />
                   Vos parcours en cours
                 </h2>
+                <Button variant="outline" size="sm" onClick={() => navigate("/academy/dashboard")} className="gap-1.5">
+                  <LayoutDashboard className="h-3.5 w-3.5" /> Mon tableau de bord
+                </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {enrollments.slice(0, 6).map((e: any, idx: number) => {
