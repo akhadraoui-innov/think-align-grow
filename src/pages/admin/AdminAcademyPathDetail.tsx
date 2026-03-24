@@ -137,6 +137,32 @@ export default function AdminAcademyPathDetail() {
     },
   });
 
+  const { data: exercises = [] } = useQuery({
+    queryKey: ["admin-path-exercises", id],
+    enabled: moduleIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("academy_exercises")
+        .select("*")
+        .in("module_id", moduleIds);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: practices = [] } = useQuery({
+    queryKey: ["admin-path-practices", id],
+    enabled: moduleIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("academy_practices")
+        .select("*")
+        .in("module_id", moduleIds);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const { data: enrollmentCount = 0 } = useQuery({
     queryKey: ["admin-path-enrollment-count", id],
     enabled: !!id,
