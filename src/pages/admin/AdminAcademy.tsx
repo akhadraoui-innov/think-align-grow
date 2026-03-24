@@ -42,8 +42,17 @@ export default function AdminAcademy() {
     },
   });
 
+  const { data: functionCount = 0 } = useQuery({
+    queryKey: ["admin-academy-function-count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("academy_functions" as any).select("id", { count: "exact", head: true });
+      return count || 0;
+    },
+  });
+
   const stats = [
     { label: "Parcours", value: pathCount, icon: Route, color: "text-primary" },
+    { label: "Fonctions", value: functionCount, icon: Briefcase, color: "text-pillar-business" },
     { label: "Personae", value: personaeCount, icon: Users, color: "text-pillar-thinking" },
     { label: "Campagnes", value: campaignCount, icon: Megaphone, color: "text-pillar-impact" },
     { label: "Inscriptions", value: enrollmentCount, icon: GraduationCap, color: "text-pillar-relations" },
