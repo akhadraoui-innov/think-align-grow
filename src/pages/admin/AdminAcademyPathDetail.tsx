@@ -560,10 +560,34 @@ export default function AdminAcademyPathDetail() {
             <TabsContent value="modules" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Parcours pédagogique</h2>
-                <Button size="sm" onClick={openCreateModule}>
-                  <Plus className="h-4 w-4 mr-1" /> Ajouter un module
-                </Button>
+                <div className="flex items-center gap-2">
+                  {pathModules.length > 0 && (
+                    <Button size="sm" variant="outline" onClick={batchGenerateAll} disabled={batchGenerating}
+                      className="border-primary/30 text-primary">
+                      {batchGenerating ? (
+                        <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> {batchProgress.step} ({batchProgress.current}/{batchProgress.total})</>
+                      ) : (
+                        <><Zap className="h-3.5 w-3.5 mr-1" /> Tout générer (contenu + quiz + illustrations)</>
+                      )}
+                    </Button>
+                  )}
+                  <Button size="sm" onClick={openCreateModule}>
+                    <Plus className="h-4 w-4 mr-1" /> Ajouter un module
+                  </Button>
+                </div>
               </div>
+              {batchGenerating && (
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm font-medium">{batchProgress.step}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{batchProgress.current}/{batchProgress.total}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${batchProgress.total > 0 ? (batchProgress.current / batchProgress.total) * 100 : 0}%` }} />
+                  </div>
+                </div>
+              )
 
               {pathModules.length === 0 ? (
                 <Card className="border-dashed border-2">
