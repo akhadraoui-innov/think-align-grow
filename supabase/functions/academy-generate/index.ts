@@ -35,6 +35,12 @@ serve(async (req) => {
       return await generateQuiz(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "evaluate-exercise") {
       return await evaluateExercise(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-persona") {
+      return await generatePersona(supabase, user.id, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-exercise") {
+      return await generateExercise(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-practice") {
+      return await generatePractice(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
