@@ -1,143 +1,103 @@
 
 
-# Audit complet Academy — Constats et Plan d'evolution
+# Refonte Persona vs Fonction — Architecture séparée
 
-## Ce qui fonctionne
+## Votre analyse est juste
 
-| Composant | Statut |
-|-----------|--------|
-| DB (14 tables) | OK, bien structurées, RLS en place |
-| Admin CRUD (Personae, Paths, Modules, Campaigns) | OK, fonctionnel |
-| AI Generation (path, content, quiz, evaluate-exercise) | OK, edge functions déployées |
-| Learner: Catalogue + filtres + recherche | OK |
-| Learner: Parcours timeline + enrollment + progression | OK |
-| Learner: Module viewer multi-type (tabs content/quiz/exercise/practice) | OK |
-| Learner: Quiz interactif (animated, feedback, score) | OK |
-| Learner: Practice IA streaming SSE | OK |
-| Learner: Exercise avec evaluation IA | OK |
-| Markdown rendering (react-markdown + remark-gfm) | OK, corrigé |
+Vous avez raison sur le fond : ce qui est aujourd'hui stocké dans `academy_personae` (seniority, department, industry, company_size) décrit des **fonctions organisationnelles**, pas des personas comportementaux.
 
-## Bugs et problemes identifiés
+**Fonction** = ce que fait la personne (poste, département, séniorité, industrie, outils utilisés, KPIs)  
+**Persona** = comment elle apprend et réagit (maturité digitale, appétence au changement, niveau d'initiative, style d'apprentissage, appréhensions face à l'IA)
 
-### Bug 1 — Progress jamais enregistré
-Le quiz, l'exercice et la pratique appellent `onComplete` mais **aucun ne persiste dans `academy_progress`**. Le composant parent (`AcademyModule.tsx`) ne fait qu'afficher un toast. L'enrollment, les scores, le statut "completed" ne sont jamais écrits en base.
+Deux DRH peuvent être un "Explorateur audacieux" ou un "Prudent méthodique" — même fonction, personas radicalement différents.
 
-**Impact** : la progression affichée dans `AcademyPath` reste a 0% meme apres avoir tout fait. Le certificat ne peut jamais se déclencher.
+**Ma nuance** : le contexte organisationnel (secteur, taille, enjeux) devrait être pré-configuré par l'admin au niveau de l'organisation ou de la fonction, pas entièrement délégué à l'utilisateur. L'onboarding IA enrichit et personnalise, mais ne part pas de zéro.
 
-### Bug 2 — Pas de lien enrollment → module dans AcademyModule
-`AcademyModule.tsx` ne reçoit pas et ne récupère pas l'`enrollmentId` du parcours. Les composants enfants (`AcademyQuiz`, `AcademyExercise`, `AcademyPractice`) ont bien un prop `enrollmentId` optionnel mais il n'est jamais passé.
+---
 
-### Bug 3 — Practice: evaluation JSON jamais parsée
-Dans `AcademyPractice.tsx`, le code cherche `parsed.evaluation` dans le stream SSE, mais la edge function `academy-practice` ne renvoie jamais un objet `evaluation` — elle renvoie le flux SSE brut de l'IA. L'évaluation est censée etre dans le dernier message sous forme de bloc markdown `\`\`\`evaluation {...}\`\`\``, mais le front ne le parse pas. Donc l'évaluation de fin de session ne fonctionne pas.
+## Plan d'implémentation
 
-### Bug 4 — Campagnes: Select vide possible
-`AdminAcademyCampaigns.tsx` lignes 233/246 : si `form.path_id` ou `form.organization_id` est vide string, le Select n'a pas de valeur par défaut, ce qui peut causer le meme bug Radix qu'on a corrigé ailleurs.
+### 1. Nouvelle table `academy_functions`
 
-### Bug 5 — Pas de gestion d'erreur dans AcademyExercise
-Si la edge function `evaluate-exercise` renvoie une erreur structurée (rate limited, credits exhausted), le front ne la traite pas specifiquement — toast générique "Erreur lors de l'évaluation".
+Contient les données organisationnelles actuellement mal placées dans personae :
 
-### Bug 6 — Modules orphelins en suppression
-`AdminAcademyPathDetail` supprime le lien `academy_path_modules` mais pas le module lui-meme. Les modules restent orphelins en base.
+| Colonne | Type | Description |
+|---------|------|-------------|
+| id | uuid | PK |
+| name | text | Ex: "Directeur des Opérations" |
+| description | text | Résumé du rôle |
+| department | text | Département |
+| seniority | text | Niveau hiérarchique |
+| industry | text | Secteur d'activité |
+| company_size | text | Taille entreprise |
+| responsibilities | jsonb | Liste des responsabilités clés |
+| tools_used | jsonb | Outils/technologies utilisés |
+| kpis | jsonb | Indicateurs de performance |
+| ai_use_cases | jsonb | Cas d'usage IA pertinents pour cette fonction |
+| organization_id | uuid? | Scope org optionnel |
+| status | text | draft/published |
+| generation_mode | text | manual/ai |
+| created_by | uuid | |
 
-## Ce qui manque fonctionnellement
+### 2. Refondre `academy_personae` en profil comportemental pur
 
-### Learner
-1. **Pas de sauvegarde de progression** — rien n'est persisté
-2. **Pas de "Marquer comme terminé"** pour les leçons (contenu pur)
-3. **Pas de certificat** — la table existe mais aucun code
-4. **Navigation entre modules** — depuis un module, pas de bouton "Module suivant"
-5. **Pas de temps passé** tracké (`time_spent_seconds` dans progress)
+Vider `characteristics` de tout ce qui est fonction et le remplacer par :
 
-### Admin
-6. **Pas de génération IA pour exercices ni practices** — les boutons n'existent pas dans `AdminAcademyPathDetail`
-7. **Pas de gestion du contenu des modules** — on génère du contenu par IA mais on ne peut pas le voir/éditer dans l'admin
-8. **Pas de preview** — l'admin ne peut pas voir ce que l'apprenant verra
-9. **Pas de génération IA de persona** — CRUD manuel seulement
-10. **Pas de statistiques** — le dashboard admin montre des compteurs mais aucune analytics (taux de complétion, scores moyens, temps passé)
-11. **Pas de drag-and-drop** pour réordonner les modules
+| Attribut dans characteristics | Description |
+|-------------------------------|-------------|
+| digital_maturity | 1-5 : niveau de maturité numérique |
+| ai_apprehension | 1-5 : niveau d'appréhension face à l'IA |
+| experimentation_level | 1-5 : propension à expérimenter |
+| initiative_level | 1-5 : autonomie dans l'apprentissage |
+| change_appetite | 1-5 : appétence au changement |
+| learning_style | visual / reading / doing / discussing |
+| time_availability | micro (15min) / short (30min) / medium (1h) / intensive (2h+) |
+| motivation_drivers | string[] : reconnaissance, montée en compétences, curiosité, obligation... |
+| resistance_patterns | string[] : "manque de temps", "ça ne marche pas dans mon métier"... |
+| preferred_format | autonome / guidé / coaching / groupe |
 
-## Plan d'implémentation — Corrections + Evolutions
+### 3. Table de liaison `academy_function_users`
 
-### Phase 1 — Corrections critiques (faire fonctionner le circuit)
+| Colonne | Type |
+|---------|------|
+| user_id | uuid |
+| function_id | uuid |
+| custom_context | jsonb | Contexte enrichi par l'utilisateur via onboarding IA |
+| assigned_at | timestamp |
 
-**1.1 Persister la progression**
-- Dans `AcademyModule.tsx` : récupérer l'enrollment via le path_id du module
-- Après completion d'un quiz/exercise/practice : upsert dans `academy_progress` avec score, status "completed", completed_at
-- Ajouter un bouton "Marquer comme terminé" pour les leçons
-- Invalider les queries de progression
+### 4. Admin : deux sections séparées
 
-**1.2 Fixer le parsing de l'évaluation Practice**
-- Dans `AcademyPractice.tsx` : après la fin du stream, parser le dernier message assistant pour extraire le bloc ```evaluation {...}```
-- Ou mieux : modifier `academy-practice` edge function pour envoyer un event SSE custom `data: {"evaluation": {...}}` après avoir parsé la réponse de l'IA
+- **Fonctions** (`/admin/academy/functions`) : CRUD + génération IA des fonctions avec les 3 modes (guidé, corporate, chat) — récupère tout le code actuel des personae qui concerne seniority/department/industry
+- **Personae** (`/admin/academy/personae`) : refonte vers des profils comportementaux. Cards avec radar chart (maturity, apprehension, experimentation, initiative, change). Génération IA basée sur des archétypes comportementaux, pas des fiches de poste.
 
-**1.3 Navigation inter-modules**
-- Ajouter un bouton "Module suivant" en bas de `AcademyModule`
-- Nécessite de passer le path_id et la liste des modules en contexte
+### 5. Parcours liés à Fonction + Persona
 
-**1.4 Fixes Select vides dans Campaigns**
-- Appliquer le pattern `value="none"` comme déjà fait dans Paths
+- `academy_paths.persona_id` reste (profil comportemental ciblé)
+- Ajouter `academy_paths.function_id` (fonction ciblée)
+- Un parcours peut cibler "DRH" (fonction) + "Prudent méthodique" (persona) = contenu adapté au métier ET au style d'apprentissage
 
-### Phase 2 — Enrichissement Admin
+### 6. Onboarding apprenant (futur)
 
-**2.1 Gestion du contenu dans les modules**
-- Ajouter un onglet "Contenu" dans le détail d'un module admin
-- CRUD des sections de contenu (markdown editor avec preview live)
-- CRUD des questions de quiz
-- CRUD des exercices avec critères
-
-**2.2 Boutons IA manquants**
-- Générer exercice IA par module
-- Générer practice IA par module
-- Générer persona par IA (brief → persona structuré)
-- Nouvelles actions dans `academy-generate` : `generate-exercise`, `generate-practice`, `generate-persona`
-
-**2.3 Analytics Dashboard**
-- Taux d'inscription par parcours
-- Taux de complétion
-- Scores moyens par module
-- Temps passé moyen
-
-### Phase 3 — UX & UI Evolutions
-
-**3.1 Certificats**
-- Détecter quand tous les modules d'un parcours sont complétés
-- Générer et stocker un certificat dans `academy_certificates`
-- Page de visualisation du certificat (partageable)
-
-**3.2 Module content editor riche dans l'admin**
-- Markdown editor avec toolbar (gras, italique, titres, listes, code)
-- Split view : édition à gauche, preview à droite
-- Support upload d'images/vidéos
-
-**3.3 Réordonnement drag-and-drop des modules**
-- Utiliser le pattern existant dans le projet (le Workshop a déjà du drag)
-
-**3.4 Amélioration du catalogue user**
-- Tags cliquables pour filtrer
-- Indicateur de popularité (nombre d'inscrits)
-- Tri par durée / difficulté / récence
+- L'utilisateur est affecté à une fonction par l'admin
+- Lors du premier accès Academy, quiz comportemental IA (5-7 questions) pour déterminer son persona
+- L'IA enrichit le contexte utilisateur dans `academy_function_users.custom_context`
 
 ### Fichiers impactés
 
-**Corrections :**
-- `src/pages/AcademyModule.tsx` — progression + navigation
-- `src/components/academy/AcademyPractice.tsx` — parsing évaluation
-- `supabase/functions/academy-practice/index.ts` — event évaluation
-- `src/pages/admin/AdminAcademyCampaigns.tsx` — fix Select
+- **Migration SQL** : `academy_functions`, `academy_function_users`, alter `academy_paths` (add `function_id`)
+- **Nouveau** : `src/pages/admin/AdminAcademyFunctions.tsx`
+- **Refonte** : `src/pages/admin/AdminAcademyPersonae.tsx` (comportemental pur)
+- **Mise à jour** : `src/pages/admin/AdminAcademyPaths.tsx` (double ciblage)
+- **Mise à jour** : `src/pages/admin/AdminAcademy.tsx` (compteur fonctions)
+- **Route** : `src/App.tsx` (nouvelle route admin)
+- **Sidebar** : `src/components/admin/AdminSidebar.tsx` (lien Fonctions)
+- **Edge function** : `academy-generate` (action `generate-function`)
 
-**Enrichissements :**
-- `src/pages/admin/AdminAcademyPathDetail.tsx` — content management + boutons IA
-- `supabase/functions/academy-generate/index.ts` — nouvelles actions
-- `src/pages/admin/AdminAcademy.tsx` — analytics
-- `src/pages/admin/AdminAcademyPersonae.tsx` — génération IA
+### Ordre
 
-**Nouveaux :**
-- `src/pages/AcademyCertificate.tsx` — vue certificat
-
-### Ordre recommandé
-
-1. Phase 1 (corrections) — indispensable pour que le circuit fonctionne
-2. Phase 2.1 + 2.2 (admin content + IA) — rend l'admin productif
-3. Phase 3.1 (certificats) — boucle la valeur apprenant
-4. Phase 2.3 + 3.2-3.4 (analytics + polish)
+1. Migration SQL (table + RLS)
+2. Admin Fonctions (CRUD + IA, 3 modes)
+3. Refonte Admin Personae (radar comportemental)
+4. Mise à jour Parcours (double ciblage)
+5. Onboarding apprenant (phase ultérieure)
 
