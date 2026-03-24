@@ -33,6 +33,8 @@ serve(async (req) => {
       return await generateContent(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-quiz") {
       return await generateQuiz(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "evaluate-exercise") {
+      return await evaluateExercise(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
