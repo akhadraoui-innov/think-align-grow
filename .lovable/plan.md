@@ -1,105 +1,100 @@
 
 
-# Refonte Parcours de Formation — Critique et plan révisé
+# Refonte Contenu & Quiz — Prompts Pro + UX Premium Apprenant
 
-## Auto-critique du plan précédent
+## Diagnostic
 
-Le plan précédent reste dans une logique CRUD améliorée : ajouter des filtres, des badges, des tabs. C'est insuffisant. Voici les vrais problèmes :
+1. **Prompts de génération basiques** : le prompt `generate-content` ne prend pas en compte la difficulté, le persona cible, la fonction cible. Il demande 300-800 mots par section sans instructions sur les illustrations markdown (schémas ASCII, encadrés, pastilles historiques, "A retenir").
 
-1. **Le contenu est invisible** — On ne voit JAMAIS le body des leçons, les questions des quiz, les exercices. On voit des titres de modules dans des cards plates. Pour un outil de formation, c'est un échec fondamental.
+2. **Prompt quiz trop simple** : seulement 2 types (mcq, true_false). Pas de types innovants (matching, ordering, fill-in-the-blank, scenario-based). Le schéma DB (`question_type: string`) le permet pourtant.
 
-2. **Pas de parcours visuel** — Un parcours de formation a une narration, une progression. L'UI actuelle est une liste numérotée. On ne comprend pas le flow pédagogique, les pré-requis, les embranchements.
+3. **Rendu apprenant (`AcademyQuiz.tsx`)** : une seule UX pour MCQ/true_false. Pas de mode rappel, pas de chat permanent, pas d'illustrations, mise en page basique.
 
-3. **Le module est une boîte noire** — Cliquer sur un module ne fait rien. Pas de page module, pas d'expansion, pas de preview. On peut juste "générer du contenu" sans voir ce qui a été généré.
+4. **Rendu contenu (`AcademyModule.tsx` / `ContentView`)** : rendu markdown brut sans enrichissement visuel (pas d'encadrés stylisés pour tips/warnings/history, pas d'icones).
 
-4. **Zéro intelligence métier** — Pas de taux de complétion par module, pas de score moyen, pas de temps passé. Pas de lien visible vers la fonction et le persona ciblés. Pas de contexte pédagogique.
+## Plan
 
-5. **Les dialogs sont étriquées** — max-w-lg pour créer un parcours ou un module. C'est petit et cheap comparé aux dialogs 3 modes de Functions/Personae.
+### 1. Refonte prompts `generate-content` (edge function)
 
-## Principes de la refonte
+Enrichir le prompt pour produire du markdown riche niveau pro :
+- Récupérer le path (difficulté, persona, fonction) en plus du module
+- Instructions explicites dans le system prompt :
+  - `> 💡 **À retenir** : ...` pour les points clés
+  - `> 📜 **Le saviez-vous ?** : ...` pour les anecdotes historiques
+  - `> ⚠️ **Attention** : ...` pour les mises en garde
+  - Schémas en ASCII art dans des blocs code
+  - Tableaux comparatifs markdown
+  - Listes numérotées pour les processus
+- Adapter la profondeur et le vocabulaire au niveau (beginner = vulgarisé, advanced = technique)
+- Adapter les exemples à la fonction cible si disponible
 
-- **Content-first** : chaque module doit pouvoir s'expanser inline pour montrer son contenu (leçon markdown, questions quiz, brief exercice)
-- **Flow pédagogique visible** : timeline verticale avec connecteurs, types de modules iconisés, preview du contenu
-- **Module = entité riche** : clic sur un module → expansion collapsible inline avec le contenu complet, pas une nouvelle page
-- **Création IA 3 modes** : comme Functions et Personae, le parcours doit avoir les 3 modes (guidé, corporate, chat)
-- **Stats métier intégrées** : dans le header du path detail, dans chaque module (si contenu généré, si quiz généré, nb questions, nb inscrits ayant complété ce module)
+### 2. Refonte prompts `generate-quiz` (edge function)
 
-## Plan d'implémentation
+Enrichir pour 6 types de questions :
+- `mcq` : QCM classique (4 options)
+- `true_false` : Vrai/Faux avec justification
+- `ordering` : Remettre dans l'ordre (drag & drop)
+- `matching` : Associer des paires
+- `fill_blank` : Texte à trous
+- `scenario` : Mise en situation avec choix contextualisé
 
-### 1. Page détail `AdminAcademyPathDetail.tsx` — Refonte complète
+Le prompt doit exiger un mix de types, des questions progressives, et des explications détaillées. Chaque question doit avoir un `hint` optionnel (indice).
 
-**Hero header premium** :
-- Gradient bg par difficulté (vert débutant, bleu intermédiaire, violet avancé)
-- Titre, description, badges (statut, difficulté, certificat)
-- Liens cliquables vers Fonction cible et Persona cible (naviguer vers leur page détail)
-- Stats bar : modules count, contenu généré %, quiz générés %, durée totale, inscrits (count `academy_enrollments`)
+Ajouter `hint` au tool schema (le champ DB `options: Json` est flexible).
 
-**Tabs** (4 onglets) :
-- **Modules** (défaut) — La pièce maîtresse
-- **Informations** — Formulaire inline éditable
-- **Inscriptions** — Liste des enrollments
-- **Statistiques** — Agrégats de progression
+### 3. Refonte `AcademyQuiz.tsx` — UX interactive premium
 
-**Tab Modules — Timeline avec content preview** :
+Réécrire le composant quiz pour supporter les 6 types :
+- **MCQ** : garder l'existant (déjà bien)
+- **True/False** : 2 gros boutons stylisés Vrai/Faux
+- **Ordering** : drag-and-drop ou boutons up/down pour ordonner des items
+- **Matching** : deux colonnes, sélection par paires
+- **Fill blank** : texte avec inputs inline
+- **Scenario** : texte de mise en situation + choix contextuel avec image/illustration
 
-Chaque module = un bloc dans une timeline verticale connectée (ligne verticale + dots numérotés). Chaque bloc affiche :
-- Icone type (BookOpen leçon, HelpCircle quiz, Dumbbell exercice, Bot pratique IA)
-- Titre + description courte
-- Badges : statut, durée, type
-- Indicateurs de contenu : "✓ Contenu généré (3 sections)" ou "⚠ Pas de contenu", "✓ Quiz (5 questions)" ou "—"
-- **Collapsible** : clic sur le module pour l'expanser et voir :
-  - Le body markdown de `academy_contents` (rendu avec ReactMarkdown)
-  - Les questions du quiz de `academy_quizzes` + `academy_quiz_questions`
-  - Actions inline : régénérer contenu, régénérer quiz, éditer module, supprimer
-- Requêtes : fetch `academy_contents` et `academy_quizzes` + `academy_quiz_questions` pour tous les module_ids du path
+Chaque type a son propre sous-composant de rendu.
 
-**Tab Informations** :
-- Formulaire inline (pas de dialog) : nom, description, difficulté, heures, statut, certificat
-- Sélecteurs Fonction et Persona avec preview du nom sélectionné
-- Tags éditables
-- Bouton Save sticky en bas
+Ajouts UX :
+- Bouton "Indice" (affiche le hint avec animation)
+- Badge type de question avec icone distincte par type
+- Animations enrichies (confetti sur bonne réponse, shake sur mauvaise)
 
-**Tab Inscriptions** :
-- Count des enrollments, table simple (user, date, statut, progression)
+### 4. Refonte `ContentView` dans `AcademyModule.tsx` — Rendu enrichi
 
-**Tab Statistiques** :
-- Taux complétion global, par module
-- Score moyen quiz
-- Temps moyen passé
+Remplacer le rendu markdown brut par des composants personnalisés via `react-markdown` components :
+- Blockquotes avec icone et couleur selon le préfixe (💡/📜/⚠️)
+- Tables stylisées avec zebra striping
+- Code blocks avec header de titre
+- Headers avec ancres et séparateurs
+- Images et schémas centrés avec caption
 
-### 2. Page liste `AdminAcademyPaths.tsx` — Enrichissement
+### 5. Chat permanent apprenant (flottant)
 
-**Header** : stats inline (total, publiés, brouillons, heures cumulées)
+Ajouter un bouton flottant sur la page `AcademyModule` qui ouvre un panel de chat (Sheet/Drawer) :
+- Utilise l'edge function `academy-practice` avec `system_override` (déjà supporté)
+- System prompt : "Tu es un tuteur pour le module [titre]. Réponds aux questions de l'apprenant sur le contenu."
+- SSE streaming comme la pratique IA existante
+- Persiste la conversation dans un state local (pas en DB)
 
-**Toggle vue grille/tableau** :
-- **Grille** : cards enrichies avec gradient par difficulté, progress bar modules, badges Fonction + Persona, indicateurs de contenu (modules avec contenu vs sans)
-- **Tableau** : DataTable premium
+### 6. Mode rappel (recap)
 
-**Création IA 3 modes** : remplacer le dialog basique par le pattern 3 modes (guidé, corporate, chat) comme Functions et Personae. Dialog large (max-w-4xl).
-- Mode guidé : étapes visuelles (objectif → public → difficulté → nb modules → preview)
-- Mode corporate : coller un brief pédagogique, l'IA structure
-- Mode chat : conversation libre
-
-**Searchbar + filtres** : par difficulté, statut, fonction, persona
-
-### 3. Requêtes enrichies
-
-Dans PathDetail, fetch en parallèle :
-- `academy_contents` WHERE module_id IN (module_ids) — pour preview contenu
-- `academy_quizzes` WHERE module_id IN (module_ids) — pour savoir si quiz existe
-- `academy_quiz_questions` count par quiz — pour le badge "5 questions"
-- `academy_enrollments` count WHERE path_id — pour stats header
-- `academy_functions` pour le nom de la fonction liée
-- `academy_personae` pour le nom du persona lié
+Dans la page résultats quiz, ajouter un onglet "Rappel" :
+- Liste les concepts clés extraits des questions ratées
+- Affiche l'explication de chaque mauvaise réponse avec le contexte du contenu
+- Bouton "Revoir la leçon" qui navigue vers le contenu
 
 ### Fichiers impactés
 
-**Refonte majeure** :
-- `src/pages/admin/AdminAcademyPathDetail.tsx` — hero, tabs, timeline avec collapsible content preview, stats
-- `src/pages/admin/AdminAcademyPaths.tsx` — grille/table, creation IA 3 modes, filtres, search, stats header
+**Edge function** :
+- `supabase/functions/academy-generate/index.ts` : refonte `generateContent` et `generateQuiz`
 
-### Ordre
+**Composants apprenant** :
+- `src/components/academy/AcademyQuiz.tsx` : refonte complète (6 types, hints, animations)
+- `src/pages/AcademyModule.tsx` : ContentView enrichi + chat flottant
 
-1. PathDetail (valeur maximale — on voit enfin le contenu)
-2. Paths liste (3 modes IA, filtres, vues)
+**Ordre** :
+1. Prompts edge function (content + quiz)
+2. AcademyQuiz refonte (6 types)
+3. ContentView enrichi
+4. Chat flottant apprenant
 
