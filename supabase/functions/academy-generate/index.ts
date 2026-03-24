@@ -203,41 +203,108 @@ Inclus au minimum 1 quiz et 1 exercice dans le parcours.`;
 async function generateContent(supabase: any, params: any, apiKey: string, cors: any) {
   const { module_id } = params;
 
-  // Fetch module info
   const { data: mod, error: modErr } = await supabase
-    .from("academy_modules")
-    .select("*")
-    .eq("id", module_id)
-    .single();
+    .from("academy_modules").select("*").eq("id", module_id).single();
   if (modErr || !mod) throw new Error("Module not found");
 
-  const systemPrompt = `Tu es un concepteur de contenu pédagogique expert.
-Tu crées du contenu de formation en markdown riche, structuré et engageant.
-Utilise des titres, sous-titres, listes, exemples concrets, encadrés de conseil, et mises en garde.
-Le contenu doit être professionnel, applicable immédiatement, et adapté à un public business.
+  // Fetch path context (difficulty, persona, function)
+  const { data: pathLink } = await supabase
+    .from("academy_path_modules").select("path_id").eq("module_id", module_id).limit(1).maybeSingle();
+  
+  let pathContext = { difficulty: "intermediate", personaName: "", functionName: "", pathName: "" };
+  if (pathLink) {
+    const { data: path } = await supabase
+      .from("academy_paths").select("name, difficulty, persona_id, function_id").eq("id", pathLink.path_id).single();
+    if (path) {
+      pathContext.difficulty = path.difficulty || "intermediate";
+      pathContext.pathName = path.name;
+      if (path.persona_id) {
+        const { data: p } = await supabase.from("academy_personae").select("name, description").eq("id", path.persona_id).single();
+        if (p) pathContext.personaName = `${p.name} — ${p.description?.slice(0, 200)}`;
+      }
+      if (path.function_id) {
+        const { data: f } = await supabase.from("academy_functions").select("name, department, seniority").eq("id", path.function_id).single();
+        if (f) pathContext.functionName = `${f.name} (${f.department || ''}, ${f.seniority || ''})`;
+      }
+    }
+  }
+
+  const levelInstructions: Record<string, string> = {
+    beginner: `NIVEAU DÉBUTANT :
+- Vocabulaire simple et accessible, pas de jargon non expliqué
+- Chaque concept nouveau est défini avec un exemple du quotidien
+- Analogies concrètes et visuelles
+- Longueur : 600-1200 mots par section
+- Ton : encourageant, rassurant, pédagogue`,
+    intermediate: `NIVEAU INTERMÉDIAIRE :
+- Vocabulaire professionnel avec définitions contextuelles
+- Liens entre concepts, frameworks reconnus du domaine
+- Cas d'usage concrets en entreprise
+- Longueur : 800-1500 mots par section
+- Ton : professionnel, pragmatique, orienté action`,
+    advanced: `NIVEAU AVANCÉ :
+- Vocabulaire technique sans simplification excessive
+- Analyse critique, perspectives divergentes, état de l'art
+- Benchmarks, études de cas complexes, données chiffrées
+- Longueur : 1000-2000 mots par section
+- Ton : expert, analytique, stratégique`,
+  };
+
+  const systemPrompt = `Tu es un concepteur de contenu pédagogique de niveau premium pour la formation professionnelle en entreprise.
+
+${levelInstructions[pathContext.difficulty] || levelInstructions.intermediate}
+
+${pathContext.functionName ? `FONCTION CIBLE : ${pathContext.functionName}\nAdapte tes exemples, cas d'usage et terminologie à cette fonction métier.` : ""}
+${pathContext.personaName ? `PERSONA CIBLE : ${pathContext.personaName}\nAdapte le style, le rythme et la complexité au profil comportemental.` : ""}
+
+RÈGLES DE MISE EN FORME OBLIGATOIRES :
+Tu DOIS utiliser les encadrés enrichis suivants dans chaque section :
+
+1. Points clés — format obligatoire :
+> 💡 **À retenir** : [concept essentiel en 1-2 phrases percutantes]
+
+2. Anecdotes / contexte historique — au moins 1 par section :
+> 📜 **Le saviez-vous ?** : [fait historique, anecdote industrielle, ou donnée chiffrée surprenante]
+
+3. Mises en garde pratiques :
+> ⚠️ **Attention** : [erreur courante, piège à éviter, nuance importante]
+
+4. Schémas en ASCII art dans des blocs code pour illustrer les processus et architectures
+5. Tableaux comparatifs markdown pour les frameworks et outils
+6. Listes numérotées pour les processus séquentiels
+7. Citations ou verbatims de praticiens reconnus si pertinent
+
+STRUCTURE DE CHAQUE SECTION :
+- Accroche (question rhétorique ou fait marquant)
+- Développement structuré avec sous-titres H3
+- Minimum 2 encadrés (💡, 📜, ⚠️) par section
+- Conclusion orientée action avec transition vers la section suivante
+
 Réponds UNIQUEMENT via l'outil fourni.`;
 
   const userPrompt = `Crée le contenu pédagogique complet pour ce module de formation :
 
-Titre : ${mod.title}
+Parcours : ${pathContext.pathName || "Non spécifié"}
+Titre du module : ${mod.title}
 Description : ${mod.description}
 Type : ${mod.module_type}
-Objectifs : ${JSON.stringify(mod.objectives)}
+Objectifs pédagogiques : ${JSON.stringify(mod.objectives)}
 Durée estimée : ${mod.estimated_minutes} minutes
 
-Génère 2 à 4 sections de contenu en markdown, chacune avec un angle différent :
-1. Introduction et contexte
-2. Concepts clés et frameworks
-3. Exemples concrets et cas pratiques
-4. Points clés à retenir et prochaines étapes
+Génère 3 à 5 sections de contenu en markdown riche, chacune avec un angle complémentaire :
+1. Contextualisation et enjeux (pourquoi ce sujet est critique aujourd'hui)
+2. Fondamentaux et frameworks (les modèles de référence)
+3. Application pratique et cas d'usage (exemples concrets adaptés au public cible)
+4. Outils et méthodes (comment mettre en œuvre concrètement)
+5. Synthèse et prochaines étapes (points clés + transition)
 
-Chaque section doit faire entre 300 et 800 mots.`;
+IMPORTANT : chaque section doit contenir au minimum 2 encadrés enrichis (💡, 📜, ⚠️) et 1 schéma ou tableau.`;
 
   const tools = [{
     type: "function",
     function: {
       name: "create_module_content",
-      description: "Create structured content sections for a learning module",
+      description: "Create structured rich content sections for a learning module",
       parameters: {
         type: "object",
         properties: {
@@ -247,7 +314,7 @@ Chaque section doit faire entre 300 et 800 mots.`;
               type: "object",
               properties: {
                 title: { type: "string" },
-                body: { type: "string", description: "Markdown content" },
+                body: { type: "string", description: "Rich markdown content with 💡/📜/⚠️ callouts, tables, ASCII diagrams" },
                 content_type: { type: "string", enum: ["markdown"] },
               },
               required: ["title", "body", "content_type"],
@@ -259,9 +326,11 @@ Chaque section doit faire entre 300 et 800 mots.`;
     },
   }];
 
-  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_module_content" } });
+  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_module_content" } }, "google/gemini-2.5-pro");
 
-  // Insert content sections
+  // Delete existing content before regenerating
+  await supabase.from("academy_contents").delete().eq("module_id", module_id);
+
   for (let i = 0; i < result.sections.length; i++) {
     const s = result.sections[i];
     await supabase.from("academy_contents").insert({
@@ -281,27 +350,47 @@ Chaque section doit faire entre 300 et 800 mots.`;
 // ─── Generate quiz for a module ──────────────────────────────────────
 
 async function generateQuiz(supabase: any, params: any, apiKey: string, cors: any) {
-  const { module_id, question_count = 5 } = params;
+  const { module_id, question_count = 8 } = params;
 
   const { data: mod, error: modErr } = await supabase
-    .from("academy_modules")
-    .select("*")
-    .eq("id", module_id)
-    .single();
+    .from("academy_modules").select("*").eq("id", module_id).single();
   if (modErr || !mod) throw new Error("Module not found");
 
-  // Fetch existing content for context
   const { data: contents } = await supabase
-    .from("academy_contents")
-    .select("body")
-    .eq("module_id", module_id)
-    .order("sort_order");
-  const contentText = (contents || []).map((c: any) => c.body).join("\n\n").slice(0, 4000);
+    .from("academy_contents").select("body").eq("module_id", module_id).order("sort_order");
+  const contentText = (contents || []).map((c: any) => c.body).join("\n\n").slice(0, 6000);
 
-  const systemPrompt = `Tu es un expert en évaluation pédagogique.
-Tu crées des quiz rigoureux qui testent la compréhension réelle, pas la mémorisation.
-Chaque question doit avoir une explication claire de la bonne réponse.
-Varie les types : QCM (4 options), vrai/faux, et questions ouvertes.
+  // Fetch path difficulty
+  const { data: pathLink } = await supabase
+    .from("academy_path_modules").select("path_id").eq("module_id", module_id).limit(1).maybeSingle();
+  let difficulty = "intermediate";
+  if (pathLink) {
+    const { data: path } = await supabase.from("academy_paths").select("difficulty").eq("id", pathLink.path_id).single();
+    if (path?.difficulty) difficulty = path.difficulty;
+  }
+
+  const systemPrompt = `Tu es un expert en évaluation pédagogique et en ingénierie de quiz innovants.
+
+NIVEAU : ${difficulty.toUpperCase()}
+
+Tu crées des quiz qui testent la COMPRÉHENSION RÉELLE, la capacité d'ANALYSE et l'APPLICATION PRATIQUE — jamais la simple mémorisation.
+
+Tu DOIS utiliser un MIX VARIÉ de ces 6 types de questions :
+1. **mcq** (QCM) : 4 options, une seule bonne réponse. Options plausibles qui testent les nuances.
+2. **true_false** : Vrai/Faux avec une affirmation précise qui nécessite réflexion.
+3. **ordering** : Remettre 4-6 éléments dans le bon ordre (processus, étapes, chronologie).
+4. **matching** : Associer 3-5 paires (concept↔définition, outil↔usage, problème↔solution).
+5. **fill_blank** : Phrase à compléter avec 1-2 mots clés (le texte contient ___ pour les blancs).
+6. **scenario** : Mise en situation professionnelle réaliste avec 3-4 choix contextuels.
+
+RÈGLES :
+- Minimum 3 types différents par quiz
+- Questions progressives en difficulté (les 2 premières sont accessibles, les dernières sont exigeantes)
+- Chaque question a une explication DÉTAILLÉE (2-3 phrases, pas un simple "bonne réponse")
+- Chaque question a un hint (indice sans donner la réponse)
+- Les scénarios doivent être réalistes et ancrés dans le contexte métier
+- Les ordering/matching testent la logique, pas la mémorisation
+
 Réponds UNIQUEMENT via l'outil fourni.`;
 
   const userPrompt = `Crée un quiz de ${question_count} questions pour ce module :
@@ -311,17 +400,17 @@ Objectifs : ${JSON.stringify(mod.objectives)}
 
 ${contentText ? `Contenu du module :\n${contentText}` : ""}
 
-Les questions doivent :
-- Tester la compréhension, pas la mémorisation
-- Être progressives en difficulté
-- Avoir des explications claires
-- Mélanger QCM et vrai/faux`;
+Exigences :
+- Au moins 1 question de chaque type parmi : mcq, ordering, scenario
+- Mix de niveaux : 30% facile, 40% moyen, 30% difficile
+- Les explications doivent enseigner, pas juste valider
+- Les hints doivent orienter sans donner la réponse`;
 
   const tools = [{
     type: "function",
     function: {
       name: "create_quiz",
-      description: "Create a quiz with questions",
+      description: "Create an innovative quiz with 6 question types",
       parameters: {
         type: "object",
         properties: {
@@ -333,12 +422,18 @@ Les questions doivent :
             items: {
               type: "object",
               properties: {
-                question: { type: "string" },
-                question_type: { type: "string", enum: ["mcq", "true_false"] },
-                options: { type: "array", items: { type: "object", properties: { label: { type: "string" }, value: { type: "string" } }, required: ["label", "value"] } },
-                correct_answer: { type: "string" },
-                explanation: { type: "string" },
+                question: { type: "string", description: "The question text. For fill_blank, use ___ for blanks." },
+                question_type: { type: "string", enum: ["mcq", "true_false", "ordering", "matching", "fill_blank", "scenario"] },
+                options: {
+                  type: "array",
+                  description: "For mcq/true_false/scenario: [{label, value}]. For ordering: [{label, value}] in correct order. For matching: [{label, value}] where label=left item, value=right item. For fill_blank: [{label: answer, value: answer}].",
+                  items: { type: "object", properties: { label: { type: "string" }, value: { type: "string" } }, required: ["label", "value"] }
+                },
+                correct_answer: { type: "string", description: "For mcq/true_false/scenario: the correct value. For ordering: comma-separated values in correct order. For matching: comma-separated 'label:value' pairs. For fill_blank: the correct word(s)." },
+                explanation: { type: "string", description: "Detailed 2-3 sentence explanation that teaches" },
+                hint: { type: "string", description: "A helpful hint without giving away the answer" },
                 points: { type: "number" },
+                scenario_context: { type: "string", description: "For scenario type: the situation description" },
               },
               required: ["question", "question_type", "options", "correct_answer", "explanation", "points"],
             },
@@ -349,9 +444,17 @@ Les questions doivent :
     },
   }];
 
-  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_quiz" } });
+  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_quiz" } }, "google/gemini-2.5-pro");
 
-  // Create quiz
+  // Delete existing quiz before regenerating
+  const { data: existingQuizzes } = await supabase.from("academy_quizzes").select("id").eq("module_id", module_id);
+  if (existingQuizzes?.length) {
+    for (const eq of existingQuizzes) {
+      await supabase.from("academy_quiz_questions").delete().eq("quiz_id", eq.id);
+    }
+    await supabase.from("academy_quizzes").delete().eq("module_id", module_id);
+  }
+
   const { data: quiz, error: quizErr } = await supabase
     .from("academy_quizzes")
     .insert({
@@ -365,14 +468,13 @@ Les questions doivent :
     .single();
   if (quizErr) throw quizErr;
 
-  // Create questions
   for (let i = 0; i < result.questions.length; i++) {
     const q = result.questions[i];
     await supabase.from("academy_quiz_questions").insert({
       quiz_id: quiz.id,
       question: q.question,
       question_type: q.question_type,
-      options: q.options,
+      options: q.options.map((o: any) => ({ ...o, hint: q.hint, scenario_context: q.scenario_context })),
       correct_answer: q.correct_answer,
       explanation: q.explanation,
       points: q.points || 1,
