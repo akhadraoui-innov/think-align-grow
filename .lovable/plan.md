@@ -1,80 +1,153 @@
 
 
-# Heeplab PPTX v3 — BCG Style + Contenu Rédactionnel Premium
+# Audit Academy — Phases restantes Admin + UX Apprenant
 
-## Problème
+## Etat actuel
 
-Les versions précédentes avaient du texte générique, des bullet points creux, des placeholders. Le contenu doit être rédigé comme un deck BCG : argumenté, chiffré, avec une narration stratégique.
+### Admin (ce qui existe)
+- **Dashboard** (`AdminAcademy`) : KPIs, graphiques, timeline activite
+- **Cartographie** (`AdminAcademyMap`) : flow fonctions/personae/parcours/campagnes
+- **Fonctions** (`AdminAcademyFunctions` + `AdminAcademyFunctionDetail`) : CRUD, 3 modes IA, page detail
+- **Personae** (`AdminAcademyPersonae`) : CRUD, radar 10 axes, sheet panel
+- **Parcours liste** (`AdminAcademyPaths`) : grille/table, creation IA 3 modes
+- **Parcours detail** (`AdminAcademyPathDetail`) : timeline modules, preview contenu EnrichedMarkdown, preview quiz enrichi, generation batch, illustrations IA
+- **Campagnes** (`AdminAcademyCampaigns`) : CRUD basique dialog
+- **Tracking** (`AdminAcademyTracking`) : DataTable enrollments + progress
 
-## Approche
+### Apprenant (ce qui existe)
+- **Catalogue** (`Academy`) : grille de cards, filtres difficulte, search
+- **Page parcours** (`AcademyPath`) : timeline verticale, inscription, progression
+- **Page module** (`AcademyModule`) : tabs contenu/quiz/exercice/pratique, EnrichedMarkdown, tuteur IA flottant
+- **Quiz** (`AcademyQuiz`) : 6 types (MCQ, vrai/faux, ordering, matching, fill_blank, scenario), hints, recap, review
+- **Exercice** (`AcademyExercise`) : soumission texte + evaluation IA
+- **Pratique** (`AcademyPractice`) : chat SSE coaching IA
 
-1. **Rédiger le contenu complet** de chaque slide via IA (prompts dédiés par slide) avant de générer le PPTX
-2. **Capturer des screenshots** réels des pages admin pour les mockups
-3. **Générer 6 images IA art** en grand format
-4. **Assembler le PPTX** avec layouts variés (8 types) et contenu premium
+---
 
-## Pipeline
+## Phases restantes
 
-### Etape 1 : Rédaction du contenu (via AI gateway)
+### ADMIN — 6 chantiers
 
-Générer un document JSON structuré avec le texte complet de chaque slide :
-- **Slide 2 "Le constat"** : stats sourcées (marché formation corporate 2025, taux d'échec des programmes classiques, gap compétences IA), paragraphes argumentés
-- **Slide 3 "Vision"** : proposition de valeur rédigée, pas un slogan
-- **Slide 5 "3 piliers"** : description de 4-5 lignes par pilier avec bénéfices concrets
-- **Slides produit (6-12)** : chaque feature décrite avec le problème qu'elle résout, comment elle fonctionne, quel résultat mesurable
-- **Slide 13 "Pourquoi Heeplab"** : 4 différenciateurs argumentés avec stats d'impact
-- **Annexes (15-30)** : descriptions techniques complètes de chaque module, pas des bullet points creux
+**1. Campagnes — Refonte complete**
+- Actuellement : CRUD dialog basique, pas de timeline visuelle, pas d'inscriptions automatiques
+- Manque : vue Gantt/timeline horizontale par campagne, inscriptions batch (inscrire tous les membres d'une org), emails de notification, stats campagne (taux inscription, taux completion), filtres multi-criteres
+- Impact : deploiement a grande echelle impossible sans ca
 
-Prompt system : "Tu es un consultant senior BCG spécialisé en EdTech et transformation digitale. Tu rédiges le contenu d'une présentation corporate pour Heeplab, plateforme SaaS de formation IA. Ton style : précis, factuel, argumenté, zéro bullshit. Chaque affirmation est étayée par un chiffre ou un mécanisme concret."
+**2. Tracking — Upgrade analytics**
+- Actuellement : table plate d'enrollments sans profils utilisateurs (pas de noms affiches), pas de graphiques, pas d'export
+- Manque : courbes de progression temporelles (Recharts), heatmap completion par module, export CSV, filtres par organisation/campagne, detail par apprenant (clic → drill down), alertes decrochage (apprenants inactifs > 7j)
+- Impact : zero visibilite operationnelle pour un L&D manager
 
-### Etape 2 : Captures d'écran (7 pages admin)
+**3. Module detail admin — Page dediee**
+- Actuellement : les modules ne sont editables que via le collapsible dans PathDetail. Pas de page `/admin/academy/modules/:id`
+- Manque : page dediee avec tabs (Contenu, Quiz, Exercice, Pratique, Stats), edition inline du contenu markdown avec preview live, gestion des quiz questions une par une (reorder, edit, delete), preview apprenant integree
+- Impact : impossible de gerer finement le contenu pedagogique
 
-Via browser : Dashboard, Toolkits, Toolkit Detail, Academy, Map, Functions, Personae, Path Detail
+**4. Exercices & Pratiques — Gestion admin**
+- Actuellement : aucune interface admin pour creer/editer des exercices ou des sessions de pratique IA. Les tables `academy_exercises` et `academy_practices` existent mais pas de CRUD admin
+- Manque : CRUD exercices (instructions, criteres d'evaluation, evaluation IA toggle), CRUD pratiques (scenario, system_prompt, max_exchanges, rubric d'evaluation, difficulte), generation IA des scenarios
+- Impact : ces 2 types de modules sont inutilisables sans creation admin
 
-### Etape 3 : Images IA art (6 images)
+**5. Certificats — Gestion et generation**
+- La table `academy_certificates` existe mais aucune UI admin ni apprenant
+- Manque : template de certificat configurable, generation automatique a la completion d'un parcours avec `certificate_enabled`, preview PDF, listing admin des certificats emis
+- Impact : feature prometteuse mais totalement dormante
 
-Via AI gateway `--image` : abstractions corporate (neural networks, transformation, growth)
+**6. Onboarding fonction — Interface admin**
+- `academy_function_users` et `custom_context` existent en DB mais pas d'interface pour assigner des utilisateurs a des fonctions ni pour lancer l'enrichissement IA du contexte
+- Manque : dans la page FunctionDetail, onglet "Utilisateurs assignes" avec ajout/suppression, bouton "Enrichir le contexte IA", visualisation du custom_context
 
-### Etape 4 : Script pptxgenjs
+---
 
-30 slides avec 8 layouts alternés, fond blanc dominant, images IA en grand (split layout 50%), screenshots centrés, texte rédigé complet.
+### APPRENANT — 8 chantiers
 
-Signature : "heeplab — by Growthinnov — Ammar Khadraoui"
+**1. Catalogue — Refonte immersive**
+- Actuellement : grille de cards plates standard, pas d'images, pas de categories
+- Objectif : hero immersif avec parcours mis en avant (featured), categories par fonction/persona, cards avec image de couverture generee, animation de survol riche, section "Recommandes pour vous" basee sur la fonction de l'utilisateur
+- Inspiration : Coursera, Udemy, LinkedIn Learning
 
-## Structure des slides avec contenu type
+**2. Page parcours — Experience narrative**
+- Actuellement : timeline verticale basique avec dots et cards plates
+- Objectif : timeline immersive avec apercu du contenu de chaque module (1ere image, 3 premieres lignes), badges de type animes, estimations de temps cumulees, section "Ce que vous allez apprendre" (objectifs du parcours), section "Pre-requis", temoignages/avis, progression animee (confetti a 100%)
+- Inspiration : page cours Coursera avec syllabus deployable
 
-| # | Slide | Contenu attendu |
-|---|-------|----------------|
-| 1 | Cover | Logo heeplab, baseline, image IA art fond |
-| 2 | Le constat | 3 stats marché (ex: "67% des programmes de formation échouent à produire un changement comportemental mesurable — McKinsey 2024"), paragraphe de contexte |
-| 3 | Vision | "Heeplab transforme la formation corporate en expérience adaptative..." — texte de 5-6 lignes argumenté |
-| 4 | Divider | "La plateforme" |
-| 5 | 3 piliers | Toolkits (structuration stratégique), Design Innovation (mise en situation), Academy (formation adaptative) — 4 lignes chacun |
-| 6 | Dashboard | Screenshot + description des KPIs temps réel, alertes proactives |
-| 7 | 20 Fonctions | Grille + texte expliquant la granularité métier (responsabilités, KPIs, use cases IA par fonction) |
-| 8 | 6 Profils | Description du modèle comportemental 10 axes, adaptation pédagogique par profil |
-| 9 | Cartographie | Screenshot + texte sur la vue relationnelle Fonctions→Personae→Parcours→Campagnes |
-| 10 | Parcours | Flow 5 étapes + texte sur la personnalisation par niveau/fonction/persona |
-| 11 | Contenu IA | Exemples concrets de callouts (À retenir, Le saviez-vous, Attention), schémas ASCII, adaptation au niveau |
-| 12 | Quiz 6 types | Description de chaque type (QCM, Vrai/Faux, Ordonner, Associer, Compléter, Scénario) avec mécanique pédagogique |
-| 13 | Pourquoi Heeplab | 4 différenciateurs : IA générative contextuelle, granularité métier, adaptive learning, déploiement en 48h |
-| 14 | Contact | Coordonnées complètes, CTA |
-| 15-30 | Annexes | Textes techniques complets par module (Toolkit 7 onglets, IA Chat, Challenge 4 onglets, Academy 6 sections, Orgs, Users, Rôles) |
+**3. Page module — Refonte lecteur immersif**
+- Actuellement : contenu dans une Card blanche basique, tabs plates
+- Objectif : lecteur plein ecran type Medium/Notion avec barre de progression de lecture, table des matieres laterale (headings extraits), mode sombre lecteur, surlignage et prise de notes (state local), animations d'apparition au scroll des sections
+- Le tuteur IA flottant est bien mais pourrait avoir des suggestions contextuelles ("Voulez-vous que je vous explique ce concept ?")
 
-## Fichiers
+**4. Quiz — Gamification avancee**
+- Actuellement : fonctionnel avec 6 types mais UI sobre, pas d'images, pas de timer, pas de streaks
+- Objectif : timer optionnel par question, streaks visuelles (3 bonnes reponses d'affilee = flamme), animations confetti sur bonne reponse (pas juste un checkmark), images/illustrations dans les questions, son optionnel (correct/incorrect), leaderboard par parcours, XP gagnes affiches en temps reel
+- Le drag & drop pour ordering est basique (boutons fleche) → vrai DnD tactile
 
-- Contenu JSON : `/tmp/heeplab_content.json`
-- Script PPTX : `/tmp/generate_v3_pptx.js`
-- Output : `/mnt/documents/Heeplab_Presentation_Premium_v3.pptx`
-- QA : conversion PDF → images → inspection slide par slide
+**5. Exercice — Interface enrichie**
+- Actuellement : Textarea + bouton soumettre → feedback texte
+- Objectif : editeur markdown avec preview (l'apprenant peut structurer sa reponse), upload de fichiers/images, historique des soumissions (re-soumission possible), feedback IA enrichi avec scoring par critere (pas juste un score global), progression par critere visualisee en radar
 
-## Ordre d'exécution
+**6. Pratique IA — Experience conversationnelle premium**
+- Actuellement : chat fonctionnel mais UI chat basique
+- Objectif : avatars animes pour le coach IA, suggestions de reponses (chips cliquables), indicateur de frappe ("Le coach reflechit..."), reactions rapides, sauvegarde de la conversation, reprise de session
 
-1. Rédiger le contenu complet via AI gateway → JSON
-2. Capturer 8 screenshots via browser
-3. Générer 6 images IA art
-4. Ecrire le script pptxgenjs avec layouts variés + contenu intégré
-5. Générer le PPTX
-6. QA visuelle complète (PDF → images → inspection)
-7. Corrections et re-génération si nécessaire
+**7. Certificats — Affichage et telechargement**
+- Aucune UI apprenant actuellement
+- Objectif : page "Mes certificats" dans le profil, visualisation du certificat (design premium genere), telechargement PDF, partage LinkedIn, badge de reussite sur le profil
+
+**8. Dashboard apprenant — Tableau de bord personnel**
+- N'existe pas actuellement
+- Objectif : page `/academy/dashboard` avec stats personnelles (parcours en cours, heures passees, score moyen, streak de jours consecutifs), calendrier d'activite (heatmap GitHub-style), recommandations de parcours, badges/achievements
+
+---
+
+## Priorisation recommandee
+
+### Vague 1 — Fondations manquantes (critique)
+1. Exercices & Pratiques admin (sans ca, 2 types de modules sont morts)
+2. Catalogue apprenant immersif (premiere impression)
+3. Page module lecteur immersif (coeur de l'experience)
+
+### Vague 2 — Engagement & gamification
+4. Quiz gamification (timer, streaks, confetti, DnD)
+5. Dashboard apprenant personnel
+6. Page parcours narrative
+
+### Vague 3 — Operations & scale
+7. Campagnes refonte (Gantt, batch enroll, notifs)
+8. Tracking analytics (graphiques, export, alertes)
+9. Module detail admin (page dediee)
+
+### Vague 4 — Differenciateurs
+10. Certificats (admin + apprenant)
+11. Onboarding fonction
+12. Exercice enrichi (markdown editor, multi-soumission)
+13. Pratique IA premium (avatars, suggestions)
+
+---
+
+## Section technique
+
+### Fichiers a creer
+- `src/pages/admin/AdminAcademyModuleDetail.tsx`
+- `src/pages/AcademyDashboard.tsx`
+- `src/pages/AcademyCertificates.tsx`
+- `src/components/academy/ImmersiveReader.tsx`
+- `src/components/academy/QuizTimer.tsx`
+- `src/components/academy/CertificateViewer.tsx`
+- `src/components/admin/AcademyExercisesTab.tsx`
+- `src/components/admin/AcademyPracticesTab.tsx`
+
+### Fichiers a refondre
+- `src/pages/Academy.tsx` (catalogue immersif)
+- `src/pages/AcademyPath.tsx` (experience narrative)
+- `src/pages/AcademyModule.tsx` (lecteur immersif)
+- `src/components/academy/AcademyQuiz.tsx` (gamification)
+- `src/pages/admin/AdminAcademyCampaigns.tsx` (Gantt + batch)
+- `src/pages/admin/AdminAcademyTracking.tsx` (analytics)
+
+### Routes a ajouter
+- `/admin/academy/modules/:id`
+- `/academy/dashboard`
+- `/academy/certificates`
+
+Par quelle vague souhaitez-vous commencer ?
 
