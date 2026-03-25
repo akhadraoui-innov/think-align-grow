@@ -1,66 +1,82 @@
 
 
-# Corrections du Catalogue + 5 vues alternatives
+# Corrections : Nom du createur + Dates
 
-## Problemes identifies
+## Diagnostic
 
-1. **Nom tronque** : `max-w-[200px] truncate` coupe les titres longs
-2. **Organisation vide** : `organization_id` est NULL pour la majorite des assets -- afficher "Growthinnov" par defaut
-3. **Version 0** : le seed met `version_count = 0` -- afficher "1.0" minimum (version initiale)
-4. **Contributeur 0** : `contributor_count = 0` -- afficher 1 minimum (le createur)
-5. **Collapse vide** : `academy_asset_versions` est vide car les triggers ne capturent qu'au UPDATE -- le collapse doit generer une "v0 - Creation" synthetique a partir du snapshot
-6. **Filtres limites** : pas de filtre par difficulte, mode de generation, statut, tags
+**Pourquoi "Utilisateur" au lieu de "Ammar Khadraoui" :**
+
+La `profileMap` est indexee par `profiles.user_id` (`315af24d`). Or certains `created_by` dans `academy_paths` stockent `fe415f6a` qui est le `profiles.id` (et non `user_id`). Donc `profileMap.get("fe415f6a")` retourne `undefined` et le fallback "Utilisateur" s'affiche.
+
+De plus, pour les quiz/exercise/practice, `last_modified_by` est NULL car le backfill via `snapshot->>'created_by'` a echoue (ces tables n'ont pas ce champ).
+
+**Pourquoi les dates sont fausses :**
+
+`last_modified_at` vaut `2026-03-25 13:44:32` pour TOUS les assets car c'est le `now()` du moment ou la migration de backfill a ete executee. La vraie date de derniere modification devrait etre `updated_at` ou `created_at` de la table source.
 
 ## Plan
 
-### 1. Corrections donnees (page catalogue)
+### 1. Migration de donnees (INSERT tool)
 
-- **Nom** : retirer `max-w-[200px] truncate`, utiliser `max-w-[350px]` avec tooltip au hover
-- **Organisation** : si `organization_id` est null, afficher "Growthinnov" avec le logo/couleur
-- **Version** : afficher `Math.max(1, version_count)` et label "v1.0"
-- **Contributeur** : afficher `Math.max(1, contributor_count)`
-- **Collapse** : si `academy_asset_versions` retourne 0 lignes, generer une entree synthetique "v1.0 — Creation initiale" avec la date `created_at` de l'asset et le `last_modified_by` ou "Systeme"
+**Backfill quiz/exercise/practice** via la hierarchie module → path :
 
-### 2. Filtres supplementaires
+```sql
+UPDATE observatory_assets oa
+SET last_modified_by = p.created_by,
+    contributor_ids = ARRAY[p.created_by],
+    contributor_count = 1
+FROM academy_quizzes q
+JOIN academy_modules m ON q.module_id = m.id
+JOIN academy_path_modules pm ON m.id = pm.module_id
+JOIN academy_paths p ON pm.path_id = p.id
+WHERE oa.asset_type = 'quiz' AND oa.asset_id = q.id AND oa.last_modified_by IS NULL;
+-- idem pour exercises et practices
+```
 
-Ajouter dans la barre de filtres :
-- **Statut** : draft / published / active
-- **Difficulte** : beginner / intermediate / advanced (extrait du snapshot)
-- **Mode de generation** : manual / ai (extrait du snapshot)
+**Corriger les dates** : remettre `last_modified_at` a la valeur reelle depuis le snapshot :
 
-Ces filtres operent cote client sur les champs du snapshot deja charge.
+```sql
+UPDATE observatory_assets
+SET last_modified_at = COALESCE(
+  (snapshot->>'updated_at')::timestamptz,
+  (snapshot->>'created_at')::timestamptz,
+  created_at
+);
+```
 
-### 3. Cinq vues alternatives du catalogue
+### 2. Double index dans profileMap (UI)
 
-Ajouter un toggle de vue (icones) dans le header, pattern deja utilise dans l'admin :
+Le `profileMap` doit etre indexe aussi par `profiles.id` en plus de `profiles.user_id` pour gerer les deux formats de `created_by`.
 
-| Vue | Description |
-|-----|-------------|
-| **Tableau** (actuel) | Table avec colonnes KPI, collapse versioning |
-| **Grille** | Cards riches par asset avec badge type, KPIs, tags, miniature snapshot |
-| **Timeline** | Axe chronologique vertical par date de creation, groupe par jour |
-| **Kanban** | Colonnes par statut (draft / published / active), drag disabled (lecture seule) |
-| **Treemap** | Blocs proportionnels par type d'asset, colores, avec count par org |
+**Fichier** : `src/hooks/useObservability.ts`
 
-Chaque vue partage les memes filtres et les memes donnees (`filtered`).
+Modifier la query profiles pour inclure `id`, et construire la map avec deux cles :
+```typescript
+profiles.forEach(p => {
+  map.set(p.user_id, p);
+  map.set(p.id, p);  // aussi par profile.id
+});
+```
 
-### Fichiers modifies
+### 3. Supprimer les fallbacks ambigus
+
+**Fichier** : `src/components/admin/catalogue/CatalogueTableView.tsx`
+
+- Remplacer `"Utilisateur"` par le `display_name` ou `email` resolve depuis la double-cle
+- Remplacer les initiales `"?"` par `"--"` en dernier recours
+
+### 4. Corriger le trigger pour les futures insertions
+
+**Fichier** : migration SQL
+
+Mettre a jour `sync_observatory_asset()` pour utiliser `COALESCE(NEW.updated_at, NEW.created_at)` comme `last_modified_at` au lieu de `now()` lors de l'INSERT initial.
+
+## Fichiers concernes
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/admin/AdminObservabilityCatalogue.tsx` | Corrections affichage + ajout filtres + 5 vues avec toggle |
-
-### Details techniques
-
-**Toggle de vue** : state local `viewMode: "table" | "grid" | "timeline" | "kanban" | "treemap"` avec des icones `Table2, LayoutGrid, Clock, Columns3, BarChart3`.
-
-**Vue Grille** : grid responsive `grid-cols-1 md:grid-cols-2 xl:grid-cols-3` avec Card contenant type badge, nom complet, org, KPIs en row, tags extraits du snapshot.
-
-**Vue Timeline** : groupement par `format(created_at, "dd MMMM yyyy")`, items verticaux avec dot + ligne.
-
-**Vue Kanban** : 3 colonnes (draft/published/active), cards compactes avec type + nom + org.
-
-**Vue Treemap** : rectangles CSS proportionnels (flex-wrap) colores par type, taille proportionnelle au count, cliquable pour filtrer.
-
-**Filtres snapshot** : extraction via `(asset.snapshot as any)?.difficulty` etc., filtrages `useMemo` cote client.
+| SQL (insert tool) | Backfill creator via hierarchie + corriger dates |
+| SQL (migration) | Mettre a jour `sync_observatory_asset()` pour dates correctes |
+| `src/hooks/useObservability.ts` | Double-cle profileMap (user_id + id) |
+| `src/components/admin/catalogue/CatalogueTableView.tsx` | Supprimer fallbacks "?" et "Utilisateur" |
 
