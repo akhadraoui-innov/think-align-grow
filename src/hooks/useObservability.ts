@@ -141,29 +141,37 @@ export function useObservability() {
     return map;
   }, [orgsQuery.data]);
 
-  // ---- KPIs ----
+  // ---- KPIs (derived from observatory_assets) ----
   const kpis = useMemo(() => {
     const catalogue = catalogueQuery.data ?? [];
-    const versions = versionsQuery.data ?? [];
-    const now = new Date();
-    const today = startOfDay(now);
-    const thirtyDaysAgo = subDays(now, 30);
+    const today = startOfDay(new Date());
 
     const totalAssets = catalogue.length;
-    const totalVersions = catalogue.reduce((sum, a) => sum + (a.version_count ?? 0), 0);
+    const totalVersions = catalogue.reduce((sum, a) => sum + Math.max(1, a.version_count ?? 0), 0);
 
-    const recentVersions = versions.filter((v) => new Date(v.created_at) >= thirtyDaysAgo);
-    const activeContributors = new Set(recentVersions.map((v) => v.changed_by).filter(Boolean)).size;
+    // Extract unique contributors from all assets
+    const contributorSet = new Set<string>();
+    catalogue.forEach((a) => {
+      (a.contributor_ids ?? []).forEach((id: string) => contributorSet.add(id));
+      if (a.last_modified_by) contributorSet.add(a.last_modified_by);
+    });
+    const activeContributors = contributorSet.size;
 
-    const activeOrgs = new Set(catalogue.map((a) => a.organization_id).filter(Boolean)).size;
-    const todayVersions = versions.filter((v) => new Date(v.created_at) >= today).length;
+    // Count distinct orgs (null = Growthinnov counts as 1)
+    const orgSet = new Set(catalogue.map((a) => a.organization_id || "growthinnov"));
+    const activeOrgs = orgSet.size;
 
-    return { totalAssets, totalVersions, activeContributors, activeOrgs, todayVersions };
-  }, [catalogueQuery.data, versionsQuery.data]);
+    // Assets modified today
+    const todayModifications = catalogue.filter(
+      (a) => new Date(a.last_modified_at) >= today
+    ).length;
 
-  // ---- Chart data (28 days grouped by asset_type) ----
+    return { totalAssets, totalVersions, activeContributors, activeOrgs, todayVersions: todayModifications };
+  }, [catalogueQuery.data]);
+
+  // ---- Chart data (28 days from observatory_assets created_at) ----
   const chartData = useMemo(() => {
-    const versions = versionsQuery.data ?? [];
+    const catalogue = catalogueQuery.data ?? [];
     const days: Record<string, Record<string, number>> = {};
 
     for (let i = 27; i >= 0; i--) {
@@ -172,10 +180,10 @@ export function useObservability() {
       ASSET_TYPES.forEach((t) => (days[day][t] = 0));
     }
 
-    versions.forEach((v) => {
-      const day = format(parseISO(v.created_at), "yyyy-MM-dd");
-      if (days[day] && ASSET_TYPES.includes(v.asset_type as any)) {
-        days[day][v.asset_type] = (days[day][v.asset_type] || 0) + 1;
+    catalogue.forEach((a) => {
+      const day = format(parseISO(a.created_at), "yyyy-MM-dd");
+      if (days[day] && ASSET_TYPES.includes(a.asset_type as any)) {
+        days[day][a.asset_type] = (days[day][a.asset_type] || 0) + 1;
       }
     });
 
@@ -183,10 +191,11 @@ export function useObservability() {
       date: format(parseISO(date), "dd/MM"),
       ...counts,
     }));
-  }, [versionsQuery.data]);
+  }, [catalogueQuery.data]);
 
-  // ---- Timeline (merged versions + logs) ----
+  // ---- Timeline (synthetic from catalogue + real versions/logs) ----
   const timeline = useMemo(() => {
+    const catalogue = catalogueQuery.data ?? [];
     const versions = (versionsQuery.data ?? []).map((v) => ({
       id: v.id,
       type: "version" as const,
@@ -211,7 +220,24 @@ export function useObservability() {
       createdAt: l.created_at,
     }));
 
-    const merged = [...versions, ...logs].sort(
+    // Synthetic creation entries from catalogue
+    const synthetic = catalogue.map((a) => ({
+      id: `synth-${a.id}`,
+      type: "log" as const,
+      assetType: a.asset_type,
+      assetId: a.asset_id,
+      userId: a.last_modified_by,
+      orgId: a.organization_id,
+      summary: a.name,
+      action: "created",
+      createdAt: a.created_at,
+    }));
+
+    // Deduplicate: if a real version/log exists for same asset, skip synthetic
+    const realAssetIds = new Set([...versions.map(v => v.assetId), ...logs.map(l => l.assetId)]);
+    const uniqueSynthetic = synthetic.filter((s) => !realAssetIds.has(s.assetId));
+
+    const merged = [...versions, ...logs, ...uniqueSynthetic].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
@@ -221,16 +247,16 @@ export function useObservability() {
     }
 
     return filtered.slice(0, 100);
-  }, [versionsQuery.data, logsQuery.data, filters.orgIds]);
+  }, [versionsQuery.data, logsQuery.data, catalogueQuery.data, filters.orgIds]);
 
-  // ---- Coverage matrix from observatory_assets ----
+  // ---- Coverage matrix (include null org as "Growthinnov") ----
   const coverageMatrix = useMemo(() => {
     const catalogue = catalogueQuery.data ?? [];
+    const GROWTHINNOV_KEY = "growthinnov";
     const matrix: Record<string, Record<string, number>> = {};
 
     catalogue.forEach((a) => {
-      const orgId = a.organization_id;
-      if (!orgId) return;
+      const orgId = a.organization_id || GROWTHINNOV_KEY;
       if (!matrix[orgId]) {
         matrix[orgId] = {};
         ASSET_TYPES.forEach((t) => (matrix[orgId][t] = 0));
@@ -242,7 +268,7 @@ export function useObservability() {
 
     return Object.entries(matrix).map(([orgId, counts]) => ({
       orgId,
-      orgName: orgMap.get(orgId)?.name ?? orgId.slice(0, 8),
+      orgName: orgId === GROWTHINNOV_KEY ? "Growthinnov" : (orgMap.get(orgId)?.name ?? orgId.slice(0, 8)),
       ...counts,
     }));
   }, [catalogueQuery.data, orgMap]);
