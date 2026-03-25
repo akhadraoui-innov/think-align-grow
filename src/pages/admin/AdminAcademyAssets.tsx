@@ -587,7 +587,12 @@ export default function AdminAcademyAssets() {
   const { data: orgs = [] } = useOrganizations();
 
   return (
-    <AdminShell title="Actifs pédagogiques" subtitle="Bibliothèque centralisée des quiz, exercices et pratiques">
+    <AdminShell>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Actifs pédagogiques</h1>
+        <p className="text-sm text-muted-foreground">Bibliothèque centralisée des quiz, exercices et pratiques</p>
+      </div>
+
       <FilterBar search={search} setSearch={setSearch} orgFilter={orgFilter} setOrgFilter={setOrgFilter} orgs={orgs} />
 
       <Tabs defaultValue="quizzes">
