@@ -5,7 +5,8 @@ import {
   Megaphone, Plus, ArrowLeft, Pencil, Trash2, Save, Calendar,
   Users, TrendingUp, Clock, Play, Pause, CheckCircle2, UserPlus,
   BarChart3, ChevronDown, ChevronUp, Eye, Sparkles, Loader2,
-  FileText, MessageSquare, Route, Search, Target, BookOpen, Building2
+  FileText, MessageSquare, Route, Search, Target, BookOpen, Building2,
+  Rows3, AlignJustify, List, ZoomIn
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +24,9 @@ import { Progress } from "@/components/ui/progress";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, differenceInDays, isAfter, isBefore, isWithinInterval } from "date-fns";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { addMonths, format, differenceInDays, isAfter, isBefore, isWithinInterval, startOfMonth, eachMonthOfInterval } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
