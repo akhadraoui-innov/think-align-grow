@@ -5,7 +5,7 @@ import {
   Megaphone, Plus, ArrowLeft, Pencil, Trash2, Save, Calendar,
   Users, TrendingUp, Clock, Play, Pause, CheckCircle2, UserPlus,
   BarChart3, ChevronDown, ChevronUp, Eye, Sparkles, Loader2,
-  FileText, MessageSquare, Route
+  FileText, MessageSquare, Route, Search, Target, BookOpen, Building2
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
