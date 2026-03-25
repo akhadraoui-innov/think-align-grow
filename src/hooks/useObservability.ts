@@ -169,9 +169,9 @@ export function useObservability() {
     return { totalAssets, totalVersions, activeContributors, activeOrgs, todayVersions: todayModifications };
   }, [catalogueQuery.data]);
 
-  // ---- Chart data (28 days grouped by asset_type) ----
+  // ---- Chart data (28 days from observatory_assets created_at) ----
   const chartData = useMemo(() => {
-    const versions = versionsQuery.data ?? [];
+    const catalogue = catalogueQuery.data ?? [];
     const days: Record<string, Record<string, number>> = {};
 
     for (let i = 27; i >= 0; i--) {
@@ -180,10 +180,10 @@ export function useObservability() {
       ASSET_TYPES.forEach((t) => (days[day][t] = 0));
     }
 
-    versions.forEach((v) => {
-      const day = format(parseISO(v.created_at), "yyyy-MM-dd");
-      if (days[day] && ASSET_TYPES.includes(v.asset_type as any)) {
-        days[day][v.asset_type] = (days[day][v.asset_type] || 0) + 1;
+    catalogue.forEach((a) => {
+      const day = format(parseISO(a.created_at), "yyyy-MM-dd");
+      if (days[day] && ASSET_TYPES.includes(a.asset_type as any)) {
+        days[day][a.asset_type] = (days[day][a.asset_type] || 0) + 1;
       }
     });
 
@@ -191,7 +191,7 @@ export function useObservability() {
       date: format(parseISO(date), "dd/MM"),
       ...counts,
     }));
-  }, [versionsQuery.data]);
+  }, [catalogueQuery.data]);
 
   // ---- Timeline (merged versions + logs) ----
   const timeline = useMemo(() => {
