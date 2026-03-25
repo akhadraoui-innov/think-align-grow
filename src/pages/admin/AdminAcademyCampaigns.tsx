@@ -396,18 +396,74 @@ export default function AdminAcademyCampaigns() {
         )}
 
         {/* Filter bar */}
-        <div className="flex items-center gap-2">
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les statuts</SelectItem>
-              <SelectItem value="draft">Brouillon</SelectItem>
-              <SelectItem value="active">Actif</SelectItem>
-              <SelectItem value="paused">Suspendu</SelectItem>
-              <SelectItem value="completed">Terminé</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="text-xs text-muted-foreground">{filtered.length} campagne{filtered.length > 1 ? "s" : ""}</span>
+        <Card>
+          <CardContent className="p-3 space-y-3">
+            {/* Search + selects row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher nom, parcours, organisation…"
+                  className="h-8 pl-8 text-xs"
+                />
+              </div>
+              <Select value={filterOrgId} onValueChange={setFilterOrgId}>
+                <SelectTrigger className="h-8 w-[180px] text-xs">
+                  <Building2 className="h-3 w-3 mr-1 shrink-0 text-muted-foreground" />
+                  <SelectValue placeholder="Organisation" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les orgs</SelectItem>
+                  {orgs.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterPathId} onValueChange={setFilterPathId}>
+                <SelectTrigger className="h-8 w-[180px] text-xs">
+                  <BookOpen className="h-3 w-3 mr-1 shrink-0 text-muted-foreground" />
+                  <SelectValue placeholder="Parcours" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les parcours</SelectItem>
+                  {paths.map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Status pills row */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { key: "all", label: "Tous" },
+                { key: "draft", label: "Brouillon" },
+                { key: "active", label: "Actif" },
+                { key: "paused", label: "Suspendu" },
+                { key: "completed", label: "Terminé" },
+              ].map(s => {
+                const isActive = filterStatus === s.key;
+                const sc = s.key !== "all" ? statusConfig[s.key] : null;
+                return (
+                  <button
+                    key={s.key}
+                    onClick={() => setFilterStatus(s.key)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors border",
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-background text-muted-foreground border-border hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    {sc && <sc.icon className="h-3 w-3" />}
+                    {s.label}
+                    <span className={cn("ml-0.5 tabular-nums", isActive ? "text-primary-foreground/80" : "text-muted-foreground/60")}>
+                      {statusCounts[s.key] || 0}
+                    </span>
+                  </button>
+                );
+              })}
+              <span className="ml-auto text-xs text-muted-foreground">{filtered.length} résultat{filtered.length > 1 ? "s" : ""}</span>
+            </div>
+          </CardContent>
+        </Card>
         </div>
 
         {/* Campaign list */}
