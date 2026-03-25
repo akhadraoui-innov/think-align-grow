@@ -513,13 +513,14 @@ export default function AdminAcademyPathDetail() {
         certificate_enabled: infoForm.certificate_enabled,
         persona_id: infoForm.persona_id || null,
         function_id: infoForm.function_id || null,
-      }).eq("id", id!);
+        organization_id: infoForm.organization_id || null,
+        tags: infoForm.tags,
+      } as any).eq("id", id!);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-academy-path", id] });
       toast.success("Parcours mis à jour");
-      setEditingInfo(false);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -542,19 +543,23 @@ export default function AdminAcademyPathDetail() {
     setModuleOpen(true);
   }
 
-  function startEditInfo() {
-    if (!path) return;
-    setInfoForm({
-      name: path.name,
-      description: path.description || "",
-      difficulty: path.difficulty || "intermediate",
-      estimated_hours: path.estimated_hours || 0,
-      status: path.status,
-      certificate_enabled: path.certificate_enabled,
-      persona_id: (path as any).academy_personae?.id || "",
-      function_id: (path as any).academy_functions?.id || "",
-    });
-    setEditingInfo(true);
+  // Initialize infoForm when path loads
+  const initInfoForm = (p: any) => ({
+    name: p.name,
+    description: p.description || "",
+    difficulty: p.difficulty || "intermediate",
+    estimated_hours: p.estimated_hours || 0,
+    status: p.status,
+    certificate_enabled: p.certificate_enabled,
+    persona_id: p.academy_personae?.id || "",
+    function_id: p.academy_functions?.id || "",
+    organization_id: p.organizations?.id || "",
+    tags: Array.isArray(p.tags) ? p.tags as string[] : [],
+  });
+
+  // Sync infoForm when path changes
+  if (path && !infoForm) {
+    setInfoForm(initInfoForm(path));
   }
 
   // ─── Loading / Not found ────────────────────────────────────
