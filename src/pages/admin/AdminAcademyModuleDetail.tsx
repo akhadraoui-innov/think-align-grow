@@ -307,44 +307,7 @@ export default function AdminAcademyModuleDetail() {
 
           {/* Exercise tab */}
           <TabsContent value="exercise">
-            {exercises.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <Dumbbell className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-sm">Aucun exercice généré.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {exercises.map((ex: any) => (
-                  <Card key={ex.id}>
-                    <CardHeader className="pb-2 px-5 pt-5">
-                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                        <Dumbbell className="h-4 w-4 text-emerald-500" />
-                        {ex.title}
-                        {ex.ai_evaluation_enabled && <Badge variant="secondary" className="text-[10px]"><Sparkles className="h-3 w-3 mr-0.5" /> Éval. IA</Badge>}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-5 pb-5 space-y-3">
-                      <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <EnrichedMarkdown content={ex.instructions} />
-                      </div>
-                      {ex.evaluation_criteria && Object.keys(ex.evaluation_criteria).length > 0 && (
-                        <div className="rounded-xl bg-muted/30 p-3 space-y-1">
-                          <p className="text-xs font-semibold text-muted-foreground">Critères d'évaluation</p>
-                          {Object.entries(ex.evaluation_criteria).map(([k, v]) => (
-                            <div key={k} className="text-xs flex gap-2">
-                              <span className="font-medium capitalize">{k.replace(/_/g, " ")}:</span>
-                              <span className="text-muted-foreground">{String(v)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <AcademyExercisesTab moduleId={id!} exercises={exercises as any} />
           </TabsContent>
 
           {/* Practice tab */}
