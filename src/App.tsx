@@ -47,6 +47,7 @@ import AdminAcademyMap from "./pages/admin/AdminAcademyMap";
 import AdminAcademyTracking from "./pages/admin/AdminAcademyTracking";
 import AdminAcademyModuleDetail from "./pages/admin/AdminAcademyModuleDetail";
 import AdminAcademyAssets from "./pages/admin/AdminAcademyAssets";
+import AdminObservability from "./pages/admin/AdminObservability";
 
 const queryClient = new QueryClient();
 

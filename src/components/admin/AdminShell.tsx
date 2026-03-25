@@ -17,6 +17,7 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/billing": "Crédits & Abonnements",
   "/admin/logs": "Logs d'activité",
   "/admin/settings": "Paramètres",
+  "/admin/observability": "Observabilité",
   "/admin/academy": "Academy",
   "/admin/academy/personae": "Academy — Personae",
   "/admin/academy/paths": "Academy — Parcours",
