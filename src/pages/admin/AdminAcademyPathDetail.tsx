@@ -24,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
+import { VersionHistory } from "@/components/admin/VersionHistory";
 
 const quizTypeConfig: Record<string, { icon: any; label: string; color: string; bg: string }> = {
   mcq: { icon: HelpCircle, label: "QCM", color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30" },
