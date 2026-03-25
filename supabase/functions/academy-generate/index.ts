@@ -1074,3 +1074,133 @@ async function generateIllustrations(supabase: any, params: any, apiKey: string,
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
+
+// ─── Generate Campaign ──────────────────────────────────────────────
+
+async function generateCampaign(supabase: any, userId: string, params: any, apiKey: string, cors: any) {
+  const { name, description, organization_id, mode = "guided", duration_weeks, objectives } = params;
+  if (!name) throw new Error("Missing campaign name");
+
+  // Fetch rich context
+  const [orgResult, pathsResult, membersResult, functionsResult, enrollmentsResult, personaeResult] = await Promise.all([
+    organization_id ? supabase.from("organizations").select("name, sector, group_name").eq("id", organization_id).single() : { data: null },
+    supabase.from("academy_paths").select("id, name, description, difficulty, estimated_hours, status, function_id, persona_id").eq("status", "published").order("name"),
+    organization_id ? supabase.from("organization_members").select("user_id").eq("organization_id", organization_id) : { data: [] },
+    supabase.from("academy_functions").select("id, name, department, seniority").order("name"),
+    organization_id ? supabase.from("academy_enrollments").select("path_id, campaign_id, user_id, status").order("enrolled_at", { ascending: false }).limit(200) : { data: [] },
+    supabase.from("academy_personae").select("id, name, description").order("name"),
+  ]);
+
+  const org = orgResult.data;
+  const paths = pathsResult.data || [];
+  const memberCount = (membersResult.data || []).length;
+  const functions = functionsResult.data || [];
+  const existingEnrollments = enrollmentsResult.data || [];
+  const personae = personaeResult.data || [];
+
+  // Build context string
+  let contextParts: string[] = [];
+  if (org) {
+    contextParts.push(`ORGANISATION : ${org.name}${org.sector ? ` (secteur : ${org.sector})` : ""}${org.group_name ? ` — Groupe : ${org.group_name}` : ""}\nNombre de membres : ${memberCount}`);
+  }
+  if (paths.length > 0) {
+    const pathList = paths.map((p: any) => {
+      const fn = functions.find((f: any) => f.id === p.function_id);
+      const pe = personae.find((pp: any) => pp.id === p.persona_id);
+      return `- ${p.name} (${p.difficulty}, ${p.estimated_hours || "?"}h)${fn ? ` → Fonction: ${fn.name}` : ""}${pe ? ` → Persona: ${pe.name}` : ""}`;
+    }).join("\n");
+    contextParts.push(`PARCOURS DISPONIBLES :\n${pathList}`);
+  }
+  if (existingEnrollments.length > 0) {
+    const enrolledPaths = [...new Set(existingEnrollments.map((e: any) => e.path_id))];
+    contextParts.push(`INSCRIPTIONS EXISTANTES : ${existingEnrollments.length} inscriptions sur ${enrolledPaths.length} parcours différents`);
+  }
+
+  const contextBlock = contextParts.join("\n\n");
+
+  const systemPrompt = `Tu es un consultant expert en déploiement de formation et en change management.
+Tu conçois des campagnes de formation optimales en tenant compte du contexte organisationnel, des parcours disponibles, et de la population cible.
+
+Tu recommandes :
+- Le parcours le plus adapté parmi ceux disponibles
+- Les dates optimales de déploiement
+- La configuration de relances (fréquence, canaux)
+- Une stratégie de déploiement (communication, engagement, suivi)
+
+Réponds UNIQUEMENT via l'outil fourni.`;
+
+  const userPrompt = `Conçois une campagne de formation complète.
+
+NOM : ${name}
+${description ? `BRIEF : ${description}` : ""}
+${objectives ? `OBJECTIFS DE DÉPLOIEMENT : ${objectives}` : ""}
+${duration_weeks ? `DURÉE SOUHAITÉE : ${duration_weeks} semaines` : ""}
+MODE : ${mode}
+
+${contextBlock}
+
+Recommande le parcours le plus adapté parmi les parcours disponibles (fournis son ID exact).
+Propose des dates réalistes, une description engageante, et une stratégie de déploiement.`;
+
+  const pathIds = paths.map((p: any) => p.id);
+
+  const tools = [{
+    type: "function",
+    function: {
+      name: "create_campaign",
+      description: "Create a training campaign with deployment strategy",
+      parameters: {
+        type: "object",
+        properties: {
+          description: { type: "string", description: "Engaging campaign description (2-3 paragraphs)" },
+          recommended_path_id: { type: "string", description: "ID of the recommended path from available paths" },
+          starts_at: { type: "string", description: "ISO date for campaign start (YYYY-MM-DD)" },
+          ends_at: { type: "string", description: "ISO date for campaign end (YYYY-MM-DD)" },
+          reminder_config: {
+            type: "object",
+            properties: {
+              frequency: { type: "string", enum: ["daily", "weekly", "biweekly"] },
+              channels: { type: "array", items: { type: "string" } },
+              first_reminder_days: { type: "number" },
+            },
+          },
+          deployment_strategy: { type: "string", description: "Detailed deployment strategy (communication plan, engagement tactics, milestones)" },
+        },
+        required: ["description", "recommended_path_id", "starts_at", "ends_at", "reminder_config", "deployment_strategy"],
+      },
+    },
+  }];
+
+  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_campaign" } });
+
+  // Validate path_id
+  const chosenPathId = pathIds.includes(result.recommended_path_id) ? result.recommended_path_id : (params.path_id || pathIds[0]);
+  if (!chosenPathId) throw new Error("No published path available for campaign");
+  if (!organization_id) throw new Error("organization_id required");
+
+  const { data: campaign, error: campErr } = await supabase
+    .from("academy_campaigns")
+    .insert({
+      name,
+      description: result.description || description || "",
+      path_id: chosenPathId,
+      organization_id,
+      status: "draft",
+      starts_at: result.starts_at || new Date().toISOString(),
+      ends_at: result.ends_at || null,
+      reminder_config: result.reminder_config || {},
+      created_by: userId,
+    })
+    .select("id")
+    .single();
+  if (campErr) throw campErr;
+
+  return new Response(JSON.stringify({
+    success: true,
+    campaign_id: campaign.id,
+    recommended_path_id: chosenPathId,
+    deployment_strategy: result.deployment_strategy,
+  }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}

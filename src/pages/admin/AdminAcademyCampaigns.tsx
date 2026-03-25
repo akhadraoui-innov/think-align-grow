@@ -277,9 +277,14 @@ export default function AdminAcademyCampaigns() {
               <p className="text-xs text-muted-foreground">{totalCampaigns} campagnes · {totalEnrolled} inscrits</p>
             </div>
           </div>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" /> Nouvelle campagne
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => { setAiOpen(true); setAiMode("guided"); setAiForm({ name: "", description: "", organization_id: "", path_id: "", duration_weeks: 8, objectives: "" }); setAiChat(""); }}>
+              <Sparkles className="h-4 w-4 mr-1" /> Générer par IA
+            </Button>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-2" /> Nouvelle campagne
+            </Button>
+          </div>
         </div>
 
         {/* KPIs */}
