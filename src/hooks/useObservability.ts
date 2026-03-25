@@ -83,7 +83,7 @@ export function useObservability() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("user_id, display_name, avatar_url, email");
+        .select("id, user_id, display_name, avatar_url, email");
       if (error) throw error;
       return data ?? [];
     },
@@ -128,7 +128,10 @@ export function useObservability() {
 
   const profileMap = useMemo(() => {
     const map = new Map<string, { display_name: string | null; avatar_url: string | null; email: string | null }>();
-    (profilesQuery.data ?? []).forEach((p) => map.set(p.user_id, p));
+    (profilesQuery.data ?? []).forEach((p) => {
+      map.set(p.user_id, p);
+      map.set(p.id, p); // also index by profile.id for created_by references
+    });
     return map;
   }, [profilesQuery.data]);
 
