@@ -1,72 +1,51 @@
 
 
-# Génération de campagnes par IA — 3 modes
+# Refonte UI/UX Campagnes — Collapse enrichi + Filtres avancés
 
-## Objectif
+## Problèmes actuels (visibles sur les screenshots)
 
-Ajouter un dialogue de génération IA à la page Campagnes (`AdminAcademyCampaigns.tsx`) avec les 3 modes existants (Guidé, Corporate, Chat), en enrichissant le contexte envoyé à l'IA avec les données de l'organisation, ses membres, les parcours disponibles, les fonctions et personae.
-
-## Contexte enrichi pour l'IA
-
-La campagne est l'entité la plus riche en contexte car elle croise :
-- **Organisation** : nom, secteur, taille (nb membres), groupe
-- **Parcours disponibles** : nom, difficulté, nb modules, fonction/persona ciblés
-- **Membres de l'org** : nombre, fonctions assignées, progression existante
-- **Fonctions & Personae** : pour recommander le bon parcours et le bon ciblage
-
-L'IA pourra ainsi recommander le parcours optimal, les dates, la stratégie de déploiement et la description.
+1. **Collapse basique** : le panneau étendu est un simple dump de texte + 3 compteurs KPI identiques, pas de structure
+2. **Filtre unique** : un seul select "statut", pas de recherche, pas de filtre par parcours ou organisation
+3. **Densité faible** : beaucoup d'espace perdu, les actions sont des icônes sans contexte
+4. **Stratégie IA invisible** : le `deployment_strategy` généré n'est accessible nulle part dans la liste
 
 ## Plan
 
-### 1. Ajouter `generate-campaign` à l'edge function `academy-generate`
+### 1. Filtres avancés — Barre de recherche + multi-filtres
 
-Nouvelle action dans `supabase/functions/academy-generate/index.ts` :
+Remplacer le select isolé par une barre complète :
+- **Recherche texte** (nom, description, parcours)
+- **Filtre statut** : pills cliquables (Tous / Brouillon / Actif / Suspendu / Terminé) avec compteur par statut
+- **Filtre organisation** : select
+- **Filtre parcours** : select
+- Compteur de résultats dynamique
 
-- Reçoit : `name`, `description`, `organization_id`, `difficulty_preference`, mode (guided/corporate/chat)
-- Fetche le contexte enrichi (org info, membres, parcours publiés avec leur fonction/persona, fonctions de l'org)
-- Prompt système : consultant en déploiement de formation, expert en change management
-- L'IA retourne via tool call : `path_id` recommandé (ou création d'un nouveau parcours), `description`, `starts_at`, `ends_at`, `reminder_config`, `deployment_strategy`
-- Insère la campagne en base, retourne l'ID
+### 2. Collapse enrichi — Vue structurée en sections
 
-### 2. Ajouter le dialogue 3 modes dans `AdminAcademyCampaigns.tsx`
+Transformer le panneau étendu en sections visuellement distinctes :
 
-Reproduire le pattern exact de `AdminAcademyPaths.tsx` :
+**Section A — Description + Stratégie**
+- Description en texte, stratégie de déploiement dans un bloc stylisé avec icône et bordure colorée (si disponible)
 
-- State : `aiOpen`, `aiMode`, `aiForm`, `aiChat`
-- `aiForm` : `name`, `description`, `organization_id`, `path_id` (optionnel, l'IA peut recommander), `duration_weeks`
-- Bouton "Générer par IA" dans le header à côté de "Nouvelle campagne"
+**Section B — KPIs en ligne**
+- 3 KPIs (Inscrits, Complétés, Taux) avec icônes et mini-progress circulaire, pas juste des gros chiffres dans des boîtes
 
-**Mode Guidé** :
-- Nom de la campagne
-- Organisation (select)
-- Parcours cible (select, optionnel — l'IA peut recommander)
-- Durée souhaitée (semaines)
-- Objectifs de déploiement (textarea)
+**Section C — Apprenants** (si inscrits > 0)
+- Table compacte avec avatar, nom, statut (badge coloré)
+- Limité à 5 lignes avec "Voir tout" si plus
 
-**Mode Corporate** :
-- Nom
-- Organisation (select)
-- Brief complet (textarea large) : contexte business, objectifs RH, contraintes calendaires, population cible
-- L'IA déduit tout le reste
+**Section D — Historique des versions** (collapsible à l'intérieur)
+- Le VersionHistory existant, mais dans un sous-collapsible pour ne pas encombrer
 
-**Mode Chat** :
-- Nom
-- Description libre (textarea)
-- L'IA recommande organisation + parcours + planning
+### 3. Amélioration du row principal
 
-### 3. Queries additionnelles pour le contexte
+- Ajouter un indicateur visuel de progression (mini barre) directement dans le row même quand collapsed
+- Afficher la durée restante ou "terminé depuis X jours" selon le statut
+- Icône de stratégie IA (Sparkles) visible si `deployment_strategy` existe
 
-Dans l'edge function, fetcher :
-- `organizations` : nom, secteur, groupe
-- `organization_members` count pour l'org sélectionnée
-- `academy_paths` publiés avec leur fonction/persona
-- `academy_function_users` pour savoir quelles fonctions sont assignées dans l'org
-- `academy_enrollments` existants pour éviter les doublons
-
-## Fichiers concernés
+### Fichier concerné
 
 | Fichier | Action |
 |---------|--------|
-| `supabase/functions/academy-generate/index.ts` | Ajouter action `generate-campaign` avec contexte enrichi |
-| `src/pages/admin/AdminAcademyCampaigns.tsx` | Ajouter dialogue IA 3 modes + bouton header + queries personae/functions |
+| `src/pages/admin/AdminAcademyCampaigns.tsx` | Refonte filtres + collapse enrichi + row amélioré |
 
