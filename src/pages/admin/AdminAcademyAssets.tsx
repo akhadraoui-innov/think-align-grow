@@ -1,4 +1,5 @@
 import { useState, useMemo, Fragment } from "react";
+import { VersionHistory } from "@/components/admin/VersionHistory";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
