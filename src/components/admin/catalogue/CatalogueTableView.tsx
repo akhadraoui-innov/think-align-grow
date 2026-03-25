@@ -145,8 +145,9 @@ export function CatalogueTableView({ assets, orgMap, profileMap }: Props) {
                             <Skeleton className="h-12 w-full" />
                           ) : (
                             buildVersionList().map((v) => {
-                              const profile = v.changed_by ? profileMap.get(v.changed_by) : null;
-                              const initials = (profile?.display_name || profile?.email || "S")
+                              const changedById = v.changed_by || expandedAsset?.last_modified_by || expandedAsset?.contributor_ids?.[0] || null;
+                              const profile = changedById ? profileMap.get(changedById) : null;
+                              const initials = (profile?.display_name || profile?.email || "?")
                                 .split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
                               return (
                                 <div key={v.id} className="flex items-start gap-3 text-xs">
