@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import {
   Megaphone, Plus, ArrowLeft, Pencil, Trash2, Save, Calendar,
   Users, TrendingUp, Clock, Play, Pause, CheckCircle2, UserPlus,
-  BarChart3, ChevronDown, ChevronUp, Eye
+  BarChart3, ChevronDown, ChevronUp, Eye, Sparkles, Loader2,
+  FileText, MessageSquare, Route
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, differenceInDays, isAfter, isBefore, isWithinInterval } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
