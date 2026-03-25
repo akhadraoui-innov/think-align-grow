@@ -1,45 +1,55 @@
 
 
-# Timeline enrichie + Design amélioré — Campagnes
+# Refonte des onglets Parcours — Info, Inscriptions, Statistiques
 
-## Changements
+## Etat actuel
 
-### 1. Timeline en Collapsible avec header interactif
-- Wraper la Card Gantt dans un `Collapsible` (ouvert par défaut)
-- Header cliquable avec chevron animé, titre + compteur de campagnes visibles
+**Onglet Informations** : Grille de Cards basiques (Nom, Difficulté, Description, Fonction, Persona, Durée, Certificat) + formulaire d'édition plat. Données manquantes : `tags`, `organization_id`, `generation_mode`, `created_at`, `updated_at`, `created_by`.
 
-### 2. Filtres dédiés Timeline (indépendants de la liste)
-- **Status pills** locales au Gantt (Tous/Brouillon/Actif/Suspendu/Terminé)
-- **Filtre organisation** : mini-select dans le header
-- **Zoom temporel** : toggle group (3 mois / 6 mois / 1 an / Tout) qui recalcule `minDate`/`maxDate`
+**Onglet Inscriptions** : Table brute avec `user_id` tronqué (pas de join profil), 4 colonnes sans enrichissement.
 
-### 3. Toggle de densité
-3 niveaux via `ToggleGroup` dans le header timeline :
-- **Compact** : barres 5px, pas de label, espacement minimal
-- **Normal** : barres 8px avec nom tronqué (actuel)
-- **Détaillé** : barres 12px avec nom + badge inscrits + mini progress inline
+**Onglet Statistiques** : 3 KPI cards géants + table par module avec seulement 2 métriques.
 
-### 4. Barres filtrées
-Le Gantt n'affiche que les campagnes matchant les filtres timeline locaux. Le `minDate`/`maxDate` est recalculé selon le zoom choisi.
+## Plan
 
-### 5. Design amélioré global
-- **Timeline** : today marker avec label, grille de fond subtile par mois, barres avec gradient selon statut
-- **Rows de la liste** : ombres plus subtiles, hover state amélioré, icônes d'action avec labels au hover
-- **Collapse enrichi** : séparateurs visuels entre sections, fond blanc pur au lieu de muted/20, coins plus arrondis
-- **KPIs header** : style plus épuré, fond blanc, bordure fine, icône dans un cercle plus petit
+### 1. Onglet Informations — Sections structurées inline-edit
 
-### Nouveau state local timeline
-```
-tlStatus: "all" | "draft" | "active" | "paused" | "completed"
-tlOrgId: "all" | string
-tlZoom: "3m" | "6m" | "1y" | "all"
-tlDensity: "compact" | "normal" | "detailed"
-tlOpen: boolean (default true)
-```
+Remplacer la grille de cards + le formulaire séparé par un design en sections (pattern ToolkitInfoTab) avec édition inline directe (pas de mode lecture/écriture distinct) :
+
+**Section A — Identité** : Nom, Difficulté (select), Statut (select), Durée estimée, Generation mode (read-only badge), Tags (input + pills comme ToolkitInfoTab)
+
+**Section B — Ciblage** : Fonction cible (select avec lien cliquable), Persona cible (select), Organisation (select — actuellement non affiché)
+
+**Section C — Description** : Textarea pleine largeur
+
+**Section D — Options** : Certificat (switch inline), bouton Enregistrer sticky
+
+**Section E — Métadonnées** : ID (mono), Créé le, Mis à jour, Créé par — read-only, style compact
+
+**Section F — Historique** : VersionHistory dans un collapsible
+
+- Requête path : ajouter le join `organizations` pour afficher le nom org
+- Requête update : ajouter `tags` et `organization_id` dans la mutation
+- Charger la liste des organisations pour le select
+
+### 2. Onglet Inscriptions — Table enrichie
+
+- Joindre `profiles` sur `user_id` pour afficher nom/email au lieu du UUID tronqué
+- Ajouter une colonne "Progression" : nombre de modules complétés / total (cross-ref avec `progress`)
+- Badge coloré pour le statut (enrolled = blue, in_progress = amber, completed = green)
+- Compteur en header + état vide amélioré
+- Si 0 inscriptions : illustration vide propre
+
+### 3. Onglet Statistiques — KPIs lean + breakdown enrichi
+
+- KPIs : remplacer les gros chiffres centrés par des cards compactes avec icône + label + valeur, sur une ligne (pattern admin)
+- Ajouter KPI : "Modules publiés" (count published / total)
+- Table par module : ajouter colonnes "En cours", "Temps moyen", barre de progression visuelle
+- Ajouter un mini-funnel : Inscrits → En cours → Complétés (3 barres horizontales proportionnelles)
 
 ### Fichier concerné
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/admin/AdminAcademyCampaigns.tsx` | Refactorer section Gantt (collapsible + filtres + densité + design) |
+| `src/pages/admin/AdminAcademyPathDetail.tsx` | Refonte des 3 onglets (Info sections, Inscriptions enrichies, Stats lean) |
 
