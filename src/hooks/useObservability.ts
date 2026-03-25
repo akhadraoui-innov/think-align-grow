@@ -141,25 +141,33 @@ export function useObservability() {
     return map;
   }, [orgsQuery.data]);
 
-  // ---- KPIs ----
+  // ---- KPIs (derived from observatory_assets) ----
   const kpis = useMemo(() => {
     const catalogue = catalogueQuery.data ?? [];
-    const versions = versionsQuery.data ?? [];
-    const now = new Date();
-    const today = startOfDay(now);
-    const thirtyDaysAgo = subDays(now, 30);
+    const today = startOfDay(new Date());
 
     const totalAssets = catalogue.length;
-    const totalVersions = catalogue.reduce((sum, a) => sum + (a.version_count ?? 0), 0);
+    const totalVersions = catalogue.reduce((sum, a) => sum + Math.max(1, a.version_count ?? 0), 0);
 
-    const recentVersions = versions.filter((v) => new Date(v.created_at) >= thirtyDaysAgo);
-    const activeContributors = new Set(recentVersions.map((v) => v.changed_by).filter(Boolean)).size;
+    // Extract unique contributors from all assets
+    const contributorSet = new Set<string>();
+    catalogue.forEach((a) => {
+      (a.contributor_ids ?? []).forEach((id: string) => contributorSet.add(id));
+      if (a.last_modified_by) contributorSet.add(a.last_modified_by);
+    });
+    const activeContributors = contributorSet.size;
 
-    const activeOrgs = new Set(catalogue.map((a) => a.organization_id).filter(Boolean)).size;
-    const todayVersions = versions.filter((v) => new Date(v.created_at) >= today).length;
+    // Count distinct orgs (null = Growthinnov counts as 1)
+    const orgSet = new Set(catalogue.map((a) => a.organization_id || "growthinnov"));
+    const activeOrgs = orgSet.size;
 
-    return { totalAssets, totalVersions, activeContributors, activeOrgs, todayVersions };
-  }, [catalogueQuery.data, versionsQuery.data]);
+    // Assets modified today
+    const todayModifications = catalogue.filter(
+      (a) => new Date(a.last_modified_at) >= today
+    ).length;
+
+    return { totalAssets, totalVersions, activeContributors, activeOrgs, todayVersions: todayModifications };
+  }, [catalogueQuery.data]);
 
   // ---- Chart data (28 days grouped by asset_type) ----
   const chartData = useMemo(() => {
