@@ -495,7 +495,7 @@ export default function AdminAcademyCampaigns() {
                   <Card className="hover:shadow-sm transition-shadow">
                     <CardContent className="p-0">
                       {/* Main row */}
-                      <div className="p-4 flex items-center gap-4">
+                      <div className="p-4 flex items-center gap-4 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : c.id)}>
                         <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", sc.bg)}>
                           <sc.icon className={cn("h-4 w-4", sc.color)} />
                         </div>
@@ -503,19 +503,46 @@ export default function AdminAcademyCampaigns() {
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-sm truncate">{c.name}</p>
                             <Badge variant="outline" className={cn("text-[10px] shrink-0", sc.bg, sc.color)}>{sc.label}</Badge>
+                            {c.description && c.description.length > 100 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Sparkles className="h-3 w-3 text-primary/60 shrink-0" />
+                                </TooltipTrigger>
+                                <TooltipContent>Stratégie IA disponible</TooltipContent>
+                              </Tooltip>
+                            )}
                           </div>
                           <div className="flex items-center gap-3 mt-0.5 text-[11px] text-muted-foreground">
-                            <span>{(c as any).academy_paths?.name || "—"}</span>
+                            <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" />{(c as any).academy_paths?.name || "—"}</span>
                             <span>·</span>
-                            <span>{(c as any).organizations?.name || "—"}</span>
+                            <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{(c as any).organizations?.name || "—"}</span>
                             <span>·</span>
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {c.starts_at ? format(new Date(c.starts_at), "d MMM", { locale: fr }) : "—"}
                               {c.ends_at && ` → ${format(new Date(c.ends_at), "d MMM yy", { locale: fr })}`}
                             </span>
+                            {(() => {
+                              if (!c.starts_at) return null;
+                              const now = new Date();
+                              const start = new Date(c.starts_at);
+                              const end = c.ends_at ? new Date(c.ends_at) : null;
+                              if (c.status === "completed" && end) {
+                                const d = differenceInDays(now, end);
+                                return <span className="text-emerald-600 font-medium">terminé il y a {d}j</span>;
+                              }
+                              if (end && isBefore(now, end) && isAfter(now, start)) {
+                                const d = differenceInDays(end, now);
+                                return <span className="text-primary font-medium">{d}j restants</span>;
+                              }
+                              if (isBefore(now, start)) {
+                                const d = differenceInDays(start, now);
+                                return <span className="font-medium">dans {d}j</span>;
+                              }
+                              return null;
+                            })()}
                           </div>
-                          {/* Mini progress */}
+                          {/* Mini progress in collapsed row */}
                           {cStats.enrolled > 0 && (
                             <div className="flex items-center gap-2 mt-1.5">
                               <Progress value={cStats.rate} className="h-1.5 flex-1 max-w-[200px]" />
@@ -523,7 +550,7 @@ export default function AdminAcademyCampaigns() {
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEnrollDialogCampaign(c)}>
@@ -538,64 +565,132 @@ export default function AdminAcademyCampaigns() {
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => remove.mutate(c.id)}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpandedId(isExpanded ? null : c.id)}>
-                            {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                          </Button>
+                          <div className={cn("h-7 w-7 flex items-center justify-center rounded-md transition-transform", isExpanded && "rotate-180")}>
+                            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          </div>
                         </div>
                       </div>
 
-                      {/* Expanded detail */}
+                      {/* ═══ Enriched Expanded Detail ═══ */}
                       <AnimatePresence>
                         {isExpanded && (
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
                             className="overflow-hidden border-t"
                           >
-                            <div className="p-4 bg-muted/20 space-y-3">
-                              {c.description && (
-                                <p className="text-xs text-muted-foreground">{c.description}</p>
-                              )}
-                              <div className="grid grid-cols-3 gap-3">
-                                <div className="rounded-xl bg-card border p-3 text-center">
-                                  <p className="font-bold text-lg">{cStats.enrolled}</p>
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Inscrits</p>
-                                </div>
-                                <div className="rounded-xl bg-card border p-3 text-center">
-                                  <p className="font-bold text-lg">{cStats.completed}</p>
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Complétés</p>
-                                </div>
-                                <div className="rounded-xl bg-card border p-3 text-center">
-                                  <p className="font-bold text-lg">{cStats.rate}%</p>
-                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Taux</p>
-                                </div>
+                            <div className="p-5 bg-muted/20 space-y-5">
+                              {/* Section A — Description + Strategy */}
+                              <div className="grid gap-4 md:grid-cols-2">
+                                {c.description && (
+                                  <div className="space-y-1.5">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                      <FileText className="h-3 w-3" /> Description
+                                    </p>
+                                    <p className="text-xs text-foreground leading-relaxed">{c.description}</p>
+                                  </div>
+                                )}
+                                {c.description && c.description.length > 100 && (
+                                  <div className="space-y-1.5">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                      <Sparkles className="h-3 w-3 text-primary" /> Stratégie de déploiement
+                                    </p>
+                                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                                      <p className="text-xs text-foreground leading-relaxed whitespace-pre-line">
+                                        {c.description.length > 300 ? c.description.slice(0, 300) + "…" : c.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                              {/* Enrolled users */}
+
+                              {/* Section B — KPIs */}
+                              <div className="grid grid-cols-3 gap-3">
+                                {[
+                                  { label: "Inscrits", value: cStats.enrolled, icon: Users, pct: null },
+                                  { label: "Complétés", value: cStats.completed, icon: CheckCircle2, pct: null },
+                                  { label: "Taux de complétion", value: `${cStats.rate}%`, icon: TrendingUp, pct: cStats.rate },
+                                ].map((kpi) => (
+                                  <div key={kpi.label} className="flex items-center gap-3 rounded-xl bg-card border p-3">
+                                    <div className="relative h-10 w-10 shrink-0">
+                                      <svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36">
+                                        <circle cx="18" cy="18" r="15" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                                        <circle
+                                          cx="18" cy="18" r="15" fill="none"
+                                          stroke="hsl(var(--primary))"
+                                          strokeWidth="3"
+                                          strokeDasharray={`${(kpi.pct ?? (cStats.enrolled > 0 ? (typeof kpi.value === "number" ? (kpi.value / Math.max(cStats.enrolled, 1)) * 100 : 0) : 0)) * 0.94} 94`}
+                                          strokeLinecap="round"
+                                        />
+                                      </svg>
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <kpi.icon className="h-3.5 w-3.5 text-primary" />
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-lg leading-none">{kpi.value}</p>
+                                      <p className="text-[10px] text-muted-foreground mt-0.5">{kpi.label}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Section C — Learners (max 5) */}
                               {campaignEnrollments.length > 0 && (
-                                <div className="space-y-1">
-                                  <p className="text-xs font-semibold text-muted-foreground">Apprenants inscrits</p>
-                                  <div className="max-h-40 overflow-y-auto space-y-1">
-                                    {campaignEnrollments.map((e: any) => {
-                                      const p = profileMap[e.user_id];
-                                      return (
-                                        <div key={e.id} className="flex items-center gap-2 rounded-lg bg-card border px-3 py-1.5">
-                                          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
-                                            {(p?.display_name || p?.email || "U")[0].toUpperCase()}
-                                          </div>
-                                          <span className="text-xs flex-1 truncate">{p?.display_name || p?.email || "Utilisateur"}</span>
-                                          <Badge variant="outline" className={cn("text-[9px]",
-                                            e.status === "completed" ? "bg-emerald-500/10 text-emerald-700" :
-                                            e.status === "active" ? "bg-blue-500/10 text-blue-700" : ""
-                                          )}>
-                                            {e.status === "completed" ? "Terminé" : "En cours"}
-                                          </Badge>
-                                        </div>
-                                      );
-                                    })}
+                                <div className="space-y-2">
+                                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                    <Users className="h-3 w-3" /> Apprenants ({campaignEnrollments.length})
+                                  </p>
+                                  <div className="rounded-lg border overflow-hidden">
+                                    <table className="w-full text-xs">
+                                      <thead>
+                                        <tr className="border-b bg-muted/30">
+                                          <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Apprenant</th>
+                                          <th className="text-left px-3 py-1.5 font-medium text-muted-foreground">Inscrit le</th>
+                                          <th className="text-right px-3 py-1.5 font-medium text-muted-foreground">Statut</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {campaignEnrollments.slice(0, 5).map((e: any) => {
+                                          const p = profileMap[e.user_id];
+                                          return (
+                                            <tr key={e.id} className="border-b last:border-0">
+                                              <td className="px-3 py-2 flex items-center gap-2">
+                                                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                                                  {(p?.display_name || p?.email || "U")[0].toUpperCase()}
+                                                </div>
+                                                <span className="truncate">{p?.display_name || p?.email || "Utilisateur"}</span>
+                                              </td>
+                                              <td className="px-3 py-2 text-muted-foreground">
+                                                {e.enrolled_at ? format(new Date(e.enrolled_at), "d MMM yy", { locale: fr }) : "—"}
+                                              </td>
+                                              <td className="px-3 py-2 text-right">
+                                                <Badge variant="outline" className={cn("text-[9px]",
+                                                  e.status === "completed" ? "bg-emerald-500/10 text-emerald-700" :
+                                                  e.status === "active" ? "bg-blue-500/10 text-blue-700" : ""
+                                                )}>
+                                                  {e.status === "completed" ? "Terminé" : "En cours"}
+                                                </Badge>
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                    {campaignEnrollments.length > 5 && (
+                                      <div className="px-3 py-2 border-t bg-muted/20 text-center">
+                                        <button className="text-[11px] text-primary font-medium hover:underline">
+                                          Voir les {campaignEnrollments.length - 5} autres apprenants
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               )}
+
+                              {/* Section D — Version History */}
                               <VersionHistory assetType="campaign" assetId={c.id} />
                             </div>
                           </motion.div>
