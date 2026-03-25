@@ -49,7 +49,7 @@ export function CatalogueTableView({ assets, orgMap, profileMap }: Props) {
 
     const hasV1 = realVersions.some((v) => v.version_number <= 1);
     if (!hasV1) {
-      const creatorId = expandedAsset.last_modified_by;
+      const creatorId = expandedAsset.last_modified_by || expandedAsset.contributor_ids?.[0] || null;
       return [
         ...realVersions,
         {
