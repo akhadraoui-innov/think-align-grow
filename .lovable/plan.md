@@ -1,77 +1,61 @@
 
 
-# Plan : Module "Actifs Pedagogiques" (Pedagogy Assets Library)
+# Plan : Filtres avances pour Actifs Pedagogiques
 
-## Concept
+## Objectif
 
-Creer une bibliotheque centralisee de tous les actifs pedagogiques (Quiz, Exercices, Pratiques) generes dans les parcours. Chaque actif est soit **public** (reutilisable par tous), soit **lie a une organisation**. L'admin peut les consulter, dupliquer vers un autre module, et modifier (si public ou si meme org).
+Remplacer la barre de filtres actuelle (recherche + org uniquement) par une barre multi-filtres complete : Organisation, Type d'actif, Theme (parcours source). Supprimer les compteurs inutiles.
 
-## Probleme actuel
+## Filtres a implementer
 
-Les tables `academy_exercises`, `academy_practices`, `academy_quizzes` n'ont **pas de champ `organization_id`** ni de champ `visibility`. L'organisation est deduite indirectement via `module → path → organization_id`. Il faut ajouter une colonne `organization_id` nullable sur ces 3 tables pour supporter le filtrage direct.
+| Filtre | Source | Valeurs |
+|--------|--------|---------|
+| Organisation | `organizations` table | Toutes / Public / [liste orgs] |
+| Type | Onglet actif (quiz/exercice/pratique) | Deja gere par les tabs — pas besoin d'un filtre supplementaire |
+| Theme (Parcours) | `academy_paths.name` via jointure | Tous / [liste des parcours distincts] |
+| Difficulte | `academy_paths.difficulty` ou `academy_practices.difficulty` | Tous / beginner / intermediate / advanced / expert |
+| Mode de generation | `generation_mode` sur chaque table | Tous / manual / ai |
 
-## Architecture
+## Modification
 
-```text
-/admin/academy/assets          ← Page principale (3 sous-onglets)
-├── Tab Quiz        (9 quiz, 53 questions)
-├── Tab Exercices   (10 exercices)
-└── Tab Pratiques   (11 pratiques)
-```
+**Fichier unique** : `src/pages/admin/AdminAcademyAssets.tsx`
 
-Chaque ligne affiche : titre, module source, parcours source, organisation (ou "Public"), actions (voir, dupliquer, modifier).
+### FilterBar enrichie
 
-## Modifications
+Ajouter 3 filtres Select supplementaires a cote de l'existant :
+- **Parcours** : dropdown avec les noms de parcours distincts extraits des donnees chargees (pas de requete supplementaire — on deduit depuis `extractContext`)
+- **Difficulte** : dropdown statique (beginner, intermediate, advanced, expert)
+- **Mode** : dropdown statique (manual, ai)
 
-### 1. Migration DB : ajouter `organization_id` aux 3 tables
+Layout : barre flex-wrap avec les 4 filtres + recherche, style aligne sur le pattern admin existant.
 
-```sql
-ALTER TABLE academy_exercises ADD COLUMN organization_id uuid REFERENCES organizations(id);
-ALTER TABLE academy_practices ADD COLUMN organization_id uuid REFERENCES organizations(id);
-ALTER TABLE academy_quizzes ADD COLUMN organization_id uuid REFERENCES organizations(id);
+### Logique de filtrage
 
--- Backfill depuis les parcours existants
-UPDATE academy_exercises e SET organization_id = p.organization_id
-FROM academy_modules m JOIN academy_path_modules pm ON pm.module_id = m.id
-JOIN academy_paths p ON p.id = pm.path_id WHERE m.id = e.module_id;
+Chaque tab (`QuizTab`, `ExercisesTab`, `PracticesTab`) recoit les nouveaux filtres en props et les applique dans le `.filter()` existant :
+- `pathFilter` : compare `ctx.pathName` au filtre
+- `difficultyFilter` : compare `item.difficulty` (practices) ou `path.difficulty` (quiz/exercises)
+- `modeFilter` : compare `item.generation_mode`
 
-UPDATE academy_practices pr SET organization_id = p.organization_id
-FROM academy_modules m JOIN academy_path_modules pm ON pm.module_id = m.id
-JOIN academy_paths p ON p.id = pm.path_id WHERE m.id = pr.module_id;
+### Collapsible detail (bonus)
 
-UPDATE academy_quizzes q SET organization_id = p.organization_id
-FROM academy_modules m JOIN academy_path_modules pm ON pm.module_id = m.id
-JOIN academy_paths p ON p.id = pm.path_id WHERE m.id = q.module_id;
-```
+Remplacer les View dialogs par des lignes expansibles : clic sur une ligne toggle un detail row avec le contenu complet (instructions, scenario, questions). State `expandedId` par tab.
 
-### 2. Sidebar : ajouter l'entree "Actifs pedagogiques"
+### Edit → navigation
 
-Dans `AdminSidebar.tsx`, ajouter dans `academySubItems` :
-```
-{ path: "/admin/academy/assets", icon: Library, label: "Actifs pedagogiques" }
-```
-
-### 3. Page `AdminAcademyAssets.tsx`
-
-- 3 onglets : Quiz | Exercices | Pratiques
-- Chaque onglet : tableau avec colonnes (Titre, Module, Parcours, Org/Public, Type, Actions)
-- Filtre par organisation (dropdown) + recherche texte
-- Actions par ligne :
-  - **Voir** : dialog avec le contenu complet (questions pour quiz, instructions pour exercice, scenario pour pratique)
-  - **Dupliquer** : dialog pour choisir le module cible → insere une copie avec nouveau module_id
-  - **Modifier** : ouvre un formulaire d'edition inline (seulement si saas_team)
-- Requetes : jointure `exercise → module → path_module → path` pour afficher le contexte
-
-### 4. Route dans `App.tsx`
-
-```tsx
-<Route path="/admin/academy/assets" element={<AdminAcademyAssets />} />
-```
+Le bouton Pencil navigue vers `/admin/academy/modules/:moduleId` au lieu d'ouvrir un dialog. Suppression des edit dialogs et de tout leur state.
 
 ## Section technique
 
-- Les jointures pour recuperer le contexte (module, parcours, org) se font cote client via des requetes React Query enrichies avec `.select("*, academy_modules!inner(title, academy_path_modules(academy_paths(name, organization_id, organizations(name))))")`
-- La duplication copie toutes les donnees sauf `id`, `module_id` (remplace par la cible), et `created_at`
-- Pour les quiz, la duplication copie aussi les `academy_quiz_questions` associees
-- Le filtre org utilise un `Select` avec les organisations chargees via une requete separee
+```tsx
+// FilterBar enrichie
+<div className="flex flex-wrap items-center gap-3 mb-4">
+  <Input ... /> {/* recherche */}
+  <Select orgFilter ... />
+  <Select pathFilter ... />  {/* noms de parcours distincts */}
+  <Select difficultyFilter ... />  {/* beginner/intermediate/advanced/expert */}
+  <Select modeFilter ... />  {/* manual/ai */}
+</div>
+```
+
+Les parcours distincts sont calcules via `useMemo` sur les donnees deja chargees (quizzes + exercises + practices), en extrayant les `pathName` uniques depuis `extractContext`.
 
