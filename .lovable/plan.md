@@ -1,43 +1,55 @@
 
-# Academy — Roadmap Stratégique Révisée
 
-## Phase 0 — Mesurer (1 jour)
-- Audit données DB : parcours, modules, enrollments, taux completion
-- Identifier frictions existantes (bugs, contenus vides, timeouts)
-- **Métrique** : baseline chiffrée avant toute modification
+# Phase 0 — Audit des donnees Academy
 
-## Phase 1 — Débloquer les fonctionnalités mortes (3-4 jours)
-- CRUD admin Exercices (table `academy_exercises` existe, zéro UI)
-- CRUD admin Pratiques (table `academy_practices` existe, zéro UI)
-- Campagnes : inscriptions batch (inscrire tous les membres d'une org en 1 clic)
-- **Métrique** : 100% des types de modules créables depuis l'admin
+## Chiffres cles
 
-## Phase 2 — Qualité du contenu généré (2-3 jours)
-- Prompts de génération plus contextuels, zéro ASCII art
-- Illustrations isométriques premium (style Navy/Gold/Cyan)
-- Fallback robuste si génération image échoue (placeholder gracieux)
-- **Métrique** : contenu généré sans marqueurs bruts ni schemas cassés
+| Metrique | Valeur | Diagnostic |
+|----------|--------|-----------|
+| Parcours total | 10 | OK |
+| Parcours publies | 8 | OK |
+| Parcours avec 0 modules | **4** | **Probleme** — 4 parcours publies sont des coquilles vides |
+| Parcours publies sans contenu | **6** | **Critique** — 6/8 parcours publies n'ont aucun contenu genere |
+| Noms dupliques | **8** | **Probleme** — 4 noms de parcours existent en double |
+| Modules total | 30 | OK |
+| Modules orphelins | 0 | OK |
+| Contenus remplis | 39 | Seulement 2 parcours ont du contenu reel |
+| Quiz | 7 | Seulement 2 parcours ont des quiz |
+| Exercices | 5 | Contenu riche et bien redige |
+| Pratiques | 6 | Scenarios IA detailles et fonctionnels |
+| Fonctions | 20 | OK |
+| Personae | 6 | OK |
+| Campagnes | 6 | Toutes sur 1 seule org (Growthinnov), 3 doublons |
+| Enrollments | 2 | Quasi zero usage reel |
+| Completions | 0 | Aucune completion enregistree |
+| Progress records | 0 | Aucun tracking de progression |
+| Certificats | 0 | Normal (aucune completion) |
+| Utilisateurs total | 1 | Un seul user (admin) |
+| Function users | 0 | Aucun user assigne a une fonction |
 
-## Phase 3 — UX chirurgicale apprenant (3-4 jours)
-- Catalogue : images de couverture + section "En cours"
-- Lecteur : espacement typographique + images full-width + callouts premium
-- Quiz : animation confetti sur completion du quiz (pas par question)
-- **Métrique** : temps moyen par session, taux completion module
+## Frictions identifiees
 
-## Phase 4 — Scale (quand nécessaire)
-- Tracking analytics complet (graphiques, export, alertes décrochage)
-- Certificats (admin + apprenant + PDF)
-- Dashboard apprenant personnel (stats, heatmap, recommandations)
-- **Métrique** : NPS apprenant, taux certification
+### 1. Donnees fantomes (critique)
+4 parcours publies sont des doublons vides (meme noms que d'autres parcours). Ils polluent le catalogue apprenant. Il faut les supprimer ou les depublier.
 
-## Risques techniques identifiés
-1. **Timeouts génération** : séquentiel 25 appels IA = 5-10min → prévoir queue/polling
-2. **Stockage images** : pas de compression/nettoyage → politique de rétention
-3. **Versioning contenu** : re-génération écrase tout → historique snapshots
-4. **Contenus existants** : ASCII art déjà généré non rétro-mis à jour
+### 2. Parcours publies sans contenu (critique)
+6 parcours sur 8 sont publies mais n'ont AUCUN contenu genere. Un apprenant qui s'inscrit tombe sur des modules vides. Seuls "Premiers Pas avec l'IA Generative" (6 contenus) et "Cadrer la Strategie IA pour le COMEX" (4 contenus) ont du contenu.
 
-## Règles d'exécution
-- Max 3 livrables par phase
-- Chaque livrable a un périmètre figé et testable
-- On mesure avant d'embellir
-- On débloque avant d'optimiser
+### 3. Campagnes doublonnees
+3 campagnes sur 6 sont des doublons (memes noms). Pas de batch enrollment — 1 seul enrollment lie a une campagne.
+
+### 4. Zero progression
+Malgre 2 enrollments, 0 progress records. Soit le tracking ne fonctionne pas, soit personne n'a ouvert un module.
+
+## Recommandation immediate
+
+Avant tout developpement, **nettoyer les donnees** :
+1. Supprimer les 4 parcours doublons vides (ceux avec 0 modules)
+2. Depublier les parcours sans contenu (les repasser en draft)
+3. Supprimer les 3 campagnes doublons
+4. Generer le contenu des parcours restants avant de les republier
+
+Puis passer a **Phase 1 — Debloquer** : CRUD admin exercices/pratiques + batch enrollments campagnes.
+
+Souhaitez-vous que je procede au nettoyage des donnees fantomes, ou directement a Phase 1 ?
+
