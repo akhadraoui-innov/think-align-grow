@@ -1097,9 +1097,194 @@ export default function AdminAcademyPathDetail() {
               )}
             </TabsContent>
 
-            {/* ═══ TAB: INFORMATIONS — Inline-edit sections ═══ */}
+            {/* ═══ TAB: INFORMATIONS ═══ */}
             <TabsContent value="info" className="space-y-6">
-              {infoForm && (() => {
+              {/* Header bar */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  {isEditing ? "Modification en cours" : "Informations du parcours"}
+                </h2>
+                {!isEditing ? (
+                  <Button size="sm" variant="outline" onClick={() => { if (path && !infoForm) setInfoForm(initInfoForm(path)); setIsEditing(true); }} className="gap-1.5">
+                    <Pencil className="h-3.5 w-3.5" /> Modifier
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => { setInfoForm(initInfoForm(path)); setIsEditing(false); }}>Annuler</Button>
+                    <Button size="sm" onClick={() => updatePathInfo.mutate(undefined, { onSuccess: () => setIsEditing(false) })} disabled={updatePathInfo.isPending} className="gap-1.5">
+                      {updatePathInfo.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                      Enregistrer
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* ── READ MODE ── */}
+              {!isEditing && (
+                <>
+                  {/* Section A — Identité */}
+                  <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                    <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                      <Settings className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold text-sm text-foreground tracking-tight">Identité</h3>
+                    </div>
+                    <div className="p-5">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-5">
+                        <div>
+                          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Nom</span>
+                          <p className="text-sm font-medium mt-1">{path.name}</p>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Difficulté</span>
+                          <div className="mt-1">
+                            <Badge variant="outline" className={`text-xs ${diff.color}`}>{diff.label}</Badge>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Statut</span>
+                          <div className="mt-1">
+                            <Badge variant={path.status === "published" ? "default" : "secondary"} className="text-xs">{path.status === "published" ? "Publié" : path.status === "draft" ? "Brouillon" : path.status}</Badge>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Durée estimée</span>
+                          <p className="text-sm font-medium mt-1 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-muted-foreground" />{path.estimated_hours || 0}h</p>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Mode de génération</span>
+                          <div className="mt-1">
+                            <Badge variant="outline" className="text-xs">{path.generation_mode === "ai" ? "IA" : path.generation_mode === "hybrid" ? "Hybride" : "Manuel"}</Badge>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Tags</span>
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {(Array.isArray(path.tags) ? path.tags as string[] : []).length > 0
+                              ? (path.tags as string[]).map((tag: string) => (
+                                <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5">{tag}</Badge>
+                              ))
+                              : <span className="text-xs text-muted-foreground/50 italic">Aucun tag</span>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section B — Ciblage */}
+                  <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                    <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                      <Target className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold text-sm text-foreground tracking-tight">Ciblage</h3>
+                    </div>
+                    <div className="p-5">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-5">
+                        <div>
+                          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Fonction cible</span>
+                          {funcData ? (
+                            <button onClick={() => navigate(`/admin/academy/functions/${funcData.id}`)} className="block mt-1 text-sm font-medium text-primary hover:underline flex items-center gap-1.5">
+                              {funcData.name}{funcData.department ? ` (${funcData.department})` : ""}
+                              <Link2 className="h-3 w-3" />
+                            </button>
+                          ) : (
+                            <p className="text-sm text-muted-foreground/50 italic mt-1">Non défini</p>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Persona cible</span>
+                          <p className="text-sm font-medium mt-1">{personaData?.name || <span className="text-muted-foreground/50 italic font-normal">Non défini</span>}</p>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Organisation</span>
+                          <p className="text-sm font-medium mt-1">{(path as any).organizations?.name || <span className="text-muted-foreground/50 italic font-normal">Global</span>}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section C — Description */}
+                  <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                    <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold text-sm text-foreground tracking-tight">Description</h3>
+                    </div>
+                    <div className="p-5">
+                      {path.description ? (
+                        <div className="rounded-lg bg-muted/20 p-4">
+                          <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">{path.description}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground/50 italic">Aucune description</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Section D — Options */}
+                  <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                    <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                      <Award className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold text-sm text-foreground tracking-tight">Options</h3>
+                    </div>
+                    <div className="p-5">
+                      <div className="flex items-center gap-3">
+                        {path.certificate_enabled ? (
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="h-6 w-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                            </div>
+                            <span className="font-medium">Certificat activé</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                              <X className="h-3.5 w-3.5" />
+                            </div>
+                            <span>Certificat désactivé</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section E — Métadonnées */}
+                  <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                    <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                      <Database className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold text-sm text-foreground tracking-tight">Métadonnées</h3>
+                    </div>
+                    <div className="p-5">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">ID</span>
+                          <p className="font-mono text-xs text-foreground mt-1">{path.id}</p>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">Créé le</span>
+                          <p className="text-xs text-foreground mt-1">{format(new Date(path.created_at), "dd MMM yyyy HH:mm", { locale: fr })}</p>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">Mis à jour</span>
+                          <p className="text-xs text-foreground mt-1">{format(new Date(path.updated_at), "dd MMM yyyy HH:mm", { locale: fr })}</p>
+                        </div>
+                        <div>
+                          <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">Créé par</span>
+                          <p className="font-mono text-xs text-foreground mt-1">{path.created_by?.slice(0, 8)}…</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section F — Historique */}
+                  <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                    <div className="p-5">
+                      <VersionHistory assetType="path" assetId={id!} />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ── EDIT MODE ── */}
+              {isEditing && infoForm && (() => {
                 const set = (key: string, value: any) => setInfoForm((f: any) => ({ ...f, [key]: value }));
                 const addTag = () => {
                   const t = tagInput.trim();
@@ -1122,9 +1307,9 @@ export default function AdminAcademyPathDetail() {
                         </div>
                       </div>
                       <div className="p-5 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Nom</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1.5 md:col-span-2">
+                            <Label className="text-xs text-muted-foreground">Nom du parcours</Label>
                             <Input value={infoForm.name} onChange={e => set("name", e.target.value)} className="h-9" />
                           </div>
                           <div className="space-y-1.5">
@@ -1145,7 +1330,6 @@ export default function AdminAcademyPathDetail() {
                               <SelectContent>
                                 <SelectItem value="draft">Brouillon</SelectItem>
                                 <SelectItem value="published">Publié</SelectItem>
-                                <SelectItem value="archived">Archivé</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -1153,29 +1337,23 @@ export default function AdminAcademyPathDetail() {
                             <Label className="text-xs text-muted-foreground">Durée estimée (heures)</Label>
                             <Input type="number" min={0} value={infoForm.estimated_hours} onChange={e => set("estimated_hours", Number(e.target.value))} className="h-9" />
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Mode de génération</Label>
-                            <div className="h-9 flex items-center">
-                              <Badge variant="outline" className="text-xs">{path.generation_mode || "manual"}</Badge>
-                            </div>
-                          </div>
                         </div>
+                        {/* Tags */}
                         <div className="space-y-1.5">
                           <Label className="text-xs text-muted-foreground">Tags</Label>
-                          <div className="flex gap-2">
-                            <Input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Ajouter un tag..." onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addTag())} className="max-w-xs h-9" />
-                            <Button variant="outline" size="sm" onClick={addTag} type="button" className="h-9 px-3">+</Button>
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {infoForm.tags.map((tag: string) => (
+                              <Badge key={tag} variant="secondary" className="text-[10px] px-2 py-0.5 gap-1">
+                                {tag}
+                                <button onClick={() => removeTag(tag)} className="hover:text-destructive"><X className="h-2.5 w-2.5" /></button>
+                              </Badge>
+                            ))}
                           </div>
-                          {infoForm.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {infoForm.tags.map((tag: string) => (
-                                <Badge key={tag} variant="secondary" className="gap-1 text-xs">
-                                  {tag}
-                                  <button onClick={() => removeTag(tag)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
+                          <div className="flex gap-2">
+                            <Input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Ajouter un tag…" className="h-8 text-xs flex-1"
+                              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }} />
+                            <Button type="button" size="sm" variant="outline" onClick={addTag} className="h-8 px-3 text-xs"><Tag className="h-3 w-3 mr-1" /> Ajouter</Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1202,11 +1380,6 @@ export default function AdminAcademyPathDetail() {
                                 ))}
                               </SelectContent>
                             </Select>
-                            {infoForm.function_id && (
-                              <button onClick={() => navigate(`/admin/academy/functions/${infoForm.function_id}`)} className="text-[10px] text-primary hover:underline flex items-center gap-1 mt-1">
-                                <Link2 className="h-3 w-3" /> Voir la fonction
-                              </button>
-                            )}
                           </div>
                           <div className="space-y-1.5">
                             <Label className="text-xs text-muted-foreground">Persona cible</Label>
@@ -1250,7 +1423,7 @@ export default function AdminAcademyPathDetail() {
                       </div>
                     </div>
 
-                    {/* Section D — Options + Save */}
+                    {/* Section D — Options */}
                     <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
                       <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
                         <Award className="h-4 w-4 text-primary" />
@@ -1267,54 +1440,6 @@ export default function AdminAcademyPathDetail() {
                           </div>
                           <Switch checked={infoForm.certificate_enabled} onCheckedChange={v => set("certificate_enabled", v)} />
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Sticky Save */}
-                    <div className="sticky bottom-0 z-10 -mx-1 px-1 py-3 bg-background/80 backdrop-blur-sm border-t border-border/20">
-                      <div className="flex justify-end">
-                        <Button onClick={() => updatePathInfo.mutate()} disabled={updatePathInfo.isPending} size="sm" className="gap-2 shadow-sm">
-                          {updatePathInfo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                          Enregistrer
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Section E — Métadonnées */}
-                    <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
-                      <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
-                        <Database className="h-4 w-4 text-primary" />
-                        <div>
-                          <h3 className="font-semibold text-sm text-foreground tracking-tight">Métadonnées</h3>
-                          <p className="text-[11px] text-muted-foreground/60">Informations système</p>
-                        </div>
-                      </div>
-                      <div className="p-5">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">ID</span>
-                            <p className="font-mono text-xs text-foreground mt-1">{path.id}</p>
-                          </div>
-                          <div>
-                            <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">Créé le</span>
-                            <p className="text-xs text-foreground mt-1">{format(new Date(path.created_at), "dd MMM yyyy HH:mm", { locale: fr })}</p>
-                          </div>
-                          <div>
-                            <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">Mis à jour</span>
-                            <p className="text-xs text-foreground mt-1">{format(new Date(path.updated_at), "dd MMM yyyy HH:mm", { locale: fr })}</p>
-                          </div>
-                          <div>
-                            <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">Créé par</span>
-                            <p className="font-mono text-xs text-foreground mt-1">{path.created_by?.slice(0, 8)}…</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Section F — Historique */}
-                    <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
-                      <div className="p-5">
-                        <VersionHistory assetType="path" assetId={id!} />
                       </div>
                     </div>
                   </>
