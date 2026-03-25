@@ -1,55 +1,77 @@
 
 
-# Phase 0 — Audit des donnees Academy
+# Plan : Module "Actifs Pedagogiques" (Pedagogy Assets Library)
 
-## Chiffres cles
+## Concept
 
-| Metrique | Valeur | Diagnostic |
-|----------|--------|-----------|
-| Parcours total | 10 | OK |
-| Parcours publies | 8 | OK |
-| Parcours avec 0 modules | **4** | **Probleme** — 4 parcours publies sont des coquilles vides |
-| Parcours publies sans contenu | **6** | **Critique** — 6/8 parcours publies n'ont aucun contenu genere |
-| Noms dupliques | **8** | **Probleme** — 4 noms de parcours existent en double |
-| Modules total | 30 | OK |
-| Modules orphelins | 0 | OK |
-| Contenus remplis | 39 | Seulement 2 parcours ont du contenu reel |
-| Quiz | 7 | Seulement 2 parcours ont des quiz |
-| Exercices | 5 | Contenu riche et bien redige |
-| Pratiques | 6 | Scenarios IA detailles et fonctionnels |
-| Fonctions | 20 | OK |
-| Personae | 6 | OK |
-| Campagnes | 6 | Toutes sur 1 seule org (Growthinnov), 3 doublons |
-| Enrollments | 2 | Quasi zero usage reel |
-| Completions | 0 | Aucune completion enregistree |
-| Progress records | 0 | Aucun tracking de progression |
-| Certificats | 0 | Normal (aucune completion) |
-| Utilisateurs total | 1 | Un seul user (admin) |
-| Function users | 0 | Aucun user assigne a une fonction |
+Creer une bibliotheque centralisee de tous les actifs pedagogiques (Quiz, Exercices, Pratiques) generes dans les parcours. Chaque actif est soit **public** (reutilisable par tous), soit **lie a une organisation**. L'admin peut les consulter, dupliquer vers un autre module, et modifier (si public ou si meme org).
 
-## Frictions identifiees
+## Probleme actuel
 
-### 1. Donnees fantomes (critique)
-4 parcours publies sont des doublons vides (meme noms que d'autres parcours). Ils polluent le catalogue apprenant. Il faut les supprimer ou les depublier.
+Les tables `academy_exercises`, `academy_practices`, `academy_quizzes` n'ont **pas de champ `organization_id`** ni de champ `visibility`. L'organisation est deduite indirectement via `module → path → organization_id`. Il faut ajouter une colonne `organization_id` nullable sur ces 3 tables pour supporter le filtrage direct.
 
-### 2. Parcours publies sans contenu (critique)
-6 parcours sur 8 sont publies mais n'ont AUCUN contenu genere. Un apprenant qui s'inscrit tombe sur des modules vides. Seuls "Premiers Pas avec l'IA Generative" (6 contenus) et "Cadrer la Strategie IA pour le COMEX" (4 contenus) ont du contenu.
+## Architecture
 
-### 3. Campagnes doublonnees
-3 campagnes sur 6 sont des doublons (memes noms). Pas de batch enrollment — 1 seul enrollment lie a une campagne.
+```text
+/admin/academy/assets          ← Page principale (3 sous-onglets)
+├── Tab Quiz        (9 quiz, 53 questions)
+├── Tab Exercices   (10 exercices)
+└── Tab Pratiques   (11 pratiques)
+```
 
-### 4. Zero progression
-Malgre 2 enrollments, 0 progress records. Soit le tracking ne fonctionne pas, soit personne n'a ouvert un module.
+Chaque ligne affiche : titre, module source, parcours source, organisation (ou "Public"), actions (voir, dupliquer, modifier).
 
-## Recommandation immediate
+## Modifications
 
-Avant tout developpement, **nettoyer les donnees** :
-1. Supprimer les 4 parcours doublons vides (ceux avec 0 modules)
-2. Depublier les parcours sans contenu (les repasser en draft)
-3. Supprimer les 3 campagnes doublons
-4. Generer le contenu des parcours restants avant de les republier
+### 1. Migration DB : ajouter `organization_id` aux 3 tables
 
-Puis passer a **Phase 1 — Debloquer** : CRUD admin exercices/pratiques + batch enrollments campagnes.
+```sql
+ALTER TABLE academy_exercises ADD COLUMN organization_id uuid REFERENCES organizations(id);
+ALTER TABLE academy_practices ADD COLUMN organization_id uuid REFERENCES organizations(id);
+ALTER TABLE academy_quizzes ADD COLUMN organization_id uuid REFERENCES organizations(id);
 
-Souhaitez-vous que je procede au nettoyage des donnees fantomes, ou directement a Phase 1 ?
+-- Backfill depuis les parcours existants
+UPDATE academy_exercises e SET organization_id = p.organization_id
+FROM academy_modules m JOIN academy_path_modules pm ON pm.module_id = m.id
+JOIN academy_paths p ON p.id = pm.path_id WHERE m.id = e.module_id;
+
+UPDATE academy_practices pr SET organization_id = p.organization_id
+FROM academy_modules m JOIN academy_path_modules pm ON pm.module_id = m.id
+JOIN academy_paths p ON p.id = pm.path_id WHERE m.id = pr.module_id;
+
+UPDATE academy_quizzes q SET organization_id = p.organization_id
+FROM academy_modules m JOIN academy_path_modules pm ON pm.module_id = m.id
+JOIN academy_paths p ON p.id = pm.path_id WHERE m.id = q.module_id;
+```
+
+### 2. Sidebar : ajouter l'entree "Actifs pedagogiques"
+
+Dans `AdminSidebar.tsx`, ajouter dans `academySubItems` :
+```
+{ path: "/admin/academy/assets", icon: Library, label: "Actifs pedagogiques" }
+```
+
+### 3. Page `AdminAcademyAssets.tsx`
+
+- 3 onglets : Quiz | Exercices | Pratiques
+- Chaque onglet : tableau avec colonnes (Titre, Module, Parcours, Org/Public, Type, Actions)
+- Filtre par organisation (dropdown) + recherche texte
+- Actions par ligne :
+  - **Voir** : dialog avec le contenu complet (questions pour quiz, instructions pour exercice, scenario pour pratique)
+  - **Dupliquer** : dialog pour choisir le module cible → insere une copie avec nouveau module_id
+  - **Modifier** : ouvre un formulaire d'edition inline (seulement si saas_team)
+- Requetes : jointure `exercise → module → path_module → path` pour afficher le contexte
+
+### 4. Route dans `App.tsx`
+
+```tsx
+<Route path="/admin/academy/assets" element={<AdminAcademyAssets />} />
+```
+
+## Section technique
+
+- Les jointures pour recuperer le contexte (module, parcours, org) se font cote client via des requetes React Query enrichies avec `.select("*, academy_modules!inner(title, academy_path_modules(academy_paths(name, organization_id, organizations(name))))")`
+- La duplication copie toutes les donnees sauf `id`, `module_id` (remplace par la cible), et `created_at`
+- Pour les quiz, la duplication copie aussi les `academy_quiz_questions` associees
+- Le filtre org utilise un `Select` avec les organisations chargees via une requete separee
 
