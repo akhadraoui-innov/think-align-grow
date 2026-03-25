@@ -37,3 +37,23 @@
 - `AdminAcademyPersonae.tsx` : section dans chaque card persona
 - `AdminAcademyCampaigns.tsx` : section dans le détail expandable
 - `AdminAcademyAssets.tsx` : refactoré pour utiliser le composant partagé
+
+# P4 : Module Observabilité
+
+## Statut : ✅ Terminé
+
+### Architecture
+- Agrège `academy_asset_versions` + `activity_logs` — aucune nouvelle table DB
+- Hook centralisé `useObservability` avec filtres (org, type, user, période)
+- Page `/admin/observability` dans la sidebar Système (permission `admin.logs.view`)
+
+### 4 sections interactives
+1. **KPI Cards** : versions totales, contributeurs actifs (30j), organisations actives (30j), modifications aujourd'hui
+2. **Graphique AreaChart** : activité empilée par type d'asset sur 28 jours
+3. **Fil d'activité** : timeline fusionnée versions + logs avec résolution profils/orgs
+4. **Matrice de couverture** : heatmap Organisation × Type avec clic pour filtrer la timeline
+
+### Filtres globaux
+- Organisation, type d'asset, période (date range picker)
+- Filtre contextuel par clic sur cellule de la matrice
+- Export CSV de la vue filtrée
