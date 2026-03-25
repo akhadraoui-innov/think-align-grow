@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { VersionHistory } from "@/components/admin/VersionHistory";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -284,6 +285,7 @@ export default function AdminAcademyPersonae() {
                       <Badge variant={p.status === "published" ? "default" : "secondary"} className="text-[9px]">{p.status}</Badge>
                       {pTags.slice(0, 3).map((t: string) => <Badge key={t} variant="outline" className="text-[9px]">{t}</Badge>)}
                     </div>
+                    <VersionHistory assetType="persona" assetId={p.id} />
                   </CardContent>
                 </Card>
               );

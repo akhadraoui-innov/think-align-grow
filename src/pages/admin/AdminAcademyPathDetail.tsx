@@ -24,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
+import { VersionHistory } from "@/components/admin/VersionHistory";
 
 const quizTypeConfig: Record<string, { icon: any; label: string; color: string; bg: string }> = {
   mcq: { icon: HelpCircle, label: "QCM", color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30" },
@@ -1107,6 +1108,10 @@ export default function AdminAcademyPathDetail() {
                       <p className="text-sm font-medium">{path.certificate_enabled ? "Activé" : "Désactivé"}</p>
                     </CardContent></Card>
                   </div>
+                  {/* Version History */}
+                  <Card><CardContent className="p-4">
+                    <VersionHistory assetType="path" assetId={id!} />
+                  </CardContent></Card>
                 </div>
               ) : infoForm && (
                 <div className="space-y-4 max-w-2xl">
