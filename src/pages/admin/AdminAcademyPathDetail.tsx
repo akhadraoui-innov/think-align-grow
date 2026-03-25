@@ -6,7 +6,8 @@ import {
   FileText, HelpCircle, ChevronDown, ChevronRight, Users, BarChart3,
   Clock, Award, Target, Bot, Dumbbell, GraduationCap, CheckCircle2,
   AlertTriangle, RefreshCw, Info, Eye, Lightbulb, Link2, ListOrdered,
-  PenTool, Theater, Image, Zap
+  PenTool, Theater, Image, Zap, Settings, Database, X, Tag, Building2,
+  TrendingUp, Percent, Timer
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Separator } from "@/components/ui/separator";
 import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
 import { VersionHistory } from "@/components/admin/VersionHistory";
+import { Progress } from "@/components/ui/progress";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const quizTypeConfig: Record<string, { icon: any; label: string; color: string; bg: string }> = {
   mcq: { icon: HelpCircle, label: "QCM", color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30" },
@@ -72,7 +76,9 @@ export default function AdminAcademyPathDetail() {
   const [editModuleId, setEditModuleId] = useState<string | null>(null);
   const [moduleForm, setModuleForm] = useState<ModuleForm>(emptyModule);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
-  const [editingInfo, setEditingInfo] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+
+  // Inline-edit form (always shown, no read/edit toggle)
   const [infoForm, setInfoForm] = useState<any>(null);
 
   // ─── Queries ────────────────────────────────────────────────
@@ -82,7 +88,7 @@ export default function AdminAcademyPathDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("academy_paths")
-        .select("*, academy_personae!academy_paths_persona_id_fkey(id, name), academy_functions!academy_paths_function_id_fkey(id, name, department)")
+        .select("*, academy_personae!academy_paths_persona_id_fkey(id, name), academy_functions!academy_paths_function_id_fkey(id, name, department), organizations!academy_paths_organization_id_fkey(id, name)")
         .eq("id", id!)
         .maybeSingle();
       if (error) {
@@ -187,7 +193,17 @@ export default function AdminAcademyPathDetail() {
         .eq("path_id", id!)
         .order("enrolled_at", { ascending: false });
       if (error) throw error;
-      return data || [];
+      // Fetch profiles for user_ids
+      const userIds = [...new Set((data || []).map((e: any) => e.user_id))];
+      let profileMap: Record<string, any> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, email, avatar_url")
+          .in("user_id", userIds);
+        for (const p of profiles || []) profileMap[p.user_id] = p;
+      }
+      return (data || []).map((e: any) => ({ ...e, profile: profileMap[e.user_id] || null }));
     },
   });
 
@@ -216,6 +232,14 @@ export default function AdminAcademyPathDetail() {
     queryKey: ["admin-functions-select"],
     queryFn: async () => {
       const { data } = await supabase.from("academy_functions").select("id, name, department").order("name");
+      return data || [];
+    },
+  });
+
+  const { data: organizations = [] } = useQuery({
+    queryKey: ["admin-orgs-select"],
+    queryFn: async () => {
+      const { data } = await supabase.from("organizations").select("id, name").order("name");
       return data || [];
     },
   });
@@ -489,13 +513,14 @@ export default function AdminAcademyPathDetail() {
         certificate_enabled: infoForm.certificate_enabled,
         persona_id: infoForm.persona_id || null,
         function_id: infoForm.function_id || null,
-      }).eq("id", id!);
+        organization_id: infoForm.organization_id || null,
+        tags: infoForm.tags,
+      } as any).eq("id", id!);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-academy-path", id] });
       toast.success("Parcours mis à jour");
-      setEditingInfo(false);
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -518,19 +543,23 @@ export default function AdminAcademyPathDetail() {
     setModuleOpen(true);
   }
 
-  function startEditInfo() {
-    if (!path) return;
-    setInfoForm({
-      name: path.name,
-      description: path.description || "",
-      difficulty: path.difficulty || "intermediate",
-      estimated_hours: path.estimated_hours || 0,
-      status: path.status,
-      certificate_enabled: path.certificate_enabled,
-      persona_id: (path as any).academy_personae?.id || "",
-      function_id: (path as any).academy_functions?.id || "",
-    });
-    setEditingInfo(true);
+  // Initialize infoForm when path loads
+  const initInfoForm = (p: any) => ({
+    name: p.name,
+    description: p.description || "",
+    difficulty: p.difficulty || "intermediate",
+    estimated_hours: p.estimated_hours || 0,
+    status: p.status,
+    certificate_enabled: p.certificate_enabled,
+    persona_id: p.academy_personae?.id || "",
+    function_id: p.academy_functions?.id || "",
+    organization_id: p.organizations?.id || "",
+    tags: Array.isArray(p.tags) ? p.tags as string[] : [],
+  });
+
+  // Sync infoForm when path changes
+  if (path && !infoForm) {
+    setInfoForm(initInfoForm(path));
   }
 
   // ─── Loading / Not found ────────────────────────────────────
@@ -1068,235 +1097,422 @@ export default function AdminAcademyPathDetail() {
               )}
             </TabsContent>
 
-            {/* ═══ TAB: INFORMATIONS ═══ */}
-            <TabsContent value="info" className="space-y-4">
-              {!editingInfo ? (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Détails du parcours</h2>
-                    <Button size="sm" variant="outline" onClick={startEditInfo}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" /> Modifier
-                    </Button>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Card><CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground mb-1">Nom</p>
-                      <p className="text-sm font-medium">{path.name}</p>
-                    </CardContent></Card>
-                    <Card><CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground mb-1">Difficulté</p>
-                      <p className={`text-sm font-medium ${diff.color}`}>{diff.label}</p>
-                    </CardContent></Card>
-                    <Card className="sm:col-span-2"><CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground mb-1">Description</p>
-                      <p className="text-sm">{path.description || "—"}</p>
-                    </CardContent></Card>
-                    <Card><CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground mb-1">Fonction cible</p>
-                      <p className="text-sm font-medium">{funcData?.name || "—"}</p>
-                    </CardContent></Card>
-                    <Card><CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground mb-1">Persona cible</p>
-                      <p className="text-sm font-medium">{personaData?.name || "—"}</p>
-                    </CardContent></Card>
-                    <Card><CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground mb-1">Durée estimée</p>
-                      <p className="text-sm font-medium">{path.estimated_hours || 0}h</p>
-                    </CardContent></Card>
-                    <Card><CardContent className="p-4">
-                      <p className="text-xs text-muted-foreground mb-1">Certificat</p>
-                      <p className="text-sm font-medium">{path.certificate_enabled ? "Activé" : "Désactivé"}</p>
-                    </CardContent></Card>
-                  </div>
-                  {/* Version History */}
-                  <Card><CardContent className="p-4">
-                    <VersionHistory assetType="path" assetId={id!} />
-                  </CardContent></Card>
-                </div>
-              ) : infoForm && (
-                <div className="space-y-4 max-w-2xl">
-                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Modifier le parcours</h2>
-                  <div className="space-y-1.5">
-                    <Label>Nom</Label>
-                    <Input value={infoForm.name} onChange={e => setInfoForm({ ...infoForm, name: e.target.value })} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Description</Label>
-                    <Textarea value={infoForm.description} onChange={e => setInfoForm({ ...infoForm, description: e.target.value })} rows={4} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label>Difficulté</Label>
-                      <Select value={infoForm.difficulty} onValueChange={v => setInfoForm({ ...infoForm, difficulty: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="beginner">Débutant</SelectItem>
-                          <SelectItem value="intermediate">Intermédiaire</SelectItem>
-                          <SelectItem value="advanced">Avancé</SelectItem>
-                        </SelectContent>
-                      </Select>
+            {/* ═══ TAB: INFORMATIONS — Inline-edit sections ═══ */}
+            <TabsContent value="info" className="space-y-6">
+              {infoForm && (() => {
+                const set = (key: string, value: any) => setInfoForm((f: any) => ({ ...f, [key]: value }));
+                const addTag = () => {
+                  const t = tagInput.trim();
+                  if (t && !infoForm.tags.includes(t)) {
+                    set("tags", [...infoForm.tags, t]);
+                    setTagInput("");
+                  }
+                };
+                const removeTag = (tag: string) => set("tags", infoForm.tags.filter((t: string) => t !== tag));
+
+                return (
+                  <>
+                    {/* Section A — Identité */}
+                    <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                      <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                        <Settings className="h-4 w-4 text-primary" />
+                        <div>
+                          <h3 className="font-semibold text-sm text-foreground tracking-tight">Identité</h3>
+                          <p className="text-[11px] text-muted-foreground/60">Informations principales du parcours</p>
+                        </div>
+                      </div>
+                      <div className="p-5 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Nom</Label>
+                            <Input value={infoForm.name} onChange={e => set("name", e.target.value)} className="h-9" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Difficulté</Label>
+                            <Select value={infoForm.difficulty} onValueChange={v => set("difficulty", v)}>
+                              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="beginner">Débutant</SelectItem>
+                                <SelectItem value="intermediate">Intermédiaire</SelectItem>
+                                <SelectItem value="advanced">Avancé</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Statut</Label>
+                            <Select value={infoForm.status} onValueChange={v => set("status", v)}>
+                              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="draft">Brouillon</SelectItem>
+                                <SelectItem value="published">Publié</SelectItem>
+                                <SelectItem value="archived">Archivé</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Durée estimée (heures)</Label>
+                            <Input type="number" min={0} value={infoForm.estimated_hours} onChange={e => set("estimated_hours", Number(e.target.value))} className="h-9" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Mode de génération</Label>
+                            <div className="h-9 flex items-center">
+                              <Badge variant="outline" className="text-xs">{path.generation_mode || "manual"}</Badge>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Tags</Label>
+                          <div className="flex gap-2">
+                            <Input value={tagInput} onChange={e => setTagInput(e.target.value)} placeholder="Ajouter un tag..." onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addTag())} className="max-w-xs h-9" />
+                            <Button variant="outline" size="sm" onClick={addTag} type="button" className="h-9 px-3">+</Button>
+                          </div>
+                          {infoForm.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {infoForm.tags.map((tag: string) => (
+                                <Badge key={tag} variant="secondary" className="gap-1 text-xs">
+                                  {tag}
+                                  <button onClick={() => removeTag(tag)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Durée estimée (heures)</Label>
-                      <Input type="number" min={0} value={infoForm.estimated_hours} onChange={e => setInfoForm({ ...infoForm, estimated_hours: Number(e.target.value) })} />
+
+                    {/* Section B — Ciblage */}
+                    <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                      <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                        <Target className="h-4 w-4 text-primary" />
+                        <div>
+                          <h3 className="font-semibold text-sm text-foreground tracking-tight">Ciblage</h3>
+                          <p className="text-[11px] text-muted-foreground/60">Fonction, persona et organisation</p>
+                        </div>
+                      </div>
+                      <div className="p-5">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Fonction cible</Label>
+                            <Select value={infoForm.function_id || "none"} onValueChange={v => set("function_id", v === "none" ? "" : v)}>
+                              <SelectTrigger className="h-9"><SelectValue placeholder="Aucune" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Aucune</SelectItem>
+                                {functions.map((f: any) => (
+                                  <SelectItem key={f.id} value={f.id}>{f.name}{f.department ? ` (${f.department})` : ""}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {infoForm.function_id && (
+                              <button onClick={() => navigate(`/admin/academy/functions/${infoForm.function_id}`)} className="text-[10px] text-primary hover:underline flex items-center gap-1 mt-1">
+                                <Link2 className="h-3 w-3" /> Voir la fonction
+                              </button>
+                            )}
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Persona cible</Label>
+                            <Select value={infoForm.persona_id || "none"} onValueChange={v => set("persona_id", v === "none" ? "" : v)}>
+                              <SelectTrigger className="h-9"><SelectValue placeholder="Aucun" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Aucun</SelectItem>
+                                {personae.map((p: any) => (
+                                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Organisation</Label>
+                            <Select value={infoForm.organization_id || "none"} onValueChange={v => set("organization_id", v === "none" ? "" : v)}>
+                              <SelectTrigger className="h-9"><SelectValue placeholder="Aucune" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Aucune (global)</SelectItem>
+                                {organizations.map((o: any) => (
+                                  <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label>Fonction cible</Label>
-                      <Select value={infoForm.function_id || "none"} onValueChange={v => setInfoForm({ ...infoForm, function_id: v === "none" ? "" : v })}>
-                        <SelectTrigger><SelectValue placeholder="Aucune" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Aucune</SelectItem>
-                          {functions.map((f: any) => (
-                            <SelectItem key={f.id} value={f.id}>{f.name}{f.department ? ` (${f.department})` : ""}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+
+                    {/* Section C — Description */}
+                    <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                      <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                        <FileText className="h-4 w-4 text-primary" />
+                        <div>
+                          <h3 className="font-semibold text-sm text-foreground tracking-tight">Description</h3>
+                          <p className="text-[11px] text-muted-foreground/60">Objectifs et contenu du parcours</p>
+                        </div>
+                      </div>
+                      <div className="p-5">
+                        <Textarea value={infoForm.description} onChange={e => set("description", e.target.value)} rows={4} className="resize-none" placeholder="Description détaillée du parcours..." />
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label>Persona cible</Label>
-                      <Select value={infoForm.persona_id || "none"} onValueChange={v => setInfoForm({ ...infoForm, persona_id: v === "none" ? "" : v })}>
-                        <SelectTrigger><SelectValue placeholder="Aucun" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Aucun</SelectItem>
-                          {personae.map((p: any) => (
-                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+
+                    {/* Section D — Options + Save */}
+                    <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                      <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                        <Award className="h-4 w-4 text-primary" />
+                        <div>
+                          <h3 className="font-semibold text-sm text-foreground tracking-tight">Options</h3>
+                          <p className="text-[11px] text-muted-foreground/60">Certification et paramètres</p>
+                        </div>
+                      </div>
+                      <div className="p-5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-sm font-medium">Certificat activé</Label>
+                            <p className="text-[11px] text-muted-foreground">Délivre un certificat à la complétion du parcours</p>
+                          </div>
+                          <Switch checked={infoForm.certificate_enabled} onCheckedChange={v => set("certificate_enabled", v)} />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Statut</Label>
-                    <Select value={infoForm.status} onValueChange={v => setInfoForm({ ...infoForm, status: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Brouillon</SelectItem>
-                        <SelectItem value="published">Publié</SelectItem>
-                        <SelectItem value="archived">Archivé</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label>Certificat activé</Label>
-                    <Switch checked={infoForm.certificate_enabled} onCheckedChange={v => setInfoForm({ ...infoForm, certificate_enabled: v })} />
-                  </div>
-                  <div className="flex justify-end gap-2 pt-2 sticky bottom-0 bg-background py-3 border-t">
-                    <Button variant="outline" onClick={() => setEditingInfo(false)}>Annuler</Button>
-                    <Button onClick={() => updatePathInfo.mutate()} disabled={updatePathInfo.isPending}>
-                      <Save className="h-4 w-4 mr-1" /> Enregistrer
-                    </Button>
-                  </div>
-                </div>
-              )}
+
+                    {/* Sticky Save */}
+                    <div className="sticky bottom-0 z-10 -mx-1 px-1 py-3 bg-background/80 backdrop-blur-sm border-t border-border/20">
+                      <div className="flex justify-end">
+                        <Button onClick={() => updatePathInfo.mutate()} disabled={updatePathInfo.isPending} size="sm" className="gap-2 shadow-sm">
+                          {updatePathInfo.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                          Enregistrer
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Section E — Métadonnées */}
+                    <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                      <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                        <Database className="h-4 w-4 text-primary" />
+                        <div>
+                          <h3 className="font-semibold text-sm text-foreground tracking-tight">Métadonnées</h3>
+                          <p className="text-[11px] text-muted-foreground/60">Informations système</p>
+                        </div>
+                      </div>
+                      <div className="p-5">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">ID</span>
+                            <p className="font-mono text-xs text-foreground mt-1">{path.id}</p>
+                          </div>
+                          <div>
+                            <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">Créé le</span>
+                            <p className="text-xs text-foreground mt-1">{format(new Date(path.created_at), "dd MMM yyyy HH:mm", { locale: fr })}</p>
+                          </div>
+                          <div>
+                            <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">Mis à jour</span>
+                            <p className="text-xs text-foreground mt-1">{format(new Date(path.updated_at), "dd MMM yyyy HH:mm", { locale: fr })}</p>
+                          </div>
+                          <div>
+                            <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider">Créé par</span>
+                            <p className="font-mono text-xs text-foreground mt-1">{path.created_by?.slice(0, 8)}…</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section F — Historique */}
+                    <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                      <div className="p-5">
+                        <VersionHistory assetType="path" assetId={id!} />
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </TabsContent>
 
-            {/* ═══ TAB: INSCRIPTIONS ═══ */}
+            {/* ═══ TAB: INSCRIPTIONS — Enriched ═══ */}
             <TabsContent value="enrollments" className="space-y-4">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Inscriptions ({enrollments.length})
-              </h2>
-              {enrollments.length === 0 ? (
-                <Card className="border-dashed">
-                  <CardContent className="p-8 text-center text-muted-foreground text-sm">
-                    Aucune inscription pour ce parcours.
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b bg-muted/50">
-                            <th className="text-left p-3 text-xs font-medium text-muted-foreground">Utilisateur</th>
-                            <th className="text-left p-3 text-xs font-medium text-muted-foreground">Date</th>
-                            <th className="text-left p-3 text-xs font-medium text-muted-foreground">Statut</th>
-                            <th className="text-left p-3 text-xs font-medium text-muted-foreground">Complété le</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {enrollments.map((e: any) => (
-                            <tr key={e.id} className="border-b last:border-0 hover:bg-muted/30">
-                              <td className="p-3 text-xs font-mono">{e.user_id.slice(0, 8)}...</td>
-                              <td className="p-3 text-xs">{new Date(e.enrolled_at).toLocaleDateString("fr-FR")}</td>
-                              <td className="p-3">
-                                <Badge variant={e.status === "completed" ? "default" : "secondary"} className="text-[10px]">{e.status}</Badge>
-                              </td>
-                              <td className="p-3 text-xs">{e.completed_at ? new Date(e.completed_at).toLocaleDateString("fr-FR") : "—"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            {/* ═══ TAB: STATISTIQUES ═══ */}
-            <TabsContent value="stats" className="space-y-4">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Statistiques</h2>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <Card>
-                  <CardContent className="p-5 text-center">
-                    <p className="text-3xl font-bold text-primary">
-                      {enrollmentCount > 0 ? Math.round((enrollments.filter((e: any) => e.status === "completed").length / enrollmentCount) * 100) : 0}%
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Taux de complétion</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-5 text-center">
-                    <p className="text-3xl font-bold text-primary">{avgScore}%</p>
-                    <p className="text-xs text-muted-foreground mt-1">Score moyen</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-5 text-center">
-                    <p className="text-3xl font-bold text-primary">
-                      {completedProgress.length > 0
-                        ? Math.round(completedProgress.reduce((s: number, p: any) => s + (p.time_spent_seconds || 0), 0) / completedProgress.length / 60)
-                        : 0} min
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Temps moyen par module</p>
-                  </CardContent>
-                </Card>
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  Inscriptions
+                </h2>
+                <Badge variant="outline" className="text-xs">{enrollments.length} inscrit{enrollments.length !== 1 ? "s" : ""}</Badge>
               </div>
-
-              {/* Per-module breakdown */}
-              {pathModules.length > 0 && (
-                <Card>
-                  <CardContent className="p-0">
+              {enrollments.length === 0 ? (
+                <div className="rounded-xl border-2 border-dashed border-border/50 p-12 text-center">
+                  <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
+                  <p className="text-sm font-medium text-muted-foreground">Aucune inscription</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Les inscriptions apparaîtront ici lorsque des utilisateurs rejoindront ce parcours.</p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b bg-muted/50">
-                          <th className="text-left p-3 text-xs font-medium text-muted-foreground">Module</th>
-                          <th className="text-center p-3 text-xs font-medium text-muted-foreground">Complétés</th>
-                          <th className="text-center p-3 text-xs font-medium text-muted-foreground">Score moy.</th>
+                        <tr className="border-b bg-muted/30">
+                          <th className="text-left p-3 text-xs font-medium text-muted-foreground">Utilisateur</th>
+                          <th className="text-left p-3 text-xs font-medium text-muted-foreground">Inscrit le</th>
+                          <th className="text-left p-3 text-xs font-medium text-muted-foreground">Statut</th>
+                          <th className="text-left p-3 text-xs font-medium text-muted-foreground">Progression</th>
+                          <th className="text-left p-3 text-xs font-medium text-muted-foreground">Complété le</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {pathModules.map((pm: any) => {
-                          const mod = pm.academy_modules;
-                          if (!mod) return null;
-                          const mp = getModuleProgress(mod.id);
-                          const mc = mp.filter((p: any) => p.status === "completed");
-                          const ms = mc.length > 0 ? Math.round(mc.reduce((s: number, p: any) => s + (p.score || 0), 0) / mc.length) : 0;
+                        {enrollments.map((e: any) => {
+                          const profile = e.profile;
+                          const userProgress = progress.filter((p: any) => p.enrollment_id === e.id);
+                          const completedModules = userProgress.filter((p: any) => p.status === "completed").length;
+                          const totalModules = moduleIds.length;
+                          const progressPct = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
+                          const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
+                            active: { label: "En cours", variant: "outline" },
+                            completed: { label: "Complété", variant: "default" },
+                          };
+                          const sc = statusConfig[e.status] || { label: e.status, variant: "secondary" as const };
                           return (
-                            <tr key={pm.id} className="border-b last:border-0">
-                              <td className="p-3 text-xs font-medium">{mod.title}</td>
-                              <td className="p-3 text-xs text-center">{mc.length}</td>
-                              <td className="p-3 text-xs text-center">{mc.length > 0 ? `${ms}%` : "—"}</td>
+                            <tr key={e.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                              <td className="p-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0">
+                                    {(profile?.display_name || profile?.email || "?")[0].toUpperCase()}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-medium truncate">{profile?.display_name || profile?.email || e.user_id.slice(0, 8) + "…"}</p>
+                                    {profile?.email && profile?.display_name && (
+                                      <p className="text-[10px] text-muted-foreground truncate">{profile.email}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="p-3 text-xs text-muted-foreground">{format(new Date(e.enrolled_at), "dd MMM yyyy", { locale: fr })}</td>
+                              <td className="p-3">
+                                <Badge variant={sc.variant} className="text-[10px]">{sc.label}</Badge>
+                              </td>
+                              <td className="p-3">
+                                <div className="flex items-center gap-2 min-w-[120px]">
+                                  <Progress value={progressPct} className="h-1.5 flex-1" />
+                                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">{completedModules}/{totalModules}</span>
+                                </div>
+                              </td>
+                              <td className="p-3 text-xs text-muted-foreground">{e.completed_at ? format(new Date(e.completed_at), "dd MMM yyyy", { locale: fr }) : "—"}</td>
                             </tr>
                           );
                         })}
                       </tbody>
                     </table>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
+            </TabsContent>
+
+            {/* ═══ TAB: STATISTIQUES — Lean KPIs + breakdown ═══ */}
+            <TabsContent value="stats" className="space-y-6">
+              {(() => {
+                const completionRate = enrollmentCount > 0 ? Math.round((enrollments.filter((e: any) => e.status === "completed").length / enrollmentCount) * 100) : 0;
+                const inProgressCount = enrollments.filter((e: any) => e.status === "active").length;
+                const completedEnrollments = enrollments.filter((e: any) => e.status === "completed").length;
+                const publishedModules = pathModules.filter((pm: any) => pm.academy_modules?.status === "published").length;
+                const avgTimeMin = completedProgress.length > 0
+                  ? Math.round(completedProgress.reduce((s: number, p: any) => s + (p.time_spent_seconds || 0), 0) / completedProgress.length / 60)
+                  : 0;
+
+                return (
+                  <>
+                    {/* KPI row */}
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                      {[
+                        { icon: Users, label: "Inscrits", value: enrollmentCount, color: "text-primary" },
+                        { icon: TrendingUp, label: "En cours", value: inProgressCount, color: "text-amber-600" },
+                        { icon: CheckCircle2, label: "Complétés", value: completedEnrollments, color: "text-emerald-600" },
+                        { icon: Percent, label: "Complétion", value: `${completionRate}%`, color: "text-primary" },
+                        { icon: Timer, label: "Temps moy.", value: `${avgTimeMin} min`, color: "text-muted-foreground" },
+                      ].map(kpi => (
+                        <div key={kpi.label} className="rounded-xl border border-border/40 bg-card p-4 flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                            <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+                          </div>
+                          <div>
+                            <p className="text-lg font-bold leading-none">{kpi.value}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{kpi.label}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Mini funnel */}
+                    {enrollmentCount > 0 && (
+                      <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                        <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30">
+                          <h3 className="font-semibold text-sm text-foreground tracking-tight">Funnel d'engagement</h3>
+                        </div>
+                        <div className="p-5 space-y-3">
+                          {[
+                            { label: "Inscrits", count: enrollmentCount, pct: 100 },
+                            { label: "En cours", count: inProgressCount, pct: Math.round((inProgressCount / enrollmentCount) * 100) },
+                            { label: "Complétés", count: completedEnrollments, pct: Math.round((completedEnrollments / enrollmentCount) * 100) },
+                          ].map((step, i) => (
+                            <div key={step.label} className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium">{step.label}</span>
+                                <span className="text-muted-foreground">{step.count} ({step.pct}%)</span>
+                              </div>
+                              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                                <div className="h-full rounded-full bg-primary/80 transition-all" style={{ width: `${step.pct}%`, opacity: 1 - i * 0.2 }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Module breakdown */}
+                    {pathModules.length > 0 && (
+                      <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+                        <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center justify-between">
+                          <h3 className="font-semibold text-sm text-foreground tracking-tight">Détail par module</h3>
+                          <Badge variant="outline" className="text-[10px]">{publishedModules}/{pathModules.length} publiés</Badge>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b bg-muted/20">
+                                <th className="text-left p-3 text-xs font-medium text-muted-foreground">Module</th>
+                                <th className="text-center p-3 text-xs font-medium text-muted-foreground">En cours</th>
+                                <th className="text-center p-3 text-xs font-medium text-muted-foreground">Complétés</th>
+                                <th className="text-center p-3 text-xs font-medium text-muted-foreground">Score moy.</th>
+                                <th className="text-center p-3 text-xs font-medium text-muted-foreground">Temps moy.</th>
+                                <th className="p-3 text-xs font-medium text-muted-foreground w-32">Progression</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {pathModules.map((pm: any) => {
+                                const mod = pm.academy_modules;
+                                if (!mod) return null;
+                                const mp = getModuleProgress(mod.id);
+                                const inProg = mp.filter((p: any) => p.status === "in_progress").length;
+                                const mc = mp.filter((p: any) => p.status === "completed");
+                                const ms = mc.length > 0 ? Math.round(mc.reduce((s: number, p: any) => s + (p.score || 0), 0) / mc.length) : 0;
+                                const avgT = mc.length > 0 ? Math.round(mc.reduce((s: number, p: any) => s + (p.time_spent_seconds || 0), 0) / mc.length / 60) : 0;
+                                const modPct = enrollmentCount > 0 ? Math.round((mc.length / enrollmentCount) * 100) : 0;
+                                return (
+                                  <tr key={pm.id} className="border-b last:border-0 hover:bg-muted/10 transition-colors">
+                                    <td className="p-3">
+                                      <p className="text-xs font-medium">{mod.title}</p>
+                                      <p className="text-[10px] text-muted-foreground">{moduleTypeConfig[mod.module_type]?.label || mod.module_type}</p>
+                                    </td>
+                                    <td className="p-3 text-xs text-center">{inProg}</td>
+                                    <td className="p-3 text-xs text-center font-medium">{mc.length}</td>
+                                    <td className="p-3 text-xs text-center">{mc.length > 0 ? `${ms}%` : "—"}</td>
+                                    <td className="p-3 text-xs text-center">{mc.length > 0 ? `${avgT} min` : "—"}</td>
+                                    <td className="p-3">
+                                      <div className="flex items-center gap-2">
+                                        <Progress value={modPct} className="h-1.5 flex-1" />
+                                        <span className="text-[10px] text-muted-foreground w-8 text-right">{modPct}%</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </TabsContent>
           </Tabs>
         </div>
