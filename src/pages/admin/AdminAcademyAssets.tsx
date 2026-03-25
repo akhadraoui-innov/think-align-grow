@@ -208,7 +208,7 @@ function useAssetVersions(assetType: string, assetId: string | null) {
         .order("version_number", { ascending: false })
         .limit(20);
       if (error) throw error;
-      return (data ?? []) as Array<{
+      return (data ?? []) as unknown as Array<{
         id: string;
         version_number: number;
         change_summary: string | null;
