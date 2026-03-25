@@ -38,7 +38,7 @@ export interface CatalogueAsset {
   last_modified_at: string;
   last_modified_by: string | null;
   created_at: string;
-  snapshot: Record<string, unknown>;
+  snapshot: Json;
 }
 
 export function getDisplayOrg(asset: CatalogueAsset, orgMap: Map<string, { name: string }>): string {
