@@ -1,82 +1,42 @@
 
 
-# Corrections : Nom du createur + Dates
+# Fix: Vue d'ensemble vide + Matrice de couverture vide
 
 ## Diagnostic
 
-**Pourquoi "Utilisateur" au lieu de "Ammar Khadraoui" :**
+**Vue d'ensemble vide** : Les KPIs, le graphique et le fil d'activite dependent de `academy_asset_versions` et `activity_logs`, qui sont tous deux **vides** (0 lignes). Ces tables ne se remplissent qu'au UPDATE d'un asset (pas a la creation initiale). Donc avec des assets uniquement crees et jamais modifies, tout est a zero.
 
-La `profileMap` est indexee par `profiles.user_id` (`315af24d`). Or certains `created_by` dans `academy_paths` stockent `fe415f6a` qui est le `profiles.id` (et non `user_id`). Donc `profileMap.get("fe415f6a")` retourne `undefined` et le fallback "Utilisateur" s'affiche.
-
-De plus, pour les quiz/exercise/practice, `last_modified_by` est NULL car le backfill via `snapshot->>'created_by'` a echoue (ces tables n'ont pas ce champ).
-
-**Pourquoi les dates sont fausses :**
-
-`last_modified_at` vaut `2026-03-25 13:44:32` pour TOUS les assets car c'est le `now()` du moment ou la migration de backfill a ete executee. La vraie date de derniere modification devrait etre `updated_at` ou `created_at` de la table source.
+**Matrice de couverture vide** : Le code filtre les assets avec `if (!orgId) return`, or **tous les assets** ont `organization_id = null`. Donc la matrice est systematiquement vide.
 
 ## Plan
 
-### 1. Migration de donnees (INSERT tool)
+### 1. Refonder les KPIs sur `observatory_assets`
 
-**Backfill quiz/exercise/practice** via la hierarchie module → path :
+Les KPIs doivent utiliser `observatory_assets` (qui contient 56 assets) comme source principale, pas `academy_asset_versions` (vide) :
 
-```sql
-UPDATE observatory_assets oa
-SET last_modified_by = p.created_by,
-    contributor_ids = ARRAY[p.created_by],
-    contributor_count = 1
-FROM academy_quizzes q
-JOIN academy_modules m ON q.module_id = m.id
-JOIN academy_path_modules pm ON m.id = pm.module_id
-JOIN academy_paths p ON pm.path_id = p.id
-WHERE oa.asset_type = 'quiz' AND oa.asset_id = q.id AND oa.last_modified_by IS NULL;
--- idem pour exercises et practices
-```
+- **Assets total** : `catalogue.length` (deja OK)
+- **Versions totales** : somme des `version_count` depuis catalogue (deja OK)
+- **Contributeurs actifs** : extraire les `contributor_ids` uniques depuis catalogue au lieu de chercher dans les versions
+- **Organisations actives** : compter les org distinctes, en incluant les assets sans org sous "Growthinnov"
+- **Modif. aujourd'hui** : compter les assets du catalogue avec `last_modified_at` aujourd'hui (au lieu de chercher dans les versions vides)
 
-**Corriger les dates** : remettre `last_modified_at` a la valeur reelle depuis le snapshot :
+### 2. Generer le graphique depuis `observatory_assets`
 
-```sql
-UPDATE observatory_assets
-SET last_modified_at = COALESCE(
-  (snapshot->>'updated_at')::timestamptz,
-  (snapshot->>'created_at')::timestamptz,
-  created_at
-);
-```
+Le graphique 28 jours doit utiliser `created_at` des assets du catalogue (groupes par jour et par type) au lieu des versions vides. Cela donnera une courbe d'activite de creation.
 
-### 2. Double index dans profileMap (UI)
+### 3. Generer le fil d'activite depuis `observatory_assets`
 
-Le `profileMap` doit etre indexe aussi par `profiles.id` en plus de `profiles.user_id` pour gerer les deux formats de `created_by`.
+Creer des entrees de timeline synthetiques a partir du catalogue : chaque asset genere une entree "a cree [type]" avec son `last_modified_by` et `created_at`. Fusionner avec les versions/logs existants (pour quand ils auront des donnees).
 
-**Fichier** : `src/hooks/useObservability.ts`
+### 4. Corriger la matrice de couverture
 
-Modifier la query profiles pour inclure `id`, et construire la map avec deux cles :
-```typescript
-profiles.forEach(p => {
-  map.set(p.user_id, p);
-  map.set(p.id, p);  // aussi par profile.id
-});
-```
+Remplacer `if (!orgId) return` par un regroupement sous un ID synthetique "growthinnov" pour les assets sans `organization_id`. Afficher "Growthinnov" comme nom d'organisation dans la matrice.
 
-### 3. Supprimer les fallbacks ambigus
-
-**Fichier** : `src/components/admin/catalogue/CatalogueTableView.tsx`
-
-- Remplacer `"Utilisateur"` par le `display_name` ou `email` resolve depuis la double-cle
-- Remplacer les initiales `"?"` par `"--"` en dernier recours
-
-### 4. Corriger le trigger pour les futures insertions
-
-**Fichier** : migration SQL
-
-Mettre a jour `sync_observatory_asset()` pour utiliser `COALESCE(NEW.updated_at, NEW.created_at)` comme `last_modified_at` au lieu de `now()` lors de l'INSERT initial.
-
-## Fichiers concernes
+### Fichiers concernes
 
 | Fichier | Action |
 |---------|--------|
-| SQL (insert tool) | Backfill creator via hierarchie + corriger dates |
-| SQL (migration) | Mettre a jour `sync_observatory_asset()` pour dates correctes |
-| `src/hooks/useObservability.ts` | Double-cle profileMap (user_id + id) |
-| `src/components/admin/catalogue/CatalogueTableView.tsx` | Supprimer fallbacks "?" et "Utilisateur" |
+| `src/hooks/useObservability.ts` | Refondre KPIs, chart, timeline et matrice sur `observatory_assets` |
+| `src/pages/admin/AdminObservability.tsx` | Aucun changement (consomme deja les memos du hook) |
+| `src/pages/admin/AdminObservabilityMatrix.tsx` | Aucun changement (consomme deja `coverageMatrix`) |
 
