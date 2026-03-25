@@ -154,21 +154,22 @@ export function CatalogueTableView({ assets, orgMap, profileMap }: Props) {
                                 || expandedAsset?.contributor_ids?.[0] 
                                 || null;
                               const profile = changedById ? profileMap.get(changedById) : null;
-                              const initials = (profile?.display_name || profile?.email || "?")
-                                .split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
-                              return (
-                                <div key={v.id} className="flex items-start gap-3 text-xs">
-                                  <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 font-mono">
-                                    v{v.version_number}
-                                  </Badge>
-                                  <Avatar className="h-5 w-5 shrink-0">
-                                    <AvatarImage src={profile?.avatar_url || undefined} />
-                                    <AvatarFallback className="text-[8px] bg-muted">{initials}</AvatarFallback>
-                                  </Avatar>
-                                  <div className="min-w-0 flex-1">
-                                    <span className="font-medium text-foreground">
-                                      {profile?.display_name || profile?.email || "Utilisateur"}
-                                    </span>
+                               const displayName = profile?.display_name || profile?.email || (changedById ? changedById.slice(0, 8) : "--");
+                               const initials = (profile?.display_name || profile?.email || "--")
+                                 .split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+                               return (
+                                 <div key={v.id} className="flex items-start gap-3 text-xs">
+                                   <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 font-mono">
+                                     v{v.version_number}
+                                   </Badge>
+                                   <Avatar className="h-5 w-5 shrink-0">
+                                     <AvatarImage src={profile?.avatar_url || undefined} />
+                                     <AvatarFallback className="text-[8px] bg-muted">{initials}</AvatarFallback>
+                                   </Avatar>
+                                   <div className="min-w-0 flex-1">
+                                     <span className="font-medium text-foreground">
+                                       {displayName}
+                                     </span>
                                     {v.change_summary && (
                                       <span className="text-muted-foreground ml-1.5">— {v.change_summary}</span>
                                     )}

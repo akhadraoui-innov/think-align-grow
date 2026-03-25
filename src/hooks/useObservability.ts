@@ -128,7 +128,10 @@ export function useObservability() {
 
   const profileMap = useMemo(() => {
     const map = new Map<string, { display_name: string | null; avatar_url: string | null; email: string | null }>();
-    (profilesQuery.data ?? []).forEach((p) => map.set(p.user_id, p));
+    (profilesQuery.data ?? []).forEach((p) => {
+      map.set(p.user_id, p);
+      map.set(p.id, p); // also index by profile.id for created_by references
+    });
     return map;
   }, [profilesQuery.data]);
 
