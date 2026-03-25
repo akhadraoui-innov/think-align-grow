@@ -160,7 +160,7 @@ export function CatalogueTableView({ assets, orgMap, profileMap }: Props) {
                                   </Avatar>
                                   <div className="min-w-0 flex-1">
                                     <span className="font-medium text-foreground">
-                                      {profile?.display_name || profile?.email || "Système"}
+                                      {profile?.display_name || profile?.email || "Utilisateur"}
                                     </span>
                                     {v.change_summary && (
                                       <span className="text-muted-foreground ml-1.5">— {v.change_summary}</span>
