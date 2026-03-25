@@ -20,6 +20,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { VersionHistory } from "@/components/admin/VersionHistory";
+import remarkGfm from "remark-gfm";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
