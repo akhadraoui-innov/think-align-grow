@@ -186,6 +186,34 @@ export default function AdminAcademyCampaigns() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const generateAI = useMutation({
+    mutationFn: async () => {
+      const body: any = {
+        action: "generate-campaign",
+        name: aiForm.name,
+        description: aiMode === "chat" ? aiChat : aiForm.description,
+        organization_id: aiForm.organization_id || null,
+        path_id: aiForm.path_id || null,
+        duration_weeks: aiForm.duration_weeks,
+        objectives: aiForm.objectives,
+        mode: aiMode,
+      };
+      const { data, error } = await supabase.functions.invoke("academy-generate", { body });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["admin-academy-campaigns"] });
+      if (data.deployment_strategy) {
+        setAiStrategy(data.deployment_strategy);
+      }
+      toast.success("Campagne générée avec succès");
+      setAiOpen(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   function openCreate() { setEditId(null); setForm(emptyForm); setOpen(true); }
   function openEdit(c: any) {
     setEditId(c.id);
