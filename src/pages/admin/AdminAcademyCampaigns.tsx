@@ -773,7 +773,7 @@ export default function AdminAcademyCampaigns() {
                                   { label: "Complétés", value: cStats.completed, icon: CheckCircle2, pct: null },
                                   { label: "Taux de complétion", value: `${cStats.rate}%`, icon: TrendingUp, pct: cStats.rate },
                                 ].map((kpi) => (
-                                  <div key={kpi.label} className="flex items-center gap-3 rounded-xl bg-card border p-3">
+                                  <div key={kpi.label} className="flex items-center gap-3 rounded-xl bg-background border p-3">
                                     <div className="relative h-10 w-10 shrink-0">
                                       <svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36">
                                         <circle cx="18" cy="18" r="15" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
