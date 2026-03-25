@@ -1,42 +1,72 @@
 
 
-# Fix: Vue d'ensemble vide + Matrice de couverture vide
+# Génération de campagnes par IA — 3 modes
 
-## Diagnostic
+## Objectif
 
-**Vue d'ensemble vide** : Les KPIs, le graphique et le fil d'activite dependent de `academy_asset_versions` et `activity_logs`, qui sont tous deux **vides** (0 lignes). Ces tables ne se remplissent qu'au UPDATE d'un asset (pas a la creation initiale). Donc avec des assets uniquement crees et jamais modifies, tout est a zero.
+Ajouter un dialogue de génération IA à la page Campagnes (`AdminAcademyCampaigns.tsx`) avec les 3 modes existants (Guidé, Corporate, Chat), en enrichissant le contexte envoyé à l'IA avec les données de l'organisation, ses membres, les parcours disponibles, les fonctions et personae.
 
-**Matrice de couverture vide** : Le code filtre les assets avec `if (!orgId) return`, or **tous les assets** ont `organization_id = null`. Donc la matrice est systematiquement vide.
+## Contexte enrichi pour l'IA
+
+La campagne est l'entité la plus riche en contexte car elle croise :
+- **Organisation** : nom, secteur, taille (nb membres), groupe
+- **Parcours disponibles** : nom, difficulté, nb modules, fonction/persona ciblés
+- **Membres de l'org** : nombre, fonctions assignées, progression existante
+- **Fonctions & Personae** : pour recommander le bon parcours et le bon ciblage
+
+L'IA pourra ainsi recommander le parcours optimal, les dates, la stratégie de déploiement et la description.
 
 ## Plan
 
-### 1. Refonder les KPIs sur `observatory_assets`
+### 1. Ajouter `generate-campaign` à l'edge function `academy-generate`
 
-Les KPIs doivent utiliser `observatory_assets` (qui contient 56 assets) comme source principale, pas `academy_asset_versions` (vide) :
+Nouvelle action dans `supabase/functions/academy-generate/index.ts` :
 
-- **Assets total** : `catalogue.length` (deja OK)
-- **Versions totales** : somme des `version_count` depuis catalogue (deja OK)
-- **Contributeurs actifs** : extraire les `contributor_ids` uniques depuis catalogue au lieu de chercher dans les versions
-- **Organisations actives** : compter les org distinctes, en incluant les assets sans org sous "Growthinnov"
-- **Modif. aujourd'hui** : compter les assets du catalogue avec `last_modified_at` aujourd'hui (au lieu de chercher dans les versions vides)
+- Reçoit : `name`, `description`, `organization_id`, `difficulty_preference`, mode (guided/corporate/chat)
+- Fetche le contexte enrichi (org info, membres, parcours publiés avec leur fonction/persona, fonctions de l'org)
+- Prompt système : consultant en déploiement de formation, expert en change management
+- L'IA retourne via tool call : `path_id` recommandé (ou création d'un nouveau parcours), `description`, `starts_at`, `ends_at`, `reminder_config`, `deployment_strategy`
+- Insère la campagne en base, retourne l'ID
 
-### 2. Generer le graphique depuis `observatory_assets`
+### 2. Ajouter le dialogue 3 modes dans `AdminAcademyCampaigns.tsx`
 
-Le graphique 28 jours doit utiliser `created_at` des assets du catalogue (groupes par jour et par type) au lieu des versions vides. Cela donnera une courbe d'activite de creation.
+Reproduire le pattern exact de `AdminAcademyPaths.tsx` :
 
-### 3. Generer le fil d'activite depuis `observatory_assets`
+- State : `aiOpen`, `aiMode`, `aiForm`, `aiChat`
+- `aiForm` : `name`, `description`, `organization_id`, `path_id` (optionnel, l'IA peut recommander), `duration_weeks`
+- Bouton "Générer par IA" dans le header à côté de "Nouvelle campagne"
 
-Creer des entrees de timeline synthetiques a partir du catalogue : chaque asset genere une entree "a cree [type]" avec son `last_modified_by` et `created_at`. Fusionner avec les versions/logs existants (pour quand ils auront des donnees).
+**Mode Guidé** :
+- Nom de la campagne
+- Organisation (select)
+- Parcours cible (select, optionnel — l'IA peut recommander)
+- Durée souhaitée (semaines)
+- Objectifs de déploiement (textarea)
 
-### 4. Corriger la matrice de couverture
+**Mode Corporate** :
+- Nom
+- Organisation (select)
+- Brief complet (textarea large) : contexte business, objectifs RH, contraintes calendaires, population cible
+- L'IA déduit tout le reste
 
-Remplacer `if (!orgId) return` par un regroupement sous un ID synthetique "growthinnov" pour les assets sans `organization_id`. Afficher "Growthinnov" comme nom d'organisation dans la matrice.
+**Mode Chat** :
+- Nom
+- Description libre (textarea)
+- L'IA recommande organisation + parcours + planning
 
-### Fichiers concernes
+### 3. Queries additionnelles pour le contexte
+
+Dans l'edge function, fetcher :
+- `organizations` : nom, secteur, groupe
+- `organization_members` count pour l'org sélectionnée
+- `academy_paths` publiés avec leur fonction/persona
+- `academy_function_users` pour savoir quelles fonctions sont assignées dans l'org
+- `academy_enrollments` existants pour éviter les doublons
+
+## Fichiers concernés
 
 | Fichier | Action |
 |---------|--------|
-| `src/hooks/useObservability.ts` | Refondre KPIs, chart, timeline et matrice sur `observatory_assets` |
-| `src/pages/admin/AdminObservability.tsx` | Aucun changement (consomme deja les memos du hook) |
-| `src/pages/admin/AdminObservabilityMatrix.tsx` | Aucun changement (consomme deja `coverageMatrix`) |
+| `supabase/functions/academy-generate/index.ts` | Ajouter action `generate-campaign` avec contexte enrichi |
+| `src/pages/admin/AdminAcademyCampaigns.tsx` | Ajouter dialogue IA 3 modes + bouton header + queries personae/functions |
 
