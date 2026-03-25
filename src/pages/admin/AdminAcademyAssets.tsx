@@ -521,6 +521,7 @@ function QuizTab({ data, filters, isError, error, stats }: { data: any[]; filter
                       onUpdate={tags => updateTags.mutate({ id: q.id, tags })}
                       isPending={updateTags.isPending}
                     />
+                    <VersionHistory assetType="quiz" assetId={q.id} />
                   </div>
                 </DetailRow>
               </Fragment>
