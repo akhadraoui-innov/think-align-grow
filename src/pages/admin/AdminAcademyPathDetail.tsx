@@ -236,6 +236,14 @@ export default function AdminAcademyPathDetail() {
     },
   });
 
+  const { data: organizations = [] } = useQuery({
+    queryKey: ["admin-orgs-select"],
+    queryFn: async () => {
+      const { data } = await supabase.from("organizations").select("id, name").order("name");
+      return data || [];
+    },
+  });
+
   // ─── Helpers ────────────────────────────────────────────────
   const getModuleContents = (moduleId: string) => contents.filter((c: any) => c.module_id === moduleId);
   const getModuleQuiz = (moduleId: string) => quizzes.find((q: any) => q.module_id === moduleId);
