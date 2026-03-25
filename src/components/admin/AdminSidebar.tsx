@@ -40,16 +40,23 @@ export function AdminSidebar() {
     { path: "/admin/design-innovation", icon: Lightbulb, label: "Design Innovation", show: perms.has("admin.challenges.view") },
   ];
 
+  const observabilitySubItems = [
+    { path: "/admin/observability", icon: LayoutDashboard, label: "Vue d'ensemble", exact: true },
+    { path: "/admin/observability/catalogue", icon: Layers, label: "Catalogue Assets" },
+    { path: "/admin/observability/matrix", icon: Building2, label: "Matrice Couverture" },
+  ];
+
   const systemItems = [
     { path: "/admin/billing", icon: CreditCard, label: "Crédits & Abonnements", show: perms.has("admin.billing.view") },
     { path: "/admin/logs", icon: ScrollText, label: "Logs d'activité", show: perms.has("admin.logs.view") },
     { path: "/admin/settings", icon: Settings, label: "Paramètres", show: perms.hasAny("admin.settings.ai", "admin.settings.roles", "admin.settings.platform") },
-    { path: "/admin/observability", icon: Activity, label: "Observabilité", show: perms.has("admin.logs.view") },
   ];
 
   const visibleMain = mainItems.filter(i => i.show);
   const visibleSystem = systemItems.filter(i => i.show);
   const showAcademy = perms.has("academy.paths.view");
+  const showObservability = perms.has("admin.logs.view");
+  const isObservabilityRoute = location.pathname.startsWith("/admin/observability");
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
@@ -169,6 +176,59 @@ export function AdminSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>{visibleSystem.map(renderItem)}</SidebarMenu>
             </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Observability collapsible group */}
+        {showObservability && (
+          <SidebarGroup>
+            <Collapsible defaultOpen={isObservabilityRoute} open={collapsed ? false : undefined}>
+              <CollapsibleTrigger asChild>
+                <button
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                    isObservabilityRoute
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }`}
+                  onClick={(e) => {
+                    if (collapsed) {
+                      e.preventDefault();
+                      navigate("/admin/observability");
+                    }
+                  }}
+                >
+                  <Activity className="h-4 w-4 shrink-0" />
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1 text-left">Observabilité</span>
+                      <ChevronDown className="h-3 w-3 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                    </>
+                  )}
+                </button>
+              </CollapsibleTrigger>
+              {!collapsed && (
+                <CollapsibleContent className="pl-4 mt-1 space-y-0.5">
+                  {observabilitySubItems.map(sub => {
+                    const active = isActive(sub.path, sub.exact);
+                    const SubIcon = sub.icon;
+                    return (
+                      <button
+                        key={sub.path}
+                        onClick={() => navigate(sub.path)}
+                        className={`flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                          active
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        }`}
+                      >
+                        <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                        <span>{sub.label}</span>
+                      </button>
+                    );
+                  })}
+                </CollapsibleContent>
+              )}
+            </Collapsible>
           </SidebarGroup>
         )}
       </SidebarContent>
