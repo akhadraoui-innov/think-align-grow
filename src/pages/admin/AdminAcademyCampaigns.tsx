@@ -267,17 +267,37 @@ export default function AdminAcademyCampaigns() {
   }, [campaigns, filterStatus, filterOrgId, filterPathId, searchQuery]);
 
   // --- Gantt helpers ---
+  const tlFilteredCampaigns = useMemo(() => {
+    return campaigns.filter((c: any) => {
+      if (!c.starts_at) return false;
+      if (tlStatus !== "all" && c.status !== tlStatus) return false;
+      if (tlOrgId !== "all" && c.organization_id !== tlOrgId) return false;
+      return true;
+    });
+  }, [campaigns, tlStatus, tlOrgId]);
+
   const ganttData = useMemo(() => {
     const now = new Date();
-    const withDates = campaigns.filter((c: any) => c.starts_at);
-    if (withDates.length === 0) return null;
-    const allStarts = withDates.map((c: any) => new Date(c.starts_at));
-    const allEnds = withDates.map((c: any) => c.ends_at ? new Date(c.ends_at) : new Date(new Date(c.starts_at).getTime() + 90 * 86400000));
-    const minDate = new Date(Math.min(...allStarts.map(d => d.getTime())));
-    const maxDate = new Date(Math.max(...allEnds.map(d => d.getTime()), now.getTime() + 30 * 86400000));
+    if (tlFilteredCampaigns.length === 0) return null;
+
+    let minDate: Date, maxDate: Date;
+
+    if (tlZoom === "all") {
+      const allStarts = tlFilteredCampaigns.map((c: any) => new Date(c.starts_at));
+      const allEnds = tlFilteredCampaigns.map((c: any) => c.ends_at ? new Date(c.ends_at) : new Date(new Date(c.starts_at).getTime() + 90 * 86400000));
+      minDate = new Date(Math.min(...allStarts.map(d => d.getTime())));
+      maxDate = new Date(Math.max(...allEnds.map(d => d.getTime()), now.getTime() + 30 * 86400000));
+    } else {
+      const monthsMap = { "3m": 3, "6m": 6, "1y": 12 } as const;
+      const months = monthsMap[tlZoom];
+      minDate = startOfMonth(addMonths(now, -Math.floor(months / 3)));
+      maxDate = addMonths(minDate, months);
+    }
+
     const totalDays = Math.max(differenceInDays(maxDate, minDate), 1);
-    return { minDate, maxDate, totalDays, now };
-  }, [campaigns]);
+    const monthMarkers = eachMonthOfInterval({ start: minDate, end: maxDate });
+    return { minDate, maxDate, totalDays, now, monthMarkers };
+  }, [tlFilteredCampaigns, tlZoom]);
 
   function getCampaignStats(campaignId: string) {
     const ce = enrollments.filter(e => e.campaign_id === campaignId);
