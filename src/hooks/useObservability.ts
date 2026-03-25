@@ -229,6 +229,44 @@ export function useObservability() {
     }));
   }, [versionsQuery.data, orgMap]);
 
+  // ---- Asset Catalogue ----
+  const assetCatalogue = useMemo(() => {
+    const versions = versionsQuery.data ?? [];
+    const grouped = new Map<string, typeof versions>();
+
+    versions.forEach((v) => {
+      const list = grouped.get(v.asset_id) || [];
+      list.push(v);
+      grouped.set(v.asset_id, list);
+    });
+
+    return Array.from(grouped.entries()).map(([assetId, versionList]) => {
+      // Sort versions descending
+      const sorted = [...versionList].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      const latest = sorted[0];
+      const oldest = sorted[sorted.length - 1];
+      const snap = latest.snapshot as Record<string, unknown> | null;
+      const name = (snap?.name || snap?.title || assetId.slice(0, 8)) as string;
+      const orgId = snap?.organization_id as string | undefined;
+      const contributors = new Set(sorted.map((v) => v.changed_by).filter(Boolean));
+
+      return {
+        assetId,
+        assetType: latest.asset_type,
+        name,
+        orgId,
+        versionCount: sorted.length,
+        contributorCount: contributors.size,
+        contributorIds: Array.from(contributors) as string[],
+        lastModified: latest.created_at,
+        createdAt: oldest.created_at,
+        versions: sorted,
+      };
+    }).sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+  }, [versionsQuery.data]);
+
   // ---- Export CSV ----
   const exportCsv = () => {
     const rows = timeline.map((item) => {
