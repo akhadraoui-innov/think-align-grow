@@ -50,9 +50,11 @@ const ACTION_LABELS: Record<string, string> = {
 
 export default function AdminObservability() {
   const {
-    filters, setFilters, kpis, chartData, timeline, coverageMatrix,
+    filters, setFilters, kpis, chartData, timeline, coverageMatrix, assetCatalogue,
     profileMap, orgMap, orgs, isLoading, exportCsv, ASSET_TYPES,
   } = useObservability();
+
+  const [catalogueSearch, setCatalogueSearch] = useState("");
 
   const [matrixFilter, setMatrixFilter] = useState<{ orgId: string; assetType: string } | null>(null);
 
