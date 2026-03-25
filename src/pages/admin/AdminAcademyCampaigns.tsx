@@ -741,7 +741,7 @@ export default function AdminAcademyCampaigns() {
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden border-t"
                           >
-                            <div className="p-5 bg-muted/20 space-y-5">
+                            <div className="p-5 bg-card space-y-5">
                               {/* Section A — Description + Strategy */}
                               <div className="grid gap-4 md:grid-cols-2">
                                 {c.description && (
