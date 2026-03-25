@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Search, Copy, Pencil, Library, HelpCircle, Dumbbell, MessageSquare, ChevronRight, Sparkles, BookOpen, AlertCircle } from "lucide-react";
+import { Search, Copy, Pencil, Library, HelpCircle, Dumbbell, MessageSquare, ChevronRight, Sparkles, BookOpen, AlertCircle, X, Plus, TrendingUp, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,7 @@ type OrgInfo = { id: string; name: string };
 
 type AssetContext = {
   moduleTitle: string;
+  moduleId: string;
   pathName: string | null;
   orgName: string | null;
   orgId: string | null;
@@ -30,28 +31,39 @@ type Filters = {
   pathFilter: string;
   difficultyFilter: string;
   modeFilter: string;
+  tagFilter: string;
 };
 
 type ActiveTab = "quizzes" | "exercises" | "practices";
 
+type AssetStats = Record<string, { attempts: number; completed: number; avgScore: number | null }>;
+
 // ─── Helpers ───
 function extractContext(mod: any): AssetContext {
   const moduleTitle = mod?.title ?? "—";
+  const moduleId = mod?.id ?? "";
   const pm = mod?.academy_path_modules;
   const firstPath = Array.isArray(pm) && pm.length > 0 ? pm[0]?.academy_paths : null;
   return {
     moduleTitle,
+    moduleId,
     pathName: firstPath?.name ?? null,
     orgName: firstPath?.organizations?.name ?? null,
     orgId: firstPath?.organization_id ?? null,
   };
 }
 
+function isNewAsset(createdAt: string): boolean {
+  const created = new Date(createdAt);
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  return created > sevenDaysAgo;
+}
+
 function applyFilters(items: any[], filters: Filters, activeTab: ActiveTab) {
   return items.filter((item: any) => {
     const ctx = extractContext(item.academy_modules);
     const s = filters.search.toLowerCase();
-    // P1: Full-text search in content fields
     const matchSearch = !s || 
       item.title?.toLowerCase().includes(s) || 
       ctx.moduleTitle.toLowerCase().includes(s) ||
@@ -61,10 +73,10 @@ function applyFilters(items: any[], filters: Filters, activeTab: ActiveTab) {
       (Array.isArray(item.academy_quiz_questions) && item.academy_quiz_questions.some((q: any) => q.question?.toLowerCase().includes(s)));
     const matchOrg = filters.orgFilter === "all" || (filters.orgFilter === "public" ? !ctx.orgId : ctx.orgId === filters.orgFilter);
     const matchPath = filters.pathFilter === "all" || ctx.pathName === filters.pathFilter;
-    // Only apply difficulty filter for practices tab
     const matchDifficulty = activeTab !== "practices" || filters.difficultyFilter === "all" || item.difficulty === filters.difficultyFilter;
     const matchMode = filters.modeFilter === "all" || item.generation_mode === filters.modeFilter;
-    return matchSearch && matchOrg && matchPath && matchDifficulty && matchMode;
+    const matchTags = filters.tagFilter === "all" || (Array.isArray(item.tags) && item.tags.includes(filters.tagFilter));
+    return matchSearch && matchOrg && matchPath && matchDifficulty && matchMode && matchTags;
   });
 }
 
@@ -98,7 +110,7 @@ function useModulesForDuplicate() {
   });
 }
 
-const MODULE_SELECT = "*, academy_modules!inner(title, academy_path_modules(academy_paths(name, organization_id, organizations(name))))";
+const MODULE_SELECT = "*, academy_modules!inner(id, title, academy_path_modules(academy_paths(name, organization_id, organizations(name))))";
 
 function useQuizzes() {
   return useQuery({
@@ -142,15 +154,56 @@ function usePractices() {
   });
 }
 
+function useAssetStats(): { data: AssetStats; isLoading: boolean } {
+  const query = useQuery({
+    queryKey: ["admin-asset-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("academy_progress")
+        .select("module_id, status, score");
+      if (error) throw error;
+      const stats: AssetStats = {};
+      (data ?? []).forEach((row: any) => {
+        if (!stats[row.module_id]) {
+          stats[row.module_id] = { attempts: 0, completed: 0, avgScore: null };
+        }
+        const s = stats[row.module_id];
+        s.attempts++;
+        if (row.status === "completed") s.completed++;
+        if (row.score != null) {
+          s.avgScore = s.avgScore == null ? row.score : (s.avgScore * (s.attempts - 1) + row.score) / s.attempts;
+        }
+      });
+      return stats;
+    },
+    staleTime: 60_000,
+  });
+  return { data: query.data ?? {}, isLoading: query.isLoading };
+}
+
+// ─── Tag editing hook ───
+function useUpdateTags(table: "academy_quizzes" | "academy_exercises" | "academy_practices", queryKey: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, tags }: { id: string; tags: string[] }) => {
+      const { error } = await supabase.from(table).update({ tags } as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [queryKey] }),
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
 // ─── Filter bar ───
 function FilterBar({
-  filters, setFilter, orgs, paths, showDifficulty,
+  filters, setFilter, orgs, paths, showDifficulty, allTags,
 }: {
   filters: Filters;
   setFilter: (key: keyof Filters, val: string) => void;
   orgs: OrgInfo[];
   paths: string[];
   showDifficulty: boolean;
+  allTags: string[];
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -193,6 +246,15 @@ function FilterBar({
           <SelectItem value="manual">Manuel</SelectItem>
         </SelectContent>
       </Select>
+      {allTags.length > 0 && (
+        <Select value={filters.tagFilter} onValueChange={v => setFilter("tagFilter", v)}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Tag" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les tags</SelectItem>
+            {allTags.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 }
@@ -213,6 +275,75 @@ function ModeBadge({ mode }: { mode: string }) {
   return mode === "ai"
     ? <Badge variant="outline" className="gap-1 text-xs"><Sparkles className="h-3 w-3" />IA</Badge>
     : <Badge variant="outline" className="gap-1 text-xs"><BookOpen className="h-3 w-3" />Manuel</Badge>;
+}
+
+function StatusBadges({ createdAt, stats }: { createdAt: string; stats?: { attempts: number } }) {
+  return (
+    <div className="flex gap-1">
+      {isNewAsset(createdAt) && (
+        <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">
+          <Clock className="h-2.5 w-2.5 mr-0.5" />Nouveau
+        </Badge>
+      )}
+      {stats && stats.attempts > 10 && (
+        <Badge className="bg-amber-500/15 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0">
+          <TrendingUp className="h-2.5 w-2.5 mr-0.5" />Populaire
+        </Badge>
+      )}
+    </div>
+  );
+}
+
+function StatsSection({ stats }: { stats?: { attempts: number; completed: number; avgScore: number | null } }) {
+  if (!stats || stats.attempts === 0) return <p className="text-xs text-muted-foreground">Aucune donnée d'utilisation</p>;
+  const completionRate = stats.attempts > 0 ? Math.round((stats.completed / stats.attempts) * 100) : 0;
+  return (
+    <div className="flex gap-6 text-xs">
+      <span><strong>Tentatives :</strong> {stats.attempts}</span>
+      <span><strong>Complétion :</strong> {completionRate}%</span>
+      {stats.avgScore != null && <span><strong>Score moyen :</strong> {Math.round(stats.avgScore)}%</span>}
+    </div>
+  );
+}
+
+function InlineTagEditor({ tags, onUpdate, isPending }: { tags: string[]; onUpdate: (tags: string[]) => void; isPending: boolean }) {
+  const [newTag, setNewTag] = useState("");
+  const addTag = () => {
+    const t = newTag.trim();
+    if (t && !tags.includes(t)) {
+      onUpdate([...tags, t]);
+      setNewTag("");
+    }
+  };
+  const removeTag = (tag: string) => onUpdate(tags.filter(t => t !== tag));
+
+  return (
+    <div className="space-y-1.5" onClick={e => e.stopPropagation()}>
+      <p className="text-xs font-semibold text-muted-foreground">Tags</p>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {tags.map(tag => (
+          <Badge key={tag} variant="secondary" className="gap-1 text-xs pr-1">
+            {tag}
+            <button onClick={() => removeTag(tag)} disabled={isPending} className="hover:text-destructive">
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        ))}
+        <div className="flex items-center gap-1">
+          <Input
+            value={newTag}
+            onChange={e => setNewTag(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addTag())}
+            placeholder="Ajouter…"
+            className="h-6 w-28 text-xs"
+          />
+          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={addTag} disabled={isPending || !newTag.trim()}>
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function DetailRow({ expanded, colSpan, children }: { expanded: boolean; colSpan: number; children: React.ReactNode }) {
@@ -237,13 +368,14 @@ function ErrorBanner({ error }: { error: Error | null }) {
 }
 
 // ─── Quiz Tab ───
-function QuizTab({ data, filters, isError, error }: { data: any[]; filters: Filters; isError: boolean; error: Error | null }) {
+function QuizTab({ data, filters, isError, error, stats }: { data: any[]; filters: Filters; isError: boolean; error: Error | null; stats: AssetStats }) {
   const { data: modules = [] } = useModulesForDuplicate();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [dupItem, setDupItem] = useState<any>(null);
   const [dupTarget, setDupTarget] = useState("");
+  const updateTags = useUpdateTags("academy_quizzes", "admin-asset-quizzes");
 
   const filtered = applyFilters(data, filters, "quizzes");
 
@@ -251,7 +383,7 @@ function QuizTab({ data, filters, isError, error }: { data: any[]; filters: Filt
     mutationFn: async ({ quiz, targetModuleId }: { quiz: any; targetModuleId: string }) => {
       const { data: newQuiz, error } = await supabase.from("academy_quizzes").insert({
         module_id: targetModuleId, title: `${quiz.title} (copie)`, description: quiz.description,
-        passing_score: quiz.passing_score, generation_mode: "manual", organization_id: quiz.organization_id,
+        passing_score: quiz.passing_score, generation_mode: "manual", organization_id: quiz.organization_id, tags: quiz.tags ?? [],
       }).select().single();
       if (error) throw error;
       const { data: questions } = await supabase.from("academy_quiz_questions").select("*").eq("quiz_id", quiz.id);
@@ -287,13 +419,19 @@ function QuizTab({ data, filters, isError, error }: { data: any[]; filters: Filt
           {filtered.map((q: any) => {
             const ctx = extractContext(q.academy_modules);
             const isOpen = expandedId === q.id;
+            const moduleStats = stats[ctx.moduleId];
             return (
               <Fragment key={q.id}>
                 <TableRow className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : q.id)}>
                   <TableCell className="w-8 px-2">
                     <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
                   </TableCell>
-                  <TableCell className="font-medium">{q.title || "Sans titre"}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{q.title || "Sans titre"}</span>
+                      <StatusBadges createdAt={q.created_at} stats={moduleStats} />
+                    </div>
+                  </TableCell>
                   <TableCell className="text-muted-foreground text-xs">{ctx.moduleTitle}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{ctx.pathName ?? "—"}</TableCell>
                   <TableCell><OrgBadge orgName={ctx.orgName} /></TableCell>
@@ -314,6 +452,12 @@ function QuizTab({ data, filters, isError, error }: { data: any[]; filters: Filt
                       <span><strong>Questions :</strong> {q.academy_quiz_questions?.length ?? 0}</span>
                       <span><strong>Mode :</strong> {q.generation_mode}</span>
                     </div>
+                    <StatsSection stats={moduleStats} />
+                    <InlineTagEditor
+                      tags={q.tags ?? []}
+                      onUpdate={tags => updateTags.mutate({ id: q.id, tags })}
+                      isPending={updateTags.isPending}
+                    />
                   </div>
                 </DetailRow>
               </Fragment>
@@ -344,13 +488,14 @@ function QuizTab({ data, filters, isError, error }: { data: any[]; filters: Filt
 }
 
 // ─── Exercises Tab ───
-function ExercisesTab({ data, filters, isError, error }: { data: any[]; filters: Filters; isError: boolean; error: Error | null }) {
+function ExercisesTab({ data, filters, isError, error, stats }: { data: any[]; filters: Filters; isError: boolean; error: Error | null; stats: AssetStats }) {
   const { data: modules = [] } = useModulesForDuplicate();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [dupItem, setDupItem] = useState<any>(null);
   const [dupTarget, setDupTarget] = useState("");
+  const updateTags = useUpdateTags("academy_exercises", "admin-asset-exercises");
 
   const filtered = applyFilters(data, filters, "exercises");
 
@@ -359,7 +504,7 @@ function ExercisesTab({ data, filters, isError, error }: { data: any[]; filters:
       const { error } = await supabase.from("academy_exercises").insert({
         module_id: targetModuleId, title: `${exercise.title} (copie)`, instructions: exercise.instructions,
         expected_output_type: exercise.expected_output_type, ai_evaluation_enabled: exercise.ai_evaluation_enabled,
-        evaluation_criteria: exercise.evaluation_criteria, generation_mode: "manual", organization_id: exercise.organization_id,
+        evaluation_criteria: exercise.evaluation_criteria, generation_mode: "manual", organization_id: exercise.organization_id, tags: exercise.tags ?? [],
       });
       if (error) throw error;
     },
@@ -390,13 +535,19 @@ function ExercisesTab({ data, filters, isError, error }: { data: any[]; filters:
           {filtered.map((ex: any) => {
             const ctx = extractContext(ex.academy_modules);
             const isOpen = expandedId === ex.id;
+            const moduleStats = stats[ctx.moduleId];
             return (
               <Fragment key={ex.id}>
                 <TableRow className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : ex.id)}>
                   <TableCell className="w-8 px-2">
                     <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
                   </TableCell>
-                  <TableCell className="font-medium">{ex.title}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{ex.title}</span>
+                      <StatusBadges createdAt={ex.created_at} stats={moduleStats} />
+                    </div>
+                  </TableCell>
                   <TableCell className="text-muted-foreground text-xs">{ctx.moduleTitle}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{ctx.pathName ?? "—"}</TableCell>
                   <TableCell><OrgBadge orgName={ctx.orgName} /></TableCell>
@@ -420,6 +571,12 @@ function ExercisesTab({ data, filters, isError, error }: { data: any[]; filters:
                       <span><strong>Éval. IA :</strong> {ex.ai_evaluation_enabled ? "Oui" : "Non"}</span>
                       <span><strong>Mode :</strong> {ex.generation_mode}</span>
                     </div>
+                    <StatsSection stats={moduleStats} />
+                    <InlineTagEditor
+                      tags={ex.tags ?? []}
+                      onUpdate={tags => updateTags.mutate({ id: ex.id, tags })}
+                      isPending={updateTags.isPending}
+                    />
                   </div>
                 </DetailRow>
               </Fragment>
@@ -450,13 +607,14 @@ function ExercisesTab({ data, filters, isError, error }: { data: any[]; filters:
 }
 
 // ─── Practices Tab ───
-function PracticesTab({ data, filters, isError, error }: { data: any[]; filters: Filters; isError: boolean; error: Error | null }) {
+function PracticesTab({ data, filters, isError, error, stats }: { data: any[]; filters: Filters; isError: boolean; error: Error | null; stats: AssetStats }) {
   const { data: modules = [] } = useModulesForDuplicate();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [dupItem, setDupItem] = useState<any>(null);
   const [dupTarget, setDupTarget] = useState("");
+  const updateTags = useUpdateTags("academy_practices", "admin-asset-practices");
 
   const filtered = applyFilters(data, filters, "practices");
 
@@ -465,7 +623,7 @@ function PracticesTab({ data, filters, isError, error }: { data: any[]; filters:
       const { error } = await supabase.from("academy_practices").insert({
         module_id: targetModuleId, title: `${practice.title} (copie)`, scenario: practice.scenario,
         system_prompt: practice.system_prompt, max_exchanges: practice.max_exchanges, difficulty: practice.difficulty,
-        evaluation_rubric: practice.evaluation_rubric, generation_mode: "manual", organization_id: practice.organization_id,
+        evaluation_rubric: practice.evaluation_rubric, generation_mode: "manual", organization_id: practice.organization_id, tags: practice.tags ?? [],
       });
       if (error) throw error;
     },
@@ -496,13 +654,19 @@ function PracticesTab({ data, filters, isError, error }: { data: any[]; filters:
           {filtered.map((pr: any) => {
             const ctx = extractContext(pr.academy_modules);
             const isOpen = expandedId === pr.id;
+            const moduleStats = stats[ctx.moduleId];
             return (
               <Fragment key={pr.id}>
                 <TableRow className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : pr.id)}>
                   <TableCell className="w-8 px-2">
                     <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
                   </TableCell>
-                  <TableCell className="font-medium">{pr.title}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{pr.title}</span>
+                      <StatusBadges createdAt={pr.created_at} stats={moduleStats} />
+                    </div>
+                  </TableCell>
                   <TableCell className="text-muted-foreground text-xs">{ctx.moduleTitle}</TableCell>
                   <TableCell className="text-muted-foreground text-xs">{ctx.pathName ?? "—"}</TableCell>
                   <TableCell><OrgBadge orgName={ctx.orgName} /></TableCell>
@@ -530,6 +694,12 @@ function PracticesTab({ data, filters, isError, error }: { data: any[]; filters:
                       <span><strong>Difficulté :</strong> {pr.difficulty ?? "—"}</span>
                       <span><strong>Mode :</strong> {pr.generation_mode}</span>
                     </div>
+                    <StatsSection stats={moduleStats} />
+                    <InlineTagEditor
+                      tags={pr.tags ?? []}
+                      onUpdate={tags => updateTags.mutate({ id: pr.id, tags })}
+                      isPending={updateTags.isPending}
+                    />
                   </div>
                 </DetailRow>
               </Fragment>
@@ -560,18 +730,16 @@ function PracticesTab({ data, filters, isError, error }: { data: any[]; filters:
 }
 
 // ─── Main Page ───
-import { Fragment } from "react";
-
 export default function AdminAcademyAssets() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("quizzes");
   const [filters, setFilters] = useState<Filters>({
-    search: "", orgFilter: "all", pathFilter: "all", difficultyFilter: "all", modeFilter: "all",
+    search: "", orgFilter: "all", pathFilter: "all", difficultyFilter: "all", modeFilter: "all", tagFilter: "all",
   });
   const { data: orgs = [] } = useOrganizations();
-  // Single fetch at parent level — passed as props to tabs
   const quizzesQuery = useQuizzes();
   const exercisesQuery = useExercises();
   const practicesQuery = usePractices();
+  const { data: assetStats } = useAssetStats();
 
   const quizzes = quizzesQuery.data ?? [];
   const exercises = exercisesQuery.data ?? [];
@@ -581,7 +749,6 @@ export default function AdminAcademyAssets() {
 
   const setFilter = (key: keyof Filters, val: string) => setFilters(prev => ({ ...prev, [key]: val }));
 
-  // Reset difficulty filter when switching away from practices
   const handleTabChange = (tab: string) => {
     const newTab = tab as ActiveTab;
     if (newTab !== "practices" && filters.difficultyFilter !== "all") {
@@ -590,7 +757,6 @@ export default function AdminAcademyAssets() {
     setActiveTab(newTab);
   };
 
-  // Derive distinct path names from all loaded data
   const paths = useMemo(() => {
     const allItems = [...quizzes, ...exercises, ...practices];
     const names = new Set<string>();
@@ -599,6 +765,15 @@ export default function AdminAcademyAssets() {
       if (ctx.pathName) names.add(ctx.pathName);
     });
     return Array.from(names).sort();
+  }, [quizzes, exercises, practices]);
+
+  const allTags = useMemo(() => {
+    const allItems = [...quizzes, ...exercises, ...practices];
+    const tagSet = new Set<string>();
+    allItems.forEach((item: any) => {
+      if (Array.isArray(item.tags)) item.tags.forEach((t: string) => tagSet.add(t));
+    });
+    return Array.from(tagSet).sort();
   }, [quizzes, exercises, practices]);
 
   return (
@@ -612,7 +787,7 @@ export default function AdminAcademyAssets() {
           </div>
         </div>
 
-        <FilterBar filters={filters} setFilter={setFilter} orgs={orgs} paths={paths} showDifficulty={activeTab === "practices"} />
+        <FilterBar filters={filters} setFilter={setFilter} orgs={orgs} paths={paths} showDifficulty={activeTab === "practices"} allTags={allTags} />
 
         {isLoading ? (
           <div className="text-muted-foreground text-sm py-8 text-center">Chargement…</div>
@@ -624,13 +799,13 @@ export default function AdminAcademyAssets() {
               <TabsTrigger value="practices" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" />Pratiques ({practices.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="quizzes">
-              <QuizTab data={quizzes} filters={filters} isError={quizzesQuery.isError} error={quizzesQuery.error} />
+              <QuizTab data={quizzes} filters={filters} isError={quizzesQuery.isError} error={quizzesQuery.error} stats={assetStats} />
             </TabsContent>
             <TabsContent value="exercises">
-              <ExercisesTab data={exercises} filters={filters} isError={exercisesQuery.isError} error={exercisesQuery.error} />
+              <ExercisesTab data={exercises} filters={filters} isError={exercisesQuery.isError} error={exercisesQuery.error} stats={assetStats} />
             </TabsContent>
             <TabsContent value="practices">
-              <PracticesTab data={practices} filters={filters} isError={practicesQuery.isError} error={practicesQuery.error} />
+              <PracticesTab data={practices} filters={filters} isError={practicesQuery.isError} error={practicesQuery.error} stats={assetStats} />
             </TabsContent>
           </Tabs>
         )}
