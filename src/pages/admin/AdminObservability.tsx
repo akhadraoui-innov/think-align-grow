@@ -19,6 +19,10 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { ChevronRight, Search, Package } from "lucide-react";
 
 const ASSET_TYPE_LABELS: Record<string, string> = {
   path: "Parcours",
