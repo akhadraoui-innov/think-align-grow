@@ -193,8 +193,9 @@ export function useObservability() {
     }));
   }, [catalogueQuery.data]);
 
-  // ---- Timeline (merged versions + logs) ----
+  // ---- Timeline (synthetic from catalogue + real versions/logs) ----
   const timeline = useMemo(() => {
+    const catalogue = catalogueQuery.data ?? [];
     const versions = (versionsQuery.data ?? []).map((v) => ({
       id: v.id,
       type: "version" as const,
@@ -219,7 +220,24 @@ export function useObservability() {
       createdAt: l.created_at,
     }));
 
-    const merged = [...versions, ...logs].sort(
+    // Synthetic creation entries from catalogue
+    const synthetic = catalogue.map((a) => ({
+      id: `synth-${a.id}`,
+      type: "log" as const,
+      assetType: a.asset_type,
+      assetId: a.asset_id,
+      userId: a.last_modified_by,
+      orgId: a.organization_id,
+      summary: a.name,
+      action: "created",
+      createdAt: a.created_at,
+    }));
+
+    // Deduplicate: if a real version/log exists for same asset, skip synthetic
+    const realAssetIds = new Set([...versions.map(v => v.assetId), ...logs.map(l => l.assetId)]);
+    const uniqueSynthetic = synthetic.filter((s) => !realAssetIds.has(s.assetId));
+
+    const merged = [...versions, ...logs, ...uniqueSynthetic].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
@@ -229,7 +247,7 @@ export function useObservability() {
     }
 
     return filtered.slice(0, 100);
-  }, [versionsQuery.data, logsQuery.data, filters.orgIds]);
+  }, [versionsQuery.data, logsQuery.data, catalogueQuery.data, filters.orgIds]);
 
   // ---- Coverage matrix from observatory_assets ----
   const coverageMatrix = useMemo(() => {
