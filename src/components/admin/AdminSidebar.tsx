@@ -40,11 +40,16 @@ export function AdminSidebar() {
     { path: "/admin/design-innovation", icon: Lightbulb, label: "Design Innovation", show: perms.has("admin.challenges.view") },
   ];
 
+  const observabilitySubItems = [
+    { path: "/admin/observability", icon: LayoutDashboard, label: "Vue d'ensemble", exact: true },
+    { path: "/admin/observability/catalogue", icon: Layers, label: "Catalogue Assets" },
+    { path: "/admin/observability/matrix", icon: Building2, label: "Matrice Couverture" },
+  ];
+
   const systemItems = [
     { path: "/admin/billing", icon: CreditCard, label: "Crédits & Abonnements", show: perms.has("admin.billing.view") },
     { path: "/admin/logs", icon: ScrollText, label: "Logs d'activité", show: perms.has("admin.logs.view") },
     { path: "/admin/settings", icon: Settings, label: "Paramètres", show: perms.hasAny("admin.settings.ai", "admin.settings.roles", "admin.settings.platform") },
-    { path: "/admin/observability", icon: Activity, label: "Observabilité", show: perms.has("admin.logs.view") },
   ];
 
   const visibleMain = mainItems.filter(i => i.show);
