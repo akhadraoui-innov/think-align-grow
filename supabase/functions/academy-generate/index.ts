@@ -328,7 +328,7 @@ IMPORTANT : chaque section doit contenir au minimum 2 encadrés enrichis (💡, 
     },
   }];
 
-  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_module_content" } }, "google/gemini-2.5-pro");
+  const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_module_content" } }, "google/gemini-2.5-flash");
 
   // Delete existing content before regenerating
   await supabase.from("academy_contents").delete().eq("module_id", module_id);

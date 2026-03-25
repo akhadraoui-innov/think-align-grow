@@ -406,50 +406,61 @@ export default function AdminAcademyPathDetail() {
 
     try {
       for (const mod of modules) {
+        const invokeWithRetry = async (body: any, label: string) => {
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/academy-generate`;
+              const session = (await supabase.auth.getSession()).data.session;
+              const controller = new AbortController();
+              const timeout = setTimeout(() => controller.abort(), 120000);
+              const resp = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${session?.access_token}`,
+                  apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                },
+                body: JSON.stringify(body),
+                signal: controller.signal,
+              });
+              clearTimeout(timeout);
+              if (!resp.ok) {
+                const t = await resp.text();
+                console.error(`${label} error:`, t);
+                if (attempt === 0 && resp.status >= 500) continue;
+              }
+              return;
+            } catch (e: any) {
+              console.error(`${label} attempt ${attempt + 1} error:`, e);
+              if (attempt === 0) continue;
+            }
+          }
+        };
+
         // Generate content
         current++;
         setBatchProgress({ current, total, step: `Contenu: ${mod.title}` });
-        try {
-          await supabase.functions.invoke("academy-generate", {
-            body: { action: "generate-content", module_id: mod.id },
-          });
-        } catch (e: any) { console.error("Content gen error:", e); }
+        await invokeWithRetry({ action: "generate-content", module_id: mod.id }, "Content");
 
         // Generate quiz
         current++;
         setBatchProgress({ current, total, step: `Quiz: ${mod.title}` });
-        try {
-          await supabase.functions.invoke("academy-generate", {
-            body: { action: "generate-quiz", module_id: mod.id, question_count: 6 },
-          });
-        } catch (e: any) { console.error("Quiz gen error:", e); }
+        await invokeWithRetry({ action: "generate-quiz", module_id: mod.id, question_count: 6 }, "Quiz");
 
         // Generate illustrations
         current++;
         setBatchProgress({ current, total, step: `Illustrations: ${mod.title}` });
-        try {
-          await supabase.functions.invoke("academy-generate", {
-            body: { action: "generate-illustrations", module_id: mod.id },
-          });
-        } catch (e: any) { console.error("Illustration gen error:", e); }
+        await invokeWithRetry({ action: "generate-illustrations", module_id: mod.id }, "Illustrations");
 
         // Generate exercise
         current++;
         setBatchProgress({ current, total, step: `Exercice: ${mod.title}` });
-        try {
-          await supabase.functions.invoke("academy-generate", {
-            body: { action: "generate-exercise", module_id: mod.id },
-          });
-        } catch (e: any) { console.error("Exercise gen error:", e); }
+        await invokeWithRetry({ action: "generate-exercise", module_id: mod.id }, "Exercise");
 
         // Generate practice
         current++;
         setBatchProgress({ current, total, step: `Pratique IA: ${mod.title}` });
-        try {
-          await supabase.functions.invoke("academy-generate", {
-            body: { action: "generate-practice", module_id: mod.id },
-          });
-        } catch (e: any) { console.error("Practice gen error:", e); }
+        await invokeWithRetry({ action: "generate-practice", module_id: mod.id }, "Practice");
       }
 
       qc.invalidateQueries({ queryKey: ["admin-path-contents", id] });
