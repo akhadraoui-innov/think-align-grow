@@ -32,7 +32,7 @@ export function useObservability() {
     queryFn: async () => {
       let q = supabase
         .from("academy_asset_versions")
-        .select("id, asset_type, asset_id, change_summary, changed_by, created_at, snapshot")
+        .select("id, asset_type, asset_id, change_summary, changed_by, created_at, snapshot, version_number")
         .gte("created_at", filters.dateRange.from.toISOString())
         .lte("created_at", filters.dateRange.to.toISOString())
         .order("created_at", { ascending: false })
