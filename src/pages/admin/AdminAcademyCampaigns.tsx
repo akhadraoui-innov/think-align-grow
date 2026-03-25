@@ -62,6 +62,13 @@ export default function AdminAcademyCampaigns() {
   const [enrollDialogCampaign, setEnrollDialogCampaign] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState("all");
 
+  // AI generation state
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiMode, setAiMode] = useState<"guided" | "corporate" | "chat">("guided");
+  const [aiForm, setAiForm] = useState({ name: "", description: "", organization_id: "", path_id: "", duration_weeks: 8, objectives: "" });
+  const [aiChat, setAiChat] = useState("");
+  const [aiStrategy, setAiStrategy] = useState<string | null>(null);
+
   // --- Queries ---
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["admin-academy-campaigns"],
