@@ -193,7 +193,17 @@ export default function AdminAcademyPathDetail() {
         .eq("path_id", id!)
         .order("enrolled_at", { ascending: false });
       if (error) throw error;
-      return data || [];
+      // Fetch profiles for user_ids
+      const userIds = [...new Set((data || []).map((e: any) => e.user_id))];
+      let profileMap: Record<string, any> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, email, avatar_url")
+          .in("user_id", userIds);
+        for (const p of profiles || []) profileMap[p.user_id] = p;
+      }
+      return (data || []).map((e: any) => ({ ...e, profile: profileMap[e.user_id] || null }));
     },
   });
 
