@@ -83,7 +83,7 @@ export function useObservability() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("user_id, display_name, avatar_url, email");
+        .select("id, user_id, display_name, avatar_url, email");
       if (error) throw error;
       return data ?? [];
     },
