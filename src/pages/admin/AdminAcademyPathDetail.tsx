@@ -1108,6 +1108,11 @@ export default function AdminAcademyPathDetail() {
                       <p className="text-sm font-medium">{path.certificate_enabled ? "Activé" : "Désactivé"}</p>
                     </CardContent></Card>
                   </div>
+                  {/* Version History */}
+                  <Card><CardContent className="p-4">
+                    <VersionHistory assetType="path" assetId={id!} />
+                  </CardContent></Card>
+                </div>
                 </div>
               ) : infoForm && (
                 <div className="space-y-4 max-w-2xl">

@@ -477,6 +477,7 @@ export default function AdminAcademyCampaigns() {
                                   </div>
                                 </div>
                               )}
+                              <VersionHistory assetType="campaign" assetId={c.id} />
                             </div>
                           </motion.div>
                         )}
