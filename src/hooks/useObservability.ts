@@ -249,14 +249,14 @@ export function useObservability() {
     return filtered.slice(0, 100);
   }, [versionsQuery.data, logsQuery.data, catalogueQuery.data, filters.orgIds]);
 
-  // ---- Coverage matrix from observatory_assets ----
+  // ---- Coverage matrix (include null org as "Growthinnov") ----
   const coverageMatrix = useMemo(() => {
     const catalogue = catalogueQuery.data ?? [];
+    const GROWTHINNOV_KEY = "growthinnov";
     const matrix: Record<string, Record<string, number>> = {};
 
     catalogue.forEach((a) => {
-      const orgId = a.organization_id;
-      if (!orgId) return;
+      const orgId = a.organization_id || GROWTHINNOV_KEY;
       if (!matrix[orgId]) {
         matrix[orgId] = {};
         ASSET_TYPES.forEach((t) => (matrix[orgId][t] = 0));
@@ -268,7 +268,7 @@ export function useObservability() {
 
     return Object.entries(matrix).map(([orgId, counts]) => ({
       orgId,
-      orgName: orgMap.get(orgId)?.name ?? orgId.slice(0, 8),
+      orgName: orgId === GROWTHINNOV_KEY ? "Growthinnov" : (orgMap.get(orgId)?.name ?? orgId.slice(0, 8)),
       ...counts,
     }));
   }, [catalogueQuery.data, orgMap]);
