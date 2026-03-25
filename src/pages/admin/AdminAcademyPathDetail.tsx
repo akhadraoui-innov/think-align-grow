@@ -88,7 +88,7 @@ export default function AdminAcademyPathDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("academy_paths")
-        .select("*, academy_personae!academy_paths_persona_id_fkey(id, name), academy_functions!academy_paths_function_id_fkey(id, name, department)")
+        .select("*, academy_personae!academy_paths_persona_id_fkey(id, name), academy_functions!academy_paths_function_id_fkey(id, name, department), organizations!academy_paths_organization_id_fkey(id, name)")
         .eq("id", id!)
         .maybeSingle();
       if (error) {
