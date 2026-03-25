@@ -349,42 +349,7 @@ function InlineTagEditor({ tags, onUpdate, isPending }: { tags: string[]; onUpda
   );
 }
 
-function VersionHistory({ assetType, assetId }: { assetType: string; assetId: string }) {
-  const [open, setOpen] = useState(false);
-  const { data: versions = [], isLoading } = useAssetVersions(assetType, open ? assetId : null);
-
-  return (
-    <div className="space-y-1.5" onClick={e => e.stopPropagation()}>
-      <button
-        className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
-        onClick={() => setOpen(!open)}
-      >
-        <History className="h-3.5 w-3.5" />
-        Historique des versions
-        <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
-      </button>
-      {open && (
-        <div className="ml-5 border-l-2 border-border pl-3 space-y-2 mt-2">
-          {isLoading && <p className="text-xs text-muted-foreground">Chargement…</p>}
-          {!isLoading && versions.length === 0 && (
-            <p className="text-xs text-muted-foreground">Aucune version antérieure</p>
-          )}
-          {versions.map(v => (
-            <div key={v.id} className="flex items-start gap-3 text-xs">
-              <Badge variant="outline" className="shrink-0 text-[10px] px-1.5">v{v.version_number}</Badge>
-              <div className="space-y-0.5">
-                <p className="text-muted-foreground">
-                  {new Date(v.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                </p>
-                <p className="text-foreground">{v.change_summary || "—"}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+// VersionHistory is now imported from shared component
 
 function DetailRow({ expanded, colSpan, children }: { expanded: boolean; colSpan: number; children: React.ReactNode }) {
   if (!expanded) return null;
