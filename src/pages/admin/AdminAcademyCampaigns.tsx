@@ -5,7 +5,8 @@ import {
   Megaphone, Plus, ArrowLeft, Pencil, Trash2, Save, Calendar,
   Users, TrendingUp, Clock, Play, Pause, CheckCircle2, UserPlus,
   BarChart3, ChevronDown, ChevronUp, Eye, Sparkles, Loader2,
-  FileText, MessageSquare, Route, Search, Target, BookOpen, Building2
+  FileText, MessageSquare, Route, Search, Target, BookOpen, Building2,
+  Rows3, AlignJustify, List, ZoomIn
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +24,9 @@ import { Progress } from "@/components/ui/progress";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, differenceInDays, isAfter, isBefore, isWithinInterval } from "date-fns";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { addMonths, format, differenceInDays, isAfter, isBefore, isWithinInterval, startOfMonth, eachMonthOfInterval } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -64,6 +67,13 @@ export default function AdminAcademyCampaigns() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOrgId, setFilterOrgId] = useState("all");
   const [filterPathId, setFilterPathId] = useState("all");
+
+  // Timeline local state
+  const [tlOpen, setTlOpen] = useState(true);
+  const [tlStatus, setTlStatus] = useState("all");
+  const [tlOrgId, setTlOrgId] = useState("all");
+  const [tlZoom, setTlZoom] = useState<"3m" | "6m" | "1y" | "all">("all");
+  const [tlDensity, setTlDensity] = useState<"compact" | "normal" | "detailed">("normal");
 
   // AI generation state
   const [aiOpen, setAiOpen] = useState(false);
@@ -257,17 +267,37 @@ export default function AdminAcademyCampaigns() {
   }, [campaigns, filterStatus, filterOrgId, filterPathId, searchQuery]);
 
   // --- Gantt helpers ---
+  const tlFilteredCampaigns = useMemo(() => {
+    return campaigns.filter((c: any) => {
+      if (!c.starts_at) return false;
+      if (tlStatus !== "all" && c.status !== tlStatus) return false;
+      if (tlOrgId !== "all" && c.organization_id !== tlOrgId) return false;
+      return true;
+    });
+  }, [campaigns, tlStatus, tlOrgId]);
+
   const ganttData = useMemo(() => {
     const now = new Date();
-    const withDates = campaigns.filter((c: any) => c.starts_at);
-    if (withDates.length === 0) return null;
-    const allStarts = withDates.map((c: any) => new Date(c.starts_at));
-    const allEnds = withDates.map((c: any) => c.ends_at ? new Date(c.ends_at) : new Date(new Date(c.starts_at).getTime() + 90 * 86400000));
-    const minDate = new Date(Math.min(...allStarts.map(d => d.getTime())));
-    const maxDate = new Date(Math.max(...allEnds.map(d => d.getTime()), now.getTime() + 30 * 86400000));
+    if (tlFilteredCampaigns.length === 0) return null;
+
+    let minDate: Date, maxDate: Date;
+
+    if (tlZoom === "all") {
+      const allStarts = tlFilteredCampaigns.map((c: any) => new Date(c.starts_at));
+      const allEnds = tlFilteredCampaigns.map((c: any) => c.ends_at ? new Date(c.ends_at) : new Date(new Date(c.starts_at).getTime() + 90 * 86400000));
+      minDate = new Date(Math.min(...allStarts.map(d => d.getTime())));
+      maxDate = new Date(Math.max(...allEnds.map(d => d.getTime()), now.getTime() + 30 * 86400000));
+    } else {
+      const monthsMap = { "3m": 3, "6m": 6, "1y": 12 } as const;
+      const months = monthsMap[tlZoom];
+      minDate = startOfMonth(addMonths(now, -Math.floor(months / 3)));
+      maxDate = addMonths(minDate, months);
+    }
+
     const totalDays = Math.max(differenceInDays(maxDate, minDate), 1);
-    return { minDate, maxDate, totalDays, now };
-  }, [campaigns]);
+    const monthMarkers = eachMonthOfInterval({ start: minDate, end: maxDate });
+    return { minDate, maxDate, totalDays, now, monthMarkers };
+  }, [tlFilteredCampaigns, tlZoom]);
 
   function getCampaignStats(campaignId: string) {
     const ce = enrollments.filter(e => e.campaign_id === campaignId);
@@ -325,75 +355,205 @@ export default function AdminAcademyCampaigns() {
           ))}
         </div>
 
-        {/* Gantt Timeline */}
-        {ganttData && campaigns.filter((c: any) => c.starts_at).length > 0 && (
-          <Card>
-            <CardHeader className="pb-2 px-5 pt-5">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" /> Timeline des campagnes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-5 pb-5">
-              <div className="space-y-2">
-                {/* Month markers */}
-                <div className="relative h-6 text-[10px] text-muted-foreground">
-                  {Array.from({ length: Math.ceil(ganttData.totalDays / 30) + 1 }, (_, i) => {
-                    const d = new Date(ganttData.minDate.getTime() + i * 30 * 86400000);
-                    const left = (differenceInDays(d, ganttData.minDate) / ganttData.totalDays) * 100;
-                    if (left > 100) return null;
-                    return (
-                      <span key={i} className="absolute top-0 font-medium" style={{ left: `${left}%` }}>
-                        {format(d, "MMM yy", { locale: fr })}
-                      </span>
-                    );
-                  })}
+        {/* Gantt Timeline — Collapsible */}
+        <Collapsible open={tlOpen} onOpenChange={setTlOpen}>
+          <Card className="overflow-hidden">
+            <CollapsibleTrigger asChild>
+              <CardHeader className="px-5 py-3 cursor-pointer hover:bg-accent/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    Timeline des campagnes
+                    <Badge variant="secondary" className="text-[10px] ml-1">{tlFilteredCampaigns.length}</Badge>
+                  </CardTitle>
+                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", tlOpen && "rotate-180")} />
                 </div>
-                {/* Bars */}
-                {campaigns.filter((c: any) => c.starts_at).map((c: any) => {
-                  const start = new Date(c.starts_at);
-                  const end = c.ends_at ? new Date(c.ends_at) : new Date(start.getTime() + 90 * 86400000);
-                  const leftPct = (differenceInDays(start, ganttData.minDate) / ganttData.totalDays) * 100;
-                  const widthPct = Math.max((differenceInDays(end, start) / ganttData.totalDays) * 100, 2);
-                  const sc = statusConfig[c.status] || statusConfig.draft;
-                  const cStats = getCampaignStats(c.id);
-                  return (
-                    <div key={c.id} className="relative h-8 group">
-                      <div className="absolute inset-0 bg-muted/30 rounded" />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div
-                            className={cn("absolute h-full rounded cursor-pointer transition-opacity hover:opacity-80", sc.bg)}
-                            style={{ left: `${Math.max(leftPct, 0)}%`, width: `${Math.min(widthPct, 100 - leftPct)}%` }}
-                          >
-                            <div className="px-2 h-full flex items-center gap-1.5 overflow-hidden">
-                              <span className={cn("text-[10px] font-semibold truncate", sc.color)}>{c.name}</span>
-                              {cStats.enrolled > 0 && (
-                                <Badge variant="outline" className="h-4 text-[8px] shrink-0">{cStats.enrolled}</Badge>
-                              )}
-                            </div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="font-semibold">{c.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(start, "d MMM", { locale: fr })} → {format(end, "d MMM yyyy", { locale: fr })}
-                          </p>
-                          <p className="text-xs">{cStats.enrolled} inscrits · {cStats.rate}% complétés</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      {/* Today marker */}
-                      {(() => {
-                        const todayPct = (differenceInDays(ganttData.now, ganttData.minDate) / ganttData.totalDays) * 100;
-                        if (todayPct < 0 || todayPct > 100) return null;
-                        return <div className="absolute top-0 bottom-0 w-px bg-destructive/50 z-10" style={{ left: `${todayPct}%` }} />;
-                      })()}
-                    </div>
-                  );
-                })}
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              {/* Timeline Toolbar */}
+              <div className="px-5 pb-3 space-y-2 border-t pt-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Status pills */}
+                  <div className="flex items-center gap-1">
+                    {[
+                      { key: "all", label: "Tous" },
+                      { key: "draft", label: "Brouillon" },
+                      { key: "active", label: "Actif" },
+                      { key: "paused", label: "Suspendu" },
+                      { key: "completed", label: "Terminé" },
+                    ].map(s => (
+                      <button
+                        key={s.key}
+                        onClick={() => setTlStatus(s.key)}
+                        className={cn(
+                          "rounded-md px-2 py-1 text-[10px] font-medium transition-colors",
+                          tlStatus === s.key
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                        )}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="h-4 w-px bg-border" />
+
+                  {/* Org filter */}
+                  <Select value={tlOrgId} onValueChange={setTlOrgId}>
+                    <SelectTrigger className="h-7 w-[150px] text-[10px]">
+                      <Building2 className="h-3 w-3 mr-1 shrink-0 text-muted-foreground" />
+                      <SelectValue placeholder="Organisation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes</SelectItem>
+                      {orgs.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+
+                  <div className="h-4 w-px bg-border" />
+
+                  {/* Zoom */}
+                  <div className="flex items-center gap-1">
+                    <ZoomIn className="h-3 w-3 text-muted-foreground" />
+                    <ToggleGroup type="single" value={tlZoom} onValueChange={(v) => v && setTlZoom(v as any)} size="sm" className="gap-0">
+                      {[
+                        { value: "3m", label: "3M" },
+                        { value: "6m", label: "6M" },
+                        { value: "1y", label: "1A" },
+                        { value: "all", label: "Tout" },
+                      ].map(z => (
+                        <ToggleGroupItem key={z.value} value={z.value} className="h-6 px-2 text-[10px] rounded-md data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                          {z.label}
+                        </ToggleGroupItem>
+                      ))}
+                    </ToggleGroup>
+                  </div>
+
+                  <div className="h-4 w-px bg-border" />
+
+                  {/* Density */}
+                  <ToggleGroup type="single" value={tlDensity} onValueChange={(v) => v && setTlDensity(v as any)} size="sm" className="gap-0">
+                    <ToggleGroupItem value="compact" className="h-6 px-1.5 rounded-md data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                      <Tooltip><TooltipTrigger asChild><List className="h-3 w-3" /></TooltipTrigger><TooltipContent>Compact</TooltipContent></Tooltip>
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="normal" className="h-6 px-1.5 rounded-md data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                      <Tooltip><TooltipTrigger asChild><Rows3 className="h-3 w-3" /></TooltipTrigger><TooltipContent>Normal</TooltipContent></Tooltip>
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="detailed" className="h-6 px-1.5 rounded-md data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                      <Tooltip><TooltipTrigger asChild><AlignJustify className="h-3 w-3" /></TooltipTrigger><TooltipContent>Détaillé</TooltipContent></Tooltip>
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
               </div>
-            </CardContent>
+
+              {/* Gantt Chart */}
+              <CardContent className="px-5 pb-5 pt-0">
+                {ganttData && tlFilteredCampaigns.length > 0 ? (
+                  <div className="space-y-0 relative">
+                    {/* Month grid lines + labels */}
+                    <div className="relative h-6 text-[10px] text-muted-foreground">
+                      {ganttData.monthMarkers.map((d, i) => {
+                        const left = (differenceInDays(d, ganttData.minDate) / ganttData.totalDays) * 100;
+                        if (left < 0 || left > 100) return null;
+                        return (
+                          <span key={i} className="absolute top-0 font-medium" style={{ left: `${left}%` }}>
+                            {format(d, "MMM yy", { locale: fr })}
+                          </span>
+                        );
+                      })}
+                    </div>
+
+                    {/* Grid bg lines */}
+                    <div className="absolute inset-0 top-6 pointer-events-none">
+                      {ganttData.monthMarkers.map((d, i) => {
+                        const left = (differenceInDays(d, ganttData.minDate) / ganttData.totalDays) * 100;
+                        if (left <= 0 || left >= 100) return null;
+                        return <div key={i} className="absolute top-0 bottom-0 w-px bg-border/40" style={{ left: `${left}%` }} />;
+                      })}
+                    </div>
+
+                    {/* Today marker */}
+                    {(() => {
+                      const todayPct = (differenceInDays(ganttData.now, ganttData.minDate) / ganttData.totalDays) * 100;
+                      if (todayPct < 0 || todayPct > 100) return null;
+                      return (
+                        <div className="absolute top-0 bottom-0 z-20 pointer-events-none" style={{ left: `${todayPct}%` }}>
+                          <div className="w-px h-full bg-destructive/60" />
+                          <span className="absolute -top-0.5 -translate-x-1/2 text-[8px] font-bold text-destructive bg-background px-1 rounded">
+                            Auj.
+                          </span>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Bars */}
+                    <div className="space-y-px">
+                      {tlFilteredCampaigns.map((c: any) => {
+                        const start = new Date(c.starts_at);
+                        const end = c.ends_at ? new Date(c.ends_at) : new Date(start.getTime() + 90 * 86400000);
+                        const leftPct = Math.max((differenceInDays(start, ganttData.minDate) / ganttData.totalDays) * 100, 0);
+                        const widthPct = Math.max(Math.min((differenceInDays(end, start) / ganttData.totalDays) * 100, 100 - leftPct), 1.5);
+                        const sc = statusConfig[c.status] || statusConfig.draft;
+                        const cStats = getCampaignStats(c.id);
+
+                        const barH = tlDensity === "compact" ? "h-5" : tlDensity === "detailed" ? "h-10" : "h-7";
+                        const statusGradient: Record<string, string> = {
+                          draft: "from-muted-foreground/20 to-muted-foreground/10",
+                          active: "from-primary/30 to-primary/15",
+                          paused: "from-amber-500/25 to-amber-500/10",
+                          completed: "from-emerald-500/25 to-emerald-500/10",
+                        };
+
+                        return (
+                          <div key={c.id} className={cn("relative group", barH)}>
+                            <div className="absolute inset-0 bg-muted/20 rounded-sm" />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className={cn(
+                                    "absolute rounded-sm cursor-pointer transition-all hover:brightness-90 bg-gradient-to-r border border-transparent hover:border-primary/20",
+                                    barH,
+                                    statusGradient[c.status] || statusGradient.draft
+                                  )}
+                                  style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                                >
+                                  {tlDensity !== "compact" && (
+                                    <div className="px-1.5 h-full flex items-center gap-1 overflow-hidden">
+                                      <span className={cn("font-semibold truncate", sc.color, tlDensity === "detailed" ? "text-[11px]" : "text-[10px]")}>{c.name}</span>
+                                      {tlDensity === "detailed" && cStats.enrolled > 0 && (
+                                        <>
+                                          <Badge variant="outline" className="h-4 text-[8px] shrink-0 border-primary/30">{cStats.enrolled}</Badge>
+                                          <div className="h-1 w-10 bg-muted rounded-full shrink-0 overflow-hidden">
+                                            <div className="h-full bg-primary/60 rounded-full" style={{ width: `${cStats.rate}%` }} />
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-semibold">{c.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {format(start, "d MMM", { locale: fr })} → {format(end, "d MMM yyyy", { locale: fr })}
+                                </p>
+                                <p className="text-xs">{cStats.enrolled} inscrits · {cStats.rate}% complétés</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-4">Aucune campagne à afficher sur la timeline.</p>
+                )}
+              </CardContent>
+            </CollapsibleContent>
           </Card>
-        )}
+        </Collapsible>
 
         {/* Filter bar */}
         <Card>
@@ -492,7 +652,7 @@ export default function AdminAcademyCampaigns() {
 
               return (
                 <motion.div key={c.id} layout>
-                  <Card className="hover:shadow-sm transition-shadow">
+                  <Card className="hover:shadow-md transition-all border-border/60">
                     <CardContent className="p-0">
                       {/* Main row */}
                       <div className="p-4 flex items-center gap-4 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : c.id)}>
@@ -581,7 +741,7 @@ export default function AdminAcademyCampaigns() {
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden border-t"
                           >
-                            <div className="p-5 bg-muted/20 space-y-5">
+                            <div className="p-5 bg-card space-y-5">
                               {/* Section A — Description + Strategy */}
                               <div className="grid gap-4 md:grid-cols-2">
                                 {c.description && (
@@ -613,7 +773,7 @@ export default function AdminAcademyCampaigns() {
                                   { label: "Complétés", value: cStats.completed, icon: CheckCircle2, pct: null },
                                   { label: "Taux de complétion", value: `${cStats.rate}%`, icon: TrendingUp, pct: cStats.rate },
                                 ].map((kpi) => (
-                                  <div key={kpi.label} className="flex items-center gap-3 rounded-xl bg-card border p-3">
+                                  <div key={kpi.label} className="flex items-center gap-3 rounded-xl bg-background border p-3">
                                     <div className="relative h-10 w-10 shrink-0">
                                       <svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36">
                                         <circle cx="18" cy="18" r="15" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
