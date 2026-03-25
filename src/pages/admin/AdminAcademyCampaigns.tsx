@@ -652,7 +652,7 @@ export default function AdminAcademyCampaigns() {
 
               return (
                 <motion.div key={c.id} layout>
-                  <Card className="hover:shadow-sm transition-shadow">
+                  <Card className="hover:shadow-md transition-all border-border/60">
                     <CardContent className="p-0">
                       {/* Main row */}
                       <div className="p-4 flex items-center gap-4 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : c.id)}>
