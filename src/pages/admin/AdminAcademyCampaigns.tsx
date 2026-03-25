@@ -464,7 +464,6 @@ export default function AdminAcademyCampaigns() {
             </div>
           </CardContent>
         </Card>
-        </div>
 
         {/* Campaign list */}
         {isLoading ? (
