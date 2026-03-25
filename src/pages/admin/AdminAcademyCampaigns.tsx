@@ -68,6 +68,13 @@ export default function AdminAcademyCampaigns() {
   const [filterOrgId, setFilterOrgId] = useState("all");
   const [filterPathId, setFilterPathId] = useState("all");
 
+  // Timeline local state
+  const [tlOpen, setTlOpen] = useState(true);
+  const [tlStatus, setTlStatus] = useState("all");
+  const [tlOrgId, setTlOrgId] = useState("all");
+  const [tlZoom, setTlZoom] = useState<"3m" | "6m" | "1y" | "all">("all");
+  const [tlDensity, setTlDensity] = useState<"compact" | "normal" | "detailed">("normal");
+
   // AI generation state
   const [aiOpen, setAiOpen] = useState(false);
   const [aiMode, setAiMode] = useState<"guided" | "corporate" | "chat">("guided");
