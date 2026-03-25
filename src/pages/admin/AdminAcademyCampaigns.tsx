@@ -235,7 +235,26 @@ export default function AdminAcademyCampaigns() {
   const totalEnrolled = enrollments.filter(e => campaigns.some((c: any) => c.id === e.campaign_id)).length;
   const completedEnrolled = enrollments.filter(e => e.status === "completed" && campaigns.some((c: any) => c.id === e.campaign_id)).length;
 
-  const filtered = campaigns.filter((c: any) => filterStatus === "all" || c.status === filterStatus);
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: campaigns.length, draft: 0, active: 0, paused: 0, completed: 0 };
+    campaigns.forEach((c: any) => { counts[c.status] = (counts[c.status] || 0) + 1; });
+    return counts;
+  }, [campaigns]);
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return campaigns.filter((c: any) => {
+      if (filterStatus !== "all" && c.status !== filterStatus) return false;
+      if (filterOrgId !== "all" && c.organization_id !== filterOrgId) return false;
+      if (filterPathId !== "all" && c.path_id !== filterPathId) return false;
+      if (q) {
+        const haystack = [c.name, c.description, (c as any).academy_paths?.name, (c as any).organizations?.name]
+          .filter(Boolean).join(" ").toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [campaigns, filterStatus, filterOrgId, filterPathId, searchQuery]);
 
   // --- Gantt helpers ---
   const ganttData = useMemo(() => {
