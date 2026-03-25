@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Search, Copy, Pencil, Library, HelpCircle, Dumbbell, MessageSquare, ChevronRight, Sparkles, BookOpen } from "lucide-react";
+import { Search, Copy, Pencil, Library, HelpCircle, Dumbbell, MessageSquare, ChevronRight, Sparkles, BookOpen, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,8 @@ type Filters = {
   modeFilter: string;
 };
 
+type ActiveTab = "quizzes" | "exercises" | "practices";
+
 // ─── Helpers ───
 function extractContext(mod: any): AssetContext {
   const moduleTitle = mod?.title ?? "—";
@@ -45,15 +47,22 @@ function extractContext(mod: any): AssetContext {
   };
 }
 
-function applyFilters(items: any[], filters: Filters) {
+function applyFilters(items: any[], filters: Filters, activeTab: ActiveTab) {
   return items.filter((item: any) => {
     const ctx = extractContext(item.academy_modules);
     const s = filters.search.toLowerCase();
-    const matchSearch = !s || item.title?.toLowerCase().includes(s) || ctx.moduleTitle.toLowerCase().includes(s);
+    // P1: Full-text search in content fields
+    const matchSearch = !s || 
+      item.title?.toLowerCase().includes(s) || 
+      ctx.moduleTitle.toLowerCase().includes(s) ||
+      item.description?.toLowerCase().includes(s) ||
+      item.instructions?.toLowerCase().includes(s) ||
+      item.scenario?.toLowerCase().includes(s) ||
+      (Array.isArray(item.academy_quiz_questions) && item.academy_quiz_questions.some((q: any) => q.question?.toLowerCase().includes(s)));
     const matchOrg = filters.orgFilter === "all" || (filters.orgFilter === "public" ? !ctx.orgId : ctx.orgId === filters.orgFilter);
     const matchPath = filters.pathFilter === "all" || ctx.pathName === filters.pathFilter;
-    const itemDifficulty = item.difficulty || null;
-    const matchDifficulty = filters.difficultyFilter === "all" || itemDifficulty === filters.difficultyFilter;
+    // Only apply difficulty filter for practices tab
+    const matchDifficulty = activeTab !== "practices" || filters.difficultyFilter === "all" || item.difficulty === filters.difficultyFilter;
     const matchMode = filters.modeFilter === "all" || item.generation_mode === filters.modeFilter;
     return matchSearch && matchOrg && matchPath && matchDifficulty && matchMode;
   });
@@ -71,7 +80,8 @@ function useOrganizations() {
   return useQuery({
     queryKey: ["admin-orgs-list"],
     queryFn: async () => {
-      const { data } = await supabase.from("organizations").select("id, name").order("name");
+      const { data, error } = await supabase.from("organizations").select("id, name").order("name");
+      if (error) throw error;
       return (data ?? []) as OrgInfo[];
     },
   });
@@ -81,7 +91,8 @@ function useModulesForDuplicate() {
   return useQuery({
     queryKey: ["admin-modules-list"],
     queryFn: async () => {
-      const { data } = await supabase.from("academy_modules").select("id, title").order("title");
+      const { data, error } = await supabase.from("academy_modules").select("id, title").order("title");
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -95,7 +106,7 @@ function useQuizzes() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("academy_quizzes")
-        .select(`${MODULE_SELECT}, academy_quiz_questions(id)`)
+        .select(`${MODULE_SELECT}, academy_quiz_questions(id, question)`)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -133,18 +144,19 @@ function usePractices() {
 
 // ─── Filter bar ───
 function FilterBar({
-  filters, setFilter, orgs, paths,
+  filters, setFilter, orgs, paths, showDifficulty,
 }: {
   filters: Filters;
   setFilter: (key: keyof Filters, val: string) => void;
   orgs: OrgInfo[];
   paths: string[];
+  showDifficulty: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3 mb-4">
       <div className="relative flex-1 min-w-[200px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Rechercher…" value={filters.search} onChange={e => setFilter("search", e.target.value)} className="pl-9" />
+        <Input placeholder="Rechercher dans titres, contenus…" value={filters.search} onChange={e => setFilter("search", e.target.value)} className="pl-9" />
       </div>
       <Select value={filters.orgFilter} onValueChange={v => setFilter("orgFilter", v)}>
         <SelectTrigger className="w-[200px]"><SelectValue placeholder="Organisation" /></SelectTrigger>
@@ -161,16 +173,18 @@ function FilterBar({
           {paths.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
         </SelectContent>
       </Select>
-      <Select value={filters.difficultyFilter} onValueChange={v => setFilter("difficultyFilter", v)}>
-        <SelectTrigger className="w-[160px]"><SelectValue placeholder="Difficulté" /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Toute difficulté</SelectItem>
-          <SelectItem value="beginner">Débutant</SelectItem>
-          <SelectItem value="intermediate">Intermédiaire</SelectItem>
-          <SelectItem value="advanced">Avancé</SelectItem>
-          <SelectItem value="expert">Expert</SelectItem>
-        </SelectContent>
-      </Select>
+      {showDifficulty && (
+        <Select value={filters.difficultyFilter} onValueChange={v => setFilter("difficultyFilter", v)}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Difficulté" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toute difficulté</SelectItem>
+            <SelectItem value="beginner">Débutant</SelectItem>
+            <SelectItem value="intermediate">Intermédiaire</SelectItem>
+            <SelectItem value="advanced">Avancé</SelectItem>
+            <SelectItem value="expert">Expert</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
       <Select value={filters.modeFilter} onValueChange={v => setFilter("modeFilter", v)}>
         <SelectTrigger className="w-[150px]"><SelectValue placeholder="Mode" /></SelectTrigger>
         <SelectContent>
@@ -212,9 +226,18 @@ function DetailRow({ expanded, colSpan, children }: { expanded: boolean; colSpan
   );
 }
 
+function ErrorBanner({ error }: { error: Error | null }) {
+  if (!error) return null;
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive mb-4">
+      <AlertCircle className="h-4 w-4 shrink-0" />
+      <span>Erreur de chargement : {error.message}</span>
+    </div>
+  );
+}
+
 // ─── Quiz Tab ───
-function QuizTab({ filters }: { filters: Filters }) {
-  const { data: quizzes = [], isLoading } = useQuizzes();
+function QuizTab({ data, filters, isError, error }: { data: any[]; filters: Filters; isError: boolean; error: Error | null }) {
   const { data: modules = [] } = useModulesForDuplicate();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -222,7 +245,7 @@ function QuizTab({ filters }: { filters: Filters }) {
   const [dupItem, setDupItem] = useState<any>(null);
   const [dupTarget, setDupTarget] = useState("");
 
-  const filtered = applyFilters(quizzes, filters);
+  const filtered = applyFilters(data, filters, "quizzes");
 
   const duplicateMut = useMutation({
     mutationFn: async ({ quiz, targetModuleId }: { quiz: any; targetModuleId: string }) => {
@@ -241,10 +264,9 @@ function QuizTab({ filters }: { filters: Filters }) {
     onError: (e: any) => toast.error(e.message),
   });
 
-  if (isLoading) return <div className="text-muted-foreground text-sm py-8 text-center">Chargement…</div>;
-
   return (
     <>
+      <ErrorBanner error={isError ? error : null} />
       <Table>
         <TableHeader>
           <TableRow>
@@ -266,8 +288,8 @@ function QuizTab({ filters }: { filters: Filters }) {
             const ctx = extractContext(q.academy_modules);
             const isOpen = expandedId === q.id;
             return (
-              <>
-                <TableRow key={q.id} className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : q.id)}>
+              <Fragment key={q.id}>
+                <TableRow className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : q.id)}>
                   <TableCell className="w-8 px-2">
                     <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
                   </TableCell>
@@ -284,7 +306,7 @@ function QuizTab({ filters }: { filters: Filters }) {
                     </div>
                   </TableCell>
                 </TableRow>
-                <DetailRow key={`${q.id}-detail`} expanded={isOpen} colSpan={8}>
+                <DetailRow expanded={isOpen} colSpan={8}>
                   <div className="grid gap-3 text-sm">
                     <div><strong>Description :</strong> {q.description || "—"}</div>
                     <div className="flex gap-6">
@@ -294,7 +316,7 @@ function QuizTab({ filters }: { filters: Filters }) {
                     </div>
                   </div>
                 </DetailRow>
-              </>
+              </Fragment>
             );
           })}
         </TableBody>
@@ -322,8 +344,7 @@ function QuizTab({ filters }: { filters: Filters }) {
 }
 
 // ─── Exercises Tab ───
-function ExercisesTab({ filters }: { filters: Filters }) {
-  const { data: exercises = [], isLoading } = useExercises();
+function ExercisesTab({ data, filters, isError, error }: { data: any[]; filters: Filters; isError: boolean; error: Error | null }) {
   const { data: modules = [] } = useModulesForDuplicate();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -331,7 +352,7 @@ function ExercisesTab({ filters }: { filters: Filters }) {
   const [dupItem, setDupItem] = useState<any>(null);
   const [dupTarget, setDupTarget] = useState("");
 
-  const filtered = applyFilters(exercises, filters);
+  const filtered = applyFilters(data, filters, "exercises");
 
   const duplicateMut = useMutation({
     mutationFn: async ({ exercise, targetModuleId }: { exercise: any; targetModuleId: string }) => {
@@ -346,10 +367,9 @@ function ExercisesTab({ filters }: { filters: Filters }) {
     onError: (e: any) => toast.error(e.message),
   });
 
-  if (isLoading) return <div className="text-muted-foreground text-sm py-8 text-center">Chargement…</div>;
-
   return (
     <>
+      <ErrorBanner error={isError ? error : null} />
       <Table>
         <TableHeader>
           <TableRow>
@@ -371,8 +391,8 @@ function ExercisesTab({ filters }: { filters: Filters }) {
             const ctx = extractContext(ex.academy_modules);
             const isOpen = expandedId === ex.id;
             return (
-              <>
-                <TableRow key={ex.id} className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : ex.id)}>
+              <Fragment key={ex.id}>
+                <TableRow className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : ex.id)}>
                   <TableCell className="w-8 px-2">
                     <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
                   </TableCell>
@@ -389,7 +409,7 @@ function ExercisesTab({ filters }: { filters: Filters }) {
                     </div>
                   </TableCell>
                 </TableRow>
-                <DetailRow key={`${ex.id}-detail`} expanded={isOpen} colSpan={8}>
+                <DetailRow expanded={isOpen} colSpan={8}>
                   <div className="grid gap-3 text-sm">
                     <div>
                       <strong>Instructions :</strong>
@@ -402,7 +422,7 @@ function ExercisesTab({ filters }: { filters: Filters }) {
                     </div>
                   </div>
                 </DetailRow>
-              </>
+              </Fragment>
             );
           })}
         </TableBody>
@@ -430,8 +450,7 @@ function ExercisesTab({ filters }: { filters: Filters }) {
 }
 
 // ─── Practices Tab ───
-function PracticesTab({ filters }: { filters: Filters }) {
-  const { data: practices = [], isLoading } = usePractices();
+function PracticesTab({ data, filters, isError, error }: { data: any[]; filters: Filters; isError: boolean; error: Error | null }) {
   const { data: modules = [] } = useModulesForDuplicate();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -439,7 +458,7 @@ function PracticesTab({ filters }: { filters: Filters }) {
   const [dupItem, setDupItem] = useState<any>(null);
   const [dupTarget, setDupTarget] = useState("");
 
-  const filtered = applyFilters(practices, filters);
+  const filtered = applyFilters(data, filters, "practices");
 
   const duplicateMut = useMutation({
     mutationFn: async ({ practice, targetModuleId }: { practice: any; targetModuleId: string }) => {
@@ -454,10 +473,9 @@ function PracticesTab({ filters }: { filters: Filters }) {
     onError: (e: any) => toast.error(e.message),
   });
 
-  if (isLoading) return <div className="text-muted-foreground text-sm py-8 text-center">Chargement…</div>;
-
   return (
     <>
+      <ErrorBanner error={isError ? error : null} />
       <Table>
         <TableHeader>
           <TableRow>
@@ -479,8 +497,8 @@ function PracticesTab({ filters }: { filters: Filters }) {
             const ctx = extractContext(pr.academy_modules);
             const isOpen = expandedId === pr.id;
             return (
-              <>
-                <TableRow key={pr.id} className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : pr.id)}>
+              <Fragment key={pr.id}>
+                <TableRow className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : pr.id)}>
                   <TableCell className="w-8 px-2">
                     <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
                   </TableCell>
@@ -497,7 +515,7 @@ function PracticesTab({ filters }: { filters: Filters }) {
                     </div>
                   </TableCell>
                 </TableRow>
-                <DetailRow key={`${pr.id}-detail`} expanded={isOpen} colSpan={8}>
+                <DetailRow expanded={isOpen} colSpan={8}>
                   <div className="grid gap-3 text-sm">
                     <div>
                       <strong>Scénario :</strong>
@@ -514,7 +532,7 @@ function PracticesTab({ filters }: { filters: Filters }) {
                     </div>
                   </div>
                 </DetailRow>
-              </>
+              </Fragment>
             );
           })}
         </TableBody>
@@ -542,16 +560,35 @@ function PracticesTab({ filters }: { filters: Filters }) {
 }
 
 // ─── Main Page ───
+import { Fragment } from "react";
+
 export default function AdminAcademyAssets() {
+  const [activeTab, setActiveTab] = useState<ActiveTab>("quizzes");
   const [filters, setFilters] = useState<Filters>({
     search: "", orgFilter: "all", pathFilter: "all", difficultyFilter: "all", modeFilter: "all",
   });
   const { data: orgs = [] } = useOrganizations();
-  const { data: quizzes = [] } = useQuizzes();
-  const { data: exercises = [] } = useExercises();
-  const { data: practices = [] } = usePractices();
+  // Single fetch at parent level — passed as props to tabs
+  const quizzesQuery = useQuizzes();
+  const exercisesQuery = useExercises();
+  const practicesQuery = usePractices();
+
+  const quizzes = quizzesQuery.data ?? [];
+  const exercises = exercisesQuery.data ?? [];
+  const practices = practicesQuery.data ?? [];
+
+  const isLoading = quizzesQuery.isLoading || exercisesQuery.isLoading || practicesQuery.isLoading;
 
   const setFilter = (key: keyof Filters, val: string) => setFilters(prev => ({ ...prev, [key]: val }));
+
+  // Reset difficulty filter when switching away from practices
+  const handleTabChange = (tab: string) => {
+    const newTab = tab as ActiveTab;
+    if (newTab !== "practices" && filters.difficultyFilter !== "all") {
+      setFilters(prev => ({ ...prev, difficultyFilter: "all" }));
+    }
+    setActiveTab(newTab);
+  };
 
   // Derive distinct path names from all loaded data
   const paths = useMemo(() => {
@@ -566,26 +603,38 @@ export default function AdminAcademyAssets() {
 
   return (
     <AdminShell>
-      <div className="mb-6 flex items-center gap-3">
-        <Library className="h-6 w-6 text-primary" />
-        <div>
-          <h1 className="text-2xl font-bold">Actifs pédagogiques</h1>
-          <p className="text-sm text-muted-foreground">Bibliothèque centralisée des quiz, exercices et pratiques</p>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center gap-3">
+          <Library className="h-6 w-6 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold">Actifs pédagogiques</h1>
+            <p className="text-sm text-muted-foreground">Bibliothèque centralisée des quiz, exercices et pratiques</p>
+          </div>
         </div>
+
+        <FilterBar filters={filters} setFilter={setFilter} orgs={orgs} paths={paths} showDifficulty={activeTab === "practices"} />
+
+        {isLoading ? (
+          <div className="text-muted-foreground text-sm py-8 text-center">Chargement…</div>
+        ) : (
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger value="quizzes" className="gap-1.5"><HelpCircle className="h-3.5 w-3.5" />Quiz ({quizzes.length})</TabsTrigger>
+              <TabsTrigger value="exercises" className="gap-1.5"><Dumbbell className="h-3.5 w-3.5" />Exercices ({exercises.length})</TabsTrigger>
+              <TabsTrigger value="practices" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" />Pratiques ({practices.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="quizzes">
+              <QuizTab data={quizzes} filters={filters} isError={quizzesQuery.isError} error={quizzesQuery.error} />
+            </TabsContent>
+            <TabsContent value="exercises">
+              <ExercisesTab data={exercises} filters={filters} isError={exercisesQuery.isError} error={exercisesQuery.error} />
+            </TabsContent>
+            <TabsContent value="practices">
+              <PracticesTab data={practices} filters={filters} isError={practicesQuery.isError} error={practicesQuery.error} />
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
-
-      <FilterBar filters={filters} setFilter={setFilter} orgs={orgs} paths={paths} />
-
-      <Tabs defaultValue="quizzes">
-        <TabsList>
-          <TabsTrigger value="quizzes" className="gap-1.5"><HelpCircle className="h-3.5 w-3.5" />Quiz</TabsTrigger>
-          <TabsTrigger value="exercises" className="gap-1.5"><Dumbbell className="h-3.5 w-3.5" />Exercices</TabsTrigger>
-          <TabsTrigger value="practices" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" />Pratiques</TabsTrigger>
-        </TabsList>
-        <TabsContent value="quizzes"><QuizTab filters={filters} /></TabsContent>
-        <TabsContent value="exercises"><ExercisesTab filters={filters} /></TabsContent>
-        <TabsContent value="practices"><PracticesTab filters={filters} /></TabsContent>
-      </Tabs>
     </AdminShell>
   );
 }
