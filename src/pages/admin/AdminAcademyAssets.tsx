@@ -641,6 +641,7 @@ function ExercisesTab({ data, filters, isError, error, stats }: { data: any[]; f
                       onUpdate={tags => updateTags.mutate({ id: ex.id, tags })}
                       isPending={updateTags.isPending}
                     />
+                    <VersionHistory assetType="exercise" assetId={ex.id} />
                   </div>
                 </DetailRow>
               </Fragment>
