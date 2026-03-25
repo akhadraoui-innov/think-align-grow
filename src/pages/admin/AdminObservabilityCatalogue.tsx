@@ -4,68 +4,84 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronRight, Search, Package, Filter } from "lucide-react";
-import { format, formatDistanceToNow, parseISO } from "date-fns";
-import { fr } from "date-fns/locale";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-
-const ASSET_TYPE_LABELS: Record<string, string> = {
-  path: "Parcours", quiz: "Quiz", exercise: "Exercice",
-  practice: "Pratique", persona: "Persona", campaign: "Campagne",
-};
-
-const ASSET_TYPE_COLORS: Record<string, string> = {
-  path: "hsl(var(--primary))", quiz: "hsl(262, 80%, 55%)",
-  exercise: "hsl(174, 70%, 42%)", practice: "hsl(32, 90%, 55%)",
-  persona: "hsl(340, 75%, 55%)", campaign: "hsl(210, 80%, 55%)",
-};
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Search, Package, Filter, Table2, LayoutGrid, Clock, Columns3, BarChart3 } from "lucide-react";
+import { useState, useMemo } from "react";
+import {
+  ViewMode, ASSET_TYPE_LABELS, STATUS_LABELS, DIFFICULTY_LABELS, GEN_MODE_LABELS,
+  CatalogueAsset, getSnapshotField,
+} from "@/components/admin/catalogue/CatalogueTypes";
+import { CatalogueTableView } from "@/components/admin/catalogue/CatalogueTableView";
+import { CatalogueGridView } from "@/components/admin/catalogue/CatalogueGridView";
+import { CatalogueTimelineView } from "@/components/admin/catalogue/CatalogueTimelineView";
+import { CatalogueKanbanView } from "@/components/admin/catalogue/CatalogueKanbanView";
+import { CatalogueTreemapView } from "@/components/admin/catalogue/CatalogueTreemapView";
 
 export default function AdminObservabilityCatalogue() {
   const { catalogue, profileMap, orgMap, orgs, isLoading, filters, setFilters } = useObservability();
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
+  const [genModeFilter, setGenModeFilter] = useState("all");
 
   const updateFilter = (patch: Partial<ObsFilters>) => {
     setFilters((prev) => ({ ...prev, ...patch }));
   };
 
-  const filtered = catalogue.filter((a) => {
-    if (search && !a.name.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  // Unique values for filters
+  const filterOptions = useMemo(() => {
+    const statuses = new Set<string>();
+    const difficulties = new Set<string>();
+    const genModes = new Set<string>();
+    catalogue.forEach((a: CatalogueAsset) => {
+      if (a.status) statuses.add(a.status);
+      const d = getSnapshotField(a, "difficulty");
+      if (d) difficulties.add(d);
+      const g = getSnapshotField(a, "generation_mode");
+      if (g) genModes.add(g);
+    });
+    return { statuses: Array.from(statuses), difficulties: Array.from(difficulties), genModes: Array.from(genModes) };
+  }, [catalogue]);
 
-  // Fetch version history per asset on expand
-  const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
+  const filtered = useMemo(() => {
+    return catalogue.filter((a: CatalogueAsset) => {
+      if (search && !a.name.toLowerCase().includes(search.toLowerCase())) return false;
+      if (statusFilter !== "all" && (a.status || "draft") !== statusFilter) return false;
+      if (difficultyFilter !== "all" && getSnapshotField(a, "difficulty") !== difficultyFilter) return false;
+      if (genModeFilter !== "all" && getSnapshotField(a, "generation_mode") !== genModeFilter) return false;
+      return true;
+    });
+  }, [catalogue, search, statusFilter, difficultyFilter, genModeFilter]);
 
-  const versionsForAsset = useQuery({
-    queryKey: ["obs-asset-versions", expandedAssetId],
-    queryFn: async () => {
-      if (!expandedAssetId) return [];
-      const { data, error } = await supabase
-        .from("academy_asset_versions")
-        .select("id, version_number, change_summary, changed_by, created_at")
-        .eq("asset_id", expandedAssetId)
-        .order("version_number", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!expandedAssetId,
-  });
+  const handleTreemapFilter = (type: string) => {
+    updateFilter({ assetTypes: [type] });
+  };
 
   return (
     <AdminShell>
       <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Catalogue des Assets</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Inventaire complet des contenus pédagogiques avec historique de versioning
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Catalogue des Assets</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Inventaire complet des contenus pédagogiques avec historique de versioning
+            </p>
+          </div>
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={(v) => v && setViewMode(v as ViewMode)}
+            variant="outline"
+            size="sm"
+          >
+            <ToggleGroupItem value="table" aria-label="Tableau"><Table2 className="h-4 w-4" /></ToggleGroupItem>
+            <ToggleGroupItem value="grid" aria-label="Grille"><LayoutGrid className="h-4 w-4" /></ToggleGroupItem>
+            <ToggleGroupItem value="timeline" aria-label="Timeline"><Clock className="h-4 w-4" /></ToggleGroupItem>
+            <ToggleGroupItem value="kanban" aria-label="Kanban"><Columns3 className="h-4 w-4" /></ToggleGroupItem>
+            <ToggleGroupItem value="treemap" aria-label="Treemap"><BarChart3 className="h-4 w-4" /></ToggleGroupItem>
+          </ToggleGroup>
         </div>
 
         {/* Filters */}
@@ -101,7 +117,7 @@ export default function AdminObservabilityCatalogue() {
                 onValueChange={(v) => updateFilter({ assetTypes: v === "all" ? [] : [v] })}
               >
                 <SelectTrigger className="w-[160px] h-8 text-xs">
-                  <SelectValue placeholder="Type d'asset" />
+                  <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les types</SelectItem>
@@ -110,11 +126,48 @@ export default function AdminObservabilityCatalogue() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px] h-8 text-xs">
+                  <SelectValue placeholder="Statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous statuts</SelectItem>
+                  {filterOptions.statuses.map((s) => (
+                    <SelectItem key={s} value={s}>{STATUS_LABELS[s] || s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {filterOptions.difficulties.length > 0 && (
+                <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+                  <SelectTrigger className="w-[150px] h-8 text-xs">
+                    <SelectValue placeholder="Difficulté" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes difficultés</SelectItem>
+                    {filterOptions.difficulties.map((d) => (
+                      <SelectItem key={d} value={d}>{DIFFICULTY_LABELS[d] || d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {filterOptions.genModes.length > 0 && (
+                <Select value={genModeFilter} onValueChange={setGenModeFilter}>
+                  <SelectTrigger className="w-[130px] h-8 text-xs">
+                    <SelectValue placeholder="Génération" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous modes</SelectItem>
+                    {filterOptions.genModes.map((g) => (
+                      <SelectItem key={g} value={g}>{GEN_MODE_LABELS[g] || g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Catalogue Table */}
+        {/* Content */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -127,120 +180,16 @@ export default function AdminObservabilityCatalogue() {
               <Skeleton className="h-[300px] w-full" />
             ) : filtered.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">Aucun asset trouvé</p>
+            ) : viewMode === "table" ? (
+              <CatalogueTableView assets={filtered} orgMap={orgMap} profileMap={profileMap} />
+            ) : viewMode === "grid" ? (
+              <CatalogueGridView assets={filtered} orgMap={orgMap} />
+            ) : viewMode === "timeline" ? (
+              <CatalogueTimelineView assets={filtered} orgMap={orgMap} />
+            ) : viewMode === "kanban" ? (
+              <CatalogueKanbanView assets={filtered} orgMap={orgMap} />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-8" />
-                    <TableHead className="text-xs">Type</TableHead>
-                    <TableHead className="text-xs">Nom</TableHead>
-                    <TableHead className="text-xs">Organisation</TableHead>
-                    <TableHead className="text-xs">Statut</TableHead>
-                    <TableHead className="text-xs text-center">Versions</TableHead>
-                    <TableHead className="text-xs text-center">Contributeurs</TableHead>
-                    <TableHead className="text-xs">Dernière modif.</TableHead>
-                    <TableHead className="text-xs">Créé le</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((asset) => {
-                    const isOpen = expandedAssetId === asset.asset_id;
-                    return (
-                      <Collapsible
-                        key={asset.id}
-                        asChild
-                        open={isOpen}
-                        onOpenChange={(open) => setExpandedAssetId(open ? asset.asset_id : null)}
-                      >
-                        <>
-                          <CollapsibleTrigger asChild>
-                            <TableRow className="cursor-pointer hover:bg-muted/50 group">
-                              <TableCell className="p-2">
-                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
-                              </TableCell>
-                              <TableCell className="p-2">
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] px-1.5 py-0 font-normal"
-                                  style={{
-                                    borderColor: ASSET_TYPE_COLORS[asset.asset_type],
-                                    color: ASSET_TYPE_COLORS[asset.asset_type],
-                                  }}
-                                >
-                                  {ASSET_TYPE_LABELS[asset.asset_type] || asset.asset_type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="p-2 font-medium text-xs text-foreground max-w-[200px] truncate">
-                                {asset.name || "Sans nom"}
-                              </TableCell>
-                              <TableCell className="p-2 text-xs text-muted-foreground">
-                                {asset.organization_id ? orgMap.get(asset.organization_id)?.name || "—" : "—"}
-                              </TableCell>
-                              <TableCell className="p-2">
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                  {asset.status || "—"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="p-2 text-xs text-center font-semibold">{asset.version_count}</TableCell>
-                              <TableCell className="p-2 text-xs text-center">{asset.contributor_count}</TableCell>
-                              <TableCell className="p-2 text-xs text-muted-foreground">
-                                {formatDistanceToNow(parseISO(asset.last_modified_at), { addSuffix: true, locale: fr })}
-                              </TableCell>
-                              <TableCell className="p-2 text-xs text-muted-foreground">
-                                {format(parseISO(asset.created_at), "dd/MM/yyyy")}
-                              </TableCell>
-                            </TableRow>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent asChild>
-                            <TableRow className="bg-muted/20 hover:bg-muted/20">
-                              <TableCell colSpan={9} className="p-0">
-                                <div className="px-6 py-3 ml-8 border-l-2 border-primary/20 space-y-2">
-                                  {asset.version_count === 0 ? (
-                                    <p className="text-xs text-muted-foreground italic">Aucune modification enregistrée</p>
-                                  ) : versionsForAsset.isLoading ? (
-                                    <Skeleton className="h-12 w-full" />
-                                  ) : (versionsForAsset.data ?? []).length === 0 ? (
-                                    <p className="text-xs text-muted-foreground italic">Aucun historique de version</p>
-                                  ) : (
-                                    (versionsForAsset.data ?? []).map((v) => {
-                                      const profile = v.changed_by ? profileMap.get(v.changed_by) : null;
-                                      const initials = (profile?.display_name || profile?.email || "?")
-                                        .split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-
-                                      return (
-                                        <div key={v.id} className="flex items-start gap-3 text-xs">
-                                          <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 font-mono">
-                                            v{v.version_number}
-                                          </Badge>
-                                          <Avatar className="h-5 w-5 shrink-0">
-                                            <AvatarImage src={profile?.avatar_url || undefined} />
-                                            <AvatarFallback className="text-[8px] bg-muted">{initials}</AvatarFallback>
-                                          </Avatar>
-                                          <div className="min-w-0 flex-1">
-                                            <span className="font-medium text-foreground">
-                                              {profile?.display_name || profile?.email || "Système"}
-                                            </span>
-                                            {v.change_summary && (
-                                              <span className="text-muted-foreground ml-1.5">— {v.change_summary}</span>
-                                            )}
-                                          </div>
-                                          <span className="text-muted-foreground/60 shrink-0">
-                                            {formatDistanceToNow(parseISO(v.created_at), { addSuffix: true, locale: fr })}
-                                          </span>
-                                        </div>
-                                      );
-                                    })
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          </CollapsibleContent>
-                        </>
-                      </Collapsible>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <CatalogueTreemapView assets={filtered} onFilterType={handleTreemapFilter} />
             )}
           </CardContent>
         </Card>
