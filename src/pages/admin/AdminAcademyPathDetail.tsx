@@ -78,7 +78,7 @@ export default function AdminAcademyPathDetail() {
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [tagInput, setTagInput] = useState("");
 
-  // Inline-edit form (always shown, no read/edit toggle)
+  const [isEditing, setIsEditing] = useState(false);
   const [infoForm, setInfoForm] = useState<any>(null);
 
   // ─── Queries ────────────────────────────────────────────────
