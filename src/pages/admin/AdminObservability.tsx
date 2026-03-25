@@ -171,7 +171,7 @@ export default function AdminObservability() {
                   <div>
                     <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
                     <div className="text-3xl font-bold mt-1 tracking-tight">
-                      {isLoading ? <Skeleton className="h-9 w-16" /> : <AnimatedCounter value={kpi.value} />}
+                      {isLoading ? <Skeleton className="h-9 w-16" /> : <AnimatedCounter value={String(kpi.value)} label={kpi.label} />}
                     </div>
                   </div>
                   <div className={cn("p-2.5 rounded-xl bg-muted/50", kpi.color)}>
