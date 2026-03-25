@@ -1,6 +1,8 @@
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AcademyExercisesTab } from "@/components/admin/AcademyExercisesTab";
+import { AcademyPracticesTab } from "@/components/admin/AcademyPracticesTab";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
