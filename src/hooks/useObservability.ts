@@ -307,6 +307,7 @@ export function useObservability() {
     chartData,
     timeline,
     coverageMatrix,
+    assetCatalogue,
     profileMap,
     orgMap,
     orgs: orgsQuery.data ?? [],
