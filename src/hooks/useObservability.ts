@@ -103,6 +103,29 @@ export function useObservability() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // ---- Query 5: Observatory assets (pre-calculated) ----
+  const catalogueQuery = useQuery({
+    queryKey: ["obs-catalogue", filters.orgIds, filters.assetTypes],
+    queryFn: async () => {
+      let q = supabase
+        .from("observatory_assets")
+        .select("*")
+        .order("last_modified_at", { ascending: false })
+        .limit(1000);
+
+      if (filters.orgIds.length > 0) {
+        q = q.in("organization_id", filters.orgIds);
+      }
+      if (filters.assetTypes.length > 0) {
+        q = q.in("asset_type", filters.assetTypes);
+      }
+
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const profileMap = useMemo(() => {
     const map = new Map<string, { display_name: string | null; avatar_url: string | null; email: string | null }>();
     (profilesQuery.data ?? []).forEach((p) => map.set(p.user_id, p));
@@ -117,30 +140,23 @@ export function useObservability() {
 
   // ---- KPIs ----
   const kpis = useMemo(() => {
+    const catalogue = catalogueQuery.data ?? [];
     const versions = versionsQuery.data ?? [];
     const now = new Date();
     const today = startOfDay(now);
     const thirtyDaysAgo = subDays(now, 30);
 
-    const totalVersions = versions.length;
+    const totalAssets = catalogue.length;
+    const totalVersions = catalogue.reduce((sum, a) => sum + (a.version_count ?? 0), 0);
 
     const recentVersions = versions.filter((v) => new Date(v.created_at) >= thirtyDaysAgo);
     const activeContributors = new Set(recentVersions.map((v) => v.changed_by).filter(Boolean)).size;
 
-    const orgIdsFromSnapshots = new Set(
-      recentVersions
-        .map((v) => {
-          const snap = v.snapshot as Record<string, unknown> | null;
-          return snap?.organization_id as string | undefined;
-        })
-        .filter(Boolean)
-    );
-    const activeOrgs = orgIdsFromSnapshots.size;
-
+    const activeOrgs = new Set(catalogue.map((a) => a.organization_id).filter(Boolean)).size;
     const todayVersions = versions.filter((v) => new Date(v.created_at) >= today).length;
 
-    return { totalVersions, activeContributors, activeOrgs, todayVersions };
-  }, [versionsQuery.data]);
+    return { totalAssets, totalVersions, activeContributors, activeOrgs, todayVersions };
+  }, [catalogueQuery.data, versionsQuery.data]);
 
   // ---- Chart data (28 days grouped by asset_type) ----
   const chartData = useMemo(() => {
@@ -196,7 +212,6 @@ export function useObservability() {
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-    // Filter by orgIds if set
     let filtered = merged;
     if (filters.orgIds.length > 0) {
       filtered = filtered.filter((item) => item.orgId && filters.orgIds.includes(item.orgId));
@@ -205,20 +220,20 @@ export function useObservability() {
     return filtered.slice(0, 100);
   }, [versionsQuery.data, logsQuery.data, filters.orgIds]);
 
-  // ---- Coverage matrix (org x asset_type) ----
+  // ---- Coverage matrix from observatory_assets ----
   const coverageMatrix = useMemo(() => {
-    const versions = versionsQuery.data ?? [];
+    const catalogue = catalogueQuery.data ?? [];
     const matrix: Record<string, Record<string, number>> = {};
 
-    versions.forEach((v) => {
-      const orgId = (v.snapshot as Record<string, unknown> | null)?.organization_id as string | undefined;
+    catalogue.forEach((a) => {
+      const orgId = a.organization_id;
       if (!orgId) return;
       if (!matrix[orgId]) {
         matrix[orgId] = {};
         ASSET_TYPES.forEach((t) => (matrix[orgId][t] = 0));
       }
-      if (ASSET_TYPES.includes(v.asset_type as any)) {
-        matrix[orgId][v.asset_type] = (matrix[orgId][v.asset_type] || 0) + 1;
+      if (ASSET_TYPES.includes(a.asset_type as any)) {
+        matrix[orgId][a.asset_type] = (matrix[orgId][a.asset_type] || 0) + 1;
       }
     });
 
@@ -227,45 +242,7 @@ export function useObservability() {
       orgName: orgMap.get(orgId)?.name ?? orgId.slice(0, 8),
       ...counts,
     }));
-  }, [versionsQuery.data, orgMap]);
-
-  // ---- Asset Catalogue ----
-  const assetCatalogue = useMemo(() => {
-    const versions = versionsQuery.data ?? [];
-    const grouped = new Map<string, typeof versions>();
-
-    versions.forEach((v) => {
-      const list = grouped.get(v.asset_id) || [];
-      list.push(v);
-      grouped.set(v.asset_id, list);
-    });
-
-    return Array.from(grouped.entries()).map(([assetId, versionList]) => {
-      // Sort versions descending
-      const sorted = [...versionList].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      const latest = sorted[0];
-      const oldest = sorted[sorted.length - 1];
-      const snap = latest.snapshot as Record<string, unknown> | null;
-      const name = (snap?.name || snap?.title || assetId.slice(0, 8)) as string;
-      const orgId = snap?.organization_id as string | undefined;
-      const contributors = new Set(sorted.map((v) => v.changed_by).filter(Boolean));
-
-      return {
-        assetId,
-        assetType: latest.asset_type,
-        name,
-        orgId,
-        versionCount: sorted.length,
-        contributorCount: contributors.size,
-        contributorIds: Array.from(contributors) as string[],
-        lastModified: latest.created_at,
-        createdAt: oldest.created_at,
-        versions: sorted,
-      };
-    }).sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
-  }, [versionsQuery.data]);
+  }, [catalogueQuery.data, orgMap]);
 
   // ---- Export CSV ----
   const exportCsv = () => {
@@ -307,11 +284,11 @@ export function useObservability() {
     chartData,
     timeline,
     coverageMatrix,
-    assetCatalogue,
+    catalogue: catalogueQuery.data ?? [],
     profileMap,
     orgMap,
     orgs: orgsQuery.data ?? [],
-    isLoading: versionsQuery.isLoading || logsQuery.isLoading,
+    isLoading: versionsQuery.isLoading || logsQuery.isLoading || catalogueQuery.isLoading,
     exportCsv,
     ASSET_TYPES,
   };

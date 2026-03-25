@@ -55,6 +55,8 @@ export function AdminSidebar() {
   const visibleMain = mainItems.filter(i => i.show);
   const visibleSystem = systemItems.filter(i => i.show);
   const showAcademy = perms.has("academy.paths.view");
+  const showObservability = perms.has("admin.logs.view");
+  const isObservabilityRoute = location.pathname.startsWith("/admin/observability");
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);

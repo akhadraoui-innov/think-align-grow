@@ -11,7 +11,7 @@ import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import {
   Activity, Users, Building2, Zap, Download, CalendarIcon,
-  GitCommitHorizontal, Filter, X,
+  GitCommitHorizontal, Filter, X, Package,
 } from "lucide-react";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -19,61 +19,37 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { ChevronRight, Search, Package } from "lucide-react";
 
 const ASSET_TYPE_LABELS: Record<string, string> = {
-  path: "Parcours",
-  quiz: "Quiz",
-  exercise: "Exercice",
-  practice: "Pratique",
-  persona: "Persona",
-  campaign: "Campagne",
+  path: "Parcours", quiz: "Quiz", exercise: "Exercice",
+  practice: "Pratique", persona: "Persona", campaign: "Campagne",
 };
 
 const ASSET_TYPE_COLORS: Record<string, string> = {
-  path: "hsl(var(--primary))",
-  quiz: "hsl(262, 80%, 55%)",
-  exercise: "hsl(174, 70%, 42%)",
-  practice: "hsl(32, 90%, 55%)",
-  persona: "hsl(340, 75%, 55%)",
-  campaign: "hsl(210, 80%, 55%)",
+  path: "hsl(var(--primary))", quiz: "hsl(262, 80%, 55%)",
+  exercise: "hsl(174, 70%, 42%)", practice: "hsl(32, 90%, 55%)",
+  persona: "hsl(340, 75%, 55%)", campaign: "hsl(210, 80%, 55%)",
 };
 
 const ACTION_LABELS: Record<string, string> = {
-  updated: "a modifié",
-  created: "a créé",
-  deleted: "a supprimé",
+  updated: "a modifié", created: "a créé", deleted: "a supprimé",
 };
 
 export default function AdminObservability() {
   const {
-    filters, setFilters, kpis, chartData, timeline, coverageMatrix, assetCatalogue,
+    filters, setFilters, kpis, chartData, timeline,
     profileMap, orgMap, orgs, isLoading, exportCsv, ASSET_TYPES,
   } = useObservability();
-
-  const [catalogueSearch, setCatalogueSearch] = useState("");
 
   const [matrixFilter, setMatrixFilter] = useState<{ orgId: string; assetType: string } | null>(null);
 
   const filteredTimeline = matrixFilter
-    ? timeline.filter(
-        (item) => item.orgId === matrixFilter.orgId && item.assetType === matrixFilter.assetType
-      )
+    ? timeline.filter((item) => item.orgId === matrixFilter.orgId && item.assetType === matrixFilter.assetType)
     : timeline;
 
   const updateFilter = (patch: Partial<ObsFilters>) => {
     setFilters((prev) => ({ ...prev, ...patch }));
   };
-
-  const maxMatrixValue = Math.max(
-    1,
-    ...coverageMatrix.flatMap((row) =>
-      ASSET_TYPES.map((t) => (row as any)[t] || 0)
-    )
-  );
 
   return (
     <AdminShell>
@@ -83,7 +59,7 @@ export default function AdminObservability() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Observabilité</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Cycle de vie des contenus pédagogiques à travers les organisations
+              Vue d'ensemble du cycle de vie des contenus pédagogiques
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={exportCsv} className="gap-2">
@@ -97,8 +73,6 @@ export default function AdminObservability() {
           <CardContent className="py-3 px-4">
             <div className="flex flex-wrap items-center gap-3">
               <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-
-              {/* Org filter */}
               <Select
                 value={filters.orgIds[0] || "all"}
                 onValueChange={(v) => updateFilter({ orgIds: v === "all" ? [] : [v] })}
@@ -114,7 +88,6 @@ export default function AdminObservability() {
                 </SelectContent>
               </Select>
 
-              {/* Asset type filter */}
               <Select
                 value={filters.assetTypes[0] || "all"}
                 onValueChange={(v) => updateFilter({ assetTypes: v === "all" ? [] : [v] })}
@@ -130,7 +103,6 @@ export default function AdminObservability() {
                 </SelectContent>
               </Select>
 
-              {/* Date range */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
@@ -164,9 +136,10 @@ export default function AdminObservability() {
         </Card>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {[
-            { label: "Versions totales", value: kpis.totalVersions, icon: GitCommitHorizontal, color: "text-primary" },
+            { label: "Assets total", value: kpis.totalAssets, icon: Package, color: "text-primary" },
+            { label: "Versions totales", value: kpis.totalVersions, icon: GitCommitHorizontal, color: "text-blue-500" },
             { label: "Contributeurs actifs", value: kpis.activeContributors, icon: Users, color: "text-emerald-500" },
             { label: "Organisations actives", value: kpis.activeOrgs, icon: Building2, color: "text-violet-500" },
             { label: "Modif. aujourd'hui", value: kpis.todayVersions, icon: Zap, color: "text-amber-500" },
@@ -191,7 +164,6 @@ export default function AdminObservability() {
 
         {/* Chart + Timeline row */}
         <div className="grid lg:grid-cols-5 gap-4">
-          {/* Area Chart */}
           <Card className="lg:col-span-3">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -212,26 +184,19 @@ export default function AdminObservability() {
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
-                        borderRadius: 8,
-                        fontSize: 12,
+                        borderRadius: 8, fontSize: 12,
                       }}
                     />
                     {ASSET_TYPES.map((type) => (
                       <Area
-                        key={type}
-                        type="monotone"
-                        dataKey={type}
-                        stackId="1"
-                        stroke={ASSET_TYPE_COLORS[type]}
-                        fill={ASSET_TYPE_COLORS[type]}
-                        fillOpacity={0.3}
-                        name={ASSET_TYPE_LABELS[type]}
+                        key={type} type="monotone" dataKey={type} stackId="1"
+                        stroke={ASSET_TYPE_COLORS[type]} fill={ASSET_TYPE_COLORS[type]}
+                        fillOpacity={0.3} name={ASSET_TYPE_LABELS[type]}
                       />
                     ))}
                   </AreaChart>
                 </ResponsiveContainer>
               )}
-              {/* Legend */}
               <div className="flex flex-wrap gap-3 mt-3 justify-center">
                 {ASSET_TYPES.map((type) => (
                   <div key={type} className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -243,7 +208,6 @@ export default function AdminObservability() {
             </CardContent>
           </Card>
 
-          {/* Timeline */}
           <Card className="lg:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Fil d'activité</CardTitle>
@@ -271,11 +235,7 @@ export default function AdminObservability() {
                       const profile = item.userId ? profileMap.get(item.userId) : null;
                       const org = item.orgId ? orgMap.get(item.orgId) : null;
                       const initials = (profile?.display_name || profile?.email || "?")
-                        .split(" ")
-                        .map((w) => w[0])
-                        .join("")
-                        .slice(0, 2)
-                        .toUpperCase();
+                        .split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
                       return (
                         <div key={item.id} className="relative flex gap-3 py-2.5 group">
@@ -299,14 +259,10 @@ export default function AdminObservability() {
                               </Badge>
                             </p>
                             {item.summary && item.summary !== "modification" && (
-                              <p className="text-[10px] text-muted-foreground/70 truncate mt-0.5">
-                                {item.summary}
-                              </p>
+                              <p className="text-[10px] text-muted-foreground/70 truncate mt-0.5">{item.summary}</p>
                             )}
                             <div className="flex items-center gap-2 mt-0.5">
-                              {org && (
-                                <span className="text-[10px] text-muted-foreground font-medium">{org.name}</span>
-                              )}
+                              {org && <span className="text-[10px] text-muted-foreground font-medium">{org.name}</span>}
                               <span className="text-[10px] text-muted-foreground/50">
                                 {formatDistanceToNow(parseISO(item.createdAt), { addSuffix: true, locale: fr })}
                               </span>
@@ -321,211 +277,6 @@ export default function AdminObservability() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Coverage Matrix */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              Matrice de couverture Organisation × Type
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-[200px] w-full" />
-            ) : coverageMatrix.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Aucune donnée cross-org disponible
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left font-semibold p-2 text-muted-foreground">Organisation</th>
-                      {ASSET_TYPES.map((t) => (
-                        <th key={t} className="text-center font-semibold p-2 text-muted-foreground">
-                          {ASSET_TYPE_LABELS[t]}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {coverageMatrix.map((row) => (
-                      <tr key={row.orgId} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                        <td className="p-2 font-medium text-foreground">{row.orgName}</td>
-                        {ASSET_TYPES.map((t) => {
-                          const val = (row as any)[t] || 0;
-                          const opacity = val === 0 ? 0 : Math.max(0.1, Math.min(0.8, val / maxMatrixValue));
-                          const isActive =
-                            matrixFilter?.orgId === row.orgId && matrixFilter?.assetType === t;
-
-                          return (
-                            <td
-                              key={t}
-                              className={cn(
-                                "text-center p-2 cursor-pointer transition-all rounded",
-                                isActive && "ring-2 ring-primary ring-offset-1"
-                              )}
-                              style={{
-                                backgroundColor: val > 0 ? `hsl(var(--primary) / ${opacity})` : undefined,
-                              }}
-                              onClick={() =>
-                                setMatrixFilter(
-                                  isActive ? null : { orgId: row.orgId, assetType: t }
-                                )
-                              }
-                            >
-                              <span className={cn("font-bold", val > 0 ? "text-foreground" : "text-muted-foreground/40")}>
-                                {val}
-                              </span>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        {/* Asset Catalogue */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Package className="h-4 w-4 text-primary" />
-                Catalogue des Assets
-              </CardTitle>
-              <div className="relative w-[220px]">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher un asset…"
-                  value={catalogueSearch}
-                  onChange={(e) => setCatalogueSearch(e.target.value)}
-                  className="h-8 pl-8 text-xs"
-                />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-[200px] w-full" />
-            ) : (
-              (() => {
-                const filtered = assetCatalogue.filter((a) => {
-                  if (catalogueSearch && !a.name.toLowerCase().includes(catalogueSearch.toLowerCase())) return false;
-                  if (filters.assetTypes.length > 0 && !filters.assetTypes.includes(a.assetType)) return false;
-                  if (filters.orgIds.length > 0 && (!a.orgId || !filters.orgIds.includes(a.orgId))) return false;
-                  return true;
-                });
-
-                if (filtered.length === 0) {
-                  return <p className="text-sm text-muted-foreground text-center py-8">Aucun asset trouvé</p>;
-                }
-
-                return (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-8" />
-                        <TableHead className="text-xs">Type</TableHead>
-                        <TableHead className="text-xs">Nom</TableHead>
-                        <TableHead className="text-xs">Organisation</TableHead>
-                        <TableHead className="text-xs text-center">Versions</TableHead>
-                        <TableHead className="text-xs text-center">Contributeurs</TableHead>
-                        <TableHead className="text-xs">Dernière modif.</TableHead>
-                        <TableHead className="text-xs">Créé le</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filtered.map((asset) => (
-                        <Collapsible key={asset.assetId} asChild>
-                          <>
-                            <CollapsibleTrigger asChild>
-                              <TableRow className="cursor-pointer hover:bg-muted/50 group">
-                                <TableCell className="p-2">
-                                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
-                                </TableCell>
-                                <TableCell className="p-2">
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[10px] px-1.5 py-0 font-normal"
-                                    style={{
-                                      borderColor: ASSET_TYPE_COLORS[asset.assetType],
-                                      color: ASSET_TYPE_COLORS[asset.assetType],
-                                    }}
-                                  >
-                                    {ASSET_TYPE_LABELS[asset.assetType] || asset.assetType}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="p-2 font-medium text-xs text-foreground max-w-[200px] truncate">
-                                  {asset.name}
-                                </TableCell>
-                                <TableCell className="p-2 text-xs text-muted-foreground">
-                                  {asset.orgId ? orgMap.get(asset.orgId)?.name || "—" : "—"}
-                                </TableCell>
-                                <TableCell className="p-2 text-xs text-center font-semibold">{asset.versionCount}</TableCell>
-                                <TableCell className="p-2 text-xs text-center">{asset.contributorCount}</TableCell>
-                                <TableCell className="p-2 text-xs text-muted-foreground">
-                                  {formatDistanceToNow(parseISO(asset.lastModified), { addSuffix: true, locale: fr })}
-                                </TableCell>
-                                <TableCell className="p-2 text-xs text-muted-foreground">
-                                  {format(parseISO(asset.createdAt), "dd/MM/yyyy")}
-                                </TableCell>
-                              </TableRow>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent asChild>
-                              <TableRow className="bg-muted/20 hover:bg-muted/20">
-                                <TableCell colSpan={8} className="p-0">
-                                  <div className="px-6 py-3 ml-8 border-l-2 border-primary/20 space-y-2">
-                                    {asset.versions.map((v) => {
-                                      const profile = v.changed_by ? profileMap.get(v.changed_by) : null;
-                                      const initials = (profile?.display_name || profile?.email || "?")
-                                        .split(" ")
-                                        .map((w) => w[0])
-                                        .join("")
-                                        .slice(0, 2)
-                                        .toUpperCase();
-
-                                      return (
-                                        <div key={v.id} className="flex items-start gap-3 text-xs">
-                                          <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 font-mono">
-                                            v{v.version_number}
-                                          </Badge>
-                                          <Avatar className="h-5 w-5 shrink-0">
-                                            <AvatarImage src={profile?.avatar_url || undefined} />
-                                            <AvatarFallback className="text-[8px] bg-muted">{initials}</AvatarFallback>
-                                          </Avatar>
-                                          <div className="min-w-0 flex-1">
-                                            <span className="font-medium text-foreground">
-                                              {profile?.display_name || profile?.email || "Système"}
-                                            </span>
-                                            {v.change_summary && (
-                                              <span className="text-muted-foreground ml-1.5">— {v.change_summary}</span>
-                                            )}
-                                          </div>
-                                          <span className="text-muted-foreground/60 shrink-0">
-                                            {formatDistanceToNow(parseISO(v.created_at), { addSuffix: true, locale: fr })}
-                                          </span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            </CollapsibleContent>
-                          </>
-                        </Collapsible>
-                      ))}
-                    </TableBody>
-                  </Table>
-                );
-              })()
-            )}
-          </CardContent>
-        </Card>
       </div>
     </AdminShell>
   );
