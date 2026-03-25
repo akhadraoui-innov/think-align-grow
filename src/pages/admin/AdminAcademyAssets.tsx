@@ -194,31 +194,8 @@ function useUpdateTags(table: "academy_quizzes" | "academy_exercises" | "academy
   });
 }
 
-// ─── Version history hook ───
-function useAssetVersions(assetType: string, assetId: string | null) {
-  return useQuery({
-    queryKey: ["asset-versions", assetType, assetId],
-    enabled: !!assetId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("academy_asset_versions" as any)
-        .select("id, version_number, change_summary, created_at, changed_by")
-        .eq("asset_type", assetType)
-        .eq("asset_id", assetId!)
-        .order("version_number", { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return (data ?? []) as unknown as Array<{
-        id: string;
-        version_number: number;
-        change_summary: string | null;
-        created_at: string;
-        changed_by: string | null;
-      }>;
-    },
-    staleTime: 30_000,
-  });
-}
+// ─── Version history (shared component) ───
+// Re-exported from shared component for backward compat
 
 // ─── Filter bar ───
 function FilterBar({
