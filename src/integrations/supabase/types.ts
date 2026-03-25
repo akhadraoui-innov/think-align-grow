@@ -1481,6 +1481,62 @@ export type Database = {
           },
         ]
       }
+      observatory_assets: {
+        Row: {
+          asset_id: string
+          asset_type: string
+          contributor_count: number
+          contributor_ids: string[]
+          created_at: string
+          id: string
+          last_modified_at: string
+          last_modified_by: string | null
+          name: string
+          organization_id: string | null
+          snapshot: Json
+          status: string | null
+          version_count: number
+        }
+        Insert: {
+          asset_id: string
+          asset_type: string
+          contributor_count?: number
+          contributor_ids?: string[]
+          created_at?: string
+          id?: string
+          last_modified_at?: string
+          last_modified_by?: string | null
+          name?: string
+          organization_id?: string | null
+          snapshot?: Json
+          status?: string | null
+          version_count?: number
+        }
+        Update: {
+          asset_id?: string
+          asset_type?: string
+          contributor_count?: number
+          contributor_ids?: string[]
+          created_at?: string
+          id?: string
+          last_modified_at?: string
+          last_modified_by?: string | null
+          name?: string
+          organization_id?: string | null
+          snapshot?: Json
+          status?: string | null
+          version_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observatory_assets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
