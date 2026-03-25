@@ -6,7 +6,7 @@ import {
 import {
   LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb, GraduationCap,
   CreditCard, ScrollText, Settings, ArrowLeft, Sparkles, Briefcase, Route, UserCircle,
-  Megaphone, Map, BarChart3, ChevronDown, Library,
+  Megaphone, Map, BarChart3, ChevronDown, Library, Activity,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -44,6 +44,7 @@ export function AdminSidebar() {
     { path: "/admin/billing", icon: CreditCard, label: "Crédits & Abonnements", show: perms.has("admin.billing.view") },
     { path: "/admin/logs", icon: ScrollText, label: "Logs d'activité", show: perms.has("admin.logs.view") },
     { path: "/admin/settings", icon: Settings, label: "Paramètres", show: perms.hasAny("admin.settings.ai", "admin.settings.roles", "admin.settings.platform") },
+    { path: "/admin/observability", icon: Activity, label: "Observabilité", show: perms.has("admin.logs.view") },
   ];
 
   const visibleMain = mainItems.filter(i => i.show);

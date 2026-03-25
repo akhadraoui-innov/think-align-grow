@@ -47,6 +47,7 @@ import AdminAcademyMap from "./pages/admin/AdminAcademyMap";
 import AdminAcademyTracking from "./pages/admin/AdminAcademyTracking";
 import AdminAcademyModuleDetail from "./pages/admin/AdminAcademyModuleDetail";
 import AdminAcademyAssets from "./pages/admin/AdminAcademyAssets";
+import AdminObservability from "./pages/admin/AdminObservability";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,7 @@ function AnimatedRoutes() {
           <Route path="/admin/academy/tracking" element={<AdminAcademyTracking />} />
           <Route path="/admin/academy/modules/:id" element={<AdminAcademyModuleDetail />} />
           <Route path="/admin/academy/assets" element={<AdminAcademyAssets />} />
+          <Route path="/admin/observability" element={<AdminObservability />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
