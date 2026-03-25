@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_asset_versions: {
+        Row: {
+          asset_id: string
+          asset_type: string
+          change_summary: string | null
+          changed_by: string | null
+          created_at: string
+          id: string
+          snapshot: Json
+          version_number: number
+        }
+        Insert: {
+          asset_id: string
+          asset_type: string
+          change_summary?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          version_number?: number
+        }
+        Update: {
+          asset_id?: string
+          asset_type?: string
+          change_summary?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          version_number?: number
+        }
+        Relationships: []
+      }
       academy_campaign_targets: {
         Row: {
           campaign_id: string
