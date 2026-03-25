@@ -256,7 +256,12 @@ export function useObservability() {
     const matrix: Record<string, Record<string, number>> = {};
 
     catalogue.forEach((a) => {
-      const orgId = a.organization_id || GROWTHINNOV_KEY;
+      // Normalize: null org OR org named "Growthinnov" → same key
+      let orgId = a.organization_id || GROWTHINNOV_KEY;
+      if (orgId !== GROWTHINNOV_KEY) {
+        const orgName = orgMap.get(orgId)?.name;
+        if (orgName?.toLowerCase() === "growthinnov") orgId = GROWTHINNOV_KEY;
+      }
       if (!matrix[orgId]) {
         matrix[orgId] = {};
         ASSET_TYPES.forEach((t) => (matrix[orgId][t] = 0));
