@@ -312,39 +312,7 @@ export default function AdminAcademyModuleDetail() {
 
           {/* Practice tab */}
           <TabsContent value="practice">
-            {practices.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                  <p className="text-sm">Aucune pratique IA générée.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {practices.map((pr: any) => (
-                  <Card key={pr.id}>
-                    <CardHeader className="pb-2 px-5 pt-5">
-                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                        <MessageSquare className="h-4 w-4 text-violet-500" />
-                        {pr.title}
-                        <Badge variant="outline" className="text-[10px]">{pr.max_exchanges} échanges max</Badge>
-                        {pr.difficulty && <Badge variant="secondary" className="text-[10px]">{pr.difficulty}</Badge>}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-5 pb-5 space-y-3">
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground mb-1">Scénario</p>
-                        <p className="text-sm">{pr.scenario}</p>
-                      </div>
-                      <div className="rounded-xl bg-muted/30 p-3">
-                        <p className="text-xs font-semibold text-muted-foreground mb-1">Prompt système IA</p>
-                        <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-6">{pr.system_prompt}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <AcademyPracticesTab moduleId={id!} practices={practices as any} />
           </TabsContent>
 
           {/* Info tab */}
