@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -9,11 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Search, Eye, Copy, Pencil, Library, HelpCircle, Dumbbell, MessageSquare } from "lucide-react";
+import { Search, Copy, Pencil, Library, HelpCircle, Dumbbell, MessageSquare, ChevronRight, Sparkles, BookOpen } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // ─── Types ───
 type OrgInfo = { id: string; name: string };
@@ -23,6 +22,14 @@ type AssetContext = {
   pathName: string | null;
   orgName: string | null;
   orgId: string | null;
+};
+
+type Filters = {
+  search: string;
+  orgFilter: string;
+  pathFilter: string;
+  difficultyFilter: string;
+  modeFilter: string;
 };
 
 // ─── Helpers ───
@@ -37,6 +44,27 @@ function extractContext(mod: any): AssetContext {
     orgId: firstPath?.organization_id ?? null,
   };
 }
+
+function applyFilters(items: any[], filters: Filters) {
+  return items.filter((item: any) => {
+    const ctx = extractContext(item.academy_modules);
+    const s = filters.search.toLowerCase();
+    const matchSearch = !s || item.title?.toLowerCase().includes(s) || ctx.moduleTitle.toLowerCase().includes(s);
+    const matchOrg = filters.orgFilter === "all" || (filters.orgFilter === "public" ? !ctx.orgId : ctx.orgId === filters.orgFilter);
+    const matchPath = filters.pathFilter === "all" || ctx.pathName === filters.pathFilter;
+    const itemDifficulty = item.difficulty || null;
+    const matchDifficulty = filters.difficultyFilter === "all" || itemDifficulty === filters.difficultyFilter;
+    const matchMode = filters.modeFilter === "all" || item.generation_mode === filters.modeFilter;
+    return matchSearch && matchOrg && matchPath && matchDifficulty && matchMode;
+  });
+}
+
+const DIFFICULTY_COLORS: Record<string, string> = {
+  beginner: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+  intermediate: "bg-blue-500/10 text-blue-700 border-blue-200",
+  advanced: "bg-orange-500/10 text-orange-700 border-orange-200",
+  expert: "bg-red-500/10 text-red-700 border-red-200",
+};
 
 // ─── Hooks ───
 function useOrganizations() {
@@ -105,88 +133,111 @@ function usePractices() {
 
 // ─── Filter bar ───
 function FilterBar({
-  search, setSearch, orgFilter, setOrgFilter, orgs,
+  filters, setFilter, orgs, paths,
 }: {
-  search: string; setSearch: (v: string) => void;
-  orgFilter: string; setOrgFilter: (v: string) => void;
+  filters: Filters;
+  setFilter: (key: keyof Filters, val: string) => void;
   orgs: OrgInfo[];
+  paths: string[];
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3 mb-4">
       <div className="relative flex-1 min-w-[200px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+        <Input placeholder="Rechercher…" value={filters.search} onChange={e => setFilter("search", e.target.value)} className="pl-9" />
       </div>
-      <Select value={orgFilter} onValueChange={setOrgFilter}>
-        <SelectTrigger className="w-[220px]">
-          <SelectValue placeholder="Toutes les organisations" />
-        </SelectTrigger>
+      <Select value={filters.orgFilter} onValueChange={v => setFilter("orgFilter", v)}>
+        <SelectTrigger className="w-[200px]"><SelectValue placeholder="Organisation" /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Toutes</SelectItem>
+          <SelectItem value="all">Toutes les orgs</SelectItem>
           <SelectItem value="public">Public uniquement</SelectItem>
           {orgs.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={filters.pathFilter} onValueChange={v => setFilter("pathFilter", v)}>
+        <SelectTrigger className="w-[200px]"><SelectValue placeholder="Parcours" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Tous les parcours</SelectItem>
+          {paths.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+        </SelectContent>
+      </Select>
+      <Select value={filters.difficultyFilter} onValueChange={v => setFilter("difficultyFilter", v)}>
+        <SelectTrigger className="w-[160px]"><SelectValue placeholder="Difficulté" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Toute difficulté</SelectItem>
+          <SelectItem value="beginner">Débutant</SelectItem>
+          <SelectItem value="intermediate">Intermédiaire</SelectItem>
+          <SelectItem value="advanced">Avancé</SelectItem>
+          <SelectItem value="expert">Expert</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={filters.modeFilter} onValueChange={v => setFilter("modeFilter", v)}>
+        <SelectTrigger className="w-[150px]"><SelectValue placeholder="Mode" /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Tous les modes</SelectItem>
+          <SelectItem value="ai">IA</SelectItem>
+          <SelectItem value="manual">Manuel</SelectItem>
         </SelectContent>
       </Select>
     </div>
   );
 }
 
-// ─── Org badge ───
+// ─── Shared components ───
 function OrgBadge({ orgName }: { orgName: string | null }) {
   return orgName
     ? <Badge variant="outline">{orgName}</Badge>
     : <Badge variant="secondary">Public</Badge>;
 }
 
+function DifficultyBadge({ difficulty }: { difficulty: string | null }) {
+  if (!difficulty) return <span className="text-muted-foreground">—</span>;
+  return <Badge variant="outline" className={cn("text-xs", DIFFICULTY_COLORS[difficulty])}>{difficulty}</Badge>;
+}
+
+function ModeBadge({ mode }: { mode: string }) {
+  return mode === "ai"
+    ? <Badge variant="outline" className="gap-1 text-xs"><Sparkles className="h-3 w-3" />IA</Badge>
+    : <Badge variant="outline" className="gap-1 text-xs"><BookOpen className="h-3 w-3" />Manuel</Badge>;
+}
+
+function DetailRow({ expanded, colSpan, children }: { expanded: boolean; colSpan: number; children: React.ReactNode }) {
+  if (!expanded) return null;
+  return (
+    <TableRow className="bg-muted/30 hover:bg-muted/30">
+      <TableCell colSpan={colSpan} className="p-4">
+        <div className="animate-accordion-down">{children}</div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 // ─── Quiz Tab ───
-function QuizTab({ search, orgFilter, orgs }: { search: string; orgFilter: string; orgs: OrgInfo[] }) {
+function QuizTab({ filters }: { filters: Filters }) {
   const { data: quizzes = [], isLoading } = useQuizzes();
   const { data: modules = [] } = useModulesForDuplicate();
   const qc = useQueryClient();
-  const [viewItem, setViewItem] = useState<any>(null);
+  const navigate = useNavigate();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [dupItem, setDupItem] = useState<any>(null);
   const [dupTarget, setDupTarget] = useState("");
-  const [editItem, setEditItem] = useState<any>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editScore, setEditScore] = useState(70);
 
-  const filtered = quizzes.filter((q: any) => {
-    const ctx = extractContext(q.academy_modules);
-    const matchSearch = !search || q.title?.toLowerCase().includes(search.toLowerCase()) || ctx.moduleTitle.toLowerCase().includes(search.toLowerCase());
-    const matchOrg = orgFilter === "all" || (orgFilter === "public" ? !ctx.orgId : ctx.orgId === orgFilter);
-    return matchSearch && matchOrg;
-  });
+  const filtered = applyFilters(quizzes, filters);
 
   const duplicateMut = useMutation({
     mutationFn: async ({ quiz, targetModuleId }: { quiz: any; targetModuleId: string }) => {
       const { data: newQuiz, error } = await supabase.from("academy_quizzes").insert({
-        module_id: targetModuleId,
-        title: `${quiz.title} (copie)`,
-        description: quiz.description,
-        passing_score: quiz.passing_score,
-        generation_mode: "manual",
-        organization_id: quiz.organization_id,
+        module_id: targetModuleId, title: `${quiz.title} (copie)`, description: quiz.description,
+        passing_score: quiz.passing_score, generation_mode: "manual", organization_id: quiz.organization_id,
       }).select().single();
       if (error) throw error;
-      // Copy questions
       const { data: questions } = await supabase.from("academy_quiz_questions").select("*").eq("quiz_id", quiz.id);
       if (questions?.length) {
         const copies = questions.map(({ id, quiz_id, ...rest }: any) => ({ ...rest, quiz_id: newQuiz.id }));
-        const { error: qErr } = await supabase.from("academy_quiz_questions").insert(copies);
-        if (qErr) throw qErr;
+        await supabase.from("academy_quiz_questions").insert(copies);
       }
     },
     onSuccess: () => { toast.success("Quiz dupliqué"); setDupItem(null); setDupTarget(""); qc.invalidateQueries({ queryKey: ["admin-asset-quizzes"] }); },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const editMut = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("academy_quizzes").update({ title: editTitle, description: editDesc, passing_score: editScore }).eq("id", editItem.id);
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Quiz mis à jour"); setEditItem(null); qc.invalidateQueries({ queryKey: ["admin-asset-quizzes"] }); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -197,58 +248,58 @@ function QuizTab({ search, orgFilter, orgs }: { search: string; orgFilter: strin
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-8" />
             <TableHead>Titre</TableHead>
-            <TableHead>Module source</TableHead>
+            <TableHead>Module</TableHead>
             <TableHead>Parcours</TableHead>
             <TableHead>Organisation</TableHead>
             <TableHead className="text-center">Questions</TableHead>
-            <TableHead className="text-center">Score min.</TableHead>
+            <TableHead className="text-center">Mode</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.length === 0 && (
-            <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Aucun quiz trouvé</TableCell></TableRow>
+            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Aucun quiz trouvé</TableCell></TableRow>
           )}
           {filtered.map((q: any) => {
             const ctx = extractContext(q.academy_modules);
+            const isOpen = expandedId === q.id;
             return (
-              <TableRow key={q.id}>
-                <TableCell className="font-medium">{q.title || "Sans titre"}</TableCell>
-                <TableCell className="text-muted-foreground text-xs">{ctx.moduleTitle}</TableCell>
-                <TableCell className="text-muted-foreground text-xs">{ctx.pathName ?? "—"}</TableCell>
-                <TableCell><OrgBadge orgName={ctx.orgName} /></TableCell>
-                <TableCell className="text-center">{q.academy_quiz_questions?.length ?? 0}</TableCell>
-                <TableCell className="text-center">{q.passing_score}%</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => setViewItem(q)}><Eye className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setDupItem(q)}><Copy className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => { setEditItem(q); setEditTitle(q.title); setEditDesc(q.description); setEditScore(q.passing_score); }}><Pencil className="h-4 w-4" /></Button>
+              <>
+                <TableRow key={q.id} className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : q.id)}>
+                  <TableCell className="w-8 px-2">
+                    <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
+                  </TableCell>
+                  <TableCell className="font-medium">{q.title || "Sans titre"}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{ctx.moduleTitle}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{ctx.pathName ?? "—"}</TableCell>
+                  <TableCell><OrgBadge orgName={ctx.orgName} /></TableCell>
+                  <TableCell className="text-center">{q.academy_quiz_questions?.length ?? 0}</TableCell>
+                  <TableCell className="text-center"><ModeBadge mode={q.generation_mode} /></TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
+                      <Button size="icon" variant="ghost" onClick={() => setDupItem(q)}><Copy className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => navigate(`/admin/academy/modules/${q.module_id}`)}><Pencil className="h-4 w-4" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+                <DetailRow key={`${q.id}-detail`} expanded={isOpen} colSpan={8}>
+                  <div className="grid gap-3 text-sm">
+                    <div><strong>Description :</strong> {q.description || "—"}</div>
+                    <div className="flex gap-6">
+                      <span><strong>Score min. :</strong> {q.passing_score}%</span>
+                      <span><strong>Questions :</strong> {q.academy_quiz_questions?.length ?? 0}</span>
+                      <span><strong>Mode :</strong> {q.generation_mode}</span>
+                    </div>
                   </div>
-                </TableCell>
-              </TableRow>
+                </DetailRow>
+              </>
             );
           })}
         </TableBody>
       </Table>
 
-      {/* View Dialog */}
-      <Dialog open={!!viewItem} onOpenChange={() => setViewItem(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{viewItem?.title}</DialogTitle>
-            <DialogDescription>{viewItem?.description}</DialogDescription>
-          </DialogHeader>
-          <div className="text-sm space-y-2">
-            <p><strong>Score minimum :</strong> {viewItem?.passing_score}%</p>
-            <p><strong>Questions :</strong> {viewItem?.academy_quiz_questions?.length ?? 0}</p>
-            <p><strong>Mode :</strong> {viewItem?.generation_mode}</p>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Duplicate Dialog */}
       <Dialog open={!!dupItem} onOpenChange={() => setDupItem(null)}>
         <DialogContent>
           <DialogHeader>
@@ -257,33 +308,11 @@ function QuizTab({ search, orgFilter, orgs }: { search: string; orgFilter: strin
           </DialogHeader>
           <Select value={dupTarget} onValueChange={setDupTarget}>
             <SelectTrigger><SelectValue placeholder="Sélectionner un module…" /></SelectTrigger>
-            <SelectContent>
-              {modules.map(m => <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>)}
-            </SelectContent>
+            <SelectContent>{modules.map(m => <SelectItem key={m.id} value={m.id}>{m.title}</SelectItem>)}</SelectContent>
           </Select>
           <DialogFooter>
             <Button disabled={!dupTarget || duplicateMut.isPending} onClick={() => duplicateMut.mutate({ quiz: dupItem, targetModuleId: dupTarget })}>
               {duplicateMut.isPending ? "Duplication…" : "Dupliquer"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editItem} onOpenChange={() => setEditItem(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Modifier le quiz</DialogTitle>
-            <DialogDescription>Mettre à jour les informations du quiz</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Titre</Label><Input value={editTitle} onChange={e => setEditTitle(e.target.value)} /></div>
-            <div><Label>Description</Label><Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} /></div>
-            <div><Label>Score minimum (%)</Label><Input type="number" value={editScore} onChange={e => setEditScore(+e.target.value)} /></div>
-          </div>
-          <DialogFooter>
-            <Button disabled={editMut.isPending} onClick={() => editMut.mutate()}>
-              {editMut.isPending ? "Enregistrement…" : "Enregistrer"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -293,49 +322,27 @@ function QuizTab({ search, orgFilter, orgs }: { search: string; orgFilter: strin
 }
 
 // ─── Exercises Tab ───
-function ExercisesTab({ search, orgFilter }: { search: string; orgFilter: string }) {
+function ExercisesTab({ filters }: { filters: Filters }) {
   const { data: exercises = [], isLoading } = useExercises();
   const { data: modules = [] } = useModulesForDuplicate();
   const qc = useQueryClient();
-  const [viewItem, setViewItem] = useState<any>(null);
+  const navigate = useNavigate();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [dupItem, setDupItem] = useState<any>(null);
   const [dupTarget, setDupTarget] = useState("");
-  const [editItem, setEditItem] = useState<any>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editInstructions, setEditInstructions] = useState("");
-  const [editAiEnabled, setEditAiEnabled] = useState(false);
 
-  const filtered = exercises.filter((ex: any) => {
-    const ctx = extractContext(ex.academy_modules);
-    const matchSearch = !search || ex.title?.toLowerCase().includes(search.toLowerCase()) || ctx.moduleTitle.toLowerCase().includes(search.toLowerCase());
-    const matchOrg = orgFilter === "all" || (orgFilter === "public" ? !ctx.orgId : ctx.orgId === orgFilter);
-    return matchSearch && matchOrg;
-  });
+  const filtered = applyFilters(exercises, filters);
 
   const duplicateMut = useMutation({
     mutationFn: async ({ exercise, targetModuleId }: { exercise: any; targetModuleId: string }) => {
       const { error } = await supabase.from("academy_exercises").insert({
-        module_id: targetModuleId,
-        title: `${exercise.title} (copie)`,
-        instructions: exercise.instructions,
-        expected_output_type: exercise.expected_output_type,
-        ai_evaluation_enabled: exercise.ai_evaluation_enabled,
-        evaluation_criteria: exercise.evaluation_criteria,
-        generation_mode: "manual",
-        organization_id: exercise.organization_id,
+        module_id: targetModuleId, title: `${exercise.title} (copie)`, instructions: exercise.instructions,
+        expected_output_type: exercise.expected_output_type, ai_evaluation_enabled: exercise.ai_evaluation_enabled,
+        evaluation_criteria: exercise.evaluation_criteria, generation_mode: "manual", organization_id: exercise.organization_id,
       });
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Exercice dupliqué"); setDupItem(null); setDupTarget(""); qc.invalidateQueries({ queryKey: ["admin-asset-exercises"] }); },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const editMut = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("academy_exercises").update({ title: editTitle, instructions: editInstructions, ai_evaluation_enabled: editAiEnabled }).eq("id", editItem.id);
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Exercice mis à jour"); setEditItem(null); qc.invalidateQueries({ queryKey: ["admin-asset-exercises"] }); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -346,53 +353,60 @@ function ExercisesTab({ search, orgFilter }: { search: string; orgFilter: string
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-8" />
             <TableHead>Titre</TableHead>
-            <TableHead>Module source</TableHead>
+            <TableHead>Module</TableHead>
             <TableHead>Parcours</TableHead>
             <TableHead>Organisation</TableHead>
             <TableHead className="text-center">Éval. IA</TableHead>
+            <TableHead className="text-center">Mode</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.length === 0 && (
-            <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Aucun exercice trouvé</TableCell></TableRow>
+            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Aucun exercice trouvé</TableCell></TableRow>
           )}
           {filtered.map((ex: any) => {
             const ctx = extractContext(ex.academy_modules);
+            const isOpen = expandedId === ex.id;
             return (
-              <TableRow key={ex.id}>
-                <TableCell className="font-medium">{ex.title}</TableCell>
-                <TableCell className="text-muted-foreground text-xs">{ctx.moduleTitle}</TableCell>
-                <TableCell className="text-muted-foreground text-xs">{ctx.pathName ?? "—"}</TableCell>
-                <TableCell><OrgBadge orgName={ctx.orgName} /></TableCell>
-                <TableCell className="text-center">{ex.ai_evaluation_enabled ? <Badge>IA</Badge> : "—"}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => setViewItem(ex)}><Eye className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setDupItem(ex)}><Copy className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => { setEditItem(ex); setEditTitle(ex.title); setEditInstructions(ex.instructions); setEditAiEnabled(ex.ai_evaluation_enabled); }}><Pencil className="h-4 w-4" /></Button>
+              <>
+                <TableRow key={ex.id} className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : ex.id)}>
+                  <TableCell className="w-8 px-2">
+                    <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
+                  </TableCell>
+                  <TableCell className="font-medium">{ex.title}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{ctx.moduleTitle}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{ctx.pathName ?? "—"}</TableCell>
+                  <TableCell><OrgBadge orgName={ctx.orgName} /></TableCell>
+                  <TableCell className="text-center">{ex.ai_evaluation_enabled ? <Badge>IA</Badge> : "—"}</TableCell>
+                  <TableCell className="text-center"><ModeBadge mode={ex.generation_mode} /></TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
+                      <Button size="icon" variant="ghost" onClick={() => setDupItem(ex)}><Copy className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => navigate(`/admin/academy/modules/${ex.module_id}`)}><Pencil className="h-4 w-4" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+                <DetailRow key={`${ex.id}-detail`} expanded={isOpen} colSpan={8}>
+                  <div className="grid gap-3 text-sm">
+                    <div>
+                      <strong>Instructions :</strong>
+                      <pre className="mt-1 whitespace-pre-wrap bg-background p-3 rounded-lg text-xs border">{ex.instructions}</pre>
+                    </div>
+                    <div className="flex gap-6">
+                      <span><strong>Type rendu :</strong> {ex.expected_output_type}</span>
+                      <span><strong>Éval. IA :</strong> {ex.ai_evaluation_enabled ? "Oui" : "Non"}</span>
+                      <span><strong>Mode :</strong> {ex.generation_mode}</span>
+                    </div>
                   </div>
-                </TableCell>
-              </TableRow>
+                </DetailRow>
+              </>
             );
           })}
         </TableBody>
       </Table>
-
-      <Dialog open={!!viewItem} onOpenChange={() => setViewItem(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{viewItem?.title}</DialogTitle>
-            <DialogDescription>Détail de l'exercice</DialogDescription>
-          </DialogHeader>
-          <div className="text-sm space-y-3">
-            <div><strong>Instructions :</strong><pre className="mt-1 whitespace-pre-wrap bg-muted p-3 rounded-lg text-xs">{viewItem?.instructions}</pre></div>
-            <p><strong>Type de rendu :</strong> {viewItem?.expected_output_type}</p>
-            <p><strong>Évaluation IA :</strong> {viewItem?.ai_evaluation_enabled ? "Oui" : "Non"}</p>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={!!dupItem} onOpenChange={() => setDupItem(null)}>
         <DialogContent>
@@ -411,74 +425,32 @@ function ExercisesTab({ search, orgFilter }: { search: string; orgFilter: string
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Dialog open={!!editItem} onOpenChange={() => setEditItem(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Modifier l'exercice</DialogTitle>
-            <DialogDescription>Mettre à jour le contenu de l'exercice</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Titre</Label><Input value={editTitle} onChange={e => setEditTitle(e.target.value)} /></div>
-            <div><Label>Instructions</Label><Textarea rows={6} value={editInstructions} onChange={e => setEditInstructions(e.target.value)} /></div>
-            <div className="flex items-center gap-2"><Switch checked={editAiEnabled} onCheckedChange={setEditAiEnabled} /><Label>Évaluation IA</Label></div>
-          </div>
-          <DialogFooter>
-            <Button disabled={editMut.isPending} onClick={() => editMut.mutate()}>
-              {editMut.isPending ? "Enregistrement…" : "Enregistrer"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
 
 // ─── Practices Tab ───
-function PracticesTab({ search, orgFilter }: { search: string; orgFilter: string }) {
+function PracticesTab({ filters }: { filters: Filters }) {
   const { data: practices = [], isLoading } = usePractices();
   const { data: modules = [] } = useModulesForDuplicate();
   const qc = useQueryClient();
-  const [viewItem, setViewItem] = useState<any>(null);
+  const navigate = useNavigate();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [dupItem, setDupItem] = useState<any>(null);
   const [dupTarget, setDupTarget] = useState("");
-  const [editItem, setEditItem] = useState<any>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editScenario, setEditScenario] = useState("");
-  const [editMaxExchanges, setEditMaxExchanges] = useState(10);
 
-  const filtered = practices.filter((pr: any) => {
-    const ctx = extractContext(pr.academy_modules);
-    const matchSearch = !search || pr.title?.toLowerCase().includes(search.toLowerCase()) || ctx.moduleTitle.toLowerCase().includes(search.toLowerCase());
-    const matchOrg = orgFilter === "all" || (orgFilter === "public" ? !ctx.orgId : ctx.orgId === orgFilter);
-    return matchSearch && matchOrg;
-  });
+  const filtered = applyFilters(practices, filters);
 
   const duplicateMut = useMutation({
     mutationFn: async ({ practice, targetModuleId }: { practice: any; targetModuleId: string }) => {
       const { error } = await supabase.from("academy_practices").insert({
-        module_id: targetModuleId,
-        title: `${practice.title} (copie)`,
-        scenario: practice.scenario,
-        system_prompt: practice.system_prompt,
-        max_exchanges: practice.max_exchanges,
-        difficulty: practice.difficulty,
-        evaluation_rubric: practice.evaluation_rubric,
-        generation_mode: "manual",
-        organization_id: practice.organization_id,
+        module_id: targetModuleId, title: `${practice.title} (copie)`, scenario: practice.scenario,
+        system_prompt: practice.system_prompt, max_exchanges: practice.max_exchanges, difficulty: practice.difficulty,
+        evaluation_rubric: practice.evaluation_rubric, generation_mode: "manual", organization_id: practice.organization_id,
       });
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Pratique dupliquée"); setDupItem(null); setDupTarget(""); qc.invalidateQueries({ queryKey: ["admin-asset-practices"] }); },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const editMut = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("academy_practices").update({ title: editTitle, scenario: editScenario, max_exchanges: editMaxExchanges }).eq("id", editItem.id);
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Pratique mise à jour"); setEditItem(null); qc.invalidateQueries({ queryKey: ["admin-asset-practices"] }); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -489,56 +461,64 @@ function PracticesTab({ search, orgFilter }: { search: string; orgFilter: string
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-8" />
             <TableHead>Titre</TableHead>
-            <TableHead>Module source</TableHead>
+            <TableHead>Module</TableHead>
             <TableHead>Parcours</TableHead>
             <TableHead>Organisation</TableHead>
-            <TableHead className="text-center">Échanges max</TableHead>
             <TableHead className="text-center">Difficulté</TableHead>
+            <TableHead className="text-center">Mode</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filtered.length === 0 && (
-            <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Aucune pratique trouvée</TableCell></TableRow>
+            <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Aucune pratique trouvée</TableCell></TableRow>
           )}
           {filtered.map((pr: any) => {
             const ctx = extractContext(pr.academy_modules);
+            const isOpen = expandedId === pr.id;
             return (
-              <TableRow key={pr.id}>
-                <TableCell className="font-medium">{pr.title}</TableCell>
-                <TableCell className="text-muted-foreground text-xs">{ctx.moduleTitle}</TableCell>
-                <TableCell className="text-muted-foreground text-xs">{ctx.pathName ?? "—"}</TableCell>
-                <TableCell><OrgBadge orgName={ctx.orgName} /></TableCell>
-                <TableCell className="text-center">{pr.max_exchanges}</TableCell>
-                <TableCell className="text-center"><Badge variant="outline">{pr.difficulty ?? "—"}</Badge></TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => setViewItem(pr)}><Eye className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => setDupItem(pr)}><Copy className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => { setEditItem(pr); setEditTitle(pr.title); setEditScenario(pr.scenario); setEditMaxExchanges(pr.max_exchanges); }}><Pencil className="h-4 w-4" /></Button>
+              <>
+                <TableRow key={pr.id} className="cursor-pointer" onClick={() => setExpandedId(isOpen ? null : pr.id)}>
+                  <TableCell className="w-8 px-2">
+                    <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
+                  </TableCell>
+                  <TableCell className="font-medium">{pr.title}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{ctx.moduleTitle}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{ctx.pathName ?? "—"}</TableCell>
+                  <TableCell><OrgBadge orgName={ctx.orgName} /></TableCell>
+                  <TableCell className="text-center"><DifficultyBadge difficulty={pr.difficulty} /></TableCell>
+                  <TableCell className="text-center"><ModeBadge mode={pr.generation_mode} /></TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
+                      <Button size="icon" variant="ghost" onClick={() => setDupItem(pr)}><Copy className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => navigate(`/admin/academy/modules/${pr.module_id}`)}><Pencil className="h-4 w-4" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+                <DetailRow key={`${pr.id}-detail`} expanded={isOpen} colSpan={8}>
+                  <div className="grid gap-3 text-sm">
+                    <div>
+                      <strong>Scénario :</strong>
+                      <pre className="mt-1 whitespace-pre-wrap bg-background p-3 rounded-lg text-xs border">{pr.scenario}</pre>
+                    </div>
+                    <div>
+                      <strong>Prompt système :</strong>
+                      <pre className="mt-1 whitespace-pre-wrap bg-background p-3 rounded-lg text-xs border">{pr.system_prompt}</pre>
+                    </div>
+                    <div className="flex gap-6">
+                      <span><strong>Échanges max :</strong> {pr.max_exchanges}</span>
+                      <span><strong>Difficulté :</strong> {pr.difficulty ?? "—"}</span>
+                      <span><strong>Mode :</strong> {pr.generation_mode}</span>
+                    </div>
                   </div>
-                </TableCell>
-              </TableRow>
+                </DetailRow>
+              </>
             );
           })}
         </TableBody>
       </Table>
-
-      <Dialog open={!!viewItem} onOpenChange={() => setViewItem(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{viewItem?.title}</DialogTitle>
-            <DialogDescription>Détail de la pratique IA</DialogDescription>
-          </DialogHeader>
-          <div className="text-sm space-y-3">
-            <div><strong>Scénario :</strong><pre className="mt-1 whitespace-pre-wrap bg-muted p-3 rounded-lg text-xs">{viewItem?.scenario}</pre></div>
-            <div><strong>Prompt système :</strong><pre className="mt-1 whitespace-pre-wrap bg-muted p-3 rounded-lg text-xs">{viewItem?.system_prompt}</pre></div>
-            <p><strong>Échanges max :</strong> {viewItem?.max_exchanges}</p>
-            <p><strong>Difficulté :</strong> {viewItem?.difficulty ?? "—"}</p>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={!!dupItem} onOpenChange={() => setDupItem(null)}>
         <DialogContent>
@@ -557,43 +537,44 @@ function PracticesTab({ search, orgFilter }: { search: string; orgFilter: string
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Dialog open={!!editItem} onOpenChange={() => setEditItem(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Modifier la pratique</DialogTitle>
-            <DialogDescription>Mettre à jour le contenu de la pratique</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div><Label>Titre</Label><Input value={editTitle} onChange={e => setEditTitle(e.target.value)} /></div>
-            <div><Label>Scénario</Label><Textarea rows={4} value={editScenario} onChange={e => setEditScenario(e.target.value)} /></div>
-            <div><Label>Échanges max</Label><Input type="number" value={editMaxExchanges} onChange={e => setEditMaxExchanges(+e.target.value)} /></div>
-          </div>
-          <DialogFooter>
-            <Button disabled={editMut.isPending} onClick={() => editMut.mutate()}>
-              {editMut.isPending ? "Enregistrement…" : "Enregistrer"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
 
 // ─── Main Page ───
 export default function AdminAcademyAssets() {
-  const [search, setSearch] = useState("");
-  const [orgFilter, setOrgFilter] = useState("all");
+  const [filters, setFilters] = useState<Filters>({
+    search: "", orgFilter: "all", pathFilter: "all", difficultyFilter: "all", modeFilter: "all",
+  });
   const { data: orgs = [] } = useOrganizations();
+  const { data: quizzes = [] } = useQuizzes();
+  const { data: exercises = [] } = useExercises();
+  const { data: practices = [] } = usePractices();
+
+  const setFilter = (key: keyof Filters, val: string) => setFilters(prev => ({ ...prev, [key]: val }));
+
+  // Derive distinct path names from all loaded data
+  const paths = useMemo(() => {
+    const allItems = [...quizzes, ...exercises, ...practices];
+    const names = new Set<string>();
+    allItems.forEach((item: any) => {
+      const ctx = extractContext(item.academy_modules);
+      if (ctx.pathName) names.add(ctx.pathName);
+    });
+    return Array.from(names).sort();
+  }, [quizzes, exercises, practices]);
 
   return (
     <AdminShell>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Actifs pédagogiques</h1>
-        <p className="text-sm text-muted-foreground">Bibliothèque centralisée des quiz, exercices et pratiques</p>
+      <div className="mb-6 flex items-center gap-3">
+        <Library className="h-6 w-6 text-primary" />
+        <div>
+          <h1 className="text-2xl font-bold">Actifs pédagogiques</h1>
+          <p className="text-sm text-muted-foreground">Bibliothèque centralisée des quiz, exercices et pratiques</p>
+        </div>
       </div>
 
-      <FilterBar search={search} setSearch={setSearch} orgFilter={orgFilter} setOrgFilter={setOrgFilter} orgs={orgs} />
+      <FilterBar filters={filters} setFilter={setFilter} orgs={orgs} paths={paths} />
 
       <Tabs defaultValue="quizzes">
         <TabsList>
@@ -601,9 +582,9 @@ export default function AdminAcademyAssets() {
           <TabsTrigger value="exercises" className="gap-1.5"><Dumbbell className="h-3.5 w-3.5" />Exercices</TabsTrigger>
           <TabsTrigger value="practices" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" />Pratiques</TabsTrigger>
         </TabsList>
-        <TabsContent value="quizzes"><QuizTab search={search} orgFilter={orgFilter} orgs={orgs} /></TabsContent>
-        <TabsContent value="exercises"><ExercisesTab search={search} orgFilter={orgFilter} /></TabsContent>
-        <TabsContent value="practices"><PracticesTab search={search} orgFilter={orgFilter} /></TabsContent>
+        <TabsContent value="quizzes"><QuizTab filters={filters} /></TabsContent>
+        <TabsContent value="exercises"><ExercisesTab filters={filters} /></TabsContent>
+        <TabsContent value="practices"><PracticesTab filters={filters} /></TabsContent>
       </Tabs>
     </AdminShell>
   );
