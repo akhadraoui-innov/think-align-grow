@@ -639,6 +639,159 @@ export default function AdminAcademyCampaigns() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ═══ AI GENERATION DIALOG — 3 MODES ═══ */}
+      <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" /> Générer une campagne par IA
+            </DialogTitle>
+          </DialogHeader>
+
+          <Tabs value={aiMode} onValueChange={(v) => setAiMode(v as any)} className="space-y-4">
+            <TabsList className="grid grid-cols-3 w-full">
+              <TabsTrigger value="guided" className="gap-1.5">
+                <Route className="h-3.5 w-3.5" /> Guidé
+              </TabsTrigger>
+              <TabsTrigger value="corporate" className="gap-1.5">
+                <FileText className="h-3.5 w-3.5" /> Brief corporate
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5" /> Chat libre
+              </TabsTrigger>
+            </TabsList>
+
+            {/* GUIDED */}
+            <TabsContent value="guided" className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>🎯 Nom de la campagne</Label>
+                  <Input value={aiForm.name} onChange={e => setAiForm({ ...aiForm, name: e.target.value })} placeholder="Ex: Déploiement IA Managers Q2 2026" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>🏢 Organisation</Label>
+                  <Select value={aiForm.organization_id || "none"} onValueChange={v => setAiForm({ ...aiForm, organization_id: v === "none" ? "" : v })}>
+                    <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Choisir —</SelectItem>
+                      {orgs.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>📚 Parcours cible (optionnel — l'IA peut recommander)</Label>
+                  <Select value={aiForm.path_id || "none"} onValueChange={v => setAiForm({ ...aiForm, path_id: v === "none" ? "" : v })}>
+                    <SelectTrigger><SelectValue placeholder="L'IA recommandera" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">L'IA recommandera</SelectItem>
+                      {paths.filter((p: any) => p.status === "published").map((p: any) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>⏱️ Durée souhaitée (semaines)</Label>
+                  <Input type="number" min={1} max={52} value={aiForm.duration_weeks} onChange={e => setAiForm({ ...aiForm, duration_weeks: Number(e.target.value) })} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>🎯 Objectifs de déploiement</Label>
+                <Textarea value={aiForm.objectives} onChange={e => setAiForm({ ...aiForm, objectives: e.target.value })} rows={4} placeholder="Décrivez les objectifs : montée en compétences IA de 200 managers, adoption d'outils, KPIs attendus..." />
+              </div>
+            </TabsContent>
+
+            {/* CORPORATE */}
+            <TabsContent value="corporate" className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Nom de la campagne</Label>
+                  <Input value={aiForm.name} onChange={e => setAiForm({ ...aiForm, name: e.target.value })} placeholder="Titre de la campagne" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Organisation</Label>
+                  <Select value={aiForm.organization_id || "none"} onValueChange={v => setAiForm({ ...aiForm, organization_id: v === "none" ? "" : v })}>
+                    <SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Choisir —</SelectItem>
+                      {orgs.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Brief complet</Label>
+                <Textarea
+                  value={aiForm.description}
+                  onChange={e => setAiForm({ ...aiForm, description: e.target.value })}
+                  rows={10}
+                  placeholder={"Collez ici votre brief de déploiement complet :\n\n• Contexte business et enjeux stratégiques\n• Objectifs RH et de transformation\n• Population cible (effectifs, fonctions, niveaux)\n• Contraintes calendaires\n• Budget et ressources disponibles\n• KPIs de succès attendus\n• Parcours ou compétences visées"}
+                />
+              </div>
+            </TabsContent>
+
+            {/* CHAT */}
+            <TabsContent value="chat" className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Nom de la campagne</Label>
+                  <Input value={aiForm.name} onChange={e => setAiForm({ ...aiForm, name: e.target.value })} placeholder="Titre" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Organisation</Label>
+                  <Select value={aiForm.organization_id || "none"} onValueChange={v => setAiForm({ ...aiForm, organization_id: v === "none" ? "" : v })}>
+                    <SelectTrigger><SelectValue placeholder="Optionnel" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Aucune</SelectItem>
+                      {orgs.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Décrivez librement votre campagne</Label>
+                <Textarea
+                  value={aiChat}
+                  onChange={e => setAiChat(e.target.value)}
+                  rows={8}
+                  placeholder={"Décrivez en langage naturel la campagne que vous voulez déployer.\n\nExemple : \"Je veux former 150 managers à l'IA générative sur 3 mois. Ils n'ont aucune expérience. Il faut un rythme de 2h par semaine max, avec des relances hebdomadaires. L'objectif est que 80% aient complété le parcours avant septembre.\""}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button variant="outline" onClick={() => setAiOpen(false)}>Annuler</Button>
+            <Button
+              onClick={() => generateAI.mutate()}
+              disabled={!aiForm.name || !aiForm.organization_id || (aiMode === "chat" ? !aiChat : (aiMode === "corporate" ? !aiForm.description : !aiForm.objectives)) || generateAI.isPending}
+            >
+              {generateAI.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+              {generateAI.isPending ? "Génération..." : "Générer la campagne"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Strategy Result Dialog */}
+      <Dialog open={!!aiStrategy} onOpenChange={() => setAiStrategy(null)}>
+        <DialogContent className="max-w-2xl max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" /> Stratégie de déploiement
+            </DialogTitle>
+          </DialogHeader>
+          <div className="prose prose-sm max-w-none text-sm whitespace-pre-wrap">
+            {aiStrategy}
+          </div>
+          <div className="flex justify-end pt-2 border-t">
+            <Button onClick={() => setAiStrategy(null)}>Fermer</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminShell>
   );
 }
