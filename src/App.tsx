@@ -48,6 +48,8 @@ import AdminAcademyTracking from "./pages/admin/AdminAcademyTracking";
 import AdminAcademyModuleDetail from "./pages/admin/AdminAcademyModuleDetail";
 import AdminAcademyAssets from "./pages/admin/AdminAcademyAssets";
 import AdminObservability from "./pages/admin/AdminObservability";
+import AdminObservabilityCatalogue from "./pages/admin/AdminObservabilityCatalogue";
+import AdminObservabilityMatrix from "./pages/admin/AdminObservabilityMatrix";
 
 const queryClient = new QueryClient();
 
