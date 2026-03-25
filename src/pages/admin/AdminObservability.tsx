@@ -19,6 +19,10 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { ChevronRight, Search, Package } from "lucide-react";
 
 const ASSET_TYPE_LABELS: Record<string, string> = {
   path: "Parcours",
@@ -46,9 +50,11 @@ const ACTION_LABELS: Record<string, string> = {
 
 export default function AdminObservability() {
   const {
-    filters, setFilters, kpis, chartData, timeline, coverageMatrix,
+    filters, setFilters, kpis, chartData, timeline, coverageMatrix, assetCatalogue,
     profileMap, orgMap, orgs, isLoading, exportCsv, ASSET_TYPES,
   } = useObservability();
+
+  const [catalogueSearch, setCatalogueSearch] = useState("");
 
   const [matrixFilter, setMatrixFilter] = useState<{ orgId: string; assetType: string } | null>(null);
 
@@ -381,6 +387,142 @@ export default function AdminObservability() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </CardContent>
+        </Card>
+        {/* Asset Catalogue */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Package className="h-4 w-4 text-primary" />
+                Catalogue des Assets
+              </CardTitle>
+              <div className="relative w-[220px]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher un asset…"
+                  value={catalogueSearch}
+                  onChange={(e) => setCatalogueSearch(e.target.value)}
+                  className="h-8 pl-8 text-xs"
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : (
+              (() => {
+                const filtered = assetCatalogue.filter((a) => {
+                  if (catalogueSearch && !a.name.toLowerCase().includes(catalogueSearch.toLowerCase())) return false;
+                  if (filters.assetTypes.length > 0 && !filters.assetTypes.includes(a.assetType)) return false;
+                  if (filters.orgIds.length > 0 && (!a.orgId || !filters.orgIds.includes(a.orgId))) return false;
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return <p className="text-sm text-muted-foreground text-center py-8">Aucun asset trouvé</p>;
+                }
+
+                return (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-8" />
+                        <TableHead className="text-xs">Type</TableHead>
+                        <TableHead className="text-xs">Nom</TableHead>
+                        <TableHead className="text-xs">Organisation</TableHead>
+                        <TableHead className="text-xs text-center">Versions</TableHead>
+                        <TableHead className="text-xs text-center">Contributeurs</TableHead>
+                        <TableHead className="text-xs">Dernière modif.</TableHead>
+                        <TableHead className="text-xs">Créé le</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map((asset) => (
+                        <Collapsible key={asset.assetId} asChild>
+                          <>
+                            <CollapsibleTrigger asChild>
+                              <TableRow className="cursor-pointer hover:bg-muted/50 group">
+                                <TableCell className="p-2">
+                                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+                                </TableCell>
+                                <TableCell className="p-2">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0 font-normal"
+                                    style={{
+                                      borderColor: ASSET_TYPE_COLORS[asset.assetType],
+                                      color: ASSET_TYPE_COLORS[asset.assetType],
+                                    }}
+                                  >
+                                    {ASSET_TYPE_LABELS[asset.assetType] || asset.assetType}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="p-2 font-medium text-xs text-foreground max-w-[200px] truncate">
+                                  {asset.name}
+                                </TableCell>
+                                <TableCell className="p-2 text-xs text-muted-foreground">
+                                  {asset.orgId ? orgMap.get(asset.orgId)?.name || "—" : "—"}
+                                </TableCell>
+                                <TableCell className="p-2 text-xs text-center font-semibold">{asset.versionCount}</TableCell>
+                                <TableCell className="p-2 text-xs text-center">{asset.contributorCount}</TableCell>
+                                <TableCell className="p-2 text-xs text-muted-foreground">
+                                  {formatDistanceToNow(parseISO(asset.lastModified), { addSuffix: true, locale: fr })}
+                                </TableCell>
+                                <TableCell className="p-2 text-xs text-muted-foreground">
+                                  {format(parseISO(asset.createdAt), "dd/MM/yyyy")}
+                                </TableCell>
+                              </TableRow>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent asChild>
+                              <TableRow className="bg-muted/20 hover:bg-muted/20">
+                                <TableCell colSpan={8} className="p-0">
+                                  <div className="px-6 py-3 ml-8 border-l-2 border-primary/20 space-y-2">
+                                    {asset.versions.map((v) => {
+                                      const profile = v.changed_by ? profileMap.get(v.changed_by) : null;
+                                      const initials = (profile?.display_name || profile?.email || "?")
+                                        .split(" ")
+                                        .map((w) => w[0])
+                                        .join("")
+                                        .slice(0, 2)
+                                        .toUpperCase();
+
+                                      return (
+                                        <div key={v.id} className="flex items-start gap-3 text-xs">
+                                          <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 font-mono">
+                                            v{v.version_number}
+                                          </Badge>
+                                          <Avatar className="h-5 w-5 shrink-0">
+                                            <AvatarImage src={profile?.avatar_url || undefined} />
+                                            <AvatarFallback className="text-[8px] bg-muted">{initials}</AvatarFallback>
+                                          </Avatar>
+                                          <div className="min-w-0 flex-1">
+                                            <span className="font-medium text-foreground">
+                                              {profile?.display_name || profile?.email || "Système"}
+                                            </span>
+                                            {v.change_summary && (
+                                              <span className="text-muted-foreground ml-1.5">— {v.change_summary}</span>
+                                            )}
+                                          </div>
+                                          <span className="text-muted-foreground/60 shrink-0">
+                                            {formatDistanceToNow(parseISO(v.created_at), { addSuffix: true, locale: fr })}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            </CollapsibleContent>
+                          </>
+                        </Collapsible>
+                      ))}
+                    </TableBody>
+                  </Table>
+                );
+              })()
             )}
           </CardContent>
         </Card>
