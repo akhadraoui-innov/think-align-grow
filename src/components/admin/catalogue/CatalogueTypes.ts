@@ -1,3 +1,5 @@
+import type { Json } from "@/integrations/supabase/types";
+
 export type ViewMode = "table" | "grid" | "timeline" | "kanban" | "treemap";
 
 export const ASSET_TYPE_LABELS: Record<string, string> = {
