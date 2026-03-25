@@ -1113,7 +1113,6 @@ export default function AdminAcademyPathDetail() {
                     <VersionHistory assetType="path" assetId={id!} />
                   </CardContent></Card>
                 </div>
-                </div>
               ) : infoForm && (
                 <div className="space-y-4 max-w-2xl">
                   <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Modifier le parcours</h2>
