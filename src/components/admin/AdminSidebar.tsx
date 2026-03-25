@@ -6,7 +6,7 @@ import {
 import {
   LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb, GraduationCap,
   CreditCard, ScrollText, Settings, ArrowLeft, Sparkles, Briefcase, Route, UserCircle,
-  Megaphone, Map, BarChart3, ChevronDown,
+  Megaphone, Map, BarChart3, ChevronDown, Library,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -19,6 +19,7 @@ const academySubItems = [
   { path: "/admin/academy/paths", icon: Route, label: "Parcours" },
   { path: "/admin/academy/campaigns", icon: Megaphone, label: "Campagnes" },
   { path: "/admin/academy/tracking", icon: BarChart3, label: "Suivi" },
+  { path: "/admin/academy/assets", icon: Library, label: "Actifs pédagogiques" },
 ];
 
 export function AdminSidebar() {

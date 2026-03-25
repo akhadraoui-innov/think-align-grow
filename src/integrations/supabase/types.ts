@@ -247,6 +247,7 @@ export type Database = {
           id: string
           instructions: string
           module_id: string
+          organization_id: string | null
           title: string
         }
         Insert: {
@@ -258,6 +259,7 @@ export type Database = {
           id?: string
           instructions?: string
           module_id: string
+          organization_id?: string | null
           title: string
         }
         Update: {
@@ -269,6 +271,7 @@ export type Database = {
           id?: string
           instructions?: string
           module_id?: string
+          organization_id?: string | null
           title?: string
         }
         Relationships: [
@@ -277,6 +280,13 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_exercises_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -604,6 +614,7 @@ export type Database = {
           id: string
           max_exchanges: number
           module_id: string
+          organization_id: string | null
           scenario: string
           system_prompt: string
           title: string
@@ -616,6 +627,7 @@ export type Database = {
           id?: string
           max_exchanges?: number
           module_id: string
+          organization_id?: string | null
           scenario?: string
           system_prompt?: string
           title: string
@@ -628,6 +640,7 @@ export type Database = {
           id?: string
           max_exchanges?: number
           module_id?: string
+          organization_id?: string | null
           scenario?: string
           system_prompt?: string
           title?: string
@@ -638,6 +651,13 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_practices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -747,6 +767,7 @@ export type Database = {
           generation_mode: string
           id: string
           module_id: string
+          organization_id: string | null
           passing_score: number
           title: string
         }
@@ -756,6 +777,7 @@ export type Database = {
           generation_mode?: string
           id?: string
           module_id: string
+          organization_id?: string | null
           passing_score?: number
           title?: string
         }
@@ -765,6 +787,7 @@ export type Database = {
           generation_mode?: string
           id?: string
           module_id?: string
+          organization_id?: string | null
           passing_score?: number
           title?: string
         }
@@ -774,6 +797,13 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "academy_modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_quizzes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
