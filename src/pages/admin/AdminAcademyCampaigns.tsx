@@ -25,6 +25,7 @@ import { format, differenceInDays, isAfter, isBefore, isWithinInterval } from "d
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { VersionHistory } from "@/components/admin/VersionHistory";
 
 interface CampaignForm {
   name: string;
