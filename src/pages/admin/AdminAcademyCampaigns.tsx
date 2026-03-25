@@ -61,6 +61,9 @@ export default function AdminAcademyCampaigns() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [enrollDialogCampaign, setEnrollDialogCampaign] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterOrgId, setFilterOrgId] = useState("all");
+  const [filterPathId, setFilterPathId] = useState("all");
 
   // AI generation state
   const [aiOpen, setAiOpen] = useState(false);
