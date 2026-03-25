@@ -17,3 +17,23 @@
 - Composant `VersionHistory` avec toggle, timeline verticale, badges version
 - Lazy-load des versions (requête uniquement quand ouvert)
 - Intégré dans les 3 onglets (Quiz, Exercices, Pratiques)
+
+# P3b : Extension du versioning aux Parcours, Personae et Campagnes
+
+## Statut : ✅ Terminé
+
+### 1. Migration DB — Trigger étendu
+- `capture_asset_version()` supporte désormais 6 tables : quiz, exercise, practice, path, persona, campaign
+- Triggers BEFORE UPDATE sur `academy_paths`, `academy_personae`, `academy_campaigns`
+- Détection spécifique des champs modifiés par type (difficulty, persona_id, starts_at, characteristics, etc.)
+
+### 2. Composant `VersionHistory` réutilisable
+- Extrait dans `src/components/admin/VersionHistory.tsx`
+- Props : `assetType` + `assetId`
+- Lazy-load, timeline verticale, badges version
+
+### 3. Intégration dans les pages admin
+- `AdminAcademyPathDetail.tsx` : section dans l'onglet Informations
+- `AdminAcademyPersonae.tsx` : section dans chaque card persona
+- `AdminAcademyCampaigns.tsx` : section dans le détail expandable
+- `AdminAcademyAssets.tsx` : refactoré pour utiliser le composant partagé
