@@ -26,6 +26,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Separator } from "@/components/ui/separator";
 import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
 import { VersionHistory } from "@/components/admin/VersionHistory";
+import { Progress } from "@/components/ui/progress";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const quizTypeConfig: Record<string, { icon: any; label: string; color: string; bg: string }> = {
   mcq: { icon: HelpCircle, label: "QCM", color: "text-blue-600", bg: "bg-blue-100 dark:bg-blue-900/30" },
