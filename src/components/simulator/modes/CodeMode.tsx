@@ -274,8 +274,8 @@ export function CodeMode({
               <div key={k} className="flex items-center gap-1">
                 <span className="text-muted-foreground capitalize">{k.replace(/_/g, " ")}:</span>
                 <span className={cn("font-bold",
-                  typeof v === "number" && v >= 8 ? "text-green-600" :
-                  typeof v === "number" && v >= 5 ? "text-amber-600" : "text-red-500"
+                  typeof v === "number" && v >= 8 ? "text-emerald-600" :
+                  typeof v === "number" && v >= 5 ? "text-amber-600" : "text-destructive"
                 )}>{String(v)}</span>
               </div>
             ))}
