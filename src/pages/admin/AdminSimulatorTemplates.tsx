@@ -73,6 +73,7 @@ export default function AdminSimulatorTemplates() {
         difficulty: form.difficulty,
         ai_assistance_level: form.ai_assistance_level,
         evaluation_rubric: form.evaluation_rubric,
+        organization_id: form.organization_id,
       };
       if (editId) {
         const { error } = await supabase.from("academy_practices").update(payload).eq("id", editId);
