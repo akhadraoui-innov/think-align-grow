@@ -354,13 +354,24 @@ export function DecisionMode({
         )}
 
         {/* Input */}
-        <div className="p-4 border-t bg-background">
-          {evaluation ? (
-            <div className="flex justify-center">
-              <Button variant="outline" onClick={resetSession}>
-                <RotateCcw className="h-4 w-4 mr-2" /> Recommencer
+        {!evaluation && (
+          <div className="p-4 border-t bg-background">
+            <div className="flex gap-2 items-end">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Votre décision..."
+                className="min-h-[44px] max-h-[120px] resize-none"
+                rows={1}
+                disabled={isStreaming}
+              />
+              <Button size="icon" onClick={sendMessage} disabled={!input.trim() || isStreaming} className="shrink-0 h-[44px] w-[44px]">
+                {isStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
               </Button>
             </div>
+          </div>
+        )}
           ) : (
             <div className="flex gap-2 items-end">
               <Textarea
