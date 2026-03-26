@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Search, Copy, Pencil, Library, HelpCircle, Dumbbell, MessageSquare, ChevronRight, Sparkles, BookOpen, AlertCircle, X, Plus, TrendingUp, Clock, History, ChevronDown } from "lucide-react";
+import { Search, Copy, Pencil, Library, HelpCircle, Dumbbell, MessageSquare, ChevronRight, Sparkles, BookOpen, AlertCircle, X, Plus, TrendingUp, Clock, History, ChevronDown, Play } from "lucide-react";
+import { PracticeTestDialog } from "@/components/admin/PracticeTestDialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
