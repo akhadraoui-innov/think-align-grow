@@ -7,7 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Search, Package, Filter, Table2, LayoutGrid, Clock, Columns3, BarChart3 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { PracticeTestDialog } from "@/components/admin/PracticeTestDialog";
 import {
   ViewMode, ASSET_TYPE_LABELS, STATUS_LABELS, DIFFICULTY_LABELS, GEN_MODE_LABELS,
   CatalogueAsset, getSnapshotField,
