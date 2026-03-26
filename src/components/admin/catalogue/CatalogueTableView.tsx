@@ -23,7 +23,7 @@ interface Props {
   onTestPractice?: (assetId: string, name: string) => void;
 }
 
-export function CatalogueTableView({ assets, orgMap, profileMap }: Props) {
+export function CatalogueTableView({ assets, orgMap, profileMap, onTestPractice }: Props) {
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
 
   const versionsForAsset = useQuery({

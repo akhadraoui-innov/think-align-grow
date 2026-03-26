@@ -215,19 +215,26 @@ export default function AdminObservabilityCatalogue() {
             ) : filtered.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">Aucun asset trouvé</p>
             ) : viewMode === "table" ? (
-              <CatalogueTableView assets={filtered} orgMap={orgMap} profileMap={profileMap} />
+              <CatalogueTableView assets={filtered} orgMap={orgMap} profileMap={profileMap} onTestPractice={handleTestPractice} />
             ) : viewMode === "grid" ? (
-              <CatalogueGridView assets={filtered} orgMap={orgMap} />
+              <CatalogueGridView assets={filtered} orgMap={orgMap} onTestPractice={handleTestPractice} />
             ) : viewMode === "timeline" ? (
               <CatalogueTimelineView assets={filtered} orgMap={orgMap} />
             ) : viewMode === "kanban" ? (
-              <CatalogueKanbanView assets={filtered} orgMap={orgMap} />
+              <CatalogueKanbanView assets={filtered} orgMap={orgMap} onTestPractice={handleTestPractice} />
             ) : (
               <CatalogueTreemapView assets={filtered} onFilterType={handleTreemapFilter} />
             )}
           </CardContent>
         </Card>
       </div>
+
+      <PracticeTestDialog
+        moduleId={testPracticeModuleId}
+        open={!!testPracticeModuleId}
+        onOpenChange={(open) => { if (!open) setTestPracticeModuleId(null); }}
+        title={testPracticeTitle}
+      />
     </AdminShell>
   );
 }
