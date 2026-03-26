@@ -99,6 +99,11 @@ export function DecisionMode({
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
+  // Notify parent of exchange count
+  useEffect(() => {
+    onExchangeUpdate?.(exchangeCount);
+  }, [exchangeCount, onExchangeUpdate]);
+
   useEffect(() => {
     if (messages.length === 0 && scenario) {
       setMessages([{ id: "scenario", role: "assistant", content: scenario, timestamp: new Date() }]);
