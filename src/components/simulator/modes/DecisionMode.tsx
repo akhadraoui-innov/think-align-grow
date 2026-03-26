@@ -33,8 +33,9 @@ interface DecisionModeProps {
   maxExchanges: number;
   practiceId: string;
   previewMode?: boolean;
-  onComplete?: (score: number) => void;
+  onComplete?: (score: number, messages?: Message[], evaluation?: any) => void;
   onExchangeUpdate?: (count: number) => void;
+  onMessagesChange?: (messages: Message[]) => void;
 }
 
 function parseInlineBlock(content: string, tag: string): Record<string, any> | null {
