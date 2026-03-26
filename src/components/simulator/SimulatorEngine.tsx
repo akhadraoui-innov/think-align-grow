@@ -5,6 +5,10 @@ import { SimulatorShell } from "./SimulatorShell";
 import { ChatMode } from "./modes/ChatMode";
 import { CodeMode } from "./modes/CodeMode";
 import { DecisionMode } from "./modes/DecisionMode";
+import { DocumentMode } from "./modes/DocumentMode";
+import { AnalysisMode } from "./modes/AnalysisMode";
+import { DesignMode } from "./modes/DesignMode";
+import { AssessmentMode } from "./modes/AssessmentMode";
 
 interface SimulatorEngineProps {
   practiceType: string;
