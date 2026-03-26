@@ -454,8 +454,75 @@ export default function AdminAcademyModuleDetail() {
                   <p className="text-xs text-muted-foreground mb-4">{quizzes[0].academy_quiz_questions.length} questions · Seuil de réussite : {quizzes[0].passing_score}%</p>
                 </div>
               )}
+              {/* Exercise preview */}
+              {exercises.length > 0 && (
+                <div className="border-t pt-4">
+                  <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+                    <Dumbbell className="h-4 w-4 text-emerald-500" /> Exercice — {(exercises[0] as any).title}
+                  </h3>
+                  <div className="prose prose-sm max-w-none dark:prose-invert">
+                    <EnrichedMarkdown content={(exercises[0] as any).instructions || ""} />
+                  </div>
+                </div>
+              )}
+              {/* Practice config preview */}
+              {practices.length > 0 && (
+                <div className="border-t pt-4 space-y-3">
+                  <h3 className="font-bold text-sm flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-violet-500" /> Pratique IA — {(practices[0] as any).title}
+                  </h3>
+                  <div className="rounded-xl border bg-muted/20 p-4 space-y-3 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Scénario</p>
+                      <p className="text-sm">{(practices[0] as any).scenario || "—"}</p>
+                    </div>
+                    {Array.isArray((practices[0] as any).phases) && (practices[0] as any).phases.length > 0 && (
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Phases</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {((practices[0] as any).phases as any[]).map((ph: any, i: number) => (
+                            <Badge key={i} variant="secondary" className="text-[10px]">{i + 1}. {ph.name}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {Array.isArray((practices[0] as any).evaluation_dimensions) && (practices[0] as any).evaluation_dimensions.length > 0 && (
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Dimensions d'évaluation</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {((practices[0] as any).evaluation_dimensions as any[]).map((dim: any, i: number) => (
+                            <Badge key={i} variant="outline" className="text-[10px]">{dim.name}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Max échanges : {(practices[0] as any).max_exchanges} · Difficulté : {(practices[0] as any).difficulty || "—"}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => { setPreviewOpen(false); setPracticeTestOpen(true); }} className="gap-1.5">
+                    <Play className="h-3.5 w-3.5" /> Lancer le test interactif
+                  </Button>
+                </div>
+              )}
             </div>
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Practice Studio Test Dialog */}
+      <Dialog open={practiceTestOpen} onOpenChange={setPracticeTestOpen}>
+        <DialogContent className="max-w-5xl h-[90vh] p-0 gap-0 flex flex-col">
+          <DialogHeader className="px-5 py-3 border-b shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <Play className="h-4 w-4 text-violet-500" /> Practice Studio — {mod.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            {practiceTestOpen && (
+              <AcademyPractice moduleId={id!} previewMode />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </AdminShell>
