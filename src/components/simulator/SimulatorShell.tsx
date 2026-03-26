@@ -147,6 +147,18 @@ export function SimulatorShell({
         )}
       </AnimatePresence>
 
+      {/* ── Beginner hint ── */}
+      {isBeginner && exchangeCount === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-4 mt-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 text-xs text-muted-foreground flex items-center gap-2"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+          Besoin d'aide ? Utilisez le bouton <HelpCircle className="h-3 w-3 inline" /> pour obtenir des conseils de l'IA.
+        </motion.div>
+      )}
+
       {/* ── Main content ── */}
       <div className="flex-1 min-h-0 relative">
         {children}
