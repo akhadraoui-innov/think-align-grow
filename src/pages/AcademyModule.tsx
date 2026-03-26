@@ -426,7 +426,21 @@ export default function AcademyModule() {
             "flex-1 overflow-y-auto",
             isPractice ? "" : "p-6 md:p-8",
           )}>
-            {renderContent()}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className={cn(
+                  !isPractice && module.module_type !== "lesson" && "max-w-3xl mx-auto",
+                  isPractice && "h-full",
+                )}
+              >
+                {renderContent()}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>
