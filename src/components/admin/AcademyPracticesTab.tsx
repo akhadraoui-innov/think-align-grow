@@ -170,8 +170,14 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
               <CardHeader className="pb-2 px-5 pt-5">
                 <CardTitle className="text-sm font-semibold flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-violet-500" />
+                    <MessageSquare className="h-4 w-4 text-primary" />
                     {pr.title}
+                    {(pr as any).practice_type && (pr as any).practice_type !== "conversation" && (
+                      <Badge className="text-[10px] bg-primary/10 text-primary border-0">
+                        <Zap className="h-2.5 w-2.5 mr-0.5" />
+                        {getModeDefinition((pr as any).practice_type)?.label || (pr as any).practice_type}
+                      </Badge>
+                    )}
                     <Badge variant="outline" className="text-[10px]">{pr.max_exchanges} échanges</Badge>
                     {pr.difficulty && (
                       <Badge variant="secondary" className="text-[10px]">{difficultyLabels[pr.difficulty] || pr.difficulty}</Badge>
