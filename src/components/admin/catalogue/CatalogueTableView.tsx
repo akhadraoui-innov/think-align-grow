@@ -83,6 +83,7 @@ export function CatalogueTableView({ assets, orgMap, profileMap, onTestPractice 
             <TableHead className="text-xs text-center">Contributeurs</TableHead>
             <TableHead className="text-xs">Dernière modif.</TableHead>
             <TableHead className="text-xs">Créé le</TableHead>
+            <TableHead className="text-xs w-10" />
           </TableRow>
         </TableHeader>
         <TableBody>
