@@ -88,6 +88,7 @@ export function AnalysisMode({
   previewMode = false,
   onComplete,
   onExchangeUpdate,
+  onMessagesChange,
 }: AnalysisModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
