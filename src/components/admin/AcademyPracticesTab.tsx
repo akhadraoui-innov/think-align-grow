@@ -114,6 +114,8 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
       system_prompt: pr.system_prompt,
       max_exchanges: pr.max_exchanges,
       difficulty: pr.difficulty || "intermediate",
+      practice_type: (pr as any).practice_type || "conversation",
+      type_config: (pr as any).type_config || {},
       evaluation_rubric: rubric,
     });
     setDialogOpen(true);
