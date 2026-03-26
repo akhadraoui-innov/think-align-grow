@@ -41,6 +41,7 @@ const emptyForm = {
   difficulty: "intermediate" as string,
   practice_type: "conversation" as string,
   type_config: {} as Record<string, unknown>,
+  ai_assistance_level: "guided" as string,
   evaluation_rubric: [] as { criterion: string; weight: number; description: string }[],
 };
 
@@ -81,6 +82,7 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
         difficulty: form.difficulty,
         practice_type: form.practice_type,
         type_config: form.type_config,
+        ai_assistance_level: form.ai_assistance_level,
         evaluation_rubric: form.evaluation_rubric,
       } as any;
       if (editId) {
@@ -130,6 +132,7 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
       difficulty: pr.difficulty || "intermediate",
       practice_type: (pr as any).practice_type || "conversation",
       type_config: (pr as any).type_config || {},
+      ai_assistance_level: (pr as any).ai_assistance_level || "guided",
       evaluation_rubric: rubric,
     });
     setDialogOpen(true);
@@ -351,7 +354,7 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label>Échanges max</Label>
                 <Input type="number" min={3} max={30} value={form.max_exchanges} onChange={e => setForm(f => ({ ...f, max_exchanges: parseInt(e.target.value) || 10 }))} />
@@ -365,6 +368,17 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
                     <SelectItem value="intermediate">Intermédiaire</SelectItem>
                     <SelectItem value="advanced">Avancé</SelectItem>
                     <SelectItem value="expert">Expert</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Niveau d'aide IA</Label>
+                <Select value={form.ai_assistance_level} onValueChange={v => setForm(f => ({ ...f, ai_assistance_level: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="autonomous">Autonome</SelectItem>
+                    <SelectItem value="guided">Guidé</SelectItem>
+                    <SelectItem value="intensive">Intensif</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -431,6 +445,7 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
             difficulty: data.difficulty,
             practice_type: data.practice_type,
             type_config: data.type_config,
+            ai_assistance_level: "guided",
             evaluation_rubric: data.evaluation_rubric,
           });
           setEditId(null);

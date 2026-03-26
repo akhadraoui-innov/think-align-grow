@@ -4,7 +4,7 @@ import { useOrganizationDetail } from "@/hooks/useOrganizations";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Users, Layers, CreditCard, BarChart3, Settings, UsersRound, Presentation, ScrollText, Bot } from "lucide-react";
+import { ArrowLeft, Loader2, Users, Layers, CreditCard, BarChart3, Settings, UsersRound, Presentation, ScrollText, Bot, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { OrgInfoTab } from "@/components/admin/OrgInfoTab";
@@ -16,6 +16,7 @@ import { OrgWorkshopsTab } from "@/components/admin/OrgWorkshopsTab";
 import { OrgUsageTab } from "@/components/admin/OrgUsageTab";
 import { OrgActivityTab } from "@/components/admin/OrgActivityTab";
 import { OrgAIConfigTab } from "@/components/admin/OrgAIConfigTab";
+import { OrgSimulatorTab } from "@/components/admin/OrgSimulatorTab";
 
 export default function AdminOrganizationDetail() {
   const { id } = useParams();
@@ -111,6 +112,9 @@ export default function AdminOrganizationDetail() {
             <TabsTrigger value="ai" className="gap-1.5 text-xs">
               <Bot className="h-3.5 w-3.5" /> IA
             </TabsTrigger>
+            <TabsTrigger value="simulator" className="gap-1.5 text-xs">
+              <Zap className="h-3.5 w-3.5" /> Simulateur
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="info">
@@ -162,6 +166,10 @@ export default function AdminOrganizationDetail() {
 
           <TabsContent value="ai">
             <OrgAIConfigTab organizationId={organization.id} />
+          </TabsContent>
+
+          <TabsContent value="simulator">
+            <OrgSimulatorTab organizationId={organization.id} />
           </TabsContent>
         </Tabs>
       </div>

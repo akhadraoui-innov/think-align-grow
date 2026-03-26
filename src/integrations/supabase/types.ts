@@ -694,6 +694,7 @@ export type Database = {
       }
       academy_practices: {
         Row: {
+          ai_assistance_level: string
           created_at: string
           difficulty: string | null
           evaluation_dimensions: Json
@@ -701,7 +702,7 @@ export type Database = {
           generation_mode: string
           id: string
           max_exchanges: number
-          module_id: string
+          module_id: string | null
           organization_id: string | null
           phases: Json
           practice_type: string
@@ -712,6 +713,7 @@ export type Database = {
           type_config: Json
         }
         Insert: {
+          ai_assistance_level?: string
           created_at?: string
           difficulty?: string | null
           evaluation_dimensions?: Json
@@ -719,7 +721,7 @@ export type Database = {
           generation_mode?: string
           id?: string
           max_exchanges?: number
-          module_id: string
+          module_id?: string | null
           organization_id?: string | null
           phases?: Json
           practice_type?: string
@@ -730,6 +732,7 @@ export type Database = {
           type_config?: Json
         }
         Update: {
+          ai_assistance_level?: string
           created_at?: string
           difficulty?: string | null
           evaluation_dimensions?: Json
@@ -737,7 +740,7 @@ export type Database = {
           generation_mode?: string
           id?: string
           max_exchanges?: number
-          module_id?: string
+          module_id?: string | null
           organization_id?: string | null
           phases?: Json
           practice_type?: string

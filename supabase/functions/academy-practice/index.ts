@@ -94,6 +94,7 @@ serve(async (req) => {
       practiceType = practice.practice_type || "conversation";
       typeConfig = practice.type_config || {};
       rubric = practice.evaluation_rubric || [];
+      const assistanceLevel = practice.ai_assistance_level || "guided";
 
       // Build system prompt: behavior injection + admin custom prompt
       const behaviorInjection = BEHAVIOR_INJECTIONS[practiceType] || "";
@@ -104,13 +105,25 @@ serve(async (req) => {
         ? `\n\nCONTEXTE DE CONFIGURATION :\n${JSON.stringify(typeConfig, null, 2)}`
         : "";
 
-      const suggestionsInstruction = `\n\nAPRÈS chaque réponse, ajoute un bloc JSON de suggestions de réponses possibles pour l'apprenant :
+      // Assistance level instructions
+      const assistanceInstructions: Record<string, string> = {
+        autonomous: `\n\nMODE AUTONOME : Ne fournis PAS de suggestions de réponse. Pas de chips. Évalue uniquement à la fin. Feedback minimal pendant la session. L'apprenant doit trouver par lui-même.`,
+        guided: `\n\nAPRÈS chaque réponse, ajoute un bloc JSON de suggestions de réponses possibles pour l'apprenant :
 \`\`\`suggestions
 ["suggestion 1", "suggestion 2", "suggestion 3"]
 \`\`\`
-Les suggestions doivent être des pistes de réponse variées et pertinentes (pas les réponses complètes).`;
+Les suggestions doivent être des pistes de réponse variées et pertinentes (pas les réponses complètes).`,
+        intensive: `\n\nMODE COACHING INTENSIF : Après chaque réponse, fournis :
+1. Un feedback immédiat sur la qualité de la réponse
+2. Des conseils méthodologiques concrets
+3. Un bloc de suggestions proactives :
+\`\`\`suggestions
+["suggestion guidée 1", "suggestion guidée 2", "suggestion guidée 3"]
+\`\`\`
+Si l'apprenant semble bloqué ou donne des réponses courtes, relance-le avec des questions d'approfondissement.`,
+      };
 
-      systemPrompt = [behaviorInjection, adminPrompt, configContext, suggestionsInstruction].filter(Boolean).join("\n\n---\n\n");
+      systemPrompt = [behaviorInjection, adminPrompt, configContext, assistanceInstructions[assistanceLevel] || assistanceInstructions.guided].filter(Boolean).join("\n\n---\n\n");
     }
 
     const aiMessages: any[] = [

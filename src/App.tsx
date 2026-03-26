@@ -52,6 +52,8 @@ import AdminAcademyAssets from "./pages/admin/AdminAcademyAssets";
 import AdminObservability from "./pages/admin/AdminObservability";
 import AdminObservabilityCatalogue from "./pages/admin/AdminObservabilityCatalogue";
 import AdminObservabilityMatrix from "./pages/admin/AdminObservabilityMatrix";
+import AdminSimulator from "./pages/admin/AdminSimulator";
+import AdminSimulatorTemplates from "./pages/admin/AdminSimulatorTemplates";
 
 const queryClient = new QueryClient();
 
@@ -106,6 +108,8 @@ function AnimatedRoutes() {
            <Route path="/admin/observability" element={<AdminObservability />} />
            <Route path="/admin/observability/catalogue" element={<AdminObservabilityCatalogue />} />
            <Route path="/admin/observability/matrix" element={<AdminObservabilityMatrix />} />
+          <Route path="/admin/simulator" element={<AdminSimulator />} />
+          <Route path="/admin/simulator/templates" element={<AdminSimulatorTemplates />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

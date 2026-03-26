@@ -10,6 +10,8 @@ import { OnboardingOverlay } from "./widgets/OnboardingOverlay";
 import { HelpDrawer } from "./widgets/HelpDrawer";
 import { cn } from "@/lib/utils";
 
+export type AIAssistanceLevel = "autonomous" | "guided" | "intensive";
+
 interface SimulatorShellProps {
   practiceType: string;
   practiceId: string;
@@ -17,6 +19,7 @@ interface SimulatorShellProps {
   exchangeCount: number;
   maxExchanges: number;
   difficulty?: string;
+  aiAssistanceLevel?: AIAssistanceLevel;
   children: React.ReactNode;
   onReset?: () => void;
 }
@@ -28,6 +31,7 @@ export function SimulatorShell({
   exchangeCount,
   maxExchanges,
   difficulty,
+  aiAssistanceLevel = "guided",
   children,
   onReset,
 }: SimulatorShellProps) {
@@ -94,7 +98,7 @@ export function SimulatorShell({
             <TooltipContent>Objectifs & critères</TooltipContent>
           </Tooltip>
 
-          {!isExpert && (
+          {!isExpert && aiAssistanceLevel !== "autonomous" && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowHelp(true)}>
@@ -148,7 +152,7 @@ export function SimulatorShell({
       </AnimatePresence>
 
       {/* ── Beginner hint ── */}
-      {isBeginner && exchangeCount === 0 && (
+      {isBeginner && exchangeCount === 0 && aiAssistanceLevel !== "autonomous" && (
         <motion.div
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}

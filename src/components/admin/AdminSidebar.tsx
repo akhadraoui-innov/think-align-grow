@@ -6,7 +6,7 @@ import {
 import {
   LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb, GraduationCap,
   CreditCard, ScrollText, Settings, ArrowLeft, Sparkles, Briefcase, Route, UserCircle,
-  Megaphone, Map, BarChart3, ChevronDown, Library, Activity,
+  Megaphone, Map, BarChart3, ChevronDown, Library, Activity, Zap,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -45,6 +45,13 @@ export function AdminSidebar() {
     { path: "/admin/observability/catalogue", icon: Layers, label: "Catalogue Assets" },
     { path: "/admin/observability/matrix", icon: Building2, label: "Matrice Couverture" },
   ];
+
+  const simulatorSubItems = [
+    { path: "/admin/simulator", icon: LayoutDashboard, label: "Dashboard", exact: true },
+    { path: "/admin/simulator/templates", icon: Library, label: "Bibliothèque" },
+  ];
+
+  const isSimulatorRoute = location.pathname.startsWith("/admin/simulator");
 
   const systemItems = [
     { path: "/admin/billing", icon: CreditCard, label: "Crédits & Abonnements", show: perms.has("admin.billing.view") },
@@ -178,6 +185,54 @@ export function AdminSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
+        {/* Simulator collapsible group */}
+        <SidebarGroup>
+          <Collapsible defaultOpen={isSimulatorRoute} open={collapsed ? false : undefined}>
+            <CollapsibleTrigger asChild>
+              <button
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                  isSimulatorRoute
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+                onClick={(e) => {
+                  if (collapsed) { e.preventDefault(); navigate("/admin/simulator"); }
+                }}
+              >
+                <Zap className="h-4 w-4 shrink-0" />
+                {!collapsed && (
+                  <>
+                    <span className="flex-1 text-left">Simulateur</span>
+                    <ChevronDown className="h-3 w-3 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </>
+                )}
+              </button>
+            </CollapsibleTrigger>
+            {!collapsed && (
+              <CollapsibleContent className="pl-4 mt-1 space-y-0.5">
+                {simulatorSubItems.map(sub => {
+                  const active = isActive(sub.path, sub.exact);
+                  const SubIcon = sub.icon;
+                  return (
+                    <button
+                      key={sub.path}
+                      onClick={() => navigate(sub.path)}
+                      className={`flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      }`}
+                    >
+                      <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{sub.label}</span>
+                    </button>
+                  );
+                })}
+              </CollapsibleContent>
+            )}
+          </Collapsible>
+        </SidebarGroup>
 
         {/* Observability collapsible group */}
         {showObservability && (
