@@ -354,7 +354,7 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label>Échanges max</Label>
                 <Input type="number" min={3} max={30} value={form.max_exchanges} onChange={e => setForm(f => ({ ...f, max_exchanges: parseInt(e.target.value) || 10 }))} />
