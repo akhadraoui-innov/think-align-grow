@@ -126,6 +126,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
 
   // Persist messages to DB after each change
   const persistSession = useCallback(async (msgs: Message[], eval_data?: any, score?: number) => {
+    if (previewMode) return; // Skip persistence in preview mode
     if (!user || !practice) return;
 
     const msgPayload = msgs.map(m => ({ id: m.id, role: m.role, content: m.content, timestamp: m.timestamp.toISOString() }));
@@ -145,7 +146,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
       }).select("id").single();
       if (newSession) setSessionId(newSession.id);
     }
-  }, [user, practice, sessionId, enrollmentId]);
+  }, [user, practice, sessionId, enrollmentId, previewMode]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
