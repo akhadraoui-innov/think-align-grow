@@ -641,16 +641,69 @@ export type Database = {
           },
         ]
       }
+      academy_practice_sessions: {
+        Row: {
+          completed_at: string | null
+          enrollment_id: string | null
+          evaluation: Json | null
+          id: string
+          messages: Json
+          practice_id: string
+          score: number | null
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          enrollment_id?: string | null
+          evaluation?: Json | null
+          id?: string
+          messages?: Json
+          practice_id: string
+          score?: number | null
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          enrollment_id?: string | null
+          evaluation?: Json | null
+          id?: string
+          messages?: Json
+          practice_id?: string
+          score?: number | null
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_practice_sessions_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_practice_sessions_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "academy_practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_practices: {
         Row: {
           created_at: string
           difficulty: string | null
+          evaluation_dimensions: Json
           evaluation_rubric: Json
           generation_mode: string
           id: string
           max_exchanges: number
           module_id: string
           organization_id: string | null
+          phases: Json
           scenario: string
           system_prompt: string
           tags: string[]
@@ -659,12 +712,14 @@ export type Database = {
         Insert: {
           created_at?: string
           difficulty?: string | null
+          evaluation_dimensions?: Json
           evaluation_rubric?: Json
           generation_mode?: string
           id?: string
           max_exchanges?: number
           module_id: string
           organization_id?: string | null
+          phases?: Json
           scenario?: string
           system_prompt?: string
           tags?: string[]
@@ -673,12 +728,14 @@ export type Database = {
         Update: {
           created_at?: string
           difficulty?: string | null
+          evaluation_dimensions?: Json
           evaluation_rubric?: Json
           generation_mode?: string
           id?: string
           max_exchanges?: number
           module_id?: string
           organization_id?: string | null
+          phases?: Json
           scenario?: string
           system_prompt?: string
           tags?: string[]
