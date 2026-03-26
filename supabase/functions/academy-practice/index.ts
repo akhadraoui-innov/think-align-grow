@@ -124,7 +124,7 @@ Les suggestions doivent être des pistes de réponse variées et pertinentes (pa
         content: `C'est le dernier échange. Évalue la performance de l'apprenant en te basant sur ces critères : ${JSON.stringify(rubric)}. 
 Termine ta réponse par un bloc JSON sur une nouvelle ligne au format : 
 \`\`\`evaluation
-{"score": <0-100>, "feedback": "<résumé de l'évaluation>"}
+{"score": <0-100>, "feedback": "<résumé global>", "dimensions": [{"name": "<critère>", "score": <0-10>}, ...], "recommendations": ["<conseil 1>", "<conseil 2>", "<conseil 3>"]}
 \`\`\``,
       });
     } else if (evaluate) {
@@ -133,7 +133,7 @@ Termine ta réponse par un bloc JSON sur une nouvelle ligne au format :
         content: `C'est le dernier échange. Évalue la performance de l'apprenant. 
 Termine ta réponse par un bloc JSON sur une nouvelle ligne au format : 
 \`\`\`evaluation
-{"score": <0-100>, "feedback": "<résumé de l'évaluation>"}
+{"score": <0-100>, "feedback": "<résumé global>", "dimensions": [{"name": "<critère>", "score": <0-10>}, ...], "recommendations": ["<conseil 1>", "<conseil 2>", "<conseil 3>"]}
 \`\`\``,
       });
     }
