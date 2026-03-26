@@ -318,7 +318,7 @@ export default function AcademyModule() {
 
   return (
     <PageTransition>
-      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="flex h-screen overflow-hidden">
         {/* Desktop sidebar */}
         {pathModules.length > 0 && !isMobile && (
           <AnimatePresence initial={false}>
