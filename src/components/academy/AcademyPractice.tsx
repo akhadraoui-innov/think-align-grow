@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { EnrichedMarkdown } from "./EnrichedMarkdown";
+import { SimulatorEngine } from "@/components/simulator/SimulatorEngine";
 
 interface AcademyPracticeProps {
   moduleId: string;
