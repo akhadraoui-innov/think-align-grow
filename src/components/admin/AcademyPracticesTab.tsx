@@ -131,6 +131,7 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
       difficulty: pr.difficulty || "intermediate",
       practice_type: (pr as any).practice_type || "conversation",
       type_config: (pr as any).type_config || {},
+      ai_assistance_level: (pr as any).ai_assistance_level || "guided",
       evaluation_rubric: rubric,
     });
     setDialogOpen(true);
