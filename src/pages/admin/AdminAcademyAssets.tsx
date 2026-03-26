@@ -623,6 +623,7 @@ function PracticesTab({ data, filters, isError, error, stats }: { data: any[]; f
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [dupItem, setDupItem] = useState<any>(null);
   const [dupTarget, setDupTarget] = useState("");
+  const [testModuleId, setTestModuleId] = useState<string | null>(null);
   const updateTags = useUpdateTags("academy_practices", "admin-asset-practices");
 
   const filtered = applyFilters(data, filters, "practices");
