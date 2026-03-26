@@ -434,6 +434,7 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
             difficulty: data.difficulty,
             practice_type: data.practice_type,
             type_config: data.type_config,
+            ai_assistance_level: "guided",
             evaluation_rubric: data.evaluation_rubric,
           });
           setEditId(null);
