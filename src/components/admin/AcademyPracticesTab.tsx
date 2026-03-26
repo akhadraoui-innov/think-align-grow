@@ -41,6 +41,7 @@ const emptyForm = {
   difficulty: "intermediate" as string,
   practice_type: "conversation" as string,
   type_config: {} as Record<string, unknown>,
+  ai_assistance_level: "guided" as string,
   evaluation_rubric: [] as { criterion: string; weight: number; description: string }[],
 };
 
