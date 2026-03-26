@@ -14,7 +14,37 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // ── JWT Authentication ──
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Service role client for DB queries ──
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { practice_id, messages, evaluate, system_override } = await req.json();
@@ -44,11 +74,19 @@ serve(async (req) => {
     ];
 
     // If this is the last exchange, ask for evaluation
-    if (evaluate) {
-      const rubric = practice.evaluation_rubric || [];
+    if (evaluate && rubric.length > 0) {
       aiMessages.push({
         role: "system",
         content: `C'est le dernier échange. Évalue la performance de l'apprenant en te basant sur ces critères : ${JSON.stringify(rubric)}. 
+Termine ta réponse par un bloc JSON sur une nouvelle ligne au format : 
+\`\`\`evaluation
+{"score": <0-100>, "feedback": "<résumé de l'évaluation>"}
+\`\`\``,
+      });
+    } else if (evaluate) {
+      aiMessages.push({
+        role: "system",
+        content: `C'est le dernier échange. Évalue la performance de l'apprenant. 
 Termine ta réponse par un bloc JSON sur une nouvelle ligne au format : 
 \`\`\`evaluation
 {"score": <0-100>, "feedback": "<résumé de l'évaluation>"}
