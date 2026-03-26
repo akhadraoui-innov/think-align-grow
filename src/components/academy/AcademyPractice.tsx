@@ -440,8 +440,6 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
   const typeConfig = (practice as any)?.type_config || {};
 
   if (practiceType !== "conversation" && practice) {
-    // Dynamic import to avoid loading simulator code for standard conversations
-    const { SimulatorEngine } = require("@/components/simulator/SimulatorEngine");
     return (
       <SimulatorEngine
         practiceType={practiceType}
