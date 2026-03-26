@@ -436,6 +436,13 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
 
   return (
     <div className="flex flex-col h-full relative">
+      {/* Admin preview banner */}
+      {previewMode && (
+        <div className="flex items-center justify-center gap-2 px-4 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-medium shrink-0">
+          <Sparkles className="h-3 w-3" />
+          Mode test admin — Les échanges ne sont pas enregistrés
+        </div>
+      )}
       {/* Minimalist top bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 shrink-0">
         <div className="flex items-center gap-2.5">
