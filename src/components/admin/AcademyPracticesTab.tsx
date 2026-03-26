@@ -6,7 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { MessageSquare, Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import { MessageSquare, Plus, Pencil, Trash2, Save, X, Zap } from "lucide-react";
+import { getAllUniverses, getModeDefinition, UNIVERSE_LABELS, type ModeUniverse } from "@/components/simulator/config/modeRegistry";
+import { getConfigFields, type ConfigField } from "@/components/simulator/config/typeConfigSchemas";
+import { getBehaviorInjection } from "@/components/simulator/config/promptTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -35,6 +38,8 @@ const emptyForm = {
   system_prompt: "",
   max_exchanges: 10,
   difficulty: "intermediate" as string,
+  practice_type: "conversation" as string,
+  type_config: {} as Record<string, unknown>,
   evaluation_rubric: [] as { criterion: string; weight: number; description: string }[],
 };
 
@@ -60,8 +65,10 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
         system_prompt: form.system_prompt,
         max_exchanges: form.max_exchanges,
         difficulty: form.difficulty,
+        practice_type: form.practice_type,
+        type_config: form.type_config,
         evaluation_rubric: form.evaluation_rubric,
-      };
+      } as any;
       if (editId) {
         const { error } = await supabase.from("academy_practices").update(payload).eq("id", editId);
         if (error) throw error;
@@ -107,6 +114,8 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
       system_prompt: pr.system_prompt,
       max_exchanges: pr.max_exchanges,
       difficulty: pr.difficulty || "intermediate",
+      practice_type: (pr as any).practice_type || "conversation",
+      type_config: (pr as any).type_config || {},
       evaluation_rubric: rubric,
     });
     setDialogOpen(true);
@@ -161,8 +170,14 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
               <CardHeader className="pb-2 px-5 pt-5">
                 <CardTitle className="text-sm font-semibold flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-violet-500" />
+                    <MessageSquare className="h-4 w-4 text-primary" />
                     {pr.title}
+                    {(pr as any).practice_type && (pr as any).practice_type !== "conversation" && (
+                      <Badge className="text-[10px] bg-primary/10 text-primary border-0">
+                        <Zap className="h-2.5 w-2.5 mr-0.5" />
+                        {getModeDefinition((pr as any).practice_type)?.label || (pr as any).practice_type}
+                      </Badge>
+                    )}
                     <Badge variant="outline" className="text-[10px]">{pr.max_exchanges} échanges</Badge>
                     {pr.difficulty && (
                       <Badge variant="secondary" className="text-[10px]">{difficultyLabels[pr.difficulty] || pr.difficulty}</Badge>
@@ -212,6 +227,42 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
             <DialogTitle>{editId ? "Modifier la pratique" : "Nouvelle pratique IA"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Practice Type Selector */}
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5 text-primary" />
+                Type de simulation
+              </Label>
+              <Select value={form.practice_type} onValueChange={v => {
+                const modeDef = getModeDefinition(v);
+                setForm(f => ({
+                  ...f,
+                  practice_type: v,
+                  type_config: modeDef?.defaultConfig || {},
+                  system_prompt: f.system_prompt || "",
+                }));
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {getAllUniverses().map(u => (
+                    <div key={u.value}>
+                      <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{u.label}</div>
+                      {u.modes.map(([key, def]) => (
+                        <SelectItem key={key} value={key} className="text-xs">
+                          {def.label}
+                        </SelectItem>
+                      ))}
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.practice_type !== "conversation" && getModeDefinition(form.practice_type) && (
+                <p className="text-[10px] text-muted-foreground">
+                  {getModeDefinition(form.practice_type)!.description}
+                </p>
+              )}
+            </div>
+
             <div className="space-y-1.5">
               <Label>Titre</Label>
               <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Ex: Négociation budgétaire IA" />
@@ -225,7 +276,61 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
             <div className="space-y-1.5">
               <Label>Prompt système IA (instructions pour le coach)</Label>
               <Textarea value={form.system_prompt} onChange={e => setForm(f => ({ ...f, system_prompt: e.target.value }))} rows={6} placeholder="Tu es un coach senior spécialisé en..." className="font-mono text-xs" />
+              {form.practice_type !== "conversation" && (
+                <p className="text-[10px] text-muted-foreground">
+                  💡 Un comportement spécifique au mode "{getModeDefinition(form.practice_type)?.label}" sera automatiquement injecté.
+                </p>
+              )}
             </div>
+
+            {/* Dynamic type_config fields */}
+            {getConfigFields(form.practice_type).length > 0 && (
+              <div className="space-y-2 rounded-xl border p-3">
+                <p className="text-xs font-semibold text-muted-foreground">Configuration du mode</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {getConfigFields(form.practice_type).map((field) => (
+                    <div key={field.key} className="space-y-1">
+                      <Label className="text-xs">{field.label}</Label>
+                      {field.type === "select" && field.options ? (
+                        <Select
+                          value={String(form.type_config[field.key] ?? field.defaultValue ?? "")}
+                          onValueChange={v => setForm(f => ({ ...f, type_config: { ...f.type_config, [field.key]: v } }))}
+                        >
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {field.options.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      ) : field.type === "number" ? (
+                        <Input
+                          type="number"
+                          className="h-8 text-xs"
+                          min={field.min}
+                          max={field.max}
+                          value={Number(form.type_config[field.key] ?? field.defaultValue ?? 0)}
+                          onChange={e => setForm(f => ({ ...f, type_config: { ...f.type_config, [field.key]: parseInt(e.target.value) || 0 } }))}
+                        />
+                      ) : field.type === "textarea" ? (
+                        <Textarea
+                          className="text-xs"
+                          rows={2}
+                          placeholder={field.placeholder}
+                          value={String(form.type_config[field.key] ?? field.defaultValue ?? "")}
+                          onChange={e => setForm(f => ({ ...f, type_config: { ...f.type_config, [field.key]: e.target.value } }))}
+                        />
+                      ) : (
+                        <Input
+                          className="h-8 text-xs"
+                          placeholder={field.placeholder}
+                          value={String(form.type_config[field.key] ?? field.defaultValue ?? "")}
+                          onChange={e => setForm(f => ({ ...f, type_config: { ...f.type_config, [field.key]: e.target.value } }))}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

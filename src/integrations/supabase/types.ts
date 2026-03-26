@@ -704,10 +704,12 @@ export type Database = {
           module_id: string
           organization_id: string | null
           phases: Json
+          practice_type: string
           scenario: string
           system_prompt: string
           tags: string[]
           title: string
+          type_config: Json
         }
         Insert: {
           created_at?: string
@@ -720,10 +722,12 @@ export type Database = {
           module_id: string
           organization_id?: string | null
           phases?: Json
+          practice_type?: string
           scenario?: string
           system_prompt?: string
           tags?: string[]
           title: string
+          type_config?: Json
         }
         Update: {
           created_at?: string
@@ -736,10 +740,12 @@ export type Database = {
           module_id?: string
           organization_id?: string | null
           phases?: Json
+          practice_type?: string
           scenario?: string
           system_prompt?: string
           tags?: string[]
           title?: string
+          type_config?: Json
         }
         Relationships: [
           {

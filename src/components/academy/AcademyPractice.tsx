@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { EnrichedMarkdown } from "./EnrichedMarkdown";
+import { SimulatorEngine } from "@/components/simulator/SimulatorEngine";
 
 interface AcademyPracticeProps {
   moduleId: string;
@@ -433,6 +434,25 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
       setIsStreaming(false);
     }
   };
+
+  // Route to SimulatorEngine for non-conversation practice types
+  const practiceType = (practice as any)?.practice_type || "conversation";
+  const typeConfig = (practice as any)?.type_config || {};
+
+  if (practiceType !== "conversation" && practice) {
+    return (
+      <SimulatorEngine
+        practiceType={practiceType}
+        typeConfig={typeConfig}
+        systemPrompt={practice.system_prompt || ""}
+        scenario={practice.scenario || ""}
+        maxExchanges={practice.max_exchanges || 10}
+        practiceId={practice.id}
+        previewMode={previewMode}
+        onComplete={onComplete}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-full relative">

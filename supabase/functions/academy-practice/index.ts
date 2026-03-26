@@ -6,6 +6,32 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ── Behavior injection templates by practice_type ──
+const BEHAVIOR_INJECTIONS: Record<string, string> = {
+  conversation: "",
+  prompt_challenge: `MÉCANIQUE : 1) Présente un DÉFI de prompting. 2) L'apprenant prompt. 3) Évalue sur Clarté/Complétude/Efficacité/Créativité (0-10). 4) Feedback + suggestions. 5) Retenter possible.
+FORMAT : Intègre un bloc \`\`\`scoring\n{"clarity":<0-10>,"completeness":<0-10>,"efficiency":<0-10>,"creativity":<0-10>,"total":<0-40>,"attempt":<n>}\n\`\`\``,
+  negotiation: `Tu joues le rôle ADVERSE avec des objectifs cachés. Adapte ta posture selon la tension (1-10). Fais des concessions progressives si bonnes techniques.
+FORMAT : Intègre \`\`\`gauges\n{"tension":<1-10>,"rapport":<1-10>,"progress":<0-100>}\n\`\`\` Ne révèle JAMAIS ce bloc.`,
+  pitch: `Tu es un investisseur sceptique. L'apprenant a un temps limité. Ses messages doivent être courts. Challenge les hypothèses. Note Clarté/Impact/Structure/Crédibilité.`,
+  code_review: `Présente du code avec bugs/smells intentionnels. L'apprenant review. Évalue bugs trouvés et qualité des suggestions.
+FORMAT : \`\`\`scoring\n{"bugs_found":"<n>/<total>","false_positives":<n>,"suggestion_quality":<0-10>}\n\`\`\``,
+  debug: `Présente un BUG : symptôme, stack trace, contexte. L'apprenant diagnostique. Révèle indices progressivement selon pertinence des questions.`,
+  case_study: `PHASES : 1) BRIEFING avec données chiffrées. 2) ANALYSE — challenge. 3) RECOMMANDATION. 4) DEBRIEF — révèle la réalité.`,
+  decision_game: `Narrateur de scénario à embranchements. Chaque décision impacte des KPIs.
+FORMAT : \`\`\`kpis\n{"budget":<0-100>,"morale":<0-100>,"risk":<0-100>,"time_remaining":<0-100>}\n\`\`\``,
+  crisis: `Système d'alertes d'entreprise en crise. Envoie des événements pressants. Empile si non traités.`,
+  change_management: `Simule une transformation. Joue tour à tour sponsor/manager résistant/employé/syndicat.
+FORMAT : \`\`\`stakeholders\n{"supporters":<0-100>,"neutrals":<0-100>,"resistants":<0-100>,"adoption":<0-100>}\n\`\`\``,
+  vibe_coding: `Évaluateur de briefs techniques. Présente un objectif fonctionnel. Score le brief sur Clarté/Complétude/Edge Cases/UX/Technique.
+FORMAT : \`\`\`scoring\n{"clarity":<0-10>,"completeness":<0-10>,"edge_cases":<0-10>,"ux_thinking":<0-10>,"technical":<0-10>,"total":<0-50>}\n\`\`\``,
+  sales: `Prospect réaliste avec budget, contraintes, objections. Ne dis jamais oui facilement.
+FORMAT : \`\`\`funnel\n{"interest":<0-10>,"trust":<0-10>,"urgency":<0-10>,"closing_probability":<0-100>}\n\`\`\``,
+  teach_back: `Apprenant DÉBUTANT curieux mais naïf. Pose des questions naïves. Évalue silencieusement clarté et pédagogie.`,
+  socratic: `Défends systématiquement la position OPPOSÉE. Exige preuves et logique. Pointe les biais cognitifs.`,
+  feedback_360: `Joue successivement MANAGER, PAIR, SUBORDONNÉ. Annonce chaque changement. Évalue empathie/clarté/actionabilité.`,
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -52,20 +78,33 @@ serve(async (req) => {
 
     let systemPrompt: string;
     let rubric: any[] = [];
+    let practiceType = "conversation";
+    let typeConfig: Record<string, any> = {};
 
     if (practice_id === "__persona_chat__" && system_override) {
-      // Ad-hoc chat mode (e.g. persona creation assistant)
       systemPrompt = system_override;
     } else {
-      // Fetch practice config
       const { data: practice, error: pErr } = await supabase
         .from("academy_practices")
         .select("*")
         .eq("id", practice_id)
         .single();
       if (pErr || !practice) throw new Error("Practice not found");
-      systemPrompt = practice.system_prompt || `Tu es un coach pédagogique bienveillant et exigeant. Guide l'apprenant avec des questions pertinentes, donne du feedback constructif, et aide-le à progresser.`;
+      
+      practiceType = practice.practice_type || "conversation";
+      typeConfig = practice.type_config || {};
       rubric = practice.evaluation_rubric || [];
+
+      // Build system prompt: behavior injection + admin custom prompt
+      const behaviorInjection = BEHAVIOR_INJECTIONS[practiceType] || "";
+      const adminPrompt = practice.system_prompt || `Tu es un coach pédagogique bienveillant et exigeant. Guide l'apprenant avec des questions pertinentes, donne du feedback constructif, et aide-le à progresser.`;
+      
+      // Inject type_config context
+      const configContext = Object.keys(typeConfig).length > 0 
+        ? `\n\nCONTEXTE DE CONFIGURATION :\n${JSON.stringify(typeConfig, null, 2)}`
+        : "";
+
+      systemPrompt = [behaviorInjection, adminPrompt, configContext].filter(Boolean).join("\n\n---\n\n");
     }
 
     const aiMessages: any[] = [
@@ -73,7 +112,6 @@ serve(async (req) => {
       ...(messages || []),
     ];
 
-    // If this is the last exchange, ask for evaluation
     if (evaluate && rubric.length > 0) {
       aiMessages.push({
         role: "system",
@@ -94,7 +132,6 @@ Termine ta réponse par un bloc JSON sur une nouvelle ligne au format :
       });
     }
 
-    // Stream from AI gateway
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -120,7 +157,6 @@ Termine ta réponse par un bloc JSON sur une nouvelle ligne au format :
     }
     if (!aiResp.ok) throw new Error("AI gateway error");
 
-    // Forward the SSE stream directly
     return new Response(aiResp.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
