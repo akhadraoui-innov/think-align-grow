@@ -112,6 +112,9 @@ export default function AdminOrganizationDetail() {
             <TabsTrigger value="ai" className="gap-1.5 text-xs">
               <Bot className="h-3.5 w-3.5" /> IA
             </TabsTrigger>
+            <TabsTrigger value="simulator" className="gap-1.5 text-xs">
+              <Zap className="h-3.5 w-3.5" /> Simulateur
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="info">
