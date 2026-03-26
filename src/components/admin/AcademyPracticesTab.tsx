@@ -371,6 +371,17 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1.5">
+                <Label>Niveau d'aide IA</Label>
+                <Select value={form.ai_assistance_level} onValueChange={v => setForm(f => ({ ...f, ai_assistance_level: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="autonomous">Autonome</SelectItem>
+                    <SelectItem value="guided">Guidé</SelectItem>
+                    <SelectItem value="intensive">Intensif</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Evaluation Rubric */}
