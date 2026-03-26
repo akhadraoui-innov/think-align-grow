@@ -6,13 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { MessageSquare, Plus, Pencil, Trash2, Save, X, Zap } from "lucide-react";
+import { MessageSquare, Plus, Pencil, Trash2, Save, X, Zap, Wand2, AlertTriangle } from "lucide-react";
 import { getAllUniverses, getModeDefinition, UNIVERSE_LABELS, type ModeUniverse } from "@/components/simulator/config/modeRegistry";
 import { getConfigFields, type ConfigField } from "@/components/simulator/config/typeConfigSchemas";
 import { getBehaviorInjection } from "@/components/simulator/config/promptTemplates";
+import { PracticeDesigner } from "@/components/admin/PracticeDesigner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
