@@ -67,6 +67,20 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
     ta.style.height = "auto";
     ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
   }, [input]);
+  const contextualSuggestions = useMemo(() => {
+    if (!practice) return [];
+    const tags = practice.tags || [];
+    const title = practice.title || "";
+    const suggestions = [
+      `Comment aborder concrètement "${title.toLowerCase()}" ?`,
+      "Peux-tu me donner un exemple réel ?",
+      "Quels sont les erreurs courantes à éviter ?",
+      "Comment mesurer le succès de cette approche ?",
+    ];
+    if (tags.includes("leadership")) suggestions.push("Comment adapter ça à mon style de management ?");
+    if (tags.includes("ia") || tags.includes("ai")) suggestions.push("Quels outils IA recommandes-tu ?");
+    return suggestions.slice(0, 4);
+  }, [practice]);
 
   if (!practice) {
     return (
@@ -81,20 +95,6 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
   const isFinished = exchangeCount >= maxExchanges || !!evaluation;
   const progressPct = Math.round((exchangeCount / maxExchanges) * 100);
   const hasMessages = messages.length > 0;
-
-  const contextualSuggestions = useMemo(() => {
-    const tags = practice.tags || [];
-    const title = practice.title || "";
-    const suggestions = [
-      `Comment aborder concrètement "${title.toLowerCase()}" ?`,
-      "Peux-tu me donner un exemple réel ?",
-      "Quels sont les erreurs courantes à éviter ?",
-      "Comment mesurer le succès de cette approche ?",
-    ];
-    if (tags.includes("leadership")) suggestions.push("Comment adapter ça à mon style de management ?");
-    if (tags.includes("ia") || tags.includes("ai")) suggestions.push("Quels outils IA recommandes-tu ?");
-    return suggestions.slice(0, 4);
-  }, [practice]);
 
   const handleSend = async (text?: string) => {
     const msgText = text || input.trim();
