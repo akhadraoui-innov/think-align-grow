@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sparkles, Code, FileText, FolderSearch, Layout, ClipboardCheck, Zap, MessageSquare, Play, History, X } from "lucide-react";
+import { Search, Sparkles, Code, FileText, FolderSearch, Layout, ClipboardCheck, Zap, MessageSquare, Play, History, X, Building2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,9 @@ import { MODE_REGISTRY, UNIVERSE_LABELS, getModeDefinition, type ModeFamily, typ
 import { SimulatorEngine } from "@/components/simulator/SimulatorEngine";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useNavigate } from "react-router-dom";
+import { useActiveOrg } from "@/contexts/OrgContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 const FAMILY_ICONS: Record<ModeFamily, React.ReactNode> = {
