@@ -104,7 +104,13 @@ serve(async (req) => {
         ? `\n\nCONTEXTE DE CONFIGURATION :\n${JSON.stringify(typeConfig, null, 2)}`
         : "";
 
-      systemPrompt = [behaviorInjection, adminPrompt, configContext].filter(Boolean).join("\n\n---\n\n");
+      const suggestionsInstruction = `\n\nAPRÈS chaque réponse, ajoute un bloc JSON de suggestions de réponses possibles pour l'apprenant :
+\`\`\`suggestions
+["suggestion 1", "suggestion 2", "suggestion 3"]
+\`\`\`
+Les suggestions doivent être des pistes de réponse variées et pertinentes (pas les réponses complètes).`;
+
+      systemPrompt = [behaviorInjection, adminPrompt, configContext, suggestionsInstruction].filter(Boolean).join("\n\n---\n\n");
     }
 
     const aiMessages: any[] = [
