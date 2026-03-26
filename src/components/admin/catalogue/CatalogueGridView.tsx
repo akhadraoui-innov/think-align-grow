@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
-import { GitBranch, Users, Calendar } from "lucide-react";
+import { GitBranch, Users, Calendar, Play } from "lucide-react";
 import {
   CatalogueAsset, ASSET_TYPE_LABELS, ASSET_TYPE_COLORS,
   getDisplayOrg, getDisplayVersion, getDisplayContributors, getSnapshotField,
@@ -10,6 +11,7 @@ import {
 interface Props {
   assets: CatalogueAsset[];
   orgMap: Map<string, { name: string; logo_url: string | null; primary_color: string | null }>;
+  onTestPractice?: (assetId: string, name: string) => void;
 }
 
 export function CatalogueGridView({ assets, orgMap }: Props) {
