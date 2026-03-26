@@ -241,12 +241,8 @@ export default function AcademyModule() {
                   </div>
                 </div>
 
-                {status === "completed" && (
-                  <div className="shrink-0">
-                    {(progressMap.get(pm.module_id) as any)?.score != null && (
-                      <span className="text-[10px] font-medium text-primary">{(progressMap.get(pm.module_id) as any).score}%</span>
-                    )}
-                  </div>
+                {status === "completed" && (progressMap.get(pm.module_id) as any)?.score != null && (
+                  <span className="text-[10px] font-medium text-primary shrink-0">{(progressMap.get(pm.module_id) as any).score}%</span>
                 )}
               </button>
             );
