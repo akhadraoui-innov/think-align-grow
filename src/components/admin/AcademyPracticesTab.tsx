@@ -227,6 +227,42 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
             <DialogTitle>{editId ? "Modifier la pratique" : "Nouvelle pratique IA"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Practice Type Selector */}
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5 text-primary" />
+                Type de simulation
+              </Label>
+              <Select value={form.practice_type} onValueChange={v => {
+                const modeDef = getModeDefinition(v);
+                setForm(f => ({
+                  ...f,
+                  practice_type: v,
+                  type_config: modeDef?.defaultConfig || {},
+                  system_prompt: f.system_prompt || "",
+                }));
+              }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {getAllUniverses().map(u => (
+                    <div key={u.value}>
+                      <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{u.label}</div>
+                      {u.modes.map(([key, def]) => (
+                        <SelectItem key={key} value={key} className="text-xs">
+                          {def.label}
+                        </SelectItem>
+                      ))}
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.practice_type !== "conversation" && getModeDefinition(form.practice_type) && (
+                <p className="text-[10px] text-muted-foreground">
+                  {getModeDefinition(form.practice_type)!.description}
+                </p>
+              )}
+            </div>
+
             <div className="space-y-1.5">
               <Label>Titre</Label>
               <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Ex: Négociation budgétaire IA" />
@@ -240,7 +276,61 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
             <div className="space-y-1.5">
               <Label>Prompt système IA (instructions pour le coach)</Label>
               <Textarea value={form.system_prompt} onChange={e => setForm(f => ({ ...f, system_prompt: e.target.value }))} rows={6} placeholder="Tu es un coach senior spécialisé en..." className="font-mono text-xs" />
+              {form.practice_type !== "conversation" && (
+                <p className="text-[10px] text-muted-foreground">
+                  💡 Un comportement spécifique au mode "{getModeDefinition(form.practice_type)?.label}" sera automatiquement injecté.
+                </p>
+              )}
             </div>
+
+            {/* Dynamic type_config fields */}
+            {getConfigFields(form.practice_type).length > 0 && (
+              <div className="space-y-2 rounded-xl border p-3">
+                <p className="text-xs font-semibold text-muted-foreground">Configuration du mode</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {getConfigFields(form.practice_type).map((field) => (
+                    <div key={field.key} className="space-y-1">
+                      <Label className="text-xs">{field.label}</Label>
+                      {field.type === "select" && field.options ? (
+                        <Select
+                          value={String(form.type_config[field.key] ?? field.defaultValue ?? "")}
+                          onValueChange={v => setForm(f => ({ ...f, type_config: { ...f.type_config, [field.key]: v } }))}
+                        >
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {field.options.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      ) : field.type === "number" ? (
+                        <Input
+                          type="number"
+                          className="h-8 text-xs"
+                          min={field.min}
+                          max={field.max}
+                          value={Number(form.type_config[field.key] ?? field.defaultValue ?? 0)}
+                          onChange={e => setForm(f => ({ ...f, type_config: { ...f.type_config, [field.key]: parseInt(e.target.value) || 0 } }))}
+                        />
+                      ) : field.type === "textarea" ? (
+                        <Textarea
+                          className="text-xs"
+                          rows={2}
+                          placeholder={field.placeholder}
+                          value={String(form.type_config[field.key] ?? field.defaultValue ?? "")}
+                          onChange={e => setForm(f => ({ ...f, type_config: { ...f.type_config, [field.key]: e.target.value } }))}
+                        />
+                      ) : (
+                        <Input
+                          className="h-8 text-xs"
+                          placeholder={field.placeholder}
+                          value={String(form.type_config[field.key] ?? field.defaultValue ?? "")}
+                          onChange={e => setForm(f => ({ ...f, type_config: { ...f.type_config, [field.key]: e.target.value } }))}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
