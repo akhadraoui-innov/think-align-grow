@@ -94,14 +94,16 @@ export function SimulatorShell({
             <TooltipContent>Objectifs & critères</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowHelp(true)}>
-                <HelpCircle className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Aide IA</TooltipContent>
-          </Tooltip>
+          {!isExpert && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowHelp(true)}>
+                  <HelpCircle className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Aide IA</TooltipContent>
+            </Tooltip>
+          )}
 
           {onReset && (
             <Tooltip>
