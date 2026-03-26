@@ -1,12 +1,16 @@
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
-import { Search, Filter, Sparkles, Code, FileText, FolderSearch, Layout, ClipboardCheck, Zap, MessageSquare } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Sparkles, Code, FileText, FolderSearch, Layout, ClipboardCheck, Zap, MessageSquare, Play, History, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MODE_REGISTRY, UNIVERSE_LABELS, type ModeFamily, type ModeUniverse } from "@/components/simulator/config/modeRegistry";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MODE_REGISTRY, UNIVERSE_LABELS, getModeDefinition, type ModeFamily, type ModeUniverse } from "@/components/simulator/config/modeRegistry";
+import { SimulatorEngine } from "@/components/simulator/SimulatorEngine";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const FAMILY_ICONS: Record<ModeFamily, React.ReactNode> = {
@@ -30,9 +34,11 @@ const FAMILY_LABELS: Record<ModeFamily, string> = {
 };
 
 export default function Simulator() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filterUniverse, setFilterUniverse] = useState<string>("all");
   const [filterFamily, setFilterFamily] = useState<string>("all");
+  const [activeSim, setActiveSim] = useState<{ key: string; def: any } | null>(null);
 
   const modes = useMemo(() => {
     return Object.entries(MODE_REGISTRY)
@@ -51,20 +57,28 @@ export default function Simulator() {
   const universes = Object.keys(UNIVERSE_LABELS) as ModeUniverse[];
   const families = Object.keys(FAMILY_LABELS) as ModeFamily[];
 
+  const launchSim = (key: string, def: any) => {
+    setActiveSim({ key, def });
+  };
+
   return (
     <PageTransition>
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
-        <div>
-          <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-md">
               <Sparkles className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Professional Simulator</h1>
-              <p className="text-sm text-muted-foreground">50 simulations interactives pilotées par IA</p>
+              <p className="text-sm text-muted-foreground">{Object.keys(MODE_REGISTRY).length} simulations interactives pilotées par IA</p>
             </div>
           </div>
+          <Button variant="outline" size="sm" onClick={() => navigate("/simulator/history")} className="gap-1.5">
+            <History className="h-3.5 w-3.5" />
+            Mon historique
+          </Button>
         </div>
 
         {/* Filters */}
@@ -111,7 +125,7 @@ export default function Simulator() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.02 }}
-              className="group rounded-xl border bg-card hover:shadow-md hover:border-primary/30 transition-all p-4 space-y-3 cursor-default"
+              className="group rounded-xl border bg-card hover:shadow-md hover:border-primary/30 transition-all p-4 space-y-3"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
@@ -130,15 +144,26 @@ export default function Simulator() {
               <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                 {def.description}
               </p>
-              <div className="flex flex-wrap gap-1">
-                {def.evaluationDimensions.slice(0, 3).map((dim) => (
-                  <Badge key={dim} variant="secondary" className="text-[9px] capitalize">
-                    {dim.replace(/_/g, " ")}
-                  </Badge>
-                ))}
-                {def.evaluationDimensions.length > 3 && (
-                  <Badge variant="secondary" className="text-[9px]">+{def.evaluationDimensions.length - 3}</Badge>
-                )}
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-1">
+                  {def.evaluationDimensions.slice(0, 2).map((dim: string) => (
+                    <Badge key={dim} variant="secondary" className="text-[9px] capitalize">
+                      {dim.replace(/_/g, " ")}
+                    </Badge>
+                  ))}
+                  {def.evaluationDimensions.length > 2 && (
+                    <Badge variant="secondary" className="text-[9px]">+{def.evaluationDimensions.length - 2}</Badge>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-7 gap-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => launchSim(key, def)}
+                >
+                  <Play className="h-3 w-3" />
+                  Lancer
+                </Button>
               </div>
             </motion.div>
           ))}
@@ -150,6 +175,41 @@ export default function Simulator() {
           </div>
         )}
       </div>
+
+      {/* Fullscreen Simulator Dialog */}
+      <Dialog open={!!activeSim} onOpenChange={(open) => !open && setActiveSim(null)}>
+        <DialogContent className="max-w-full w-full h-[100dvh] p-0 gap-0 [&>button]:hidden rounded-none border-0">
+          {activeSim && (
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between px-4 py-2 border-b bg-background">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    {FAMILY_ICONS[activeSim.def.family]}
+                  </div>
+                  <span className="text-sm font-semibold">{activeSim.def.label}</span>
+                  <Badge variant="outline" className="text-[9px]">{UNIVERSE_LABELS[activeSim.def.universe]}</Badge>
+                  <Badge variant="secondary" className="text-[9px]">Mode libre</Badge>
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveSim(null)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex-1 min-h-0">
+                <SimulatorEngine
+                  practiceType={activeSim.key}
+                  typeConfig={activeSim.def.defaultConfig || {}}
+                  systemPrompt=""
+                  scenario={activeSim.def.description}
+                  maxExchanges={10}
+                  practiceId="__standalone__"
+                  previewMode
+                  difficulty="intermediate"
+                />
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </PageTransition>
   );
 }
