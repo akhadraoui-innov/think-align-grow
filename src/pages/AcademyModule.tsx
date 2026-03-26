@@ -168,9 +168,11 @@ export default function AcademyModule() {
     if (p?.status === "in_progress") return "in_progress";
     if (!enrollment) return "available";
     if (idx === 0) return "available";
-    const prev = progressMap.get(pathModules[idx - 1]?.module_id) as any;
-    if (prev?.status === "completed") return "available";
-    return "locked";
+    for (let i = 0; i < idx; i++) {
+      const prevP = progressMap.get(pathModules[i]?.module_id) as any;
+      if (prevP?.status !== "completed") return "locked";
+    }
+    return "available";
   };
 
   const sidebarContent = (
@@ -232,7 +234,7 @@ export default function AcademyModule() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs leading-tight truncate">{mod.title}</p>
+                  <p className="text-sm leading-tight truncate">{mod.title}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="text-[10px] text-muted-foreground">{moduleTypeLabels[mod.module_type]}</span>
                     {mod.estimated_minutes && (
@@ -241,12 +243,8 @@ export default function AcademyModule() {
                   </div>
                 </div>
 
-                {status === "completed" && (
-                  <div className="shrink-0">
-                    {(progressMap.get(pm.module_id) as any)?.score != null && (
-                      <span className="text-[10px] font-medium text-primary">{(progressMap.get(pm.module_id) as any).score}%</span>
-                    )}
-                  </div>
+                {status === "completed" && (progressMap.get(pm.module_id) as any)?.score != null && (
+                  <span className="text-[10px] font-medium text-primary shrink-0">{(progressMap.get(pm.module_id) as any).score}%</span>
                 )}
               </button>
             );
@@ -320,7 +318,7 @@ export default function AcademyModule() {
 
   return (
     <PageTransition>
-      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="flex h-screen overflow-hidden">
         {/* Desktop sidebar */}
         {pathModules.length > 0 && !isMobile && (
           <AnimatePresence initial={false}>
@@ -396,8 +394,8 @@ export default function AcademyModule() {
                     <div
                       key={pm.module_id}
                       className={cn(
-                        "h-1.5 rounded-full transition-all",
-                        pm.module_id === id ? "w-4 bg-primary" : "w-1.5",
+                        "h-2 rounded-full transition-all",
+                        pm.module_id === id ? "w-5 bg-primary" : "w-2",
                         pm.module_id !== id && (progressMap.get(pm.module_id) as any)?.status === "completed" ? "bg-primary/50" : "bg-muted-foreground/20",
                       )}
                     />
@@ -430,7 +428,21 @@ export default function AcademyModule() {
             "flex-1 overflow-y-auto",
             isPractice ? "" : "p-6 md:p-8",
           )}>
-            {renderContent()}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className={cn(
+                  !isPractice && module.module_type !== "lesson" && "max-w-3xl mx-auto",
+                  isPractice && "h-full",
+                )}
+              >
+                {renderContent()}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>

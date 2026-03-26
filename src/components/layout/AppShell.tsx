@@ -19,6 +19,7 @@ export function AppShell({ children }: AppShellProps) {
   const isAuthPage = location.pathname === "/auth" || location.pathname === "/reset-password";
   const isWorkshopRoom = location.pathname.startsWith("/workshop/") && location.pathname !== "/workshop";
   const isAdminPage = location.pathname.startsWith("/admin");
+  const isAcademyModule = location.pathname.startsWith("/academy/module/");
 
   // Cmd+K shortcut
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -34,7 +35,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [handleKeyDown]);
 
   // Landing page & auth: no shell chrome
-  if (isLandingPage || isAuthPage || isWorkshopRoom || isAdminPage) {
+  if (isLandingPage || isAuthPage || isWorkshopRoom || isAdminPage || isAcademyModule) {
     return <>{children}</>;
   }
 
@@ -81,6 +82,7 @@ function PageBreadcrumb() {
     "/ai": "Coach IA",
     "/profile": "Profil",
     "/workshop": "Workshop",
+    "/academy": "Academy",
   };
   const label = map[location.pathname] || "Hack & Show";
 

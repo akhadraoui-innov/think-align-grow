@@ -237,7 +237,7 @@ export function AcademyExercise({ moduleId, enrollmentId, onComplete }: AcademyE
               value={submission}
               onChange={e => setSubmission(e.target.value)}
               placeholder="Rédigez votre réponse ici... Vous pouvez utiliser du texte structuré avec des titres, listes, et paragraphes."
-              className="min-h-[240px] resize-y font-mono text-sm"
+              className="min-h-[240px] resize-y text-sm"
               disabled={isEvaluating}
             />
             {/* Progress indicator while evaluating */}
