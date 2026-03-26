@@ -4,7 +4,7 @@ import { useOrganizationDetail } from "@/hooks/useOrganizations";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Users, Layers, CreditCard, BarChart3, Settings, UsersRound, Presentation, ScrollText, Bot } from "lucide-react";
+import { ArrowLeft, Loader2, Users, Layers, CreditCard, BarChart3, Settings, UsersRound, Presentation, ScrollText, Bot, Zap } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { OrgInfoTab } from "@/components/admin/OrgInfoTab";
