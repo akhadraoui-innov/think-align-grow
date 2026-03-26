@@ -2,6 +2,7 @@
 import { getModeDefinition, type ModeFamily } from "./config/modeRegistry";
 import { ChatMode } from "./modes/ChatMode";
 import { CodeMode } from "./modes/CodeMode";
+import { DecisionMode } from "./modes/DecisionMode";
 
 interface SimulatorEngineProps {
   practiceType: string;
@@ -21,11 +22,12 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
   switch (family) {
     case "code":
       return <CodeMode {...props} />;
+    case "decision":
+      return <DecisionMode {...props} />;
 
     case "chat":
     case "document":   // TODO Phase 4
     case "analysis":   // TODO Phase 5
-    case "decision":   // TODO Phase 3
     case "design":     // TODO Phase 7
     case "assessment": // TODO Phase 6
     default:
