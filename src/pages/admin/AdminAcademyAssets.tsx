@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Search, Copy, Pencil, Library, HelpCircle, Dumbbell, MessageSquare, ChevronRight, Sparkles, BookOpen, AlertCircle, X, Plus, TrendingUp, Clock, History, ChevronDown } from "lucide-react";
+import { Search, Copy, Pencil, Library, HelpCircle, Dumbbell, MessageSquare, ChevronRight, Sparkles, BookOpen, AlertCircle, X, Plus, TrendingUp, Clock, History, ChevronDown, Play } from "lucide-react";
+import { PracticeTestDialog } from "@/components/admin/PracticeTestDialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -622,6 +623,7 @@ function PracticesTab({ data, filters, isError, error, stats }: { data: any[]; f
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [dupItem, setDupItem] = useState<any>(null);
   const [dupTarget, setDupTarget] = useState("");
+  const [testModuleId, setTestModuleId] = useState<string | null>(null);
   const updateTags = useUpdateTags("academy_practices", "admin-asset-practices");
 
   const filtered = applyFilters(data, filters, "practices");
@@ -682,6 +684,7 @@ function PracticesTab({ data, filters, isError, error, stats }: { data: any[]; f
                   <TableCell className="text-center"><ModeBadge mode={pr.generation_mode} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
+                      <Button size="icon" variant="ghost" onClick={() => setTestModuleId(pr.module_id)} title="Tester le Practice Studio"><Play className="h-4 w-4 text-violet-500" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => setDupItem(pr)}><Copy className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => navigate(`/admin/academy/modules/${pr.module_id}`)}><Pencil className="h-4 w-4" /></Button>
                     </div>
@@ -734,6 +737,13 @@ function PracticesTab({ data, filters, isError, error, stats }: { data: any[]; f
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PracticeTestDialog
+        moduleId={testModuleId}
+        open={!!testModuleId}
+        onOpenChange={(open) => { if (!open) setTestModuleId(null); }}
+        title={testModuleId ? filtered.find((p: any) => p.module_id === testModuleId)?.title : undefined}
+      />
     </>
   );
 }

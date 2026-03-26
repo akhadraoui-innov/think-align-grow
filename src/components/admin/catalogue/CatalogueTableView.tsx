@@ -1,10 +1,11 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Play } from "lucide-react";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useState } from "react";
@@ -19,9 +20,10 @@ interface Props {
   assets: CatalogueAsset[];
   orgMap: Map<string, { name: string; logo_url: string | null; primary_color: string | null }>;
   profileMap: Map<string, { display_name: string | null; avatar_url: string | null; email: string | null }>;
+  onTestPractice?: (assetId: string, name: string) => void;
 }
 
-export function CatalogueTableView({ assets, orgMap, profileMap }: Props) {
+export function CatalogueTableView({ assets, orgMap, profileMap, onTestPractice }: Props) {
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
 
   const versionsForAsset = useQuery({
@@ -81,6 +83,7 @@ export function CatalogueTableView({ assets, orgMap, profileMap }: Props) {
             <TableHead className="text-xs text-center">Contributeurs</TableHead>
             <TableHead className="text-xs">Dernière modif.</TableHead>
             <TableHead className="text-xs">Créé le</TableHead>
+            <TableHead className="text-xs w-10" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -138,11 +141,18 @@ export function CatalogueTableView({ assets, orgMap, profileMap }: Props) {
                       <TableCell className="p-2 text-xs text-muted-foreground">
                         {format(parseISO(asset.created_at), "dd/MM/yyyy")}
                       </TableCell>
+                      <TableCell className="p-2">
+                        {asset.asset_type === "practice" && onTestPractice && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onTestPractice(asset.asset_id, asset.name); }} title="Tester">
+                            <Play className="h-3.5 w-3.5 text-violet-500" />
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   </CollapsibleTrigger>
                   <CollapsibleContent asChild>
                     <TableRow className="bg-muted/20 hover:bg-muted/20">
-                      <TableCell colSpan={9} className="p-0">
+                      <TableCell colSpan={10} className="p-0">
                         <div className="px-6 py-3 ml-8 border-l-2 border-primary/20 space-y-2">
                           {versionsForAsset.isLoading ? (
                             <Skeleton className="h-12 w-full" />

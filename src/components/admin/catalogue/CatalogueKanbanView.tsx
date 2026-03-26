@@ -1,6 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
+import { Play } from "lucide-react";
 import {
   CatalogueAsset, ASSET_TYPE_LABELS, ASSET_TYPE_COLORS, STATUS_LABELS, getDisplayOrg,
 } from "./CatalogueTypes";
@@ -8,11 +10,12 @@ import {
 interface Props {
   assets: CatalogueAsset[];
   orgMap: Map<string, { name: string; logo_url: string | null; primary_color: string | null }>;
+  onTestPractice?: (assetId: string, name: string) => void;
 }
 
 const COLUMNS = ["draft", "published", "active"];
 
-export function CatalogueKanbanView({ assets, orgMap }: Props) {
+export function CatalogueKanbanView({ assets, orgMap, onTestPractice }: Props) {
   const columns = useMemo(() => {
     const result: Record<string, CatalogueAsset[]> = {};
     COLUMNS.forEach((c) => (result[c] = []));
@@ -53,7 +56,14 @@ export function CatalogueKanbanView({ assets, orgMap }: Props) {
                   <p className="text-xs font-medium text-foreground leading-tight line-clamp-2">
                     {asset.name || "Sans nom"}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">{getDisplayOrg(asset, orgMap)}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-muted-foreground">{getDisplayOrg(asset, orgMap)}</p>
+                    {asset.asset_type === "practice" && onTestPractice && (
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => onTestPractice(asset.asset_id, asset.name)} title="Tester">
+                        <Play className="h-3 w-3 text-violet-500" />
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}

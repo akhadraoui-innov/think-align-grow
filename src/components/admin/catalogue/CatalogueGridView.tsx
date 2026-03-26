@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
-import { GitBranch, Users, Calendar } from "lucide-react";
+import { GitBranch, Users, Calendar, Play } from "lucide-react";
 import {
   CatalogueAsset, ASSET_TYPE_LABELS, ASSET_TYPE_COLORS,
   getDisplayOrg, getDisplayVersion, getDisplayContributors, getSnapshotField,
@@ -10,9 +11,10 @@ import {
 interface Props {
   assets: CatalogueAsset[];
   orgMap: Map<string, { name: string; logo_url: string | null; primary_color: string | null }>;
+  onTestPractice?: (assetId: string, name: string) => void;
 }
 
-export function CatalogueGridView({ assets, orgMap }: Props) {
+export function CatalogueGridView({ assets, orgMap, onTestPractice }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {assets.map((asset) => {
@@ -34,9 +36,16 @@ export function CatalogueGridView({ assets, orgMap }: Props) {
                 >
                   {ASSET_TYPE_LABELS[asset.asset_type] || asset.asset_type}
                 </Badge>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                  {asset.status || "draft"}
-                </Badge>
+                <div className="flex items-center gap-1">
+                  {asset.asset_type === "practice" && onTestPractice && (
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => onTestPractice(asset.asset_id, asset.name)} title="Tester">
+                      <Play className="h-3 w-3 text-violet-500" />
+                    </Button>
+                  )}
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    {asset.status || "draft"}
+                  </Badge>
+                </div>
               </div>
 
               <div>

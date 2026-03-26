@@ -7,7 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Search, Package, Filter, Table2, LayoutGrid, Clock, Columns3, BarChart3 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { PracticeTestDialog } from "@/components/admin/PracticeTestDialog";
 import {
   ViewMode, ASSET_TYPE_LABELS, STATUS_LABELS, DIFFICULTY_LABELS, GEN_MODE_LABELS,
   CatalogueAsset, getSnapshotField,
@@ -25,6 +28,37 @@ export default function AdminObservabilityCatalogue() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [genModeFilter, setGenModeFilter] = useState("all");
+  const [testPracticeModuleId, setTestPracticeModuleId] = useState<string | null>(null);
+  const [testPracticeTitle, setTestPracticeTitle] = useState<string>("");
+
+  // Resolve module_id for practice assets
+  const practiceAssetIds = useMemo(() => 
+    catalogue.filter((a: any) => a.asset_type === "practice").map((a: any) => a.asset_id),
+    [catalogue]
+  );
+
+  const { data: practiceModuleMap = {} } = useQuery({
+    queryKey: ["practice-module-map", practiceAssetIds],
+    queryFn: async () => {
+      if (practiceAssetIds.length === 0) return {};
+      const { data } = await supabase
+        .from("academy_practices")
+        .select("id, module_id")
+        .in("id", practiceAssetIds);
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((p: any) => { map[p.id] = p.module_id; });
+      return map;
+    },
+    enabled: practiceAssetIds.length > 0,
+  });
+
+  const handleTestPractice = useCallback((assetId: string, name: string) => {
+    const moduleId = practiceModuleMap[assetId];
+    if (moduleId) {
+      setTestPracticeModuleId(moduleId);
+      setTestPracticeTitle(name);
+    }
+  }, [practiceModuleMap]);
 
   const updateFilter = (patch: Partial<ObsFilters>) => {
     setFilters((prev) => ({ ...prev, ...patch }));
@@ -181,19 +215,26 @@ export default function AdminObservabilityCatalogue() {
             ) : filtered.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">Aucun asset trouvé</p>
             ) : viewMode === "table" ? (
-              <CatalogueTableView assets={filtered} orgMap={orgMap} profileMap={profileMap} />
+              <CatalogueTableView assets={filtered} orgMap={orgMap} profileMap={profileMap} onTestPractice={handleTestPractice} />
             ) : viewMode === "grid" ? (
-              <CatalogueGridView assets={filtered} orgMap={orgMap} />
+              <CatalogueGridView assets={filtered} orgMap={orgMap} onTestPractice={handleTestPractice} />
             ) : viewMode === "timeline" ? (
               <CatalogueTimelineView assets={filtered} orgMap={orgMap} />
             ) : viewMode === "kanban" ? (
-              <CatalogueKanbanView assets={filtered} orgMap={orgMap} />
+              <CatalogueKanbanView assets={filtered} orgMap={orgMap} onTestPractice={handleTestPractice} />
             ) : (
               <CatalogueTreemapView assets={filtered} onFilterType={handleTreemapFilter} />
             )}
           </CardContent>
         </Card>
       </div>
+
+      <PracticeTestDialog
+        moduleId={testPracticeModuleId}
+        open={!!testPracticeModuleId}
+        onOpenChange={(open) => { if (!open) setTestPracticeModuleId(null); }}
+        title={testPracticeTitle}
+      />
     </AdminShell>
   );
 }
