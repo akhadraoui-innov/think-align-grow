@@ -1,51 +1,113 @@
 
 
-# Onglet Informations — Mode Lecture / Édition séparés
+# Refonte du Workspace Apprenant Academy
 
-## Constat actuel
-L'onglet Info affiche directement les champs en mode édition (inputs, selects, textareas). Pas de mode lecture. L'utilisateur arrive sur un formulaire brut, pas une fiche structurée.
+## Constat
 
-## Plan
+L'experience apprenant actuelle souffre de plusieurs problemes majeurs :
 
-### 1. State `isEditing` (default: false)
-Ajouter un `const [isEditing, setIsEditing] = useState(false)` dans le composant. Un bouton "Modifier" (icone Pencil) dans le header de l'onglet bascule en mode édition. Un bouton "Annuler" revient en lecture (et reset le form).
+1. **Contenu de cours** : rendu Markdown basique dans une colonne etroite, pas d'experience de lecture immersive (pas de sidebar de navigation persistante, pas de breadcrumb contextuel)
+2. **Quiz** : deja gamifie mais isole dans un onglet, pas integre dans le flux
+3. **Exercice** : textarea brut + evaluation IA, pas de guidage progressif
+4. **Pratique IA (critique)** : chat dans une boite de 650px fixe, aucune ressemblance avec les environnements ChatGPT/Claude/Gemini — pas de plein ecran, pas de sidebar conversations, pas d'experience native
+5. **Navigation** : pas de workspace unifie, chaque page est isolee, pas de sentiment de progression continue
 
-### 2. Mode Lecture — Fiche premium structurée
-Quand `!isEditing`, afficher les données dans un layout propre, sans aucun input :
+## Approche : 3 vagues
 
-**Section A — Identité** : Grille de paires label/valeur (Nom en gras, Difficulté en badge coloré, Statut en badge, Durée en texte, Mode de génération en badge outline). Tags en pills read-only.
+Vu l'ampleur, je propose de decouper en **3 vagues** successives. Chaque vague est deployable independamment.
 
-**Section B — Ciblage** : 3 colonnes — Fonction (lien cliquable vers la page fonction), Persona (texte), Organisation (texte). Si vide : "Non défini" en muted.
+---
 
-**Section C — Description** : Texte rendu en paragraphe stylé (pas de textarea), fond légèrement teinté, typography premium (leading-relaxed).
+### VAGUE 1 — Workspace Layout + Pratique IA (priorite critique)
 
-**Section D — Options** : Certificat affiché comme un indicateur visuel (check vert ou croix grise), pas de switch.
+**Objectif** : Transformer le module en workspace avec sidebar + refondre la Pratique IA en experience ChatGPT-like plein ecran.
 
-**Section E — Métadonnées** : Identique à l'actuel (déjà read-only).
+#### 1A. Layout Workspace (`AcademyModule.tsx`)
 
-**Section F — Historique** : Identique (déjà read-only).
+Remplacer le layout actuel (colonne centree + onglets) par un **workspace a 2 panneaux** :
 
-Design lecture : valeurs en `text-sm font-medium`, labels en `text-[11px] text-muted-foreground uppercase tracking-wider`, espacement généreux, sections avec le même pattern card/header que l'actuel mais sans inputs.
-
-### 3. Mode Édition — Formulaire actuel
-Quand `isEditing`, afficher le formulaire inline-edit existant (sections A-D avec inputs/selects/switch). Le bouton Enregistrer sauvegarde puis repasse en lecture. Le bouton Annuler reset `infoForm` depuis `path` et repasse en lecture.
-
-### 4. Bouton dans le header de l'onglet
-Ajouter un header entre le TabsList et le contenu de l'onglet info :
+```text
+┌──────────────┬────────────────────────────────────┐
+│  SIDEBAR     │  MAIN CONTENT                      │
+│  - Parcours  │                                    │
+│  - Modules   │  [Contenu / Quiz / Exercice /      │
+│    ✓ Mod 1   │   Pratique selon le type]           │
+│    ● Mod 2   │                                    │
+│    ○ Mod 3   │                                    │
+│    🔒 Mod 4  │                                    │
+│              │                                    │
+│  ─────────   │                                    │
+│  Progression │                                    │
+│  [====70%==] │                                    │
+└──────────────┴────────────────────────────────────┘
 ```
-[Informations du parcours]                    [Modifier ✏️]
-```
-En mode édition :
-```
-[Modification en cours]           [Annuler] [Enregistrer 💾]
-```
 
-### 5. Onglets Inscriptions & Stats
-Pas de changement de fond — ces onglets sont déjà en lecture seule. Pas besoin de mode edit.
+- Sidebar gauche collapsible (icone toggle) avec : nom du parcours, liste des modules (icone type + statut ✓/●/🔒), progression globale, bouton "Retour au parcours"
+- Sur mobile : sidebar en Sheet/Drawer
+- Le contenu principal prend toute la largeur restante
+- Plus d'onglets TabsList : le type de module determine le rendu directement (lesson → contenu, quiz → quiz engine, exercise → exercice, practice → chat IA)
 
-## Fichier concerné
+#### 1B. Pratique IA — Experience ChatGPT-like (`AcademyPractice.tsx`)
+
+Refonte complete pour ressembler aux interfaces de chat IA modernes :
+
+- **Plein ecran** : le chat prend tout l'espace principal du workspace (pas de boite 650px)
+- **Sidebar conversations** (optionnel, dans le panneau gauche du workspace) : historique des sessions
+- **Zone de saisie premium** : textarea extensible en bas, avec bouton envoyer, compteur de caracteres, raccourcis clavier
+- **Messages** : bulles avec avatar Bot anime, rendu Markdown riche (code highlight, tables, callouts), timestamps
+- **Header contextuel** : titre de la pratique, difficulte, compteur d'echanges en badge, bouton reset
+- **Zone d'accueil** (quand 0 messages) : illustration, description du scenario, 4-6 suggestions de demarrage contextuelles (pas generiques)
+- **Streaming visible** : curseur clignotant pendant la generation, animation fluide token par token
+- **Evaluation** : resultat en overlay/modal elegant avec score radial anime, feedback detaille, bouton recommencer
+- **Responsive** : sur mobile, le chat prend tout l'ecran
+
+#### Fichiers concernes Vague 1
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/admin/AdminAcademyPathDetail.tsx` | Ajouter state `isEditing`, créer le rendu lecture premium pour l'onglet Info, conditionner l'affichage lecture/édition |
+| `src/pages/AcademyModule.tsx` | Refonte layout workspace 2 panneaux, suppression des onglets |
+| `src/components/academy/AcademyPractice.tsx` | Refonte complete ChatGPT-like plein ecran |
+
+---
+
+### VAGUE 2 — Contenu de cours premium + Exercice enrichi
+
+#### 2A. Lecteur de cours immersif
+
+- **Colonne de lecture** : max-w-3xl centree, `leading-relaxed`, `space-y-12` entre sections
+- **H2 avec accent** : barre primaire a gauche style magazine
+- **Barre de lecture segmentee** : un segment par section/heading, highlight de la section active au scroll
+- **Sommaire sticky** : affiché dans la sidebar workspace (pas un toggle separe), highlight dynamique au scroll
+- **Estimations** : temps de lecture restant en haut a droite
+- **Bouton "Marquer termine"** : sticky en bas, apparait quand readingProgress > 80%
+
+#### 2B. Exercice enrichi
+
+- **Instructions structurees** : rendu Markdown riche des instructions (pas juste du texte brut)
+- **Editeur ameliore** : textarea avec compteur de mots, indication de longueur attendue
+- **Feedback IA** : rendu en sections colorees (Forces en vert, Ameliorations en orange) avec icones
+- **Historique des tentatives** : timeline visuelle des soumissions precedentes avec scores
+
+#### Fichiers concernes Vague 2
+
+| Fichier | Action |
+|---------|--------|
+| `src/pages/AcademyModule.tsx` | ImmersiveContent refonte + sommaire sidebar |
+| `src/components/academy/AcademyExercise.tsx` | UX enrichie |
+| `src/components/academy/EnrichedMarkdown.tsx` | Ajouts typographiques (H2 accent, espacement) |
+
+---
+
+### VAGUE 3 — Quiz ameliore + Dashboard enrichi
+
+- Quiz : transitions entre questions plus fluides, mode revision post-quiz, animations de score
+- Dashboard : graphiques de progression dans le temps, recommandations IA de prochains parcours
+
+---
+
+## Proposition
+
+Je recommande de commencer par la **Vague 1** (Workspace layout + Pratique IA) car c'est le changement le plus impactant et le plus critique selon votre retour. Cela transformera fondamentalement l'experience.
+
+Souhaitez-vous approuver la Vague 1 pour implementation immediate ?
 
