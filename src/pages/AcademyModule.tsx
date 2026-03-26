@@ -232,7 +232,7 @@ export default function AcademyModule() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs leading-tight truncate">{mod.title}</p>
+                  <p className="text-sm leading-tight truncate">{mod.title}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="text-[10px] text-muted-foreground">{moduleTypeLabels[mod.module_type]}</span>
                     {mod.estimated_minutes && (
