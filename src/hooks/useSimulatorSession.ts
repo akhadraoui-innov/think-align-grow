@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import type { Json } from "@/integrations/supabase/types";
 
 interface SessionMessage {
   id: string;
@@ -30,40 +29,38 @@ export function useSimulatorSession(practiceId: string, previewMode = false) {
     ) => {
       if (previewMode || !user) return;
 
-      // Debounce rapid updates
       if (debounceRef.current) clearTimeout(debounceRef.current);
 
       debounceRef.current = setTimeout(async () => {
         try {
-          const payload: Record<string, unknown> = {
-            messages: messages as unknown as Record<string, unknown>[],
-          };
-          if (evaluation) {
-            payload.evaluation = evaluation as unknown as Record<string, unknown>;
-            payload.score = score ?? evaluation.score;
-            payload.completed_at = new Date().toISOString();
-          }
+          const messagesJson = JSON.parse(JSON.stringify(messages));
+          const evalJson = evaluation ? JSON.parse(JSON.stringify(evaluation)) : undefined;
 
           if (sessionId) {
+            const updateData: Record<string, unknown> = { messages: messagesJson };
+            if (evalJson) {
+              updateData.evaluation = evalJson;
+              updateData.score = score ?? evaluation!.score;
+              updateData.completed_at = new Date().toISOString();
+            }
             await supabase
               .from("academy_practice_sessions")
-              .update(payload)
+              .update(updateData)
               .eq("id", sessionId);
           } else {
+            const insertData: Record<string, unknown> = {
+              user_id: user.id,
+              practice_id: practiceId,
+              messages: messagesJson,
+            };
+            if (evalJson) {
+              insertData.evaluation = evalJson;
+              insertData.score = score ?? evaluation!.score;
+              insertData.completed_at = new Date().toISOString();
+            }
             const { data } = await supabase
               .from("academy_practice_sessions")
-              .insert({
-                user_id: user.id,
-                practice_id: practiceId,
-                messages: messages as unknown as Record<string, unknown>[],
-                ...(evaluation
-                  ? {
-                      evaluation: evaluation as unknown as Record<string, unknown>,
-                      score: score ?? evaluation.score,
-                      completed_at: new Date().toISOString(),
-                    }
-                  : {}),
-              })
+              .insert(insertData as any)
               .select("id")
               .single();
             if (data) setSessionId(data.id);
@@ -77,17 +74,17 @@ export function useSimulatorSession(practiceId: string, previewMode = false) {
   );
 
   const completeSession = useCallback(
-    async (
-      messages: SessionMessage[],
-      evaluation: SessionEvaluation
-    ) => {
+    async (messages: SessionMessage[], evaluation: SessionEvaluation) => {
       if (previewMode || !user) return;
       if (debounceRef.current) clearTimeout(debounceRef.current);
 
       try {
-        const payload = {
-          messages: messages as unknown as Record<string, unknown>[],
-          evaluation: evaluation as unknown as Record<string, unknown>,
+        const messagesJson = JSON.parse(JSON.stringify(messages));
+        const evalJson = JSON.parse(JSON.stringify(evaluation));
+
+        const payload: Record<string, unknown> = {
+          messages: messagesJson,
+          evaluation: evalJson,
           score: evaluation.score,
           completed_at: new Date().toISOString(),
         };
@@ -104,7 +101,7 @@ export function useSimulatorSession(practiceId: string, previewMode = false) {
               user_id: user.id,
               practice_id: practiceId,
               ...payload,
-            });
+            } as any);
         }
       } catch (err) {
         console.error("Session complete error:", err);
