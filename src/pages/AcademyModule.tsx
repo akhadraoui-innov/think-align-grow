@@ -1,12 +1,10 @@
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { ArrowLeft, BookOpen, HelpCircle, FileText, MessageSquare, CheckCircle2, ArrowRight, Check, Bot, Send, List, ChevronRight } from "lucide-react";
+import { ArrowLeft, BookOpen, HelpCircle, FileText, MessageSquare, CheckCircle2, ArrowRight, Check, Bot, Send, ChevronLeft, ChevronRight, Lock, Menu, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -20,8 +18,14 @@ import { AcademyPractice } from "@/components/academy/AcademyPractice";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+const moduleTypeIcons: Record<string, any> = {
+  lesson: BookOpen, quiz: HelpCircle, exercise: FileText, practice: MessageSquare,
+};
+const moduleTypeLabels: Record<string, string> = {
+  lesson: "Leçon", quiz: "Quiz", exercise: "Exercice", practice: "Pratique IA",
+};
 
 export default function AcademyModule() {
   const { id } = useParams<{ id: string }>();
@@ -30,11 +34,11 @@ export default function AcademyModule() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [activeTab, setActiveTab] = useState("content");
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const startTimeRef = useRef(Date.now());
-  const [readingProgress, setReadingProgress] = useState(0);
-  const [showToc, setShowToc] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const { data: module, isLoading } = useQuery({
@@ -75,70 +79,42 @@ export default function AcademyModule() {
     },
   });
 
+  const { data: pathData } = useQuery({
+    queryKey: ["academy-path-name", pathId],
+    enabled: !!pathId,
+    queryFn: async () => {
+      const { data } = await supabase.from("academy_paths").select("name").eq("id", pathId!).single();
+      return data;
+    },
+  });
+
   const { data: pathModules = [] } = useQuery({
     queryKey: ["academy-path-modules-nav", pathId],
     enabled: !!pathId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("academy_path_modules").select("module_id, sort_order, academy_modules(title)").eq("path_id", pathId!).order("sort_order");
+      const { data, error } = await supabase.from("academy_path_modules").select("module_id, sort_order, academy_modules(id, title, module_type, estimated_minutes)").eq("path_id", pathId!).order("sort_order");
       if (error) throw error;
       return data || [];
     },
   });
 
+  const { data: allProgress = [] } = useQuery({
+    queryKey: ["academy-all-progress-sidebar", enrollment?.id],
+    enabled: !!enrollment,
+    queryFn: async () => {
+      const { data } = await supabase.from("academy_progress").select("module_id, status, score").eq("enrollment_id", enrollment!.id);
+      return data || [];
+    },
+  });
+
+  const progressMap = useMemo(() => new Map(allProgress.map((p: any) => [p.module_id, p])), [allProgress]);
   const currentIndex = pathModules.findIndex((pm: any) => pm.module_id === id);
   const nextModule = currentIndex >= 0 && currentIndex < pathModules.length - 1 ? pathModules[currentIndex + 1] : null;
   const prevModule = currentIndex > 0 ? pathModules[currentIndex - 1] : null;
-
-  const { data: hasQuiz } = useQuery({
-    queryKey: ["academy-has-quiz", id], enabled: !!id,
-    queryFn: async () => { const { count } = await supabase.from("academy_quizzes").select("id", { count: "exact", head: true }).eq("module_id", id!); return (count || 0) > 0; },
-  });
-
-  const { data: hasExercise } = useQuery({
-    queryKey: ["academy-has-exercise", id], enabled: !!id,
-    queryFn: async () => { const { count } = await supabase.from("academy_exercises").select("id", { count: "exact", head: true }).eq("module_id", id!); return (count || 0) > 0; },
-  });
-
-  const { data: hasPractice } = useQuery({
-    queryKey: ["academy-has-practice", id], enabled: !!id,
-    queryFn: async () => { const { count } = await supabase.from("academy_practices").select("id", { count: "exact", head: true }).eq("module_id", id!); return (count || 0) > 0; },
-  });
+  const completedCount = allProgress.filter((p: any) => p.status === "completed").length;
+  const progressPct = pathModules.length > 0 ? Math.round((completedCount / pathModules.length) * 100) : 0;
 
   useEffect(() => { startTimeRef.current = Date.now(); }, [id]);
-
-  // Reading progress tracking
-  useEffect(() => {
-    if (activeTab !== "content") return;
-    const handleScroll = () => {
-      const el = contentRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const totalHeight = el.scrollHeight - window.innerHeight;
-      if (totalHeight <= 0) { setReadingProgress(100); return; }
-      const scrolled = Math.max(0, -rect.top);
-      setReadingProgress(Math.min(100, Math.round((scrolled / totalHeight) * 100)));
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [activeTab, contents]);
-
-  // Extract headings for ToC
-  const tocHeadings = useMemo(() => {
-    const headings: { level: number; text: string; id: string }[] = [];
-    contents.forEach((c: any) => {
-      const matches = (c.body || "").matchAll(/^(#{2,3})\s+(.+)$/gm);
-      for (const match of matches) {
-        const text = match[2].trim();
-        headings.push({
-          level: match[1].length,
-          text,
-          id: text.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-        });
-      }
-    });
-    return headings;
-  }, [contents]);
 
   const saveProgress = useCallback(async (score: number | null, status: string = "completed") => {
     if (!enrollment || !id || !user) return;
@@ -160,6 +136,7 @@ export default function AcademyModule() {
     }
     qc.invalidateQueries({ queryKey: ["academy-module-progress"] });
     qc.invalidateQueries({ queryKey: ["academy-progress"] });
+    qc.invalidateQueries({ queryKey: ["academy-all-progress-sidebar"] });
   }, [enrollment, id, user, currentProgress, qc]);
 
   const handleMarkComplete = async () => {
@@ -170,462 +147,293 @@ export default function AcademyModule() {
   };
 
   const isCompleted = (currentProgress as any)?.status === "completed";
-  const moduleTypeIcon: Record<string, JSX.Element> = {
-    lesson: <BookOpen className="h-5 w-5" />, quiz: <HelpCircle className="h-5 w-5" />,
-    exercise: <FileText className="h-5 w-5" />, practice: <MessageSquare className="h-5 w-5" />,
-  };
+  const isPractice = module?.module_type === "practice";
 
   if (isLoading) {
-    return <PageTransition><div className="container max-w-4xl mx-auto px-4 py-8"><div className="animate-pulse space-y-4"><div className="h-6 bg-muted rounded w-1/3" /><div className="h-4 bg-muted rounded w-2/3" /><div className="h-64 bg-muted rounded" /></div></div></PageTransition>;
+    return <PageTransition><div className="flex items-center justify-center h-screen"><div className="animate-pulse space-y-4 w-96"><div className="h-6 bg-muted rounded w-1/3" /><div className="h-4 bg-muted rounded w-2/3" /><div className="h-64 bg-muted rounded" /></div></div></PageTransition>;
   }
 
   if (!module) {
-    return <PageTransition><div className="container max-w-4xl mx-auto px-4 py-8 text-center"><p className="text-muted-foreground">Module introuvable.</p><Button variant="ghost" className="mt-4" onClick={() => navigate(-1 as any)}><ArrowLeft className="h-4 w-4 mr-2" /> Retour</Button></div></PageTransition>;
+    return <PageTransition><div className="flex items-center justify-center h-screen text-center"><div><p className="text-muted-foreground">Module introuvable.</p><Button variant="ghost" className="mt-4" onClick={() => navigate(-1 as any)}><ArrowLeft className="h-4 w-4 mr-2" /> Retour</Button></div></div></PageTransition>;
   }
 
-  const tabs = [
-    { id: "content", label: "Contenu", icon: <BookOpen className="h-4 w-4" />, show: contents.length > 0 },
-    { id: "quiz", label: "Quiz", icon: <HelpCircle className="h-4 w-4" />, show: !!hasQuiz },
-    { id: "exercise", label: "Exercice", icon: <FileText className="h-4 w-4" />, show: !!hasExercise },
-    { id: "practice", label: "Pratique IA", icon: <MessageSquare className="h-4 w-4" />, show: !!hasPractice },
-  ].filter(t => t.show);
+  const navigateToModule = (pm: any) => {
+    navigate(`/academy/module/${pm.module_id}?pathId=${pathId}`);
+    setMobileSidebarOpen(false);
+  };
 
-  const navigateToModule = (pm: any) => navigate(`/academy/module/${pm.module_id}?pathId=${pathId}`);
+  const getModuleStatus = (moduleId: string, idx: number) => {
+    const p = progressMap.get(moduleId) as any;
+    if (p?.status === "completed") return "completed";
+    if (p?.status === "in_progress") return "in_progress";
+    if (!enrollment) return "available";
+    if (idx === 0) return "available";
+    const prev = progressMap.get(pathModules[idx - 1]?.module_id) as any;
+    if (prev?.status === "completed") return "available";
+    return "locked";
+  };
 
-  return (
-    <PageTransition>
-      {/* Reading progress bar */}
-      {activeTab === "content" && contents.length > 0 && (
-        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-muted/50">
-          <motion.div
-            className="h-full bg-primary"
-            style={{ width: `${readingProgress}%` }}
-            transition={{ duration: 0.1 }}
-          />
-        </div>
-      )}
-
-      <div className="container max-w-4xl mx-auto px-4 py-8 space-y-6">
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => pathId ? navigate(`/academy/path/${pathId}`) : navigate(-1 as any)}>
-            <ArrowLeft className="h-4 w-4 mr-2" /> {pathId ? "Retour au parcours" : "Retour"}
-          </Button>
-          {tocHeadings.length > 2 && activeTab === "content" && (
-            <Button variant="outline" size="sm" onClick={() => setShowToc(!showToc)} className="gap-1.5">
-              <List className="h-3.5 w-3.5" /> Sommaire
-            </Button>
-          )}
-        </div>
-
-        {/* Module position */}
-        {pathId && pathModules.length > 0 && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              {pathModules.map((pm: any, i: number) => (
-                <button
-                  key={pm.module_id}
-                  onClick={() => navigateToModule(pm)}
-                  className={cn(
-                    "h-2 rounded-full transition-all",
-                    pm.module_id === id ? "w-6 bg-primary" : "w-2 bg-muted hover:bg-muted-foreground/30"
-                  )}
-                  title={(pm.academy_modules as any)?.title}
-                />
-              ))}
-            </div>
-            <span className="ml-2">Module {currentIndex + 1}/{pathModules.length}</span>
-            {isCompleted && <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
-          </div>
-        )}
-
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-3"
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      {/* Sidebar header */}
+      <div className="p-4 border-b border-border/50">
+        <button
+          onClick={() => pathId ? navigate(`/academy/path/${pathId}`) : navigate("/academy")}
+          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors mb-3"
         >
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shrink-0">
-              {moduleTypeIcon[module.module_type] || <BookOpen className="h-5 w-5" />}
+          <ArrowLeft className="h-3 w-3" />
+          <span className="truncate">{pathData?.name || "Retour"}</span>
+        </button>
+        {pathModules.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-muted-foreground">{completedCount}/{pathModules.length} modules</span>
+              <span className="font-medium">{progressPct}%</span>
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-display font-bold tracking-tight">{module.title}</h1>
-              <p className="text-sm text-muted-foreground mt-1">{module.description}</p>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <Badge variant="secondary" className="capitalize">{module.module_type}</Badge>
-                {module.estimated_minutes && (
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                    {module.estimated_minutes} min
-                  </span>
-                )}
-                {(module.objectives as string[])?.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {(module.objectives as string[]).slice(0, 3).map((obj, i) => (
-                      <Badge key={i} variant="outline" className="text-[10px]">{obj}</Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Table of contents sidebar */}
-        <AnimatePresence>
-          {showToc && tocHeadings.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
-            >
-              <Card className="bg-muted/30">
-                <CardContent className="p-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Sommaire</p>
-                  <nav className="space-y-1">
-                    {tocHeadings.map((h, i) => (
-                      <a
-                        key={i}
-                        href={`#${h.id}`}
-                        className={cn(
-                          "block text-xs hover:text-primary transition-colors",
-                          h.level === 3 ? "pl-4 text-muted-foreground" : "font-medium"
-                        )}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          document.getElementById(h.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }}
-                      >
-                        {h.text}
-                      </a>
-                    ))}
-                  </nav>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Content */}
-        {tabs.length > 1 ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full justify-start">
-              {tabs.map(t => (
-                <TabsTrigger key={t.id} value={t.id} className="gap-2">
-                  {t.icon} {t.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            <TabsContent value="content" className="mt-6">
-              <div ref={contentRef}>
-                <ImmersiveContent contents={contents} />
-              </div>
-            </TabsContent>
-            {hasQuiz && (
-              <TabsContent value="quiz" className="mt-6">
-                <AcademyQuiz moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score, total) => { saveProgress(Math.round((score / total) * 100), "completed"); toast.success(`Quiz terminé : ${score}/${total} points`); }} />
-              </TabsContent>
-            )}
-            {hasExercise && (
-              <TabsContent value="exercise" className="mt-6">
-                <AcademyExercise moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score) => { saveProgress(score, "completed"); toast.success(`Exercice évalué : ${score}/100`); }} />
-              </TabsContent>
-            )}
-            {hasPractice && (
-              <TabsContent value="practice" className="mt-6">
-                <AcademyPractice moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score) => { saveProgress(score, "completed"); toast.success(`Session terminée : ${score}/100`); }} />
-              </TabsContent>
-            )}
-          </Tabs>
-        ) : (
-          <div className="mt-6" ref={contentRef}>
-            {tabs[0]?.id === "quiz" ? <AcademyQuiz moduleId={id!} enrollmentId={enrollment?.id} onComplete={(s, t) => { saveProgress(Math.round((s/t)*100), "completed"); toast.success(`Quiz terminé : ${s}/${t}`); }} />
-            : tabs[0]?.id === "exercise" ? <AcademyExercise moduleId={id!} enrollmentId={enrollment?.id} onComplete={s => { saveProgress(s, "completed"); toast.success(`Score : ${s}/100`); }} />
-            : tabs[0]?.id === "practice" ? <AcademyPractice moduleId={id!} enrollmentId={enrollment?.id} onComplete={s => { saveProgress(s, "completed"); toast.success(`Score : ${s}/100`); }} />
-            : <ImmersiveContent contents={contents} />}
-          </div>
-        )}
-
-        {/* Complete button */}
-        {enrollment && !isCompleted && (contents.length > 0 || module.module_type === "lesson") && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex justify-center pt-4"
-          >
-            <Button onClick={handleMarkComplete} disabled={isCompleting} size="lg" className="gap-2 shadow-lg">
-              <Check className="h-4 w-4" /> Marquer comme terminé
-            </Button>
-          </motion.div>
-        )}
-
-        {isCompleted && (
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="flex items-center justify-center gap-2 text-sm text-primary font-medium pt-2"
-          >
-            <CheckCircle2 className="h-5 w-5" /> Module terminé
-          </motion.div>
-        )}
-
-        {/* Navigation inter-modules */}
-        {pathId && pathModules.length > 1 && (
-          <div className="flex items-center justify-between pt-6 border-t">
-            {prevModule ? (
-              <Button variant="outline" size="sm" onClick={() => navigateToModule(prevModule)} className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                <div className="text-left">
-                  <p className="text-[10px] text-muted-foreground">Précédent</p>
-                  <p className="text-xs font-medium truncate max-w-[150px]">{(prevModule.academy_modules as any)?.title}</p>
-                </div>
-              </Button>
-            ) : <div />}
-            {nextModule ? (
-              <Button size="sm" onClick={() => navigateToModule(nextModule)} className="gap-2">
-                <div className="text-right">
-                  <p className="text-[10px] text-primary-foreground/70">Suivant</p>
-                  <p className="text-xs font-medium truncate max-w-[150px]">{(nextModule.academy_modules as any)?.title}</p>
-                </div>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button size="sm" variant="secondary" onClick={() => navigate(`/academy/path/${pathId}`)} className="gap-2">
-                Voir le parcours <ArrowRight className="h-4 w-4" />
-              </Button>
-            )}
+            <Progress value={progressPct} className="h-1.5" />
           </div>
         )}
       </div>
 
-      {/* Floating AI Tutor */}
-      <TutorChat moduleTitle={module.title} moduleId={id!} />
-    </PageTransition>
-  );
-}
+      {/* Module list */}
+      <ScrollArea className="flex-1">
+        <div className="p-2 space-y-0.5">
+          {pathModules.map((pm: any, idx: number) => {
+            const mod = pm.academy_modules;
+            if (!mod) return null;
+            const status = getModuleStatus(pm.module_id, idx);
+            const isCurrent = pm.module_id === id;
+            const Icon = moduleTypeIcons[mod.module_type] || BookOpen;
 
-// ── Immersive Content Renderer ──
+            return (
+              <button
+                key={pm.module_id}
+                onClick={() => status !== "locked" && navigateToModule(pm)}
+                disabled={status === "locked"}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all text-sm group",
+                  isCurrent && "bg-primary/10 text-primary font-medium",
+                  !isCurrent && status !== "locked" && "hover:bg-muted/50 text-foreground",
+                  status === "locked" && "opacity-40 cursor-not-allowed",
+                )}
+              >
+                {/* Status indicator */}
+                <div className={cn(
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors",
+                  status === "completed" && "bg-primary text-primary-foreground",
+                  status === "in_progress" && "bg-primary/20 text-primary",
+                  status === "available" && !isCurrent && "bg-muted text-muted-foreground",
+                  isCurrent && status !== "completed" && "bg-primary/20 text-primary",
+                  status === "locked" && "bg-muted text-muted-foreground/50",
+                )}>
+                  {status === "completed" ? <CheckCircle2 className="h-3.5 w-3.5" /> :
+                   status === "locked" ? <Lock className="h-3 w-3" /> :
+                   <Icon className="h-3.5 w-3.5" />}
+                </div>
 
-function ImmersiveContent({ contents }: { contents: any[] }) {
-  if (contents.length === 0) {
-    return (
-      <Card className="border-dashed">
-        <CardContent className="p-12 text-center text-muted-foreground">
-          <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="text-sm font-medium">Le contenu de ce module sera bientôt disponible.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs leading-tight truncate">{mod.title}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] text-muted-foreground">{moduleTypeLabels[mod.module_type]}</span>
+                    {mod.estimated_minutes && (
+                      <span className="text-[10px] text-muted-foreground">· {mod.estimated_minutes}min</span>
+                    )}
+                  </div>
+                </div>
 
-  return (
-    <div className="space-y-8">
-      {contents.map((c: any, idx: number) => (
-        <motion.div
-          key={c.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: idx * 0.1 }}
+                {status === "completed" && (
+                  <div className="shrink-0">
+                    {(progressMap.get(pm.module_id) as any)?.score != null && (
+                      <span className="text-[10px] font-medium text-primary">{(progressMap.get(pm.module_id) as any).score}%</span>
+                    )}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </ScrollArea>
+
+      {/* Sidebar footer */}
+      <div className="p-3 border-t border-border/50">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-2 text-xs h-8"
+          onClick={() => pathId ? navigate(`/academy/path/${pathId}`) : navigate("/academy")}
         >
-          {c.content_type === "video" && c.media_url ? (
-            <div className="aspect-video rounded-2xl overflow-hidden bg-muted shadow-lg">
-              <iframe src={c.media_url} className="w-full h-full" allowFullScreen />
-            </div>
-          ) : (
-            <article className="prose prose-sm max-w-none dark:prose-invert">
-              <EnrichedMarkdown content={c.body || ""} />
-            </article>
-          )}
-        </motion.div>
-      ))}
+          <GraduationCap className="h-3.5 w-3.5" />
+          Voir le parcours
+        </Button>
+      </div>
     </div>
   );
-}
 
-// ── Floating AI Tutor Chat ──
+  const renderContent = () => {
+    const moduleType = module.module_type;
 
-function TutorChat({ moduleTitle, moduleId }: { moduleTitle: string; moduleId: string }) {
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
-  const [input, setInput] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
-
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages]);
-
-  const sendMessage = async () => {
-    if (!input.trim() || isStreaming) return;
-    const userMsg = { role: "user" as const, content: input.trim() };
-    const allMessages = [...messages, userMsg];
-    setMessages(allMessages);
-    setInput("");
-    setIsStreaming(true);
-
-    let assistantSoFar = "";
-    try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/academy-practice`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({
-          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
-          system_override: `Tu es un tuteur pédagogique bienveillant et expert pour le module "${moduleTitle}". 
-Tu réponds aux questions de l'apprenant sur le contenu du module de façon claire, structurée et encourageante.
-Utilise des exemples concrets, des analogies, et du markdown pour structurer tes réponses.
-Si l'apprenant semble perdu, propose-lui de reformuler ou de décomposer le concept.
-Reste focalisé sur le sujet du module. Réponds en français.`,
-        }),
-      });
-
-      if (!resp.ok || !resp.body) throw new Error("Stream failed");
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              assistantSoFar += content;
-              setMessages(prev => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant") return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
-                return [...prev, { role: "assistant", content: assistantSoFar }];
-              });
-            }
-          } catch {}
-        }
-      }
-    } catch (e) {
-      setMessages(prev => [...prev, { role: "assistant", content: "Désolé, une erreur est survenue. Réessayez." }]);
-    } finally {
-      setIsStreaming(false);
+    if (moduleType === "quiz") {
+      return <AcademyQuiz moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score, total) => { saveProgress(Math.round((score / total) * 100), "completed"); toast.success(`Quiz terminé : ${score}/${total} points`); }} />;
     }
+    if (moduleType === "exercise") {
+      return <AcademyExercise moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score) => { saveProgress(score, "completed"); toast.success(`Exercice évalué : ${score}/100`); }} />;
+    }
+    if (moduleType === "practice") {
+      return <AcademyPractice moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score) => { saveProgress(score, "completed"); toast.success(`Session terminée : ${score}/100`); }} />;
+    }
+
+    // Default: lesson content
+    return (
+      <div className="max-w-3xl mx-auto" ref={contentRef}>
+        {contents.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="p-12 text-center text-muted-foreground">
+              <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm font-medium">Le contenu de ce module sera bientôt disponible.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-8">
+            {contents.map((c: any, idx: number) => (
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                {c.content_type === "video" && c.media_url ? (
+                  <div className="aspect-video rounded-2xl overflow-hidden bg-muted shadow-lg">
+                    <iframe src={c.media_url} className="w-full h-full" allowFullScreen />
+                  </div>
+                ) : (
+                  <article className="prose prose-sm max-w-none dark:prose-invert leading-relaxed">
+                    <EnrichedMarkdown content={c.body || ""} />
+                  </article>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1 }}
-        >
-          <Button
-            size="icon"
-            className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl z-50 bg-primary hover:bg-primary/90"
-          >
-            <Bot className="h-6 w-6" />
-          </Button>
-        </motion.div>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-[400px] sm:w-[440px] p-0 flex flex-col">
-        <SheetHeader className="px-4 py-3 border-b bg-muted/30">
-          <SheetTitle className="text-sm flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
-              <Bot className="h-4 w-4 text-primary" />
-            </div>
-            Tuteur IA — {moduleTitle}
-          </SheetTitle>
-        </SheetHeader>
-
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          {messages.length === 0 && (
-            <div className="text-center text-muted-foreground text-sm py-16 space-y-3">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/5 mx-auto">
-                <Bot className="h-8 w-8 text-muted-foreground/40" />
-              </div>
-              <p className="font-medium">Posez une question</p>
-              <p className="text-xs max-w-[200px] mx-auto">Je suis votre tuteur IA pour ce module. Je suis là pour vous aider à comprendre.</p>
-              <div className="flex flex-wrap gap-1.5 justify-center pt-2">
-                {["Explique le concept principal", "Donne un exemple concret", "Résume cette leçon"].map(s => (
-                  <button
-                    key={s}
-                    onClick={() => { setInput(s); }}
-                    className="text-[10px] px-2.5 py-1.5 rounded-full border hover:bg-muted/50 transition-colors"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="space-y-4">
-            {messages.map((m, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}
+    <PageTransition>
+      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+        {/* Desktop sidebar */}
+        {pathModules.length > 0 && !isMobile && (
+          <AnimatePresence initial={false}>
+            {sidebarOpen && (
+              <motion.aside
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 280, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="border-r border-border/50 bg-muted/20 overflow-hidden shrink-0"
               >
-                <div className={cn(
-                  "max-w-[85%] rounded-2xl px-4 py-3 text-sm",
-                  m.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-br-md"
-                    : "bg-muted rounded-bl-md"
-                )}>
-                  {m.role === "assistant" ? (
-                    <div className="prose prose-sm max-w-none dark:prose-invert [&>p]:mb-2 [&>p:last-child]:mb-0">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
-                    </div>
-                  ) : (
-                    <p>{m.content}</p>
-                  )}
+                <div className="w-[280px] h-full">
+                  {sidebarContent}
                 </div>
-              </motion.div>
-            ))}
-            {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
-              <div className="flex justify-start">
-                <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
-                  </div>
-                  <span className="text-xs text-muted-foreground">Réflexion...</span>
+              </motion.aside>
+            )}
+          </AnimatePresence>
+        )}
+
+        {/* Mobile sidebar */}
+        {pathModules.length > 0 && isMobile && (
+          <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+            <SheetContent side="left" className="w-[300px] p-0">
+              {sidebarContent}
+            </SheetContent>
+          </Sheet>
+        )}
+
+        {/* Main content area */}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {/* Top bar */}
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/50 bg-background shrink-0">
+            {/* Sidebar toggle */}
+            {pathModules.length > 0 && (
+              <>
+                {isMobile ? (
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setMobileSidebarOpen(true)}>
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                    {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </Button>
+                )}
+              </>
+            )}
+
+            {/* Module info */}
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className={cn(
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                isPractice ? "bg-violet-500/10 text-violet-500" : "bg-primary/10 text-primary"
+              )}>
+                {isPractice ? <Bot className="h-4 w-4" /> :
+                 React.createElement(moduleTypeIcons[module.module_type] || BookOpen, { className: "h-4 w-4" })}
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-sm font-semibold truncate">{module.title}</h1>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <span>{moduleTypeLabels[module.module_type]}</span>
+                  {module.estimated_minutes && <span>· {module.estimated_minutes} min</span>}
+                  {isCompleted && <CheckCircle2 className="h-3 w-3 text-primary" />}
                 </div>
               </div>
-            )}
-          </div>
-        </ScrollArea>
+            </div>
 
-        <div className="p-3 border-t bg-background">
-          <div className="flex gap-2">
-            <Input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-              placeholder="Posez votre question..."
-              className="h-10"
-              disabled={isStreaming}
-            />
-            <Button size="icon" onClick={sendMessage} disabled={!input.trim() || isStreaming} className="h-10 w-10 shrink-0">
-              <Send className="h-4 w-4" />
-            </Button>
+            {/* Actions */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Segmented progress dots */}
+              {pathModules.length > 0 && !isMobile && (
+                <div className="flex items-center gap-0.5 mr-2">
+                  {pathModules.map((pm: any, i: number) => (
+                    <div
+                      key={pm.module_id}
+                      className={cn(
+                        "h-1.5 rounded-full transition-all",
+                        pm.module_id === id ? "w-4 bg-primary" : "w-1.5",
+                        pm.module_id !== id && (progressMap.get(pm.module_id) as any)?.status === "completed" ? "bg-primary/50" : "bg-muted-foreground/20",
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {enrollment && !isCompleted && module.module_type === "lesson" && (
+                <Button size="sm" variant="outline" onClick={handleMarkComplete} disabled={isCompleting} className="h-8 text-xs gap-1.5">
+                  <Check className="h-3 w-3" /> Terminé
+                </Button>
+              )}
+
+              {/* Nav arrows */}
+              {prevModule && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateToModule(prevModule)} title={(prevModule.academy_modules as any)?.title}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              )}
+              {nextModule && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigateToModule(nextModule)} title={(nextModule.academy_modules as any)?.title}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className={cn(
+            "flex-1 overflow-y-auto",
+            isPractice ? "" : "p-6 md:p-8",
+          )}>
+            {renderContent()}
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </PageTransition>
   );
 }
