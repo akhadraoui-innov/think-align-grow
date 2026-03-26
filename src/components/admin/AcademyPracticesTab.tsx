@@ -165,9 +165,14 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{practices.length} pratique{practices.length !== 1 ? "s" : ""}</p>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-1.5" /> Ajouter une pratique
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setDesignerOpen(true)} className="gap-1.5">
+            <Wand2 className="h-3.5 w-3.5" /> Designer IA
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-1.5" /> Ajouter une pratique
+          </Button>
+        </div>
       </div>
 
       {practices.length === 0 ? (
