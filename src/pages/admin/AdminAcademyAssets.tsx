@@ -737,6 +737,13 @@ function PracticesTab({ data, filters, isError, error, stats }: { data: any[]; f
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <PracticeTestDialog
+        moduleId={testModuleId}
+        open={!!testModuleId}
+        onOpenChange={(open) => { if (!open) setTestModuleId(null); }}
+        title={testModuleId ? filtered.find((p: any) => p.module_id === testModuleId)?.title : undefined}
+      />
     </>
   );
 }
