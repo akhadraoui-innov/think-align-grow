@@ -32,6 +32,7 @@ interface CodeModeProps {
   practiceId: string;
   previewMode?: boolean;
   onComplete?: (score: number) => void;
+  onExchangeUpdate?: (count: number) => void;
 }
 
 function parseInlineBlock(content: string, tag: string): Record<string, any> | null {

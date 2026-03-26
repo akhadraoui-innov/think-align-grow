@@ -1,5 +1,7 @@
-// SimulatorEngine — Routes practice_type to the correct UI family component
+// SimulatorEngine — Routes practice_type to the correct UI family component, wrapped in SimulatorShell
+import { useState, useCallback } from "react";
 import { getModeDefinition, type ModeFamily } from "./config/modeRegistry";
+import { SimulatorShell } from "./SimulatorShell";
 import { ChatMode } from "./modes/ChatMode";
 import { CodeMode } from "./modes/CodeMode";
 import { DecisionMode } from "./modes/DecisionMode";
@@ -12,25 +14,59 @@ interface SimulatorEngineProps {
   maxExchanges: number;
   practiceId: string;
   previewMode?: boolean;
+  difficulty?: string;
   onComplete?: (score: number) => void;
 }
 
 export function SimulatorEngine(props: SimulatorEngineProps) {
+  const [exchangeCount, setExchangeCount] = useState(0);
+  const [resetKey, setResetKey] = useState(0);
+
   const modeDef = getModeDefinition(props.practiceType);
   const family: ModeFamily = modeDef?.family || "chat";
 
-  switch (family) {
-    case "code":
-      return <CodeMode {...props} />;
-    case "decision":
-      return <DecisionMode {...props} />;
+  const handleExchangeUpdate = useCallback((count: number) => {
+    setExchangeCount(count);
+  }, []);
 
-    case "chat":
-    case "document":   // TODO Phase 4
-    case "analysis":   // TODO Phase 5
-    case "design":     // TODO Phase 7
-    case "assessment": // TODO Phase 6
-    default:
-      return <ChatMode {...props} />;
-  }
+  const handleReset = useCallback(() => {
+    setResetKey((k) => k + 1);
+    setExchangeCount(0);
+  }, []);
+
+  const modeProps = {
+    ...props,
+    key: resetKey,
+    onExchangeUpdate: handleExchangeUpdate,
+  };
+
+  const renderMode = () => {
+    switch (family) {
+      case "code":
+        return <CodeMode {...modeProps} />;
+      case "decision":
+        return <DecisionMode {...modeProps} />;
+      case "chat":
+      case "document":
+      case "analysis":
+      case "design":
+      case "assessment":
+      default:
+        return <ChatMode {...modeProps} />;
+    }
+  };
+
+  return (
+    <SimulatorShell
+      practiceType={props.practiceType}
+      practiceId={props.practiceId}
+      previewMode={props.previewMode}
+      exchangeCount={exchangeCount}
+      maxExchanges={props.maxExchanges}
+      difficulty={props.difficulty}
+      onReset={handleReset}
+    >
+      {renderMode()}
+    </SimulatorShell>
+  );
 }
