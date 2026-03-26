@@ -16,6 +16,7 @@ import { OrgWorkshopsTab } from "@/components/admin/OrgWorkshopsTab";
 import { OrgUsageTab } from "@/components/admin/OrgUsageTab";
 import { OrgActivityTab } from "@/components/admin/OrgActivityTab";
 import { OrgAIConfigTab } from "@/components/admin/OrgAIConfigTab";
+import { OrgSimulatorTab } from "@/components/admin/OrgSimulatorTab";
 
 export default function AdminOrganizationDetail() {
   const { id } = useParams();
