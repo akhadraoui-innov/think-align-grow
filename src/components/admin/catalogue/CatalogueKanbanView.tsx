@@ -1,6 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
+import { Play } from "lucide-react";
 import {
   CatalogueAsset, ASSET_TYPE_LABELS, ASSET_TYPE_COLORS, STATUS_LABELS, getDisplayOrg,
 } from "./CatalogueTypes";
@@ -8,6 +10,7 @@ import {
 interface Props {
   assets: CatalogueAsset[];
   orgMap: Map<string, { name: string; logo_url: string | null; primary_color: string | null }>;
+  onTestPractice?: (assetId: string, name: string) => void;
 }
 
 const COLUMNS = ["draft", "published", "active"];
