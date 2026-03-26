@@ -168,9 +168,11 @@ export default function AcademyModule() {
     if (p?.status === "in_progress") return "in_progress";
     if (!enrollment) return "available";
     if (idx === 0) return "available";
-    const prev = progressMap.get(pathModules[idx - 1]?.module_id) as any;
-    if (prev?.status === "completed") return "available";
-    return "locked";
+    for (let i = 0; i < idx; i++) {
+      const prevP = progressMap.get(pathModules[i]?.module_id) as any;
+      if (prevP?.status !== "completed") return "locked";
+    }
+    return "available";
   };
 
   const sidebarContent = (

@@ -220,6 +220,15 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
               <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progressPct}%` }} />
             </div>
           </div>
+          {!isFinished && exchangeCount >= 3 && (
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => {
+              const score = Math.round((exchangeCount / maxExchanges) * 70);
+              setEvaluation({ score, feedback: "Session terminée manuellement. Votre score est basé sur le nombre d'échanges effectués." });
+              onComplete?.(score);
+            }}>
+              <Award className="h-3 w-3" /> Terminer
+            </Button>
+          )}
           {!isFinished && (
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleReset} title="Recommencer">
               <RotateCcw className="h-3.5 w-3.5" />

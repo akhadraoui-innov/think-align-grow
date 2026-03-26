@@ -82,6 +82,7 @@ function PageBreadcrumb() {
     "/ai": "Coach IA",
     "/profile": "Profil",
     "/workshop": "Workshop",
+    "/academy": "Academy",
   };
   const label = map[location.pathname] || "Hack & Show";
 
