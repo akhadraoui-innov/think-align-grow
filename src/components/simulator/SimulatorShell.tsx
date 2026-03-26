@@ -31,6 +31,7 @@ export function SimulatorShell({
   exchangeCount,
   maxExchanges,
   difficulty,
+  aiAssistanceLevel = "guided",
   children,
   onReset,
 }: SimulatorShellProps) {
