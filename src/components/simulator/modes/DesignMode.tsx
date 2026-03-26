@@ -39,8 +39,9 @@ interface DesignModeProps {
   maxExchanges: number;
   practiceId: string;
   previewMode?: boolean;
-  onComplete?: (score: number) => void;
+  onComplete?: (score: number, messages?: Message[], evaluation?: any) => void;
   onExchangeUpdate?: (count: number) => void;
+  onMessagesChange?: (messages: Message[]) => void;
 }
 
 function parseEvaluation(content: string) {
