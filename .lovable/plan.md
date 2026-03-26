@@ -1,6 +1,5 @@
 
 
-
 # Audit complet — Ce qui est fait vs ce qui reste
 
 ## FAIT (opérationnel)
@@ -24,6 +23,8 @@
 | **SessionReplay** — dialogue de relecture des échanges étape par étape | Done |
 | **useSimulatorSession** — hook de persistance automatique DB | Done |
 | **Page catalogue `/simulator`** — grille filtrable par univers/famille | Done |
+| **Page historique `/simulator/history`** — sessions passées, scores, replay | Done |
+| **Next Steps connectés** — recommandations dynamiques depuis modeRegistry | Done |
 | **PracticeDesigner** — assistant IA admin + templates + preview | Done |
 | **practiceTemplates** — 10 templates pré-remplis | Done |
 | **promptTemplates** — injections comportementales par mode | Done |
@@ -41,20 +42,10 @@
 - Rapport de session exportable (score + dimensions + feedback + messages)
 - Bouton dans ScoreReveal pour télécharger
 
-### 2. Next Steps connectés
-
-- Recommandations de pratiques similaires basées sur les données réelles (modes du même univers, difficulté adaptée)
-- Connecter ScoreReveal.nextPractices aux données modeRegistry
-
-### 3. Mode composite / enchaînement (Phase 8)
+### 2. Mode composite / enchaînement (Phase 8)
 
 - Chaîner plusieurs modes en séquence (ex: Requirements → User Story → Sprint Planning)
 - Transfert de contexte entre modes
-
-### 4. Historique des sessions utilisateur
-
-- Page d'historique consultable par l'utilisateur avec ses sessions passées, scores, replay
-- Dashboard de progression personnelle
 
 ---
 
@@ -62,7 +53,5 @@
 
 | Priorité | Tâche | Impact |
 |----------|-------|--------|
-| **P1** | Next Steps connectés | Guidage intelligent post-session |
-| **P2** | Historique sessions utilisateur | Suivi de progression |
-| **P3** | Export PDF | Partage et archivage |
-| **P4** | Mode composite | Parcours multi-étapes |
+| **P1** | Export PDF | Partage et archivage |
+| **P2** | Mode composite | Parcours multi-étapes |
