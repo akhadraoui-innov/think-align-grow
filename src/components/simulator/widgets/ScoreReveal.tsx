@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp } from "lucide-react";
+import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SessionReplay } from "./SessionReplay";
 
 interface ScoreRevealProps {
   score: number;
@@ -9,6 +11,7 @@ interface ScoreRevealProps {
   dimensions?: { name: string; score: number }[];
   recommendations?: string[];
   nextPractices?: { label: string; type: string }[];
+  messages?: { role: "user" | "assistant"; content: string }[];
   onRestart?: () => void;
   onNextPractice?: (type: string) => void;
 }
