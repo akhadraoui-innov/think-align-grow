@@ -134,6 +134,7 @@ export default function AdminSimulatorTemplates() {
       difficulty: pr.difficulty || "intermediate",
       ai_assistance_level: pr.ai_assistance_level || "guided",
       evaluation_rubric: pr.evaluation_rubric || [],
+      organization_id: pr.organization_id || null,
     });
     setDialogOpen(true);
   }
