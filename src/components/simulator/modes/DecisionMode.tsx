@@ -70,6 +70,7 @@ export function DecisionMode({
   practiceId,
   previewMode = false,
   onComplete,
+  onExchangeUpdate,
 }: DecisionModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -97,6 +98,11 @@ export function DecisionMode({
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
+
+  // Notify parent of exchange count
+  useEffect(() => {
+    onExchangeUpdate?.(exchangeCount);
+  }, [exchangeCount, onExchangeUpdate]);
 
   useEffect(() => {
     if (messages.length === 0 && scenario) {
@@ -228,9 +234,6 @@ export function DecisionMode({
             <Zap className="h-4 w-4 text-primary" />
             <span className="text-xs font-semibold">{modeDef?.label || "Decision"}</span>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            Échange {exchangeCount}/{maxExchanges}
-          </p>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-4">
@@ -243,13 +246,13 @@ export function DecisionMode({
                   <div className="flex justify-between text-xs">
                     <span className="capitalize text-muted-foreground">{key.replace(/_/g, " ")}</span>
                     <span className={cn("font-bold tabular-nums",
-                      value > 60 ? "text-green-600" : value > 30 ? "text-amber-600" : "text-red-500"
+                      value > 60 ? "text-emerald-600" : value > 30 ? "text-amber-600" : "text-destructive"
                     )}>{value}</span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <motion.div
                       className={cn("h-full rounded-full",
-                        value > 60 ? "bg-green-500" : value > 30 ? "bg-amber-500" : "bg-red-500"
+                        value > 60 ? "bg-emerald-500" : value > 30 ? "bg-amber-500" : "bg-destructive"
                       )}
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(100, Math.max(0, value))}%` }}
@@ -269,8 +272,8 @@ export function DecisionMode({
                 <div key={key} className="flex justify-between text-xs">
                   <span className="capitalize">{key.replace(/_/g, " ")}</span>
                   <Badge variant="outline" className={cn("text-[9px] h-4",
-                    value > 60 ? "border-green-500/30 text-green-600" :
-                    value > 30 ? "border-amber-500/30 text-amber-600" : "border-red-500/30 text-red-500"
+                    value > 60 ? "border-emerald-500/30 text-emerald-600" :
+                    value > 30 ? "border-amber-500/30 text-amber-600" : "border-destructive/30 text-destructive"
                   )}>{value}%</Badge>
                 </div>
               ))}
@@ -338,17 +341,19 @@ export function DecisionMode({
           )}
         </div>
 
-        {evaluation && <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} />}
+        {evaluation && (
+          <ScoreReveal
+            score={evaluation.score}
+            feedback={evaluation.feedback}
+            dimensions={evaluation.dimensions}
+            recommendations={evaluation.recommendations}
+            onRestart={resetSession}
+          />
+        )}
 
         {/* Input */}
-        <div className="p-4 border-t bg-background">
-          {evaluation ? (
-            <div className="flex justify-center">
-              <Button variant="outline" onClick={resetSession}>
-                <RotateCcw className="h-4 w-4 mr-2" /> Recommencer
-              </Button>
-            </div>
-          ) : (
+        {!evaluation && (
+          <div className="p-4 border-t bg-background">
             <div className="flex gap-2 items-end">
               <Textarea
                 value={input}
@@ -363,8 +368,8 @@ export function DecisionMode({
                 {isStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
               </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

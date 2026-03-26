@@ -80,6 +80,7 @@ export function CodeMode({
   practiceId,
   previewMode = false,
   onComplete,
+  onExchangeUpdate,
 }: CodeModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -100,6 +101,11 @@ export function CodeMode({
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
+
+  // Notify parent
+  useEffect(() => {
+    onExchangeUpdate?.(exchangeCount);
+  }, [exchangeCount, onExchangeUpdate]);
 
   // Initialize with scenario
   useEffect(() => {
@@ -268,8 +274,8 @@ export function CodeMode({
               <div key={k} className="flex items-center gap-1">
                 <span className="text-muted-foreground capitalize">{k.replace(/_/g, " ")}:</span>
                 <span className={cn("font-bold",
-                  typeof v === "number" && v >= 8 ? "text-green-600" :
-                  typeof v === "number" && v >= 5 ? "text-amber-600" : "text-red-500"
+                  typeof v === "number" && v >= 8 ? "text-emerald-600" :
+                  typeof v === "number" && v >= 5 ? "text-amber-600" : "text-destructive"
                 )}>{String(v)}</span>
               </div>
             ))}
@@ -317,17 +323,19 @@ export function CodeMode({
         </div>
 
         {/* Evaluation */}
-        {evaluation && <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} />}
+        {evaluation && (
+          <ScoreReveal
+            score={evaluation.score}
+            feedback={evaluation.feedback}
+            dimensions={evaluation.dimensions}
+            recommendations={evaluation.recommendations}
+            onRestart={resetSession}
+          />
+        )}
 
         {/* Input */}
-        <div className="p-3 border-t bg-background">
-          {evaluation ? (
-            <div className="flex justify-center">
-              <Button variant="outline" size="sm" onClick={resetSession}>
-                <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Recommencer
-              </Button>
-            </div>
-          ) : (
+        {!evaluation && (
+          <div className="p-3 border-t bg-background">
             <div className="flex gap-2 items-end">
               <Textarea
                 value={input}
@@ -342,13 +350,8 @@ export function CodeMode({
                 {isStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
               </Button>
             </div>
-          )}
-          {!evaluation && (
-            <p className="text-[10px] text-muted-foreground mt-1 text-center">
-              {exchangeCount}/{maxExchanges} • {modeDef?.label}
-            </p>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
