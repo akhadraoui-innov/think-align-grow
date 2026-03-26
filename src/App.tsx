@@ -52,6 +52,8 @@ import AdminAcademyAssets from "./pages/admin/AdminAcademyAssets";
 import AdminObservability from "./pages/admin/AdminObservability";
 import AdminObservabilityCatalogue from "./pages/admin/AdminObservabilityCatalogue";
 import AdminObservabilityMatrix from "./pages/admin/AdminObservabilityMatrix";
+import AdminSimulator from "./pages/admin/AdminSimulator";
+import AdminSimulatorTemplates from "./pages/admin/AdminSimulatorTemplates";
 
 const queryClient = new QueryClient();
 
