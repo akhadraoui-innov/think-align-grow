@@ -11,6 +11,8 @@ import { DesignMode } from "./modes/DesignMode";
 import { AssessmentMode } from "./modes/AssessmentMode";
 import { useSimulatorSession } from "@/hooks/useSimulatorSession";
 
+import type { AIAssistanceLevel } from "./SimulatorShell";
+
 interface SimulatorEngineProps {
   practiceType: string;
   typeConfig: Record<string, unknown>;
@@ -20,6 +22,7 @@ interface SimulatorEngineProps {
   practiceId: string;
   previewMode?: boolean;
   difficulty?: string;
+  aiAssistanceLevel?: AIAssistanceLevel;
   onComplete?: (score: number) => void;
 }
 
