@@ -6,13 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { MessageSquare, Plus, Pencil, Trash2, Save, X, Zap } from "lucide-react";
+import { MessageSquare, Plus, Pencil, Trash2, Save, X, Zap, Wand2, AlertTriangle } from "lucide-react";
 import { getAllUniverses, getModeDefinition, UNIVERSE_LABELS, type ModeUniverse } from "@/components/simulator/config/modeRegistry";
 import { getConfigFields, type ConfigField } from "@/components/simulator/config/typeConfigSchemas";
 import { getBehaviorInjection } from "@/components/simulator/config/promptTemplates";
+import { PracticeDesigner } from "@/components/admin/PracticeDesigner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -53,8 +54,21 @@ const difficultyLabels: Record<string, string> = {
 export function AcademyPracticesTab({ moduleId, practices }: Props) {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [designerOpen, setDesignerOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+
+  // Validation warnings
+  const warnings = useMemo(() => {
+    const w: string[] = [];
+    if (form.scenario.length > 0 && form.scenario.length < 80) w.push("Scénario trop court — ajoutez du contexte");
+    if (form.max_exchanges < 5 && ["decision_game", "crisis", "change_management"].includes(form.practice_type)) {
+      w.push("Nombre d'échanges faible pour ce type de simulation");
+    }
+    if (form.system_prompt.length > 0 && form.system_prompt.length < 50) w.push("Prompt système trop court");
+    if (form.evaluation_rubric.length === 0 && form.title) w.push("Ajoutez des critères d'évaluation");
+    return w;
+  }, [form]);
 
   const upsert = useMutation({
     mutationFn: async () => {
@@ -151,9 +165,14 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{practices.length} pratique{practices.length !== 1 ? "s" : ""}</p>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-1.5" /> Ajouter une pratique
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setDesignerOpen(true)} className="gap-1.5">
+            <Wand2 className="h-3.5 w-3.5" /> Designer IA
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-1.5" /> Ajouter une pratique
+          </Button>
+        </div>
       </div>
 
       {practices.length === 0 ? (
@@ -377,6 +396,18 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
               )}
             </div>
 
+            {/* Validation warnings */}
+            {warnings.length > 0 && (
+              <div className="space-y-1">
+                {warnings.map((w, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-500/10 rounded-md px-2.5 py-1.5">
+                    <AlertTriangle className="h-3 w-3 shrink-0" />
+                    {w}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={closeDialog}>Annuler</Button>
               <Button onClick={() => upsert.mutate()} disabled={!form.title.trim() || upsert.isPending}>
@@ -386,6 +417,26 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Practice Designer */}
+      <PracticeDesigner
+        open={designerOpen}
+        onClose={() => setDesignerOpen(false)}
+        onApply={(data) => {
+          setForm({
+            title: data.title,
+            scenario: data.scenario,
+            system_prompt: data.system_prompt,
+            max_exchanges: data.max_exchanges,
+            difficulty: data.difficulty,
+            practice_type: data.practice_type,
+            type_config: data.type_config,
+            evaluation_rubric: data.evaluation_rubric,
+          });
+          setEditId(null);
+          setDialogOpen(true);
+        }}
+      />
     </div>
   );
 }
