@@ -1,113 +1,66 @@
 
 
-# Refonte du Workspace Apprenant Academy
+# Audit complet — Workspace Apprenant Academy
 
-## Constat
+## Etat actuel du code
 
-L'experience apprenant actuelle souffre de plusieurs problemes majeurs :
-
-1. **Contenu de cours** : rendu Markdown basique dans une colonne etroite, pas d'experience de lecture immersive (pas de sidebar de navigation persistante, pas de breadcrumb contextuel)
-2. **Quiz** : deja gamifie mais isole dans un onglet, pas integre dans le flux
-3. **Exercice** : textarea brut + evaluation IA, pas de guidage progressif
-4. **Pratique IA (critique)** : chat dans une boite de 650px fixe, aucune ressemblance avec les environnements ChatGPT/Claude/Gemini — pas de plein ecran, pas de sidebar conversations, pas d'experience native
-5. **Navigation** : pas de workspace unifie, chaque page est isolee, pas de sentiment de progression continue
-
-## Approche : 3 vagues
-
-Vu l'ampleur, je propose de decouper en **3 vagues** successives. Chaque vague est deployable independamment.
+Le workspace 2 panneaux (sidebar + contenu principal) et la refonte ChatGPT-like de la Pratique IA sont en place. Voici les problemes identifies par fichier.
 
 ---
 
-### VAGUE 1 — Workspace Layout + Pratique IA (priorite critique)
+## Bugs critiques
 
-**Objectif** : Transformer le module en workspace avec sidebar + refondre la Pratique IA en experience ChatGPT-like plein ecran.
+| # | Probleme | Fichier | Cause |
+|---|----------|---------|-------|
+| B1 | **Double header** : AppShell affiche son header (SidebarTrigger + breadcrumb, h-12) AU-DESSUS du top bar du module (h-~44px). 2 barres empilees = ~96px perdus. | `AppShell.tsx` | `/academy/module/:id` n'est pas exclu du layout desktop comme `/workshop/:id` ou `/admin` |
+| B2 | **Breadcrumb incorrect** : affiche "Hack & Show" au lieu de "Academy" car la route `/academy/module/xxx` n'est pas dans le `map` du breadcrumb | `AppShell.tsx` l.77-85 | Map ne contient que des routes statiques |
+| B3 | **Evaluation overlay deborde** : l'overlay Practice utilise `absolute inset-0` mais le parent `div.flex.flex-col.h-full` n'a pas `relative` | `AcademyPractice.tsx` l.202 | Parent manque `position: relative` |
+| B4 | **Console warning forwardRef** : `PageTransition` est un function component sans `forwardRef`, utilise dans `AnimatePresence` qui tente de passer un ref | `PageTransition.tsx` | Pas de `forwardRef` |
+| B5 | **Score "%" vide dans sidebar** : quand `score` est null, le code l.246-248 affiche quand meme `%` car le check `!= null` est correct mais le rendu est a l'interieur du block `status === "completed"` — or un module peut etre completed avec score=null (lessons) | `AcademyModule.tsx` l.244-249 | Le check est correct, mais le bloc parent `status === "completed"` s'affiche et le `<div className="shrink-0">` est rendu vide |
 
-#### 1A. Layout Workspace (`AcademyModule.tsx`)
+## Problemes UX / Navigation
 
-Remplacer le layout actuel (colonne centree + onglets) par un **workspace a 2 panneaux** :
+| # | Probleme | Impact |
+|---|----------|--------|
+| U1 | **Pas de bouton "Terminer la session"** dans Practice avant `maxExchanges` | Apprenant piege dans la conversation |
+| U2 | **Locking trop strict** : `getModuleStatus` verifie seulement le module precedent immédiat. Si un module intermediaire n'a pas de record progress, les suivants sont locks meme si l'apprenant a progresse plus loin | Navigation bloquee injustement |
+| U3 | **Quiz/Exercise sans max-width** : rendus dans `p-6 md:p-8` sans `max-w-3xl mx-auto`, contrairement aux lessons. Sur grand ecran, le contenu s'etale | Incoherence visuelle |
+| U4 | **Exercise textarea en `font-mono`** (l.240) : l'apprenant redige du texte libre, pas du code | Experience de redaction degradee |
+| U5 | **Pas de transition entre modules** : navigation = full re-mount sans animation de fade | Experience saccadee |
+| U6 | **Sidebar items en `text-xs`** (l.235) : titres de modules trop petits pour scanner | Lisibilite insuffisante |
+| U7 | **Progress dots quasi invisibles** : h-1.5 et w-1.5 avec gap-0.5 (l.394-404) | Difficiles a voir |
+| U8 | **Mobile** : double systeme sidebar (AppShell sidebar + module sidebar Sheet) potentiellement en conflit | UX confuse |
 
-```text
-┌──────────────┬────────────────────────────────────┐
-│  SIDEBAR     │  MAIN CONTENT                      │
-│  - Parcours  │                                    │
-│  - Modules   │  [Contenu / Quiz / Exercice /      │
-│    ✓ Mod 1   │   Pratique selon le type]           │
-│    ● Mod 2   │                                    │
-│    ○ Mod 3   │                                    │
-│    🔒 Mod 4  │                                    │
-│              │                                    │
-│  ─────────   │                                    │
-│  Progression │                                    │
-│  [====70%==] │                                    │
-└──────────────┴────────────────────────────────────┘
-```
+## Plan de corrections
 
-- Sidebar gauche collapsible (icone toggle) avec : nom du parcours, liste des modules (icone type + statut ✓/●/🔒), progression globale, bouton "Retour au parcours"
-- Sur mobile : sidebar en Sheet/Drawer
-- Le contenu principal prend toute la largeur restante
-- Plus d'onglets TabsList : le type de module determine le rendu directement (lesson → contenu, quiz → quiz engine, exercise → exercice, practice → chat IA)
+### Vague A — Corrections critiques
 
-#### 1B. Pratique IA — Experience ChatGPT-like (`AcademyPractice.tsx`)
+1. **`AppShell.tsx`** : Ajouter `const isAcademyModule = location.pathname.startsWith("/academy/module/")` et l'inclure dans la condition d'exclusion du shell (comme workshop room). Ajouter `/academy` dans le breadcrumb map.
 
-Refonte complete pour ressembler aux interfaces de chat IA modernes :
+2. **`AcademyPractice.tsx`** : Ajouter `relative` au div parent (l.202). Ajouter un bouton "Terminer la session" dans le header quand `exchangeCount >= 3 && !isFinished`.
 
-- **Plein ecran** : le chat prend tout l'espace principal du workspace (pas de boite 650px)
-- **Sidebar conversations** (optionnel, dans le panneau gauche du workspace) : historique des sessions
-- **Zone de saisie premium** : textarea extensible en bas, avec bouton envoyer, compteur de caracteres, raccourcis clavier
-- **Messages** : bulles avec avatar Bot anime, rendu Markdown riche (code highlight, tables, callouts), timestamps
-- **Header contextuel** : titre de la pratique, difficulte, compteur d'echanges en badge, bouton reset
-- **Zone d'accueil** (quand 0 messages) : illustration, description du scenario, 4-6 suggestions de demarrage contextuelles (pas generiques)
-- **Streaming visible** : curseur clignotant pendant la generation, animation fluide token par token
-- **Evaluation** : resultat en overlay/modal elegant avec score radial anime, feedback detaille, bouton recommencer
-- **Responsive** : sur mobile, le chat prend tout l'ecran
+3. **`AcademyModule.tsx`** :
+   - Fix score vide : ne rendre le `<div className="shrink-0">` que si `score != null`
+   - Wrapper quiz/exercise dans `max-w-3xl mx-auto`
+   - Ameliorer locking : un module est "available" si TOUS les modules precedents sont completed (pas juste l'immediat)
+   - Sidebar items : `text-xs` → `text-sm` pour les titres
+   - Progress dots : `h-1.5` → `h-2`, `w-1.5` → `w-2`
 
-#### Fichiers concernes Vague 1
+4. **`AcademyExercise.tsx`** : Retirer `font-mono` du textarea (l.240)
+
+5. **`PageTransition.tsx`** : Ajouter `React.forwardRef` pour eliminer le warning console
+
+### Vague B — Polish UX
+
+6. **Transition entre modules** : Ajouter une animation `key={id}` sur le contenu avec `AnimatePresence` + fade in/out quand `id` change
+
+### Fichiers concernes
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/AcademyModule.tsx` | Refonte layout workspace 2 panneaux, suppression des onglets |
-| `src/components/academy/AcademyPractice.tsx` | Refonte complete ChatGPT-like plein ecran |
-
----
-
-### VAGUE 2 — Contenu de cours premium + Exercice enrichi
-
-#### 2A. Lecteur de cours immersif
-
-- **Colonne de lecture** : max-w-3xl centree, `leading-relaxed`, `space-y-12` entre sections
-- **H2 avec accent** : barre primaire a gauche style magazine
-- **Barre de lecture segmentee** : un segment par section/heading, highlight de la section active au scroll
-- **Sommaire sticky** : affiché dans la sidebar workspace (pas un toggle separe), highlight dynamique au scroll
-- **Estimations** : temps de lecture restant en haut a droite
-- **Bouton "Marquer termine"** : sticky en bas, apparait quand readingProgress > 80%
-
-#### 2B. Exercice enrichi
-
-- **Instructions structurees** : rendu Markdown riche des instructions (pas juste du texte brut)
-- **Editeur ameliore** : textarea avec compteur de mots, indication de longueur attendue
-- **Feedback IA** : rendu en sections colorees (Forces en vert, Ameliorations en orange) avec icones
-- **Historique des tentatives** : timeline visuelle des soumissions precedentes avec scores
-
-#### Fichiers concernes Vague 2
-
-| Fichier | Action |
-|---------|--------|
-| `src/pages/AcademyModule.tsx` | ImmersiveContent refonte + sommaire sidebar |
-| `src/components/academy/AcademyExercise.tsx` | UX enrichie |
-| `src/components/academy/EnrichedMarkdown.tsx` | Ajouts typographiques (H2 accent, espacement) |
-
----
-
-### VAGUE 3 — Quiz ameliore + Dashboard enrichi
-
-- Quiz : transitions entre questions plus fluides, mode revision post-quiz, animations de score
-- Dashboard : graphiques de progression dans le temps, recommandations IA de prochains parcours
-
----
-
-## Proposition
-
-Je recommande de commencer par la **Vague 1** (Workspace layout + Pratique IA) car c'est le changement le plus impactant et le plus critique selon votre retour. Cela transformera fondamentalement l'experience.
-
-Souhaitez-vous approuver la Vague 1 pour implementation immediate ?
+| `src/components/layout/AppShell.tsx` | Exclure `/academy/module/` du shell, fix breadcrumb |
+| `src/pages/AcademyModule.tsx` | Fix score, max-width wrapper, locking, sidebar sizing, dots, transition |
+| `src/components/academy/AcademyPractice.tsx` | Fix overlay relative, bouton terminer session |
+| `src/components/academy/AcademyExercise.tsx` | Retirer font-mono |
+| `src/components/ui/PageTransition.tsx` | Ajouter forwardRef |
 
