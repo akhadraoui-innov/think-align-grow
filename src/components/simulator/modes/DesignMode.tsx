@@ -73,6 +73,7 @@ export function DesignMode({
   previewMode = false,
   onComplete,
   onExchangeUpdate,
+  onMessagesChange,
 }: DesignModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
