@@ -324,8 +324,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
   };
 
   const handleReset = async () => {
-    // Complete current session if exists
-    if (sessionId) {
+    if (!previewMode && sessionId) {
       await supabase.from("academy_practice_sessions").update({
         completed_at: new Date().toISOString(),
       }).eq("id", sessionId);
