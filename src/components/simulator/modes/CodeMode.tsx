@@ -350,13 +350,8 @@ export function CodeMode({
                 {isStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
               </Button>
             </div>
-          )}
-          {!evaluation && (
-            <p className="text-[10px] text-muted-foreground mt-1 text-center">
-              {exchangeCount}/{maxExchanges} • {modeDef?.label}
-            </p>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
