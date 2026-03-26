@@ -46,6 +46,13 @@ export function AdminSidebar() {
     { path: "/admin/observability/matrix", icon: Building2, label: "Matrice Couverture" },
   ];
 
+  const simulatorSubItems = [
+    { path: "/admin/simulator", icon: LayoutDashboard, label: "Dashboard", exact: true },
+    { path: "/admin/simulator/templates", icon: Library, label: "Bibliothèque" },
+  ];
+
+  const isSimulatorRoute = location.pathname.startsWith("/admin/simulator");
+
   const systemItems = [
     { path: "/admin/billing", icon: CreditCard, label: "Crédits & Abonnements", show: perms.has("admin.billing.view") },
     { path: "/admin/logs", icon: ScrollText, label: "Logs d'activité", show: perms.has("admin.logs.view") },
