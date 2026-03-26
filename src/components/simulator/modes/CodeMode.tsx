@@ -332,6 +332,7 @@ export function CodeMode({
             feedback={evaluation.feedback}
             dimensions={evaluation.dimensions}
             recommendations={evaluation.recommendations}
+            messages={messages.map(m => ({ role: m.role, content: m.content }))}
             onRestart={resetSession}
           />
         )}
