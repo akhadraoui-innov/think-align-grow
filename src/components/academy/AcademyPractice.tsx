@@ -16,6 +16,7 @@ interface AcademyPracticeProps {
   moduleId: string;
   enrollmentId?: string;
   onComplete?: (score: number) => void;
+  previewMode?: boolean;
 }
 
 interface Message {
