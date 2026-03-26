@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, BookOpen, FileText, HelpCircle, Dumbbell, MessageSquare,
-  Pencil, Save, Clock, Target, Eye, Sparkles
+  Pencil, Save, Clock, Target, Eye, Sparkles, Play
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
