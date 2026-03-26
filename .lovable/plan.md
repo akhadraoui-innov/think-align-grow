@@ -21,7 +21,7 @@
 | **Widgets** — TensionGauge, KPIDashboard, TimerBar, ScoreReveal (avec replay), ObjectivesPanel | Done |
 | **SessionReplay** — dialogue de relecture des échanges étape par étape | Done |
 | **useSimulatorSession** — hook de persistance automatique DB | Done |
-| **Page catalogue `/simulator`** — grille filtrable + bouton Lancer + Dialog fullscreen | Done |
+| **Page catalogue `/simulator`** — grille filtrable + bouton Lancer + Dialog fullscreen + onglet "Mes simulations" par org | Done |
 | **Page historique `/simulator/history`** — sessions passées, scores, replay | Done |
 | **Next Steps connectés** — recommandations dynamiques depuis modeRegistry | Done |
 | **PracticeDesigner** — assistant IA admin + templates + preview | Done |
@@ -34,23 +34,20 @@
 | **Table academy_practice_sessions** — persistance sessions avec RLS | Done |
 | **DB migration** — module_id nullable + ai_assistance_level | Done |
 | **Admin Simulateur** — Dashboard `/admin/simulator` avec stats et sessions | Done |
-| **Admin Templates** — Bibliothèque `/admin/simulator/templates` standalone | Done |
+| **Admin Templates** — Bibliothèque `/admin/simulator/templates` avec assignation organisation | Done |
 | **Admin Sidebar** — Section Simulateur avec sous-items | Done |
 | **OrgSimulatorTab** — Onglet simulateur dans fiche organisation | Done |
 | **AcademyPracticesTab** — Sélecteur ai_assistance_level | Done |
 | **SimulatorEngine** — Passage aiAssistanceLevel au Shell | Done |
 | **Practices standalone** — module_id nullable, RLS view_standalone_practices | Done |
+| **Catalogue user avec org practices** — Onglet "Mes simulations" filtré par org active | Done |
+| **Export PDF** — Bouton dans ScoreReveal pour exporter rapport de session | Done |
 
 ---
 
 ## RESTE A FAIRE
 
-### 1. Export PDF de session
-
-- Rapport de session exportable (score + dimensions + feedback + messages)
-- Bouton dans ScoreReveal pour télécharger
-
-### 2. Mode composite / enchaînement (Phase 8)
+### 1. Mode composite / enchaînement (Phase 8)
 
 - Chaîner plusieurs modes en séquence (ex: Requirements → User Story → Sprint Planning)
 - Transfert de contexte entre modes
@@ -61,5 +58,4 @@
 
 | Priorité | Tâche | Impact |
 |----------|-------|--------|
-| **P1** | Export PDF | Partage et archivage |
-| **P2** | Mode composite | Parcours multi-étapes |
+| **P1** | Mode composite | Parcours multi-étapes |
