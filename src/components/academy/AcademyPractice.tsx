@@ -16,6 +16,7 @@ interface AcademyPracticeProps {
   moduleId: string;
   enrollmentId?: string;
   onComplete?: (score: number) => void;
+  previewMode?: boolean;
 }
 
 interface Message {
@@ -47,7 +48,7 @@ function parseEvaluationFromContent(content: string): { score: number; feedback:
   return null;
 }
 
-export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyPracticeProps) {
+export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMode = false }: AcademyPracticeProps) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -89,10 +90,10 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
 
   // Load existing session or create new one
   useEffect(() => {
+    if (previewMode) { setIsLoadingSession(false); return; }
     if (!practice || !user) { setIsLoadingSession(false); return; }
 
     const loadSession = async () => {
-      // Try to find an incomplete session for this practice
       const { data: existing } = await supabase
         .from("academy_practice_sessions")
         .select("*")
@@ -121,10 +122,11 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
       setIsLoadingSession(false);
     };
     loadSession();
-  }, [practice?.id, user?.id]);
+  }, [practice?.id, user?.id, previewMode]);
 
   // Persist messages to DB after each change
   const persistSession = useCallback(async (msgs: Message[], eval_data?: any, score?: number) => {
+    if (previewMode) return; // Skip persistence in preview mode
     if (!user || !practice) return;
 
     const msgPayload = msgs.map(m => ({ id: m.id, role: m.role, content: m.content, timestamp: m.timestamp.toISOString() }));
@@ -144,7 +146,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
       }).select("id").single();
       if (newSession) setSessionId(newSession.id);
     }
-  }, [user, practice, sessionId, enrollmentId]);
+  }, [user, practice, sessionId, enrollmentId, previewMode]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -322,8 +324,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
   };
 
   const handleReset = async () => {
-    // Complete current session if exists
-    if (sessionId) {
+    if (!previewMode && sessionId) {
       await supabase.from("academy_practice_sessions").update({
         completed_at: new Date().toISOString(),
       }).eq("id", sessionId);
@@ -435,6 +436,13 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
 
   return (
     <div className="flex flex-col h-full relative">
+      {/* Admin preview banner */}
+      {previewMode && (
+        <div className="flex items-center justify-center gap-2 px-4 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-medium shrink-0">
+          <Sparkles className="h-3 w-3" />
+          Mode test admin — Les échanges ne sont pas enregistrés
+        </div>
+      )}
       {/* Minimalist top bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 shrink-0">
         <div className="flex items-center gap-2.5">
