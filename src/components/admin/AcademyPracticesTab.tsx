@@ -54,8 +54,21 @@ const difficultyLabels: Record<string, string> = {
 export function AcademyPracticesTab({ moduleId, practices }: Props) {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [designerOpen, setDesignerOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+
+  // Validation warnings
+  const warnings = useMemo(() => {
+    const w: string[] = [];
+    if (form.scenario.length > 0 && form.scenario.length < 80) w.push("Scénario trop court — ajoutez du contexte");
+    if (form.max_exchanges < 5 && ["decision_game", "crisis", "change_management"].includes(form.practice_type)) {
+      w.push("Nombre d'échanges faible pour ce type de simulation");
+    }
+    if (form.system_prompt.length > 0 && form.system_prompt.length < 50) w.push("Prompt système trop court");
+    if (form.evaluation_rubric.length === 0 && form.title) w.push("Ajoutez des critères d'évaluation");
+    return w;
+  }, [form]);
 
   const upsert = useMutation({
     mutationFn: async () => {
