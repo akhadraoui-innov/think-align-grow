@@ -32,6 +32,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminOrganizationDetail from "./pages/admin/AdminOrganizationDetail";
 import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import Academy from "./pages/Academy";
+import Simulator from "./pages/Simulator";
 import AcademyPath from "./pages/AcademyPath";
 import AcademyModule from "./pages/AcademyModule";
 import AcademyDashboard from "./pages/AcademyDashboard";
