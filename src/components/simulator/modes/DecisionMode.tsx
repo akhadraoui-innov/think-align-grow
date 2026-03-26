@@ -246,7 +246,8 @@ export function DecisionMode({
                   <div className="flex justify-between text-xs">
                     <span className="capitalize text-muted-foreground">{key.replace(/_/g, " ")}</span>
                     <span className={cn("font-bold tabular-nums",
-                      value > 60 ? "text-green-600" : value > 30 ? "text-amber-600" : "text-red-500"
+                      value > 60 ? "text-emerald-600" : value > 30 ? "text-amber-600" : "text-destructive"
+                    )}>{value}</span>
                     )}>{value}</span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
