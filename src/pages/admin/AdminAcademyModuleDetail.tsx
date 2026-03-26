@@ -46,6 +46,7 @@ export default function AdminAcademyModuleDetail() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [practiceTestOpen, setPracticeTestOpen] = useState(false);
 
   const { data: mod, isLoading } = useQuery({
     queryKey: ["admin-module-detail", id],
