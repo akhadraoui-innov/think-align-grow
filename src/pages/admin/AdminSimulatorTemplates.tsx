@@ -157,7 +157,7 @@ export default function AdminSimulatorTemplates() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher..." className="pl-9" />
           </div>
-          <Button size="sm" onClick={() => { setEditId(null); setForm({ title: "", scenario: "", system_prompt: "", practice_type: "conversation", type_config: {}, max_exchanges: 10, difficulty: "intermediate", ai_assistance_level: "guided", evaluation_rubric: [] }); setDialogOpen(true); }}>
+          <Button size="sm" onClick={() => { setEditId(null); setForm({ title: "", scenario: "", system_prompt: "", practice_type: "conversation", type_config: {}, max_exchanges: 10, difficulty: "intermediate", ai_assistance_level: "guided", evaluation_rubric: [], organization_id: null }); setDialogOpen(true); }}>
             <Plus className="h-4 w-4 mr-1.5" /> Nouveau template
           </Button>
         </div>
