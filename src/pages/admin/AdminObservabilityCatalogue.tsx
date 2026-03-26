@@ -28,6 +28,37 @@ export default function AdminObservabilityCatalogue() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [genModeFilter, setGenModeFilter] = useState("all");
+  const [testPracticeModuleId, setTestPracticeModuleId] = useState<string | null>(null);
+  const [testPracticeTitle, setTestPracticeTitle] = useState<string>("");
+
+  // Resolve module_id for practice assets
+  const practiceAssetIds = useMemo(() => 
+    catalogue.filter((a: any) => a.asset_type === "practice").map((a: any) => a.asset_id),
+    [catalogue]
+  );
+
+  const { data: practiceModuleMap = {} } = useQuery({
+    queryKey: ["practice-module-map", practiceAssetIds],
+    queryFn: async () => {
+      if (practiceAssetIds.length === 0) return {};
+      const { data } = await supabase
+        .from("academy_practices")
+        .select("id, module_id")
+        .in("id", practiceAssetIds);
+      const map: Record<string, string> = {};
+      (data ?? []).forEach((p: any) => { map[p.id] = p.module_id; });
+      return map;
+    },
+    enabled: practiceAssetIds.length > 0,
+  });
+
+  const handleTestPractice = useCallback((assetId: string, name: string) => {
+    const moduleId = practiceModuleMap[assetId];
+    if (moduleId) {
+      setTestPracticeModuleId(moduleId);
+      setTestPracticeTitle(name);
+    }
+  }, [practiceModuleMap]);
 
   const updateFilter = (patch: Partial<ObsFilters>) => {
     setFilters((prev) => ({ ...prev, ...patch }));
