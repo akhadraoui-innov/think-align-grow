@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, Award, Bot, Lightbulb, RotateCcw, MessageSquare, Zap, Target, ArrowUp } from "lucide-react";
+import { Send, Sparkles, Award, Bot, Lightbulb, RotateCcw, MessageSquare, Zap, Target, ArrowUp, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { EnrichedMarkdown } from "./EnrichedMarkdown";
@@ -24,7 +25,19 @@ interface Message {
   timestamp: Date;
 }
 
-function parseEvaluationFromContent(content: string): { score: number; feedback: string } | null {
+interface Phase {
+  name: string;
+  description?: string;
+  trigger_after?: number; // exchange count to trigger this phase
+}
+
+interface EvalDimension {
+  name: string;
+  description?: string;
+  weight?: number;
+}
+
+function parseEvaluationFromContent(content: string): { score: number; feedback: string; dimensions?: { name: string; score: number }[] } | null {
   const match = content.match(/```evaluation\s*\n?([\s\S]*?)```/);
   if (!match) return null;
   try {
@@ -35,10 +48,15 @@ function parseEvaluationFromContent(content: string): { score: number; feedback:
 }
 
 export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyPracticeProps) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [evaluation, setEvaluation] = useState<any>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [currentPhaseIdx, setCurrentPhaseIdx] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -56,6 +74,78 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
     },
   });
 
+  // Parse phases and dimensions from practice config
+  const phases: Phase[] = useMemo(() => {
+    if (!practice?.phases) return [];
+    const p = practice.phases as any;
+    return Array.isArray(p) ? p : [];
+  }, [practice]);
+
+  const evalDimensions: EvalDimension[] = useMemo(() => {
+    if (!practice?.evaluation_dimensions) return [];
+    const d = practice.evaluation_dimensions as any;
+    return Array.isArray(d) ? d : [];
+  }, [practice]);
+
+  // Load existing session or create new one
+  useEffect(() => {
+    if (!practice || !user) { setIsLoadingSession(false); return; }
+
+    const loadSession = async () => {
+      // Try to find an incomplete session for this practice
+      const { data: existing } = await supabase
+        .from("academy_practice_sessions")
+        .select("*")
+        .eq("practice_id", practice.id)
+        .eq("user_id", user.id)
+        .is("completed_at", null)
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) {
+        setSessionId(existing.id);
+        const savedMessages = (existing.messages as any[]) || [];
+        if (savedMessages.length > 0) {
+          setMessages(savedMessages.map((m: any) => ({
+            id: m.id || `${m.role}-${Date.now()}-${Math.random()}`,
+            role: m.role,
+            content: m.content,
+            timestamp: new Date(m.timestamp || Date.now()),
+          })));
+        }
+        if (existing.evaluation) {
+          setEvaluation(existing.evaluation);
+        }
+      }
+      setIsLoadingSession(false);
+    };
+    loadSession();
+  }, [practice?.id, user?.id]);
+
+  // Persist messages to DB after each change
+  const persistSession = useCallback(async (msgs: Message[], eval_data?: any, score?: number) => {
+    if (!user || !practice) return;
+
+    const msgPayload = msgs.map(m => ({ id: m.id, role: m.role, content: m.content, timestamp: m.timestamp.toISOString() }));
+
+    if (sessionId) {
+      await supabase.from("academy_practice_sessions").update({
+        messages: msgPayload as any,
+        ...(eval_data ? { evaluation: eval_data as any, score, completed_at: new Date().toISOString() } : {}),
+      }).eq("id", sessionId);
+    } else {
+      const { data: newSession } = await supabase.from("academy_practice_sessions").insert({
+        user_id: user.id,
+        practice_id: practice.id,
+        enrollment_id: enrollmentId || null,
+        messages: msgPayload as any,
+        ...(eval_data ? { evaluation: eval_data as any, score, completed_at: new Date().toISOString() } : {}),
+      }).select("id").single();
+      if (newSession) setSessionId(newSession.id);
+    }
+  }, [user, practice, sessionId, enrollmentId]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isStreaming]);
@@ -67,9 +157,23 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
     ta.style.height = "auto";
     ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
   }, [input]);
+
+  // Update current phase based on exchange count
+  useEffect(() => {
+    if (phases.length === 0) return;
+    const exchangeCount = messages.filter(m => m.role === "user").length;
+    let phaseIdx = 0;
+    for (let i = phases.length - 1; i >= 0; i--) {
+      if (phases[i].trigger_after != null && exchangeCount >= phases[i].trigger_after!) {
+        phaseIdx = i;
+        break;
+      }
+    }
+    setCurrentPhaseIdx(phaseIdx);
+  }, [messages, phases]);
+
   const contextualSuggestions = useMemo(() => {
     if (!practice) return [];
-    const tags = practice.tags || [];
     const title = practice.title || "";
     const suggestions = [
       `Comment aborder concrètement "${title.toLowerCase()}" ?`,
@@ -77,10 +181,16 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
       "Quels sont les erreurs courantes à éviter ?",
       "Comment mesurer le succès de cette approche ?",
     ];
-    if (tags.includes("leadership")) suggestions.push("Comment adapter ça à mon style de management ?");
-    if (tags.includes("ia") || tags.includes("ai")) suggestions.push("Quels outils IA recommandes-tu ?");
     return suggestions.slice(0, 4);
   }, [practice]);
+
+  if (isLoadingSession) {
+    return (
+      <div className="flex items-center justify-center h-full gap-2 text-muted-foreground text-sm">
+        <Loader2 className="h-4 w-4 animate-spin" /> Chargement de la session...
+      </div>
+    );
+  }
 
   if (!practice) {
     return (
@@ -95,6 +205,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
   const isFinished = exchangeCount >= maxExchanges || !!evaluation;
   const progressPct = Math.round((exchangeCount / maxExchanges) * 100);
   const hasMessages = messages.length > 0;
+  const currentPhase = phases.length > 0 ? phases[currentPhaseIdx] : null;
 
   const handleSend = async (text?: string) => {
     const msgText = text || input.trim();
@@ -122,6 +233,8 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
           practice_id: practice.id,
           messages: allMessages.map(m => ({ role: m.role, content: m.content })),
           evaluate: isLastExchange,
+          ...(currentPhase ? { current_phase: currentPhase } : {}),
+          ...(evalDimensions.length > 0 ? { evaluation_dimensions: evalDimensions } : {}),
         }),
       });
 
@@ -129,6 +242,121 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
         const errData = await resp.json().catch(() => ({}));
         throw new Error(errData.error || "Erreur de communication");
       }
+      if (!resp.body) throw new Error("No response body");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantContent = "";
+      let textBuffer = "";
+      let finalMessages = allMessages;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              assistantContent += content;
+              setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last?.role === "assistant" && last.id.startsWith("a-")) {
+                  const updated = prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
+                  finalMessages = updated;
+                  return updated;
+                }
+                const newMsg: Message = { id: `a-${Date.now()}`, role: "assistant", content: assistantContent, timestamp: new Date() };
+                const updated = [...prev, newMsg];
+                finalMessages = updated;
+                return updated;
+              });
+            }
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+
+      if (isLastExchange && assistantContent) {
+        const evalResult = parseEvaluationFromContent(assistantContent);
+        if (evalResult) {
+          setEvaluation(evalResult);
+          onComplete?.(evalResult.score);
+          const cleanedContent = assistantContent.replace(/```evaluation\s*\n?[\s\S]*?```/, "").trim();
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last?.role === "assistant") {
+              const updated = prev.map((m, i) => i === prev.length - 1 ? { ...m, content: cleanedContent || assistantContent } : m);
+              finalMessages = updated;
+              return updated;
+            }
+            return prev;
+          });
+          await persistSession(finalMessages, evalResult, evalResult.score);
+        } else {
+          await persistSession(finalMessages);
+        }
+      } else {
+        await persistSession(finalMessages);
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Erreur de communication");
+    } finally {
+      setIsStreaming(false);
+    }
+  };
+
+  const handleReset = async () => {
+    // Complete current session if exists
+    if (sessionId) {
+      await supabase.from("academy_practice_sessions").update({
+        completed_at: new Date().toISOString(),
+      }).eq("id", sessionId);
+    }
+    setMessages([]);
+    setEvaluation(null);
+    setSessionId(null);
+    setCurrentPhaseIdx(0);
+  };
+
+  const handleEndSession = async () => {
+    // Request evaluation from AI
+    setIsStreaming(true);
+    try {
+      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/academy-practice`;
+      const session = (await supabase.auth.getSession()).data.session;
+
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          practice_id: practice.id,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          evaluate: true,
+          ...(evalDimensions.length > 0 ? { evaluation_dimensions: evalDimensions } : {}),
+        }),
+      });
+
+      if (!resp.ok) throw new Error("Erreur lors de l'évaluation");
       if (!resp.body) throw new Error("No response body");
 
       const reader = resp.body.getReader();
@@ -159,10 +387,10 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
               assistantContent += content;
               setMessages(prev => {
                 const last = prev[prev.length - 1];
-                if (last?.role === "assistant" && last.id.startsWith("a-")) {
+                if (last?.role === "assistant" && last.id.startsWith("a-eval-")) {
                   return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
                 }
-                return [...prev, { id: `a-${Date.now()}`, role: "assistant", content: assistantContent, timestamp: new Date() }];
+                return [...prev, { id: `a-eval-${Date.now()}`, role: "assistant", content: assistantContent, timestamp: new Date() }];
               });
             }
           } catch {
@@ -172,32 +400,37 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
         }
       }
 
-      if (isLastExchange && assistantContent) {
-        const evalResult = parseEvaluationFromContent(assistantContent);
-        if (evalResult) {
-          setEvaluation(evalResult);
-          onComplete?.(evalResult.score);
-          const cleanedContent = assistantContent.replace(/```evaluation\s*\n?[\s\S]*?```/, "").trim();
-          setMessages(prev => {
-            const last = prev[prev.length - 1];
-            if (last?.role === "assistant") {
-              return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: cleanedContent || assistantContent } : m);
-            }
-            return prev;
-          });
-        }
+      const evalResult = parseEvaluationFromContent(assistantContent);
+      if (evalResult) {
+        setEvaluation(evalResult);
+        onComplete?.(evalResult.score);
+        const cleanedContent = assistantContent.replace(/```evaluation\s*\n?[\s\S]*?```/, "").trim();
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant") {
+            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: cleanedContent || assistantContent } : m);
+          }
+          return prev;
+        });
+        await persistSession(messages, evalResult, evalResult.score);
+      } else {
+        // Fallback: score based on exchange count
+        const score = Math.round((exchangeCount / maxExchanges) * 70);
+        const fallbackEval = { score, feedback: "Session terminée. Votre score est basé sur votre niveau d'engagement dans la conversation." };
+        setEvaluation(fallbackEval);
+        onComplete?.(score);
+        await persistSession(messages, fallbackEval, score);
       }
     } catch (e: any) {
       console.error(e);
-      toast.error(e.message || "Erreur de communication");
+      const score = Math.round((exchangeCount / maxExchanges) * 70);
+      const fallbackEval = { score, feedback: "Session terminée. L'évaluation automatique n'a pas pu aboutir." };
+      setEvaluation(fallbackEval);
+      onComplete?.(score);
+      await persistSession(messages, fallbackEval, score);
     } finally {
       setIsStreaming(false);
     }
-  };
-
-  const handleReset = () => {
-    setMessages([]);
-    setEvaluation(null);
   };
 
   return (
@@ -216,6 +449,13 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Phase indicator */}
+          {currentPhase && (
+            <Badge variant="outline" className="text-[9px] h-5 gap-1 border-violet-500/30 text-violet-600">
+              <Target className="h-2.5 w-2.5" />
+              {currentPhase.name}
+            </Badge>
+          )}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span>{exchangeCount}/{maxExchanges}</span>
             <div className="w-16 h-1 bg-muted rounded-full overflow-hidden">
@@ -223,11 +463,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
             </div>
           </div>
           {!isFinished && exchangeCount >= 3 && (
-            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => {
-              const score = Math.round((exchangeCount / maxExchanges) * 70);
-              setEvaluation({ score, feedback: "Session terminée manuellement. Votre score est basé sur le nombre d'échanges effectués." });
-              onComplete?.(score);
-            }}>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={handleEndSession} disabled={isStreaming}>
               <Award className="h-3 w-3" /> Terminer
             </Button>
           )}
@@ -239,6 +475,31 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
         </div>
       </div>
 
+      {/* Phase stepper (if phases exist) */}
+      {phases.length > 1 && (
+        <div className="flex items-center gap-1 px-4 py-1.5 border-b border-border/20 bg-muted/20 overflow-x-auto">
+          {phases.map((phase, idx) => (
+            <div key={idx} className="flex items-center gap-1">
+              <div className={cn(
+                "flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors",
+                idx === currentPhaseIdx ? "bg-primary/10 text-primary" :
+                idx < currentPhaseIdx ? "text-primary/60" : "text-muted-foreground/50"
+              )}>
+                <span className={cn(
+                  "h-4 w-4 rounded-full flex items-center justify-center text-[9px] font-bold",
+                  idx === currentPhaseIdx ? "bg-primary text-primary-foreground" :
+                  idx < currentPhaseIdx ? "bg-primary/30 text-primary" : "bg-muted text-muted-foreground"
+                )}>
+                  {idx + 1}
+                </span>
+                {phase.name}
+              </div>
+              {idx < phases.length - 1 && <ChevronRight className="h-3 w-3 text-muted-foreground/30" />}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Chat area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {!hasMessages ? (
@@ -249,7 +510,6 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
               animate={{ scale: 1, opacity: 1 }}
               className="text-center max-w-lg space-y-6"
             >
-              {/* Animated icon */}
               <div className="relative mx-auto w-20 h-20">
                 <motion.div
                   animate={{ rotate: 360 }}
@@ -281,6 +541,11 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
                 <div className="flex items-center gap-1.5 text-xs bg-muted/50 px-3 py-1.5 rounded-full">
                   <Zap className="h-3 w-3" /> IA conversationnelle
                 </div>
+                {phases.length > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs bg-violet-500/10 text-violet-600 px-3 py-1.5 rounded-full">
+                    <Sparkles className="h-3 w-3" /> {phases.length} phases
+                  </div>
+                )}
               </div>
 
               {/* Contextual suggestions */}
@@ -321,7 +586,6 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
                       </div>
                       <div className="prose prose-sm max-w-none dark:prose-invert [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 text-sm leading-relaxed">
                         <EnrichedMarkdown content={msg.content} />
-                        {/* Streaming cursor */}
                         {isStreaming && messages[messages.length - 1]?.id === msg.id && (
                           <motion.span
                             animate={{ opacity: [1, 0] }}
@@ -411,6 +675,35 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyP
                 </h3>
                 <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{evaluation.feedback}</p>
               </div>
+
+              {/* Radar dimensions if available */}
+              {evaluation.dimensions && evaluation.dimensions.length > 0 && (
+                <div className="space-y-2 text-left bg-muted/30 rounded-xl p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Compétences évaluées</p>
+                  {evaluation.dimensions.map((dim: any, i: number) => (
+                    <div key={i} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">{dim.name}</span>
+                        <span className={cn(
+                          "font-bold",
+                          dim.score >= 80 ? "text-emerald-500" : dim.score >= 50 ? "text-amber-500" : "text-red-500"
+                        )}>{dim.score}/100</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${dim.score}%` }}
+                          transition={{ duration: 1, delay: i * 0.2 }}
+                          className={cn(
+                            "h-full rounded-full",
+                            dim.score >= 80 ? "bg-emerald-500" : dim.score >= 50 ? "bg-amber-500" : "bg-red-500"
+                          )}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="flex gap-3 justify-center">
                 <Button variant="outline" onClick={handleReset} className="gap-2">

@@ -285,7 +285,9 @@ export default function AcademyDashboard() {
                   <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border">
                     <div className={cn("h-2 w-2 rounded-full shrink-0", p.score && p.score >= 70 ? "bg-emerald-500" : "bg-primary")} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">Module terminé</p>
+                      <p className="text-xs font-medium truncate">
+                        {(p as any).academy_modules?.title || "Module terminé"}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">
                         {new Date(p.completed_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                         {p.score != null && ` · Score: ${p.score}%`}
