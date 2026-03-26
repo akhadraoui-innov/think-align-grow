@@ -168,6 +168,11 @@ export default function AdminAcademyModuleDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {practices.length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => setPracticeTestOpen(true)} className="gap-1.5 border-violet-500/30 text-violet-600 hover:bg-violet-500/10">
+                <Play className="h-3.5 w-3.5" /> Tester Practice Studio
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
               <Eye className="h-3.5 w-3.5 mr-1.5" /> Preview apprenant
             </Button>
