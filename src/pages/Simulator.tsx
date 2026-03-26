@@ -38,10 +38,45 @@ const FAMILY_LABELS: Record<ModeFamily, string> = {
 
 export default function Simulator() {
   const navigate = useNavigate();
+  const { activeOrgId } = useActiveOrg();
   const [search, setSearch] = useState("");
   const [filterUniverse, setFilterUniverse] = useState<string>("all");
   const [filterFamily, setFilterFamily] = useState<string>("all");
-  const [activeSim, setActiveSim] = useState<{ key: string; def: any } | null>(null);
+  const [activeSim, setActiveSim] = useState<{ key: string; def: any; practiceId?: string; practice?: any } | null>(null);
+  const [activeTab, setActiveTab] = useState("catalogue");
+
+  // Fetch org-assigned standalone practices
+  const { data: orgPractices = [] } = useQuery({
+    queryKey: ["org-practices", activeOrgId],
+    enabled: !!activeOrgId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("academy_practices")
+        .select("*")
+        .eq("organization_id", activeOrgId!)
+        .is("module_id", null)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch all standalone practices (no org filter)
+  const { data: publicPractices = [] } = useQuery({
+    queryKey: ["public-practices"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("academy_practices")
+        .select("*")
+        .is("module_id", null)
+        .is("organization_id", null)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const availablePractices = [...orgPractices, ...publicPractices];
 
   const modes = useMemo(() => {
     return Object.entries(MODE_REGISTRY)
