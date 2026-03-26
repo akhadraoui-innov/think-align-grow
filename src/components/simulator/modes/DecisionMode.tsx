@@ -72,6 +72,7 @@ export function DecisionMode({
   previewMode = false,
   onComplete,
   onExchangeUpdate,
+  onMessagesChange,
 }: DecisionModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);

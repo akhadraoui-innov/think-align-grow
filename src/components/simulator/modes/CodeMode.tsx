@@ -82,6 +82,7 @@ export function CodeMode({
   previewMode = false,
   onComplete,
   onExchangeUpdate,
+  onMessagesChange,
 }: CodeModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
