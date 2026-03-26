@@ -274,8 +274,8 @@ export function DecisionMode({
                 <div key={key} className="flex justify-between text-xs">
                   <span className="capitalize">{key.replace(/_/g, " ")}</span>
                   <Badge variant="outline" className={cn("text-[9px] h-4",
-                    value > 60 ? "border-green-500/30 text-green-600" :
-                    value > 30 ? "border-amber-500/30 text-amber-600" : "border-red-500/30 text-red-500"
+                    value > 60 ? "border-emerald-500/30 text-emerald-600" :
+                    value > 30 ? "border-amber-500/30 text-amber-600" : "border-destructive/30 text-destructive"
                   )}>{value}%</Badge>
                 </div>
               ))}
