@@ -1,37 +1,44 @@
 
 
-# Practice Studio dans l'Administration
+# Lancer le Practice Studio depuis Actifs Pédagogiques et Catalogue
 
 ## Objectif
-Ajouter un bouton "Tester le Practice Studio" sur la page de detail module admin (`/admin/academy/modules/:id`) qui ouvre le composant `AcademyPractice` en plein ecran dans un Dialog, permettant aux admins de tester l'experience exacte de l'apprenant.
+Ajouter un bouton "Tester" (icone Play) sur chaque Practice dans deux pages admin : **Actifs Pédagogiques** (`AdminAcademyAssets.tsx`) et **Catalogue des Assets** (`AdminObservabilityCatalogue.tsx`), ouvrant le Practice Studio en mode `previewMode` dans un Dialog fullscreen.
 
-## Probleme actuel
-Le bouton "Preview apprenant" existant (ligne 169) affiche uniquement le contenu Markdown et un apercu statique du quiz. Il n'integre pas du tout le Practice Studio (chat IA). L'admin n'a aucun moyen de tester une session de pratique sans se connecter cote apprenant.
+## Plan
 
-## Plan d'implementation
+### 1. Actifs Pédagogiques — `AdminAcademyAssets.tsx`
 
-### 1. Ajouter un mode "admin preview" au composant AcademyPractice
+Dans le composant `PracticesTab` (ligne 618) :
+- Ajouter un state `testModuleId: string | null`
+- Ajouter un bouton Play dans la colonne Actions de chaque practice (à côté de Copy et Pencil), qui set `testModuleId = pr.module_id`
+- Ajouter un Dialog fullscreen identique à celui de `AdminAcademyModuleDetail` : `<AcademyPractice moduleId={testModuleId} previewMode />`
+- Bandeau jaune "Mode test — Les échanges ne sont pas enregistrés"
 
-Modifier `src/components/academy/AcademyPractice.tsx` pour accepter une prop optionnelle `previewMode?: boolean` :
-- Quand `previewMode = true` : ne pas persister les sessions en base, ne pas exiger `enrollmentId`, utiliser un bandeau "Mode test admin" en haut
-- Le chat fonctionne normalement (appel edge function, streaming, phases, evaluation) mais sans ecriture dans `academy_practice_sessions` et sans decompte de credits
+### 2. Catalogue des Assets — `AdminObservabilityCatalogue.tsx`
 
-### 2. Ajouter le bouton et le Dialog dans AdminAcademyModuleDetail
+Le catalogue affiche des `CatalogueAsset` avec `asset_type` et `asset_id`. Pour les assets de type `practice`, il faut résoudre le `module_id` :
+- Option : requêter `academy_practices` par `asset_id` pour obtenir le `module_id`
+- Ajouter un bouton Play conditionnel (`asset_type === "practice"`) dans les vues Table, Grid et Kanban
+- Même Dialog fullscreen avec `previewMode`
 
-Dans `src/pages/admin/AdminAcademyModuleDetail.tsx` :
-- Ajouter un state `practiceTestOpen`
-- Ajouter un bouton "Tester Practice Studio" (icone Play) a cote de "Preview apprenant", visible uniquement quand `mod.module_type === 'practice'` et qu'au moins une practice existe
-- Ouvrir un Dialog fullscreen (`max-w-5xl h-[90vh]`) contenant `<AcademyPractice moduleId={id} previewMode />`
-- Le Dialog inclut un bandeau jaune "Mode test — Les echanges ne sont pas enregistres"
+### 3. Composant partagé — `PracticeTestDialog`
 
-### 3. Enrichir la Preview existante
+Pour éviter la duplication du Dialog dans 3 fichiers, extraire un composant réutilisable :
 
-Dans le Dialog "Preview apprenant" existant (ligne 424), ajouter la preview de l'exercice et de la pratique (actuellement seuls contenu + quiz sont affiches). Afficher un apercu statique de la config practice (scenario, phases, dimensions d'evaluation) pour une vue rapide sans lancer le chat.
+```
+src/components/admin/PracticeTestDialog.tsx
+Props: { moduleId: string | null; open: boolean; onOpenChange: (open: boolean) => void }
+```
 
-### Fichiers concernes
+Contient le Dialog fullscreen, le bandeau jaune, et le `<AcademyPractice previewMode />`. Utilisé dans `AdminAcademyModuleDetail`, `AdminAcademyAssets` et `AdminObservabilityCatalogue`.
+
+### Fichiers concernés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/academy/AcademyPractice.tsx` | Ajouter prop `previewMode`, conditionner la persistance |
-| `src/pages/admin/AdminAcademyModuleDetail.tsx` | Bouton "Tester Practice Studio" + Dialog fullscreen |
+| `src/components/admin/PracticeTestDialog.tsx` | Nouveau — Dialog réutilisable |
+| `src/pages/admin/AdminAcademyAssets.tsx` | Bouton Play + state dans PracticesTab |
+| `src/pages/admin/AdminObservabilityCatalogue.tsx` | Bouton Play conditionnel pour practices |
+| `src/pages/admin/AdminAcademyModuleDetail.tsx` | Refactorer pour utiliser le Dialog partagé |
 
