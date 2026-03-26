@@ -234,9 +234,6 @@ export function DecisionMode({
             <Zap className="h-4 w-4 text-primary" />
             <span className="text-xs font-semibold">{modeDef?.label || "Decision"}</span>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            Échange {exchangeCount}/{maxExchanges}
-          </p>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-4">
