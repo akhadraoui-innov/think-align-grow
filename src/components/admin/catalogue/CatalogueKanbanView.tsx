@@ -15,7 +15,7 @@ interface Props {
 
 const COLUMNS = ["draft", "published", "active"];
 
-export function CatalogueKanbanView({ assets, orgMap }: Props) {
+export function CatalogueKanbanView({ assets, orgMap, onTestPractice }: Props) {
   const columns = useMemo(() => {
     const result: Record<string, CatalogueAsset[]> = {};
     COLUMNS.forEach((c) => (result[c] = []));
