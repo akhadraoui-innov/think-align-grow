@@ -248,7 +248,6 @@ export function DecisionMode({
                     <span className={cn("font-bold tabular-nums",
                       value > 60 ? "text-emerald-600" : value > 30 ? "text-amber-600" : "text-destructive"
                     )}>{value}</span>
-                    )}>{value}</span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <motion.div
