@@ -175,6 +175,10 @@ ${msgRows ? `<h2>Échanges (${messages?.length || 0})</h2>${msgRows}` : ""}
 
       {/* Actions */}
       <div className="flex justify-center gap-2 pt-1">
+        <Button variant="outline" size="sm" onClick={exportPDF} className="gap-2">
+          <Download className="h-3.5 w-3.5" />
+          Export PDF
+        </Button>
         {messages && messages.length > 0 && (
           <Button variant="outline" size="sm" onClick={() => setShowReplay(true)} className="gap-2">
             <MessageSquare className="h-3.5 w-3.5" />
