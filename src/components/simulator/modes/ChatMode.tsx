@@ -80,6 +80,7 @@ export function ChatMode({
   previewMode = false,
   onComplete,
   onExchangeUpdate,
+  onMessagesChange,
 }: ChatModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
