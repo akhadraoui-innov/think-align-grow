@@ -434,6 +434,27 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
     }
   };
 
+  // Route to SimulatorEngine for non-conversation practice types
+  const practiceType = (practice as any)?.practice_type || "conversation";
+  const typeConfig = (practice as any)?.type_config || {};
+
+  if (practiceType !== "conversation" && practice) {
+    // Dynamic import to avoid loading simulator code for standard conversations
+    const { SimulatorEngine } = require("@/components/simulator/SimulatorEngine");
+    return (
+      <SimulatorEngine
+        practiceType={practiceType}
+        typeConfig={typeConfig}
+        systemPrompt={practice.system_prompt || ""}
+        scenario={practice.scenario || ""}
+        maxExchanges={practice.max_exchanges || 10}
+        practiceId={practice.id}
+        previewMode={previewMode}
+        onComplete={onComplete}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-full relative">
       {/* Admin preview banner */}
