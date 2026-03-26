@@ -38,7 +38,7 @@ export default function AcademyDashboard() {
     queryFn: async () => {
       const { data } = await supabase
         .from("academy_progress")
-        .select("*")
+        .select("*, academy_modules(title, module_type)")
         .eq("user_id", user!.id)
         .order("completed_at", { ascending: false });
       return data || [];
