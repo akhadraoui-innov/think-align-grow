@@ -48,7 +48,7 @@ function parseEvaluationFromContent(content: string): { score: number; feedback:
   return null;
 }
 
-export function AcademyPractice({ moduleId, enrollmentId, onComplete }: AcademyPracticeProps) {
+export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMode = false }: AcademyPracticeProps) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
