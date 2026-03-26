@@ -14,7 +14,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Compass, Layers, Gamepad2, Sparkles, User, LogOut, Coins, Search, LayoutDashboard, Plus, List, LayoutGrid, Shield, GraduationCap } from "lucide-react";
+import { Compass, Layers, Gamepad2, Sparkles, User, LogOut, Coins, Search, LayoutDashboard, Plus, List, LayoutGrid, Shield, GraduationCap, Cpu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -36,6 +36,7 @@ const workshopItems = [
 
 const academyItems = [
   { path: "/academy", icon: GraduationCap, label: "Mes formations", exact: true },
+  { path: "/simulator", icon: Cpu, label: "Simulateur Pro", exact: true },
 ];
 
 interface AppSidebarProps {
