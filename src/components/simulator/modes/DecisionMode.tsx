@@ -369,6 +369,7 @@ export function DecisionMode({
               </Button>
             </div>
           </div>
+        )}
       </div>
     </div>
   );
