@@ -254,7 +254,6 @@ export function DecisionMode({
                       className={cn("h-full rounded-full",
                         value > 60 ? "bg-emerald-500" : value > 30 ? "bg-amber-500" : "bg-destructive"
                       )}
-                      )}
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(100, Math.max(0, value))}%` }}
                       transition={{ duration: 0.5 }}
