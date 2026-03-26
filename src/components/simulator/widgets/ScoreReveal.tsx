@@ -4,19 +4,22 @@ import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp, MessageSquar
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SessionReplay } from "./SessionReplay";
+import { getNextPractices } from "../config/nextSteps";
 
 interface ScoreRevealProps {
   score: number;
   feedback: string;
   dimensions?: { name: string; score: number }[];
   recommendations?: string[];
+  practiceType?: string;
   nextPractices?: { label: string; type: string }[];
   messages?: { role: "user" | "assistant"; content: string }[];
   onRestart?: () => void;
   onNextPractice?: (type: string) => void;
 }
 
-export function ScoreReveal({ score, feedback, dimensions, recommendations, nextPractices, messages, onRestart, onNextPractice }: ScoreRevealProps) {
+export function ScoreReveal({ score, feedback, dimensions, recommendations, practiceType, nextPractices: nextPracticesProp, messages, onRestart, onNextPractice }: ScoreRevealProps) {
+  const nextPractices = nextPracticesProp ?? (practiceType ? getNextPractices(practiceType) : []);
   const [showReplay, setShowReplay] = useState(false);
 
   const grade = score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : "D";
