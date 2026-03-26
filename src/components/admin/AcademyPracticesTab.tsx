@@ -396,6 +396,18 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
               )}
             </div>
 
+            {/* Validation warnings */}
+            {warnings.length > 0 && (
+              <div className="space-y-1">
+                {warnings.map((w, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-500/10 rounded-md px-2.5 py-1.5">
+                    <AlertTriangle className="h-3 w-3 shrink-0" />
+                    {w}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={closeDialog}>Annuler</Button>
               <Button onClick={() => upsert.mutate()} disabled={!form.title.trim() || upsert.isPending}>
@@ -405,6 +417,26 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Practice Designer */}
+      <PracticeDesigner
+        open={designerOpen}
+        onClose={() => setDesignerOpen(false)}
+        onApply={(data) => {
+          setForm({
+            title: data.title,
+            scenario: data.scenario,
+            system_prompt: data.system_prompt,
+            max_exchanges: data.max_exchanges,
+            difficulty: data.difficulty,
+            practice_type: data.practice_type,
+            type_config: data.type_config,
+            evaluation_rubric: data.evaluation_rubric,
+          });
+          setEditId(null);
+          setDialogOpen(true);
+        }}
+      />
     </div>
   );
 }
