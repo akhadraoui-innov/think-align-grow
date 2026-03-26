@@ -38,6 +38,8 @@ const emptyForm = {
   system_prompt: "",
   max_exchanges: 10,
   difficulty: "intermediate" as string,
+  practice_type: "conversation" as string,
+  type_config: {} as Record<string, unknown>,
   evaluation_rubric: [] as { criterion: string; weight: number; description: string }[],
 };
 
