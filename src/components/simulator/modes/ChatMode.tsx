@@ -31,8 +31,9 @@ interface ChatModeProps {
   maxExchanges: number;
   practiceId: string;
   previewMode?: boolean;
-  onComplete?: (score: number) => void;
+  onComplete?: (score: number, messages?: Message[], evaluation?: any) => void;
   onExchangeUpdate?: (count: number) => void;
+  onMessagesChange?: (messages: Message[]) => void;
 }
 
 function parseInlineBlock(content: string, tag: string): Record<string, number> | null {
@@ -79,6 +80,7 @@ export function ChatMode({
   previewMode = false,
   onComplete,
   onExchangeUpdate,
+  onMessagesChange,
 }: ChatModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -231,8 +233,11 @@ export function ChatMode({
       const evalData = parseEvaluation(fullContent);
       if (evalData) {
         setEvaluation(evalData);
-        onComplete?.(evalData.score);
+        onComplete?.(evalData.score, updatedMessages, evalData);
       }
+
+      // Notify parent of messages change
+      onMessagesChange?.(updatedMessages);
     } catch (err: any) {
       toast.error(err.message || "Erreur de communication");
     } finally {
@@ -354,6 +359,7 @@ export function ChatMode({
           feedback={evaluation.feedback}
           dimensions={evaluation.dimensions}
           recommendations={evaluation.recommendations}
+          messages={messages.map(m => ({ role: m.role, content: m.content }))}
           onRestart={resetSession}
         />
       )}

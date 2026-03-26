@@ -9,6 +9,7 @@ import { DocumentMode } from "./modes/DocumentMode";
 import { AnalysisMode } from "./modes/AnalysisMode";
 import { DesignMode } from "./modes/DesignMode";
 import { AssessmentMode } from "./modes/AssessmentMode";
+import { useSimulatorSession } from "@/hooks/useSimulatorSession";
 
 interface SimulatorEngineProps {
   practiceType: string;
@@ -26,6 +27,11 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
   const [exchangeCount, setExchangeCount] = useState(0);
   const [resetKey, setResetKey] = useState(0);
 
+  const { persistSession, completeSession } = useSimulatorSession(
+    props.practiceId,
+    props.previewMode
+  );
+
   const modeDef = getModeDefinition(props.practiceType);
   const family: ModeFamily = modeDef?.family || "chat";
 
@@ -38,10 +44,41 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
     setExchangeCount(0);
   }, []);
 
+  const handleMessagesChange = useCallback(
+    (messages: Array<{ id: string; role: "user" | "assistant"; content: string; timestamp: Date }>) => {
+      const serialized = messages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp.toISOString(),
+      }));
+      persistSession(serialized);
+    },
+    [persistSession]
+  );
+
+  const handleComplete = useCallback(
+    (score: number, messages?: Array<{ id: string; role: "user" | "assistant"; content: string; timestamp: Date }>, evaluation?: any) => {
+      if (messages && evaluation) {
+        const serialized = messages.map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp.toISOString(),
+        }));
+        completeSession(serialized, evaluation);
+      }
+      props.onComplete?.(score);
+    },
+    [completeSession, props.onComplete]
+  );
+
   const modeProps = {
     ...props,
     key: resetKey,
     onExchangeUpdate: handleExchangeUpdate,
+    onMessagesChange: handleMessagesChange,
+    onComplete: handleComplete,
   };
 
   const renderMode = () => {

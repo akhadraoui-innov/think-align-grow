@@ -40,8 +40,9 @@ interface AssessmentModeProps {
   maxExchanges: number;
   practiceId: string;
   previewMode?: boolean;
-  onComplete?: (score: number) => void;
+  onComplete?: (score: number, messages?: Message[], evaluation?: any) => void;
   onExchangeUpdate?: (count: number) => void;
+  onMessagesChange?: (messages: Message[]) => void;
 }
 
 function parseEvaluation(content: string) {
@@ -82,6 +83,7 @@ export function AssessmentMode({
   previewMode = false,
   onComplete,
   onExchangeUpdate,
+  onMessagesChange,
 }: AssessmentModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -200,8 +202,9 @@ export function AssessmentMode({
       const evalData = parseEvaluation(fullContent);
       if (evalData) {
         setEvaluation(evalData);
-        onComplete?.(evalData.score);
+        onComplete?.(evalData.score, updatedMessages, evalData);
       }
+      onMessagesChange?.(updatedMessages);
     } catch (err: any) {
       toast.error(err.message || "Erreur de communication");
     } finally {
@@ -328,7 +331,7 @@ export function AssessmentMode({
         </div>
 
         {evaluation && (
-          <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} recommendations={evaluation.recommendations} onRestart={resetSession} />
+          <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} recommendations={evaluation.recommendations} messages={messages.map(m => ({ role: m.role, content: m.content }))} onRestart={resetSession} />
         )}
 
         {!evaluation && suggestions.length > 0 && !isStreaming && (

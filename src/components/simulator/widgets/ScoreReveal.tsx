@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp } from "lucide-react";
+import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { SessionReplay } from "./SessionReplay";
 
 interface ScoreRevealProps {
   score: number;
@@ -9,11 +11,14 @@ interface ScoreRevealProps {
   dimensions?: { name: string; score: number }[];
   recommendations?: string[];
   nextPractices?: { label: string; type: string }[];
+  messages?: { role: "user" | "assistant"; content: string }[];
   onRestart?: () => void;
   onNextPractice?: (type: string) => void;
 }
 
-export function ScoreReveal({ score, feedback, dimensions, recommendations, nextPractices, onRestart, onNextPractice }: ScoreRevealProps) {
+export function ScoreReveal({ score, feedback, dimensions, recommendations, nextPractices, messages, onRestart, onNextPractice }: ScoreRevealProps) {
+  const [showReplay, setShowReplay] = useState(false);
+
   const grade = score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : "D";
   const gradeColor = score >= 80 ? "text-emerald-500" : score >= 60 ? "text-primary" : score >= 40 ? "text-amber-500" : "text-destructive";
 
@@ -127,14 +132,30 @@ export function ScoreReveal({ score, feedback, dimensions, recommendations, next
         </motion.div>
       )}
 
-      {/* Restart */}
-      {onRestart && (
-        <div className="flex justify-center pt-1">
+      {/* Actions */}
+      <div className="flex justify-center gap-2 pt-1">
+        {messages && messages.length > 0 && (
+          <Button variant="outline" size="sm" onClick={() => setShowReplay(true)} className="gap-2">
+            <MessageSquare className="h-3.5 w-3.5" />
+            Revoir mes réponses
+          </Button>
+        )}
+        {onRestart && (
           <Button variant="outline" size="sm" onClick={onRestart} className="gap-2">
             <RotateCcw className="h-3.5 w-3.5" />
             Recommencer
           </Button>
-        </div>
+        )}
+      </div>
+
+      {/* Replay Dialog */}
+      {messages && (
+        <SessionReplay
+          open={showReplay}
+          onClose={() => setShowReplay(false)}
+          messages={messages}
+          score={score}
+        />
       )}
     </motion.div>
   );

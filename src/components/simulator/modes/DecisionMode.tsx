@@ -33,8 +33,9 @@ interface DecisionModeProps {
   maxExchanges: number;
   practiceId: string;
   previewMode?: boolean;
-  onComplete?: (score: number) => void;
+  onComplete?: (score: number, messages?: Message[], evaluation?: any) => void;
   onExchangeUpdate?: (count: number) => void;
+  onMessagesChange?: (messages: Message[]) => void;
 }
 
 function parseInlineBlock(content: string, tag: string): Record<string, any> | null {
@@ -71,6 +72,7 @@ export function DecisionMode({
   previewMode = false,
   onComplete,
   onExchangeUpdate,
+  onMessagesChange,
 }: DecisionModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -199,8 +201,9 @@ export function DecisionMode({
       const evalData = parseEvaluation(fullContent);
       if (evalData) {
         setEvaluation(evalData);
-        onComplete?.(evalData.score);
+        onComplete?.(evalData.score, updatedMessages, evalData);
       }
+      onMessagesChange?.(updatedMessages);
     } catch (err: any) {
       toast.error(err.message || "Erreur de communication");
     } finally {
@@ -347,6 +350,7 @@ export function DecisionMode({
             feedback={evaluation.feedback}
             dimensions={evaluation.dimensions}
             recommendations={evaluation.recommendations}
+            messages={messages.map(m => ({ role: m.role, content: m.content }))}
             onRestart={resetSession}
           />
         )}
