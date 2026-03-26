@@ -32,6 +32,20 @@ export default function AdminSimulatorTemplates() {
     difficulty: "intermediate",
     ai_assistance_level: "guided",
     evaluation_rubric: [] as any[],
+    organization_id: null as string | null,
+  });
+
+  // Fetch organizations for assignment
+  const { data: orgs = [] } = useQuery({
+    queryKey: ["admin-orgs-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: practices = [], isLoading } = useQuery({
