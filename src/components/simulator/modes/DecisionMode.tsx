@@ -343,7 +343,15 @@ export function DecisionMode({
           )}
         </div>
 
-        {evaluation && <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} />}
+        {evaluation && (
+          <ScoreReveal
+            score={evaluation.score}
+            feedback={evaluation.feedback}
+            dimensions={evaluation.dimensions}
+            recommendations={evaluation.recommendations}
+            onRestart={resetSession}
+          />
+        )}
 
         {/* Input */}
         <div className="p-4 border-t bg-background">
