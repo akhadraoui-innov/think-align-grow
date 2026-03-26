@@ -65,8 +65,10 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
         system_prompt: form.system_prompt,
         max_exchanges: form.max_exchanges,
         difficulty: form.difficulty,
+        practice_type: form.practice_type,
+        type_config: form.type_config,
         evaluation_rubric: form.evaluation_rubric,
-      };
+      } as any;
       if (editId) {
         const { error } = await supabase.from("academy_practices").update(payload).eq("id", editId);
         if (error) throw error;
