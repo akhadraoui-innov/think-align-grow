@@ -10,6 +10,8 @@ import { OnboardingOverlay } from "./widgets/OnboardingOverlay";
 import { HelpDrawer } from "./widgets/HelpDrawer";
 import { cn } from "@/lib/utils";
 
+export type AIAssistanceLevel = "autonomous" | "guided" | "intensive";
+
 interface SimulatorShellProps {
   practiceType: string;
   practiceId: string;
@@ -17,6 +19,7 @@ interface SimulatorShellProps {
   exchangeCount: number;
   maxExchanges: number;
   difficulty?: string;
+  aiAssistanceLevel?: AIAssistanceLevel;
   children: React.ReactNode;
   onReset?: () => void;
 }
