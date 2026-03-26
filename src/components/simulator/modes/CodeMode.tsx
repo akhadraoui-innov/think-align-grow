@@ -323,17 +323,19 @@ export function CodeMode({
         </div>
 
         {/* Evaluation */}
-        {evaluation && <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} />}
+        {evaluation && (
+          <ScoreReveal
+            score={evaluation.score}
+            feedback={evaluation.feedback}
+            dimensions={evaluation.dimensions}
+            recommendations={evaluation.recommendations}
+            onRestart={resetSession}
+          />
+        )}
 
         {/* Input */}
-        <div className="p-3 border-t bg-background">
-          {evaluation ? (
-            <div className="flex justify-center">
-              <Button variant="outline" size="sm" onClick={resetSession}>
-                <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Recommencer
-              </Button>
-            </div>
-          ) : (
+        {!evaluation && (
+          <div className="p-3 border-t bg-background">
             <div className="flex gap-2 items-end">
               <Textarea
                 value={input}
