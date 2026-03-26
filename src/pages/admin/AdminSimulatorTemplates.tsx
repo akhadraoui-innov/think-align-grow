@@ -32,6 +32,20 @@ export default function AdminSimulatorTemplates() {
     difficulty: "intermediate",
     ai_assistance_level: "guided",
     evaluation_rubric: [] as any[],
+    organization_id: null as string | null,
+  });
+
+  // Fetch organizations for assignment
+  const { data: orgs = [] } = useQuery({
+    queryKey: ["admin-orgs-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: practices = [], isLoading } = useQuery({
@@ -59,6 +73,7 @@ export default function AdminSimulatorTemplates() {
         difficulty: form.difficulty,
         ai_assistance_level: form.ai_assistance_level,
         evaluation_rubric: form.evaluation_rubric,
+        organization_id: form.organization_id,
       };
       if (editId) {
         const { error } = await supabase.from("academy_practices").update(payload).eq("id", editId);
@@ -119,6 +134,7 @@ export default function AdminSimulatorTemplates() {
       difficulty: pr.difficulty || "intermediate",
       ai_assistance_level: pr.ai_assistance_level || "guided",
       evaluation_rubric: pr.evaluation_rubric || [],
+      organization_id: pr.organization_id || null,
     });
     setDialogOpen(true);
   }
@@ -141,7 +157,7 @@ export default function AdminSimulatorTemplates() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher..." className="pl-9" />
           </div>
-          <Button size="sm" onClick={() => { setEditId(null); setForm({ title: "", scenario: "", system_prompt: "", practice_type: "conversation", type_config: {}, max_exchanges: 10, difficulty: "intermediate", ai_assistance_level: "guided", evaluation_rubric: [] }); setDialogOpen(true); }}>
+          <Button size="sm" onClick={() => { setEditId(null); setForm({ title: "", scenario: "", system_prompt: "", practice_type: "conversation", type_config: {}, max_exchanges: 10, difficulty: "intermediate", ai_assistance_level: "guided", evaluation_rubric: [], organization_id: null }); setDialogOpen(true); }}>
             <Plus className="h-4 w-4 mr-1.5" /> Nouveau template
           </Button>
         </div>
@@ -259,6 +275,18 @@ export default function AdminSimulatorTemplates() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Assigner à une organisation (optionnel)</Label>
+                <Select value={form.organization_id || "__none__"} onValueChange={v => setForm(f => ({ ...f, organization_id: v === "__none__" ? null : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Aucune (public)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Aucune (public)</SelectItem>
+                    {orgs.map((o: any) => (
+                      <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <Button onClick={() => upsert.mutate()} disabled={!form.title || upsert.isPending} className="w-full">
                 {upsert.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

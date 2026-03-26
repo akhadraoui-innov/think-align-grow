@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp, MessageSquare } from "lucide-react";
+import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp, MessageSquare, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SessionReplay } from "./SessionReplay";
 import { getNextPractices } from "../config/nextSteps";
+import { toast } from "sonner";
 
 interface ScoreRevealProps {
   score: number;
@@ -24,6 +25,43 @@ export function ScoreReveal({ score, feedback, dimensions, recommendations, prac
 
   const grade = score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : "D";
   const gradeColor = score >= 80 ? "text-emerald-500" : score >= 60 ? "text-primary" : score >= 40 ? "text-amber-500" : "text-destructive";
+
+  const exportPDF = useCallback(() => {
+    // Build a printable HTML document
+    const dimRows = (dimensions || []).map(d => `<tr><td style="padding:4px 8px">${d.name.replace(/_/g, " ")}</td><td style="padding:4px 8px;text-align:right;font-weight:bold">${d.score}/10</td></tr>`).join("");
+    const recoItems = (recommendations || []).map((r, i) => `<li>${i + 1}. ${r}</li>`).join("");
+    const msgRows = (messages || []).map(m => `<div style="margin-bottom:8px"><strong style="color:${m.role === "user" ? "#2563eb" : "#16a34a"}">${m.role === "user" ? "Vous" : "IA"}</strong><p style="margin:2px 0;white-space:pre-wrap">${m.content.replace(/</g, "&lt;")}</p></div>`).join("");
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Rapport de session</title>
+<style>body{font-family:system-ui,sans-serif;max-width:700px;margin:40px auto;color:#1a1a1a;font-size:13px}
+h1{font-size:20px}h2{font-size:15px;margin-top:24px;border-bottom:1px solid #e5e5e5;padding-bottom:4px}
+table{border-collapse:collapse;width:100%}tr:nth-child(even){background:#f9f9f9}
+.grade{font-size:48px;font-weight:900;margin:0}.score{font-size:28px;font-weight:700}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+ul{padding-left:16px}li{margin-bottom:4px}</style></head><body>
+<h1>📊 Rapport de Simulation</h1><p style="color:#666">${new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+<div class="header"><div><div class="score">${score}/100</div><p>Grade : <strong>${grade}</strong></p></div></div>
+<h2>Feedback</h2><p>${feedback}</p>
+${dimRows ? `<h2>Dimensions</h2><table>${dimRows}</table>` : ""}
+${recoItems ? `<h2>Recommandations</h2><ul>${recoItems}</ul>` : ""}
+${msgRows ? `<h2>Échanges (${messages?.length || 0})</h2>${msgRows}` : ""}
+</body></html>`;
+
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, "_blank");
+    if (w) {
+      w.onload = () => { w.print(); URL.revokeObjectURL(url); };
+    } else {
+      // Fallback: download as HTML
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rapport-simulation-${score}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    toast.success("Export prêt — utilisez Imprimer > PDF");
+  }, [score, grade, feedback, dimensions, recommendations, messages]);
 
   return (
     <motion.div
@@ -137,6 +175,10 @@ export function ScoreReveal({ score, feedback, dimensions, recommendations, prac
 
       {/* Actions */}
       <div className="flex justify-center gap-2 pt-1">
+        <Button variant="outline" size="sm" onClick={exportPDF} className="gap-2">
+          <Download className="h-3.5 w-3.5" />
+          Export PDF
+        </Button>
         {messages && messages.length > 0 && (
           <Button variant="outline" size="sm" onClick={() => setShowReplay(true)} className="gap-2">
             <MessageSquare className="h-3.5 w-3.5" />
