@@ -90,10 +90,10 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
 
   // Load existing session or create new one
   useEffect(() => {
+    if (previewMode) { setIsLoadingSession(false); return; }
     if (!practice || !user) { setIsLoadingSession(false); return; }
 
     const loadSession = async () => {
-      // Try to find an incomplete session for this practice
       const { data: existing } = await supabase
         .from("academy_practice_sessions")
         .select("*")
@@ -122,7 +122,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
       setIsLoadingSession(false);
     };
     loadSession();
-  }, [practice?.id, user?.id]);
+  }, [practice?.id, user?.id, previewMode]);
 
   // Persist messages to DB after each change
   const persistSession = useCallback(async (msgs: Message[], eval_data?: any, score?: number) => {
