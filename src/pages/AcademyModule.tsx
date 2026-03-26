@@ -392,8 +392,8 @@ export default function AcademyModule() {
                     <div
                       key={pm.module_id}
                       className={cn(
-                        "h-1.5 rounded-full transition-all",
-                        pm.module_id === id ? "w-4 bg-primary" : "w-1.5",
+                        "h-2 rounded-full transition-all",
+                        pm.module_id === id ? "w-5 bg-primary" : "w-2",
                         pm.module_id !== id && (progressMap.get(pm.module_id) as any)?.status === "completed" ? "bg-primary/50" : "bg-muted-foreground/20",
                       )}
                     />
