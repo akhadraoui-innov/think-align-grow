@@ -16,7 +16,9 @@ interface ScoreRevealProps {
   onNextPractice?: (type: string) => void;
 }
 
-export function ScoreReveal({ score, feedback, dimensions, recommendations, nextPractices, onRestart, onNextPractice }: ScoreRevealProps) {
+export function ScoreReveal({ score, feedback, dimensions, recommendations, nextPractices, messages, onRestart, onNextPractice }: ScoreRevealProps) {
+  const [showReplay, setShowReplay] = useState(false);
+
   const grade = score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : "D";
   const gradeColor = score >= 80 ? "text-emerald-500" : score >= 60 ? "text-primary" : score >= 40 ? "text-amber-500" : "text-destructive";
 
