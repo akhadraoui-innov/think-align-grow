@@ -39,9 +39,10 @@ export function SimulatorShell({
   const universeName = modeDef ? UNIVERSE_LABELS[modeDef.universe] : "";
   const progressPct = maxExchanges > 0 ? (exchangeCount / maxExchanges) * 100 : 0;
 
-  const expertMode = difficulty === "expert" || difficulty === "advanced";
+  const isExpert = difficulty === "expert" || difficulty === "advanced";
+  const isBeginner = difficulty === "beginner" || difficulty === "débutant";
 
-  if (showOnboarding && modeDef && !expertMode) {
+  if (showOnboarding && modeDef && !isExpert) {
     return (
       <OnboardingOverlay
         modeDef={modeDef}
