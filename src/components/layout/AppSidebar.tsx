@@ -36,6 +36,7 @@ const workshopItems = [
 
 const academyItems = [
   { path: "/academy", icon: GraduationCap, label: "Mes formations", exact: true },
+  { path: "/simulator", icon: Cpu, label: "Simulateur Pro", exact: true },
 ];
 
 interface AppSidebarProps {
