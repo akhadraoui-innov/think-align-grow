@@ -36,9 +36,16 @@ export function CatalogueGridView({ assets, orgMap, onTestPractice }: Props) {
                 >
                   {ASSET_TYPE_LABELS[asset.asset_type] || asset.asset_type}
                 </Badge>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                  {asset.status || "draft"}
-                </Badge>
+                <div className="flex items-center gap-1">
+                  {asset.asset_type === "practice" && onTestPractice && (
+                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => onTestPractice(asset.asset_id, asset.name)} title="Tester">
+                      <Play className="h-3 w-3 text-violet-500" />
+                    </Button>
+                  )}
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    {asset.status || "draft"}
+                  </Badge>
+                </div>
               </div>
 
               <div>

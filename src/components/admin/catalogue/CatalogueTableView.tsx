@@ -152,7 +152,7 @@ export function CatalogueTableView({ assets, orgMap, profileMap, onTestPractice 
                   </CollapsibleTrigger>
                   <CollapsibleContent asChild>
                     <TableRow className="bg-muted/20 hover:bg-muted/20">
-                      <TableCell colSpan={9} className="p-0">
+                      <TableCell colSpan={10} className="p-0">
                         <div className="px-6 py-3 ml-8 border-l-2 border-primary/20 space-y-2">
                           {versionsForAsset.isLoading ? (
                             <Skeleton className="h-12 w-full" />

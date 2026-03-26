@@ -56,7 +56,14 @@ export function CatalogueKanbanView({ assets, orgMap, onTestPractice }: Props) {
                   <p className="text-xs font-medium text-foreground leading-tight line-clamp-2">
                     {asset.name || "Sans nom"}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">{getDisplayOrg(asset, orgMap)}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-muted-foreground">{getDisplayOrg(asset, orgMap)}</p>
+                    {asset.asset_type === "practice" && onTestPractice && (
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => onTestPractice(asset.asset_id, asset.name)} title="Tester">
+                        <Play className="h-3 w-3 text-violet-500" />
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
