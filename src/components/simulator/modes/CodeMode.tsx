@@ -102,6 +102,11 @@ export function CodeMode({
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
+  // Notify parent
+  useEffect(() => {
+    onExchangeUpdate?.(exchangeCount);
+  }, [exchangeCount, onExchangeUpdate]);
+
   // Initialize with scenario
   useEffect(() => {
     if (messages.length === 0 && scenario) {
