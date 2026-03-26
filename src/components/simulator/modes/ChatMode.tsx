@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, ArrowUp, Loader2, RotateCcw } from "lucide-react";
+import { ArrowUp, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,8 @@ import { TimerBar } from "../widgets/TimerBar";
 import { TensionGauge } from "../widgets/TensionGauge";
 import { KPIDashboard } from "../widgets/KPIDashboard";
 import { ScoreReveal } from "../widgets/ScoreReveal";
+import { SuggestionChips } from "../widgets/SuggestionChips";
+import { InputQualityIndicator } from "../widgets/InputQualityIndicator";
 import { getModeDefinition } from "../config/modeRegistry";
 
 interface Message {
@@ -30,21 +32,17 @@ interface ChatModeProps {
   practiceId: string;
   previewMode?: boolean;
   onComplete?: (score: number) => void;
+  onExchangeUpdate?: (count: number) => void;
 }
 
-// Parse inline JSON blocks from AI responses
 function parseInlineBlock(content: string, tag: string): Record<string, number> | null {
   const regex = new RegExp("```" + tag + "\\s*\\n?([\\s\\S]*?)```");
   const match = content.match(regex);
   if (!match) return null;
-  try {
-    return JSON.parse(match[1].trim());
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(match[1].trim()); } catch { return null; }
 }
 
-function parseEvaluation(content: string): { score: number; feedback: string; dimensions?: { name: string; score: number }[] } | null {
+function parseEvaluation(content: string): { score: number; feedback: string; dimensions?: { name: string; score: number }[]; recommendations?: string[] } | null {
   const match = content.match(/```evaluation\s*\n?([\s\S]*?)```/);
   if (!match) return null;
   try {
@@ -54,10 +52,19 @@ function parseEvaluation(content: string): { score: number; feedback: string; di
   return null;
 }
 
-// Strip JSON blocks from visible content
+function parseSuggestions(content: string): string[] {
+  const match = content.match(/```suggestions\s*\n?([\s\S]*?)```/);
+  if (!match) return [];
+  try {
+    const parsed = JSON.parse(match[1].trim());
+    if (Array.isArray(parsed)) return parsed.slice(0, 3);
+  } catch {}
+  return [];
+}
+
 function cleanContent(content: string): string {
   return content
-    .replace(/```(scoring|gauges|kpis|funnel|stakeholders)\s*\n?[\s\S]*?```/g, "")
+    .replace(/```(scoring|gauges|kpis|funnel|stakeholders|suggestions)\s*\n?[\s\S]*?```/g, "")
     .replace(/```evaluation\s*\n?[\s\S]*?```/g, "")
     .trim();
 }
@@ -71,22 +78,34 @@ export function ChatMode({
   practiceId,
   previewMode = false,
   onComplete,
+  onExchangeUpdate,
 }: ChatModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [evaluation, setEvaluation] = useState<any>(null);
-  const [gauges, setGauges] = useState<Record<string, number>>({});
+  const [gauges, setGauges] = useState<Record<string, number>>(() => {
+    // Initialize gauges from typeConfig defaults
+    const init: Record<string, number> = {};
+    if (typeConfig.tension_start) init.tension = typeConfig.tension_start as number;
+    if (typeConfig.rapport_start) init.rapport = typeConfig.rapport_start as number;
+    return init;
+  });
   const [scoring, setScoring] = useState<Record<string, number> | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const modeDef = getModeDefinition(practiceType);
   const exchangeCount = messages.filter((m) => m.role === "user").length;
   const isLastExchange = exchangeCount >= maxExchanges - 1;
   const hasTimer = practiceType === "pitch" || practiceType === "incident_response" || practiceType === "crisis";
-  const timeLimitSeconds = (typeConfig.time_limit_seconds as number) || (typeConfig.time_limit_minutes as number) * 60 || 0;
+  const timeLimitSeconds = (typeConfig.time_limit_seconds as number) || ((typeConfig.time_limit_minutes as number) || 0) * 60;
+
+  // Notify parent of exchange count changes
+  useEffect(() => {
+    onExchangeUpdate?.(exchangeCount);
+  }, [exchangeCount, onExchangeUpdate]);
 
   // Auto-scroll
   useEffect(() => {
@@ -95,7 +114,7 @@ export function ChatMode({
     }
   }, [messages]);
 
-  // Send initial scenario as first assistant message
+  // Send initial scenario
   useEffect(() => {
     if (messages.length === 0 && scenario) {
       setMessages([{
@@ -107,18 +126,20 @@ export function ChatMode({
     }
   }, [scenario]);
 
-  const sendMessage = useCallback(async () => {
-    if (!input.trim() || isStreaming || !user || evaluation) return;
+  const sendMessage = useCallback(async (overrideText?: string) => {
+    const text = overrideText || input.trim();
+    if (!text || isStreaming || !user || evaluation) return;
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
-      content: input.trim(),
+      content: text,
       timestamp: new Date(),
     };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setInput("");
+    setSuggestions([]);
     setIsStreaming(true);
 
     try {
@@ -129,7 +150,6 @@ export function ChatMode({
         .filter((m) => m.id !== "scenario")
         .map((m) => ({ role: m.role, content: m.content }));
 
-      // Add scenario as first user context if present
       if (scenario) {
         apiMessages.unshift({ role: "assistant", content: scenario });
       }
@@ -155,7 +175,6 @@ export function ChatMode({
         throw new Error(errData.error || `Error ${resp.status}`);
       }
 
-      // Stream SSE
       const reader = resp.body?.getReader();
       if (!reader) throw new Error("No stream");
 
@@ -197,7 +216,7 @@ export function ChatMode({
         }
       }
 
-      // Parse gauges/scoring/evaluation from full content
+      // Parse data blocks
       for (const tag of ["gauges", "kpis", "funnel", "stakeholders"]) {
         const parsed = parseInlineBlock(fullContent, tag);
         if (parsed) setGauges(parsed);
@@ -205,6 +224,9 @@ export function ChatMode({
 
       const scoringData = parseInlineBlock(fullContent, "scoring");
       if (scoringData) setScoring(scoringData);
+
+      const newSuggestions = parseSuggestions(fullContent);
+      if (newSuggestions.length > 0) setSuggestions(newSuggestions);
 
       const evalData = parseEvaluation(fullContent);
       if (evalData) {
@@ -230,10 +252,10 @@ export function ChatMode({
     setEvaluation(null);
     setGauges({});
     setScoring(null);
+    setSuggestions([]);
     setInput("");
   };
 
-  // Determine which widgets to show based on gauges
   const showTension = "tension" in gauges || "rapport" in gauges;
   const showKPIs = "budget" in gauges || "morale" in gauges || "risk" in gauges;
   const showFunnel = "interest" in gauges || "closing_probability" in gauges;
@@ -241,12 +263,10 @@ export function ChatMode({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Timer for timed modes */}
       {hasTimer && timeLimitSeconds > 0 && !evaluation && (
         <TimerBar totalSeconds={timeLimitSeconds} onExpire={() => toast.info("Temps écoulé !")} />
       )}
 
-      {/* Gauges bar */}
       {(showTension || showKPIs || showFunnel || showStakeholders) && (
         <div className="px-4 py-2 border-b bg-muted/20 flex flex-wrap gap-3">
           {showTension && <TensionGauge tension={gauges.tension || 5} rapport={gauges.rapport || 5} progress={gauges.progress} />}
@@ -260,23 +280,22 @@ export function ChatMode({
           )}
           {showStakeholders && (
             <div className="flex gap-3 text-xs">
-              {gauges.supporters !== undefined && <span className="text-green-600">Supporters: {gauges.supporters}%</span>}
+              {gauges.supporters !== undefined && <span className="text-emerald-600">Supporters: {gauges.supporters}%</span>}
               {gauges.neutrals !== undefined && <span className="text-muted-foreground">Neutres: {gauges.neutrals}%</span>}
-              {gauges.resistants !== undefined && <span className="text-red-500">Résistants: {gauges.resistants}%</span>}
+              {gauges.resistants !== undefined && <span className="text-destructive">Résistants: {gauges.resistants}%</span>}
               {gauges.adoption !== undefined && <span className="text-primary font-medium">Adoption: {gauges.adoption}%</span>}
             </div>
           )}
         </div>
       )}
 
-      {/* Scoring display for prompt_challenge / vibe_coding */}
       {scoring && (
         <div className="px-4 py-2 border-b bg-muted/20">
           <div className="flex flex-wrap gap-4 text-xs">
             {Object.entries(scoring).filter(([k]) => k !== "attempt" && k !== "total").map(([k, v]) => (
               <div key={k} className="flex items-center gap-1.5">
                 <span className="capitalize text-muted-foreground">{k.replace(/_/g, " ")}:</span>
-                <span className={cn("font-bold", (v as number) >= 8 ? "text-green-600" : (v as number) >= 5 ? "text-amber-600" : "text-red-500")}>
+                <span className={cn("font-bold", (v as number) >= 8 ? "text-emerald-600" : (v as number) >= 5 ? "text-amber-600" : "text-destructive")}>
                   {v}/10
                 </span>
               </div>
@@ -328,46 +347,50 @@ export function ChatMode({
         )}
       </div>
 
-      {/* Evaluation result */}
-      {evaluation && <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} />}
+      {/* Evaluation */}
+      {evaluation && (
+        <ScoreReveal
+          score={evaluation.score}
+          feedback={evaluation.feedback}
+          dimensions={evaluation.dimensions}
+          recommendations={evaluation.recommendations}
+          onRestart={resetSession}
+        />
+      )}
+
+      {/* Suggestion chips */}
+      {!evaluation && suggestions.length > 0 && !isStreaming && (
+        <SuggestionChips suggestions={suggestions} onSelect={(s) => sendMessage(s)} disabled={isStreaming} />
+      )}
 
       {/* Input */}
-      <div className="p-4 border-t bg-background">
-        {evaluation ? (
-          <div className="flex justify-center">
-            <Button variant="outline" onClick={resetSession}>
-              <RotateCcw className="h-4 w-4 mr-2" /> Recommencer
-            </Button>
-          </div>
-        ) : (
+      {!evaluation && (
+        <div className="p-4 border-t bg-background">
           <div className="flex gap-2 items-end">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Votre message..."
-              className="min-h-[44px] max-h-[120px] resize-none"
-              rows={1}
-              disabled={isStreaming}
-            />
+            <div className="flex-1 space-y-0">
+              <Textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Votre message..."
+                className="min-h-[44px] max-h-[120px] resize-none"
+                rows={1}
+                disabled={isStreaming}
+              />
+              <InputQualityIndicator text={input} practiceType={practiceType} />
+            </div>
             <Button
               size="icon"
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               disabled={!input.trim() || isStreaming}
               className="shrink-0 h-[44px] w-[44px]"
             >
               {isStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
             </Button>
           </div>
-        )}
-        {!evaluation && (
-          <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
-            Échange {exchangeCount}/{maxExchanges}
-            {modeDef && ` • ${modeDef.label}`}
-          </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
