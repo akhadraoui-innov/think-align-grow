@@ -807,42 +807,82 @@ L'exercice doit :
 
 async function generatePractice(supabase: any, params: any, apiKey: string, cors: any) {
   const { module_id } = params;
-  if (!module_id) throw new Error("Missing module_id");
-
-  const { data: mod, error: modErr } = await supabase
-    .from("academy_modules").select("*").eq("id", module_id).single();
-  if (modErr || !mod) throw new Error("Module not found");
 
   const systemPrompt = `Tu es un expert en simulation pédagogique et coaching IA.
 Tu conçois des scénarios de pratique immersifs où l'apprenant interagit avec une IA qui joue un rôle.
-Le scénario doit être réaliste, engageant, et évaluer des compétences concrètes.
+
+TYPES DE SIMULATION DISPONIBLES (choisis le plus pertinent selon le contexte) :
+- conversation : coaching conversationnel générique
+- prompt_challenge : défi de prompting avec scoring
+- negotiation : négociation avec adversaire IA
+- pitch : présentation à un investisseur/décideur
+- code_review : revue de code avec bugs à trouver
+- debug : diagnostic de bug avec indices progressifs
+- case_study : étude de cas à analyser
+- decision_game : jeu de décision avec KPIs dynamiques
+- crisis : gestion de crise sous pression
+- change_management : conduite du changement avec stakeholders
+- vibe_coding : briefing technique pour no-code/vibe coding
+- sales : simulation de vente B2B
+- teach_back : enseigner un concept à un apprenant IA
+- socratic : dialogue socratique avec contradicteur
+- feedback_360 : donner du feedback multi-perspectives
+- user_story : rédaction de user stories
+- sprint_planning : planification de sprint
+- requirements : élicitation de besoins
+- data_analysis : analyse de données métier
+- compliance_audit : audit de conformité
+- contract_review : revue de contrat
+- architecture_review : revue d'architecture technique
+- process_mapping : cartographie de processus
+- due_diligence : audit d'acquisition
+- restructuring : plan de restructuration
+- incident_response : réponse à incident technique
+- backlog_prio : priorisation de backlog
+
 Réponds UNIQUEMENT via l'outil fourni.`;
 
-  const userPrompt = `Crée un scénario de pratique IA pour ce module :
+  let userPrompt: string;
+  if (module_id) {
+    const { data: mod, error: modErr } = await supabase
+      .from("academy_modules").select("*").eq("id", module_id).single();
+    if (modErr || !mod) throw new Error("Module not found");
+
+    userPrompt = `Crée un scénario de pratique IA pour ce module :
 Titre : ${mod.title}
 Description : ${mod.description}
 Objectifs : ${JSON.stringify(mod.objectives)}
 
+Choisis le practice_type le PLUS ADAPTÉ au contexte du module (pas toujours "conversation").
 Le scénario doit inclure :
 - Un contexte de mise en situation réaliste
-- Un rôle précis pour l'IA (ex: client difficile, manager exigeant, investisseur)
-- Un system prompt détaillé pour guider le comportement de l'IA
+- Un rôle précis pour l'IA
+- Un system prompt détaillé
 - 3-5 critères d'évaluation avec barème
-- Un nombre d'échanges adapté (5-15)`;
+- Le type_config approprié au mode choisi
+- Le niveau d'aide IA adapté (beginner → intensive, advanced → autonomous)`;
+  } else {
+    userPrompt = `Crée un scénario de pratique IA standalone.
+${params.brief || ""}
+Choisis le practice_type le plus adapté.`;
+  }
 
   const tools = [{
     type: "function",
     function: {
       name: "create_practice",
-      description: "Create an AI practice scenario",
+      description: "Create an AI practice scenario with specialized type",
       parameters: {
         type: "object",
         properties: {
           title: { type: "string" },
           scenario: { type: "string", description: "Context description shown to the learner" },
           system_prompt: { type: "string", description: "System prompt for the AI role" },
+          practice_type: { type: "string", description: "The simulation type key" },
+          type_config: { type: "object", description: "Mode-specific configuration" },
           max_exchanges: { type: "number" },
-          difficulty: { type: "string", enum: ["beginner", "intermediate", "advanced"] },
+          difficulty: { type: "string", enum: ["beginner", "intermediate", "advanced", "expert"] },
+          ai_assistance_level: { type: "string", enum: ["autonomous", "guided", "intensive"] },
           evaluation_rubric: {
             type: "array",
             items: {
@@ -856,25 +896,30 @@ Le scénario doit inclure :
             },
           },
         },
-        required: ["title", "scenario", "system_prompt", "max_exchanges", "evaluation_rubric"],
+        required: ["title", "scenario", "system_prompt", "practice_type", "max_exchanges", "evaluation_rubric"],
       },
     },
   }];
 
   const result = await callAI(apiKey, systemPrompt, userPrompt, tools, { type: "function", function: { name: "create_practice" } }, "google/gemini-2.5-pro");
 
+  const insertPayload: any = {
+    title: result.title,
+    scenario: result.scenario,
+    system_prompt: result.system_prompt,
+    practice_type: result.practice_type || "conversation",
+    type_config: result.type_config || {},
+    max_exchanges: result.max_exchanges || 10,
+    difficulty: result.difficulty || "intermediate",
+    ai_assistance_level: result.ai_assistance_level || "guided",
+    evaluation_rubric: result.evaluation_rubric,
+    generation_mode: "ai",
+  };
+  if (module_id) insertPayload.module_id = module_id;
+
   const { data: practice, error } = await supabase
     .from("academy_practices")
-    .insert({
-      module_id,
-      title: result.title,
-      scenario: result.scenario,
-      system_prompt: result.system_prompt,
-      max_exchanges: result.max_exchanges || 10,
-      difficulty: result.difficulty || "intermediate",
-      evaluation_rubric: result.evaluation_rubric,
-      generation_mode: "ai",
-    })
+    .insert(insertPayload)
     .select("id")
     .single();
   if (error) throw error;
