@@ -112,6 +112,7 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
       exchangeCount={exchangeCount}
       maxExchanges={props.maxExchanges}
       difficulty={props.difficulty}
+      aiAssistanceLevel={props.aiAssistanceLevel}
       onReset={handleReset}
     >
       {renderMode()}

@@ -108,6 +108,8 @@ function AnimatedRoutes() {
            <Route path="/admin/observability" element={<AdminObservability />} />
            <Route path="/admin/observability/catalogue" element={<AdminObservabilityCatalogue />} />
            <Route path="/admin/observability/matrix" element={<AdminObservabilityMatrix />} />
+          <Route path="/admin/simulator" element={<AdminSimulator />} />
+          <Route path="/admin/simulator/templates" element={<AdminSimulatorTemplates />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

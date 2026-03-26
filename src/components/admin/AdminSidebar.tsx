@@ -186,6 +186,54 @@ export function AdminSidebar() {
           </SidebarGroup>
         )}
 
+        {/* Simulator collapsible group */}
+        <SidebarGroup>
+          <Collapsible defaultOpen={isSimulatorRoute} open={collapsed ? false : undefined}>
+            <CollapsibleTrigger asChild>
+              <button
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                  isSimulatorRoute
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+                onClick={(e) => {
+                  if (collapsed) { e.preventDefault(); navigate("/admin/simulator"); }
+                }}
+              >
+                <Zap className="h-4 w-4 shrink-0" />
+                {!collapsed && (
+                  <>
+                    <span className="flex-1 text-left">Simulateur</span>
+                    <ChevronDown className="h-3 w-3 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </>
+                )}
+              </button>
+            </CollapsibleTrigger>
+            {!collapsed && (
+              <CollapsibleContent className="pl-4 mt-1 space-y-0.5">
+                {simulatorSubItems.map(sub => {
+                  const active = isActive(sub.path, sub.exact);
+                  const SubIcon = sub.icon;
+                  return (
+                    <button
+                      key={sub.path}
+                      onClick={() => navigate(sub.path)}
+                      className={`flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      }`}
+                    >
+                      <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{sub.label}</span>
+                    </button>
+                  );
+                })}
+              </CollapsibleContent>
+            )}
+          </Collapsible>
+        </SidebarGroup>
+
         {/* Observability collapsible group */}
         {showObservability && (
           <SidebarGroup>

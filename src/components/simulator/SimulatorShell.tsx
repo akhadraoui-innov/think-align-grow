@@ -152,7 +152,7 @@ export function SimulatorShell({
       </AnimatePresence>
 
       {/* ── Beginner hint ── */}
-      {isBeginner && exchangeCount === 0 && (
+      {isBeginner && exchangeCount === 0 && aiAssistanceLevel !== "autonomous" && (
         <motion.div
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}

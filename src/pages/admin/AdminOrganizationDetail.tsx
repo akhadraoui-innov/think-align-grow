@@ -167,6 +167,10 @@ export default function AdminOrganizationDetail() {
           <TabsContent value="ai">
             <OrgAIConfigTab organizationId={organization.id} />
           </TabsContent>
+
+          <TabsContent value="simulator">
+            <OrgSimulatorTab organizationId={organization.id} />
+          </TabsContent>
         </Tabs>
       </div>
     </AdminShell>

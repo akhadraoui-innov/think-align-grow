@@ -82,6 +82,7 @@ export function AcademyPracticesTab({ moduleId, practices }: Props) {
         difficulty: form.difficulty,
         practice_type: form.practice_type,
         type_config: form.type_config,
+        ai_assistance_level: form.ai_assistance_level,
         evaluation_rubric: form.evaluation_rubric,
       } as any;
       if (editId) {
