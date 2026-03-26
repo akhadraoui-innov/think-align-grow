@@ -276,6 +276,18 @@ export default function AdminSimulatorTemplates() {
                   </Select>
                 </div>
               </div>
+              <div className="space-y-1.5">
+                <Label>Assigner à une organisation (optionnel)</Label>
+                <Select value={form.organization_id || "__none__"} onValueChange={v => setForm(f => ({ ...f, organization_id: v === "__none__" ? null : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Aucune (public)" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Aucune (public)</SelectItem>
+                    {orgs.map((o: any) => (
+                      <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button onClick={() => upsert.mutate()} disabled={!form.title || upsert.isPending} className="w-full">
                 {upsert.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 {editId ? "Mettre à jour" : "Créer le template"}

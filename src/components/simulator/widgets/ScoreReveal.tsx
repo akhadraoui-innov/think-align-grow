@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp, MessageSquare } from "lucide-react";
+import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp, MessageSquare, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SessionReplay } from "./SessionReplay";
 import { getNextPractices } from "../config/nextSteps";
+import { toast } from "sonner";
 
 interface ScoreRevealProps {
   score: number;
