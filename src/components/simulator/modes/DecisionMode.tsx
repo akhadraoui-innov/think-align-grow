@@ -70,6 +70,7 @@ export function DecisionMode({
   practiceId,
   previewMode = false,
   onComplete,
+  onExchangeUpdate,
 }: DecisionModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
