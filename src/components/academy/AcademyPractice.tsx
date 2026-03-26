@@ -449,6 +449,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
         maxExchanges={practice.max_exchanges || 10}
         practiceId={practice.id}
         previewMode={previewMode}
+        difficulty={(practice as any)?.difficulty || undefined}
         onComplete={onComplete}
       />
     );
