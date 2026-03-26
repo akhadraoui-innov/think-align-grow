@@ -510,21 +510,12 @@ export default function AdminAcademyModuleDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Practice Studio Test Dialog */}
-      <Dialog open={practiceTestOpen} onOpenChange={setPracticeTestOpen}>
-        <DialogContent className="max-w-5xl h-[90vh] p-0 gap-0 flex flex-col">
-          <DialogHeader className="px-5 py-3 border-b shrink-0">
-            <DialogTitle className="flex items-center gap-2 text-sm">
-              <Play className="h-4 w-4 text-violet-500" /> Practice Studio — {mod.title}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 min-h-0">
-            {practiceTestOpen && (
-              <AcademyPractice moduleId={id!} previewMode />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PracticeTestDialog
+        moduleId={id!}
+        open={practiceTestOpen}
+        onOpenChange={setPracticeTestOpen}
+        title={mod.title}
+      />
     </AdminShell>
   );
 }
