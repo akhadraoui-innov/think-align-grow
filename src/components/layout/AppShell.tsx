@@ -35,7 +35,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [handleKeyDown]);
 
   // Landing page & auth: no shell chrome
-  if (isLandingPage || isAuthPage || isWorkshopRoom || isAdminPage) {
+  if (isLandingPage || isAuthPage || isWorkshopRoom || isAdminPage || isAcademyModule) {
     return <>{children}</>;
   }
 
