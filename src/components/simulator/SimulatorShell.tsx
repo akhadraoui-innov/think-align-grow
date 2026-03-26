@@ -39,9 +39,10 @@ export function SimulatorShell({
   const universeName = modeDef ? UNIVERSE_LABELS[modeDef.universe] : "";
   const progressPct = maxExchanges > 0 ? (exchangeCount / maxExchanges) * 100 : 0;
 
-  const expertMode = difficulty === "expert" || difficulty === "advanced";
+  const isExpert = difficulty === "expert" || difficulty === "advanced";
+  const isBeginner = difficulty === "beginner" || difficulty === "débutant";
 
-  if (showOnboarding && modeDef && !expertMode) {
+  if (showOnboarding && modeDef && !isExpert) {
     return (
       <OnboardingOverlay
         modeDef={modeDef}
@@ -93,14 +94,16 @@ export function SimulatorShell({
             <TooltipContent>Objectifs & critères</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowHelp(true)}>
-                <HelpCircle className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Aide IA</TooltipContent>
-          </Tooltip>
+          {!isExpert && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowHelp(true)}>
+                  <HelpCircle className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Aide IA</TooltipContent>
+            </Tooltip>
+          )}
 
           {onReset && (
             <Tooltip>
@@ -143,6 +146,18 @@ export function SimulatorShell({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Beginner hint ── */}
+      {isBeginner && exchangeCount === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-4 mt-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 text-xs text-muted-foreground flex items-center gap-2"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+          Besoin d'aide ? Utilisez le bouton <HelpCircle className="h-3 w-3 inline" /> pour obtenir des conseils de l'IA.
+        </motion.div>
+      )}
 
       {/* ── Main content ── */}
       <div className="flex-1 min-h-0 relative">
