@@ -1,44 +1,25 @@
 
+# Professional Simulator — Phase 1 DONE
 
-# Lancer le Practice Studio depuis Actifs Pédagogiques et Catalogue
+## Completed
+- ✅ Migration DB: `practice_type` + `type_config` on `academy_practices`
+- ✅ Mode Registry: 50 modes across 12 universes (`src/components/simulator/config/modeRegistry.ts`)
+- ✅ Prompt Templates: Behavior injections per mode (`src/components/simulator/config/promptTemplates.ts`)
+- ✅ Type Config Schemas: Dynamic admin form fields per mode (`src/components/simulator/config/typeConfigSchemas.ts`)
+- ✅ SimulatorEngine: Router component dispatching to UI families (`src/components/simulator/SimulatorEngine.tsx`)
+- ✅ ChatMode: Full chat with widgets (timer, tension gauge, KPI dashboard, score reveal)
+- ✅ Widgets: TimerBar, TensionGauge, KPIDashboard, ScoreReveal
+- ✅ Edge function updated: behavior injection by practice_type
+- ✅ Admin form updated: practice_type selector grouped by universe + dynamic type_config fields
+- ✅ AcademyPractice routing: non-conversation types → SimulatorEngine
 
-## Objectif
-Ajouter un bouton "Tester" (icone Play) sur chaque Practice dans deux pages admin : **Actifs Pédagogiques** (`AdminAcademyAssets.tsx`) et **Catalogue des Assets** (`AdminObservabilityCatalogue.tsx`), ouvrant le Practice Studio en mode `previewMode` dans un Dialog fullscreen.
-
-## Plan
-
-### 1. Actifs Pédagogiques — `AdminAcademyAssets.tsx`
-
-Dans le composant `PracticesTab` (ligne 618) :
-- Ajouter un state `testModuleId: string | null`
-- Ajouter un bouton Play dans la colonne Actions de chaque practice (à côté de Copy et Pencil), qui set `testModuleId = pr.module_id`
-- Ajouter un Dialog fullscreen identique à celui de `AdminAcademyModuleDetail` : `<AcademyPractice moduleId={testModuleId} previewMode />`
-- Bandeau jaune "Mode test — Les échanges ne sont pas enregistrés"
-
-### 2. Catalogue des Assets — `AdminObservabilityCatalogue.tsx`
-
-Le catalogue affiche des `CatalogueAsset` avec `asset_type` et `asset_id`. Pour les assets de type `practice`, il faut résoudre le `module_id` :
-- Option : requêter `academy_practices` par `asset_id` pour obtenir le `module_id`
-- Ajouter un bouton Play conditionnel (`asset_type === "practice"`) dans les vues Table, Grid et Kanban
-- Même Dialog fullscreen avec `previewMode`
-
-### 3. Composant partagé — `PracticeTestDialog`
-
-Pour éviter la duplication du Dialog dans 3 fichiers, extraire un composant réutilisable :
-
-```
-src/components/admin/PracticeTestDialog.tsx
-Props: { moduleId: string | null; open: boolean; onOpenChange: (open: boolean) => void }
-```
-
-Contient le Dialog fullscreen, le bandeau jaune, et le `<AcademyPractice previewMode />`. Utilisé dans `AdminAcademyModuleDetail`, `AdminAcademyAssets` et `AdminObservabilityCatalogue`.
-
-### Fichiers concernés
-
-| Fichier | Action |
-|---------|--------|
-| `src/components/admin/PracticeTestDialog.tsx` | Nouveau — Dialog réutilisable |
-| `src/pages/admin/AdminAcademyAssets.tsx` | Bouton Play + state dans PracticesTab |
-| `src/pages/admin/AdminObservabilityCatalogue.tsx` | Bouton Play conditionnel pour practices |
-| `src/pages/admin/AdminAcademyModuleDetail.tsx` | Refactorer pour utiliser le Dialog partagé |
-
+## Next Phases
+| Phase | Content |
+|-------|---------|
+| Phase 2 | CodeMode (code_review, debug, vibe_coding) + CodeEditor widget |
+| Phase 3 | DecisionMode (crisis, decision_game, incident_response) + KPI/timer widgets |
+| Phase 4 | DocumentMode (spec_writing, user_story, adr) + DocumentEditor widget |
+| Phase 5 | AnalysisMode (case_study, due_diligence, valuation) + DataBriefing widget |
+| Phase 6 | AssessmentMode (compliance, gdpr_pia, ai_impact) |
+| Phase 7 | DesignMode (bm_design, process_mapping, backlog_prio) |
+| Phase 8 | Admin polish, mode composite (chaining), prompt templates UI |
