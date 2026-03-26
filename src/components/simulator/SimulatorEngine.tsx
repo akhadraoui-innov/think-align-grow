@@ -50,11 +50,15 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
         return <CodeMode {...modeProps} />;
       case "decision":
         return <DecisionMode {...modeProps} />;
-      case "chat":
       case "document":
+        return <DocumentMode {...modeProps} />;
       case "analysis":
+        return <AnalysisMode {...modeProps} />;
       case "design":
+        return <DesignMode {...modeProps} />;
       case "assessment":
+        return <AssessmentMode {...modeProps} />;
+      case "chat":
       default:
         return <ChatMode {...modeProps} />;
     }
