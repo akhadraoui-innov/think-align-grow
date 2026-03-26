@@ -14,7 +14,7 @@ interface Props {
   onTestPractice?: (assetId: string, name: string) => void;
 }
 
-export function CatalogueGridView({ assets, orgMap }: Props) {
+export function CatalogueGridView({ assets, orgMap, onTestPractice }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {assets.map((asset) => {
