@@ -684,6 +684,7 @@ function PracticesTab({ data, filters, isError, error, stats }: { data: any[]; f
                   <TableCell className="text-center"><ModeBadge mode={pr.generation_mode} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
+                      <Button size="icon" variant="ghost" onClick={() => setTestModuleId(pr.module_id)} title="Tester le Practice Studio"><Play className="h-4 w-4 text-violet-500" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => setDupItem(pr)}><Copy className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" onClick={() => navigate(`/admin/academy/modules/${pr.module_id}`)}><Pencil className="h-4 w-4" /></Button>
                     </div>
