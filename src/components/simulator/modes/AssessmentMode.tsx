@@ -83,6 +83,7 @@ export function AssessmentMode({
   previewMode = false,
   onComplete,
   onExchangeUpdate,
+  onMessagesChange,
 }: AssessmentModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
