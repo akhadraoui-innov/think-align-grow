@@ -75,6 +75,7 @@ export function DocumentMode({
   previewMode = false,
   onComplete,
   onExchangeUpdate,
+  onMessagesChange,
 }: DocumentModeProps) {
   const { user } = useAuth();
   const [document, setDocument] = useState("");
