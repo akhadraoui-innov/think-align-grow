@@ -141,6 +141,13 @@ export function CatalogueTableView({ assets, orgMap, profileMap, onTestPractice 
                       <TableCell className="p-2 text-xs text-muted-foreground">
                         {format(parseISO(asset.created_at), "dd/MM/yyyy")}
                       </TableCell>
+                      <TableCell className="p-2">
+                        {asset.asset_type === "practice" && onTestPractice && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onTestPractice(asset.asset_id, asset.name); }} title="Tester">
+                            <Play className="h-3.5 w-3.5 text-violet-500" />
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   </CollapsibleTrigger>
                   <CollapsibleContent asChild>
