@@ -98,7 +98,7 @@ export function SimulatorShell({
             <TooltipContent>Objectifs & critères</TooltipContent>
           </Tooltip>
 
-          {!isExpert && (
+          {!isExpert && aiAssistanceLevel !== "autonomous" && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowHelp(true)}>
