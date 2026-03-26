@@ -15,7 +15,7 @@ import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
 import { AcademyQuiz } from "@/components/academy/AcademyQuiz";
 import { AcademyExercise } from "@/components/academy/AcademyExercise";
 import { AcademyPractice } from "@/components/academy/AcademyPractice";
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
