@@ -233,8 +233,11 @@ export function ChatMode({
       const evalData = parseEvaluation(fullContent);
       if (evalData) {
         setEvaluation(evalData);
-        onComplete?.(evalData.score);
+        onComplete?.(evalData.score, updatedMessages, evalData);
       }
+
+      // Notify parent of messages change
+      onMessagesChange?.(updatedMessages);
     } catch (err: any) {
       toast.error(err.message || "Erreur de communication");
     } finally {

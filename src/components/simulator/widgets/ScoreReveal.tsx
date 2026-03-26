@@ -132,14 +132,30 @@ export function ScoreReveal({ score, feedback, dimensions, recommendations, next
         </motion.div>
       )}
 
-      {/* Restart */}
-      {onRestart && (
-        <div className="flex justify-center pt-1">
+      {/* Actions */}
+      <div className="flex justify-center gap-2 pt-1">
+        {messages && messages.length > 0 && (
+          <Button variant="outline" size="sm" onClick={() => setShowReplay(true)} className="gap-2">
+            <MessageSquare className="h-3.5 w-3.5" />
+            Revoir mes réponses
+          </Button>
+        )}
+        {onRestart && (
           <Button variant="outline" size="sm" onClick={onRestart} className="gap-2">
             <RotateCcw className="h-3.5 w-3.5" />
             Recommencer
           </Button>
-        </div>
+        )}
+      </div>
+
+      {/* Replay Dialog */}
+      {messages && (
+        <SessionReplay
+          open={showReplay}
+          onClose={() => setShowReplay(false)}
+          messages={messages}
+          score={score}
+        />
       )}
     </motion.div>
   );
