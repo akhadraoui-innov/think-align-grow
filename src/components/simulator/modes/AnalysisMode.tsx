@@ -315,7 +315,7 @@ export function AnalysisMode({
         </div>
 
         {evaluation && (
-          <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} recommendations={evaluation.recommendations} onRestart={resetSession} />
+          <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} recommendations={evaluation.recommendations} messages={messages.map(m => ({ role: m.role, content: m.content }))} onRestart={resetSession} />
         )}
 
         {!evaluation && suggestions.length > 0 && !isStreaming && (
