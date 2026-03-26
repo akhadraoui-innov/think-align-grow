@@ -65,10 +65,25 @@ export function EnrichedMarkdown({ content }: EnrichedMarkdownProps) {
       return <code className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono" {...props}>{children}</code>;
     },
     h2: ({ children, ...props }) => (
-      <h2 className="text-xl font-display font-bold mt-8 mb-4 pb-2 border-b" {...props}>{children}</h2>
+      <h2 className="text-2xl font-display font-bold mt-12 mb-5 pb-3 border-b border-border/60 flex items-center gap-3" {...props}>
+        <span className="w-1 h-7 rounded-full bg-primary shrink-0" />
+        {children}
+      </h2>
     ),
     h3: ({ children, ...props }) => (
-      <h3 className="text-lg font-display font-semibold mt-6 mb-3" {...props}>{children}</h3>
+      <h3 className="text-lg font-display font-semibold mt-8 mb-3 text-foreground/90" {...props}>{children}</h3>
+    ),
+    p: ({ children, ...props }) => (
+      <p className="my-4 leading-[1.8] text-foreground/80" {...props}>{children}</p>
+    ),
+    ul: ({ children, ...props }) => (
+      <ul className="my-4 space-y-2 pl-5 list-disc marker:text-primary/50" {...props}>{children}</ul>
+    ),
+    ol: ({ children, ...props }) => (
+      <ol className="my-4 space-y-2 pl-5 list-decimal marker:text-primary/50 marker:font-semibold" {...props}>{children}</ol>
+    ),
+    li: ({ children, ...props }) => (
+      <li className="leading-[1.8] text-foreground/80 pl-1" {...props}>{children}</li>
     ),
     img: ({ src, alt, ...props }) => (
       <figure className="my-6 text-center">
