@@ -1,5 +1,4 @@
 
-
 # Audit complet — Ce qui est fait vs ce qui reste
 
 ## FAIT (opérationnel)
@@ -7,7 +6,7 @@
 | Composant | Statut |
 |-----------|--------|
 | **modeRegistry** — 50 modes, 12 univers, 7 familles | Done |
-| **SimulatorShell** — header, progression, objectifs, persona-adapt | Done |
+| **SimulatorShell** — header, progression, objectifs, persona-adapt, ai_assistance_level | Done |
 | **OnboardingOverlay** — briefing par mode | Done |
 | **HelpDrawer** — tuteur IA contextuel | Done |
 | **SuggestionChips** — chips cliquables IA | Done |
@@ -22,7 +21,7 @@
 | **Widgets** — TensionGauge, KPIDashboard, TimerBar, ScoreReveal (avec replay), ObjectivesPanel | Done |
 | **SessionReplay** — dialogue de relecture des échanges étape par étape | Done |
 | **useSimulatorSession** — hook de persistance automatique DB | Done |
-| **Page catalogue `/simulator`** — grille filtrable par univers/famille | Done |
+| **Page catalogue `/simulator`** — grille filtrable + bouton Lancer + Dialog fullscreen | Done |
 | **Page historique `/simulator/history`** — sessions passées, scores, replay | Done |
 | **Next Steps connectés** — recommandations dynamiques depuis modeRegistry | Done |
 | **PracticeDesigner** — assistant IA admin + templates + preview | Done |
@@ -30,8 +29,17 @@
 | **promptTemplates** — injections comportementales par mode | Done |
 | **typeConfigSchemas** — champs admin dynamiques par type | Done |
 | **PracticeTestDialog** — test depuis admin (Assets, Catalogue, Module) | Done |
-| **Edge function academy-practice** — suggestions, dimensions, recommendations | Done |
+| **Edge function academy-practice** — suggestions, dimensions, recommendations, ai_assistance_level | Done |
+| **Edge function academy-generate** — practice_type intelligent avec 30+ modes | Done |
 | **Table academy_practice_sessions** — persistance sessions avec RLS | Done |
+| **DB migration** — module_id nullable + ai_assistance_level | Done |
+| **Admin Simulateur** — Dashboard `/admin/simulator` avec stats et sessions | Done |
+| **Admin Templates** — Bibliothèque `/admin/simulator/templates` standalone | Done |
+| **Admin Sidebar** — Section Simulateur avec sous-items | Done |
+| **OrgSimulatorTab** — Onglet simulateur dans fiche organisation | Done |
+| **AcademyPracticesTab** — Sélecteur ai_assistance_level | Done |
+| **SimulatorEngine** — Passage aiAssistanceLevel au Shell | Done |
+| **Practices standalone** — module_id nullable, RLS view_standalone_practices | Done |
 
 ---
 
