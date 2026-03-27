@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
 import { CodeEditor } from "../widgets/CodeEditor";
 import { ScoreReveal } from "../widgets/ScoreReveal";
+import { BriefingCard } from "../widgets/BriefingCard";
 import { getModeDefinition } from "../config/modeRegistry";
 
 interface Message {
