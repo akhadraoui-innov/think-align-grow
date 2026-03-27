@@ -225,23 +225,14 @@ export function ChatMode({
         </div>
       )}
 
-      {/* Collapsible Briefing Card */}
+      {/* Briefing Card Atlassian */}
       {scenarioMsg && (
-        <Collapsible open={briefingOpen} onOpenChange={setBriefingOpen}>
-          <div className="border-b shrink-0">
-            <CollapsibleTrigger className="flex items-center gap-2 w-full px-4 py-2.5 text-left hover:bg-muted/5 transition-colors">
-              {briefingOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Briefing de la mission</span>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="px-4 pb-3">
-                <div className="border-l-4 border-primary bg-card rounded-r-lg p-4 shadow-sm text-sm leading-relaxed max-h-[160px] overflow-y-auto">
-                  <EnrichedMarkdown content={cleanContent(scenarioMsg.content)} />
-                </div>
-              </div>
-            </CollapsibleContent>
-          </div>
-        </Collapsible>
+        <BriefingCard
+          content={cleanContent(scenarioMsg.content)}
+          practiceType={practiceType}
+          collapsed={!briefingOpen}
+          onToggle={() => setBriefingOpen(!briefingOpen)}
+        />
       )}
 
       {/* Messages */}
