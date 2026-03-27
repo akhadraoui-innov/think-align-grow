@@ -260,14 +260,16 @@ export default function SimulatorHistory() {
                                     return (
                                       <div className="hidden sm:flex items-center gap-2 ml-auto">
                                         {chips.map(c => (
-                                          <div key={c.label} className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5" title={c.label}>
+                                          <div key={c.label} className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2 py-0.5" title={c.label}>
                                             <c.icon className={cn("h-3 w-3", c.val >= 7 ? "text-emerald-500" : c.val >= 4 ? "text-amber-500" : "text-destructive")} />
-                                            <span className="text-[10px] font-semibold tabular-nums">{c.val}</span>
+                                            <span className="text-[10px] text-muted-foreground">{c.label}</span>
+                                            <span className={cn("text-[10px] font-bold tabular-nums", c.val >= 7 ? "text-emerald-600 dark:text-emerald-400" : c.val >= 4 ? "text-amber-600 dark:text-amber-400" : "text-destructive")}>{c.val}/10</span>
                                           </div>
                                         ))}
-                                        <div className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5" title="Échanges">
+                                        <div className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2 py-0.5">
                                           <MessageSquare className="h-3 w-3 text-muted-foreground" />
-                                          <span className="text-[10px] font-semibold tabular-nums">{msgCount}</span>
+                                          <span className="text-[10px] text-muted-foreground">Échanges</span>
+                                          <span className="text-[10px] font-bold tabular-nums">{msgCount}</span>
                                         </div>
                                       </div>
                                     );
