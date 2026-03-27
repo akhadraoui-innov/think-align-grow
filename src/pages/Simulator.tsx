@@ -67,7 +67,7 @@ export default function Simulator() {
   const [filterFamily, setFilterFamily] = useState<string>("all");
   const [selectedMode, setSelectedMode] = useState<{ key: string; def: any } | null>(null);
   const [aiLevel, setAiLevel] = useState<AIAssistanceLevel>("guided");
-  const [activeSim, setActiveSim] = useState<{ key: string; def: any; practiceId?: string; practice?: any; systemPrompt: string; scenario: string; aiLevel: AIAssistanceLevel } | null>(null);
+  
   const [activeTab, setActiveTab] = useState("catalogue");
 
   // Fetch org-assigned standalone practices
