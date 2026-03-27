@@ -273,13 +273,13 @@ export function ChatMode({
   const showStakeholders = "supporters" in gauges || "adoption" in gauges;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {hasTimer && timeLimitSeconds > 0 && !evaluation && (
         <TimerBar totalSeconds={timeLimitSeconds} onExpire={() => toast.info("Temps écoulé !")} />
       )}
 
       {(showTension || showKPIs || showFunnel || showStakeholders) && (
-        <div className="px-4 py-2 border-b bg-muted/20 flex flex-wrap gap-3">
+        <div className="px-4 py-2 border-b bg-muted/20 flex flex-wrap gap-3 shrink-0">
           {showTension && <TensionGauge tension={gauges.tension || 5} rapport={gauges.rapport || 5} progress={gauges.progress} />}
           {showKPIs && <KPIDashboard kpis={gauges} />}
           {showFunnel && (
