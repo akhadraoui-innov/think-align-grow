@@ -123,7 +123,8 @@ Les suggestions doivent être des pistes de réponse variées et pertinentes (pa
 Si l'apprenant semble bloqué ou donne des réponses courtes, relance-le avec des questions d'approfondissement.`,
       };
 
-      systemPrompt = [behaviorInjection, adminPrompt, configContext, assistanceInstructions[assistanceLevel] || assistanceInstructions.guided].filter(Boolean).join("\n\n---\n\n");
+      const langRule = `\n\nRÈGLE ABSOLUE : Tu réponds TOUJOURS intégralement en français. Jamais un mot en anglais sauf termes techniques universels (framework, sprint, KPI, etc.). Toutes les suggestions, feedbacks, évaluations, titres doivent être en français.`;
+      systemPrompt = [behaviorInjection, adminPrompt, configContext, assistanceInstructions[assistanceLevel] || assistanceInstructions.guided, langRule].filter(Boolean).join("\n\n---\n\n");
     }
 
     const aiMessages: any[] = [
