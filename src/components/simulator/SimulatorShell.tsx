@@ -1,10 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { HelpCircle, RotateCcw, ChevronRight, Target, BookOpen, Sparkles } from "lucide-react";
+import { HelpCircle, RotateCcw, Target, BookOpen, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { getModeDefinition, UNIVERSE_LABELS } from "./config/modeRegistry";
 import { OnboardingOverlay } from "./widgets/OnboardingOverlay";
 import { HelpDrawer } from "./widgets/HelpDrawer";
@@ -22,6 +21,8 @@ interface SimulatorShellProps {
   aiAssistanceLevel?: AIAssistanceLevel;
   children: React.ReactNode;
   onReset?: () => void;
+  onClose?: () => void;
+  sessionTitle?: string;
 }
 
 export function SimulatorShell({
@@ -34,6 +35,8 @@ export function SimulatorShell({
   aiAssistanceLevel = "guided",
   children,
   onReset,
+  onClose,
+  sessionTitle,
 }: SimulatorShellProps) {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
@@ -45,40 +48,57 @@ export function SimulatorShell({
 
   const isExpert = difficulty === "expert" || difficulty === "advanced";
   const isBeginner = difficulty === "beginner" || difficulty === "débutant";
+  const showHelpButton = !isExpert && aiAssistanceLevel !== "autonomous";
 
   if (showOnboarding && modeDef && !isExpert) {
     return (
-      <OnboardingOverlay
-        modeDef={modeDef}
-        universeName={universeName}
-        difficulty={difficulty}
-        aiAssistanceLevel={aiAssistanceLevel}
-        onStart={() => setShowOnboarding(false)}
-      />
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Header even during onboarding for consistency */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b bg-card/80 backdrop-blur-sm shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-semibold truncate">{sessionTitle || modeDef?.label || practiceType}</span>
+            {modeDef && <Badge variant="outline" className="text-xs shrink-0">{universeName}</Badge>}
+          </div>
+          {onClose && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <OnboardingOverlay
+            modeDef={modeDef}
+            universeName={universeName}
+            difficulty={difficulty}
+            aiAssistanceLevel={aiAssistanceLevel}
+            onStart={() => setShowOnboarding(false)}
+          />
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* ── Header ── */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b bg-card/50 backdrop-blur-sm">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* ── Merged Header ── */}
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b bg-card/80 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-sm font-semibold truncate">
+            {sessionTitle || modeDef?.label || practiceType}
+          </span>
           {modeDef && (
-            <Badge variant="outline" className="text-[10px] shrink-0 font-medium">
+            <Badge variant="outline" className="text-xs shrink-0">
               {universeName}
             </Badge>
           )}
-          <span className="text-sm font-semibold truncate">
-            {modeDef?.label || practiceType}
-          </span>
           {previewMode && (
-            <Badge variant="secondary" className="text-[10px]">Preview</Badge>
+            <Badge variant="secondary" className="text-xs">Preview</Badge>
           )}
         </div>
 
         {/* Progress chip */}
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
-          <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+          <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-primary rounded-full"
               animate={{ width: `${progressPct}%` }}
@@ -92,32 +112,52 @@ export function SimulatorShell({
         <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setObjectivesOpen(!objectivesOpen)}>
-                <Target className="h-3.5 w-3.5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setObjectivesOpen(!objectivesOpen)}>
+                <Target className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Objectifs & critères</TooltipContent>
           </Tooltip>
 
-          {!isExpert && aiAssistanceLevel !== "autonomous" && (
+          {showHelpButton && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowHelp(true)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "h-8 gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10",
+                    aiAssistanceLevel === "intensive" && "animate-pulse"
+                  )}
+                  onClick={() => setShowHelp(true)}
+                >
                   <HelpCircle className="h-3.5 w-3.5" />
+                  Aide IA
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Aide IA</TooltipContent>
+              <TooltipContent>Obtenir de l'aide méthodologique</TooltipContent>
             </Tooltip>
           )}
 
           {onReset && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onReset}>
-                  <RotateCcw className="h-3.5 w-3.5" />
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onReset}>
+                  <RotateCcw className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Recommencer</TooltipContent>
+            </Tooltip>
+          )}
+
+          {onClose && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Fermer</TooltipContent>
             </Tooltip>
           )}
         </TooltipProvider>
@@ -130,7 +170,7 @@ export function SimulatorShell({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-b bg-muted/30"
+            className="overflow-hidden border-b bg-muted/20 shrink-0"
           >
             <div className="px-4 py-3 space-y-2">
               <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -139,7 +179,7 @@ export function SimulatorShell({
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {modeDef.evaluationDimensions.map((dim) => (
-                  <Badge key={dim} variant="outline" className="text-[10px] capitalize">
+                  <Badge key={dim} variant="outline" className="text-xs capitalize">
                     {dim.replace(/_/g, " ")}
                   </Badge>
                 ))}
@@ -157,15 +197,15 @@ export function SimulatorShell({
         <motion.div
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mx-4 mt-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 text-xs text-muted-foreground flex items-center gap-2"
+          className="mx-4 mt-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 text-xs text-muted-foreground flex items-center gap-2 shrink-0"
         >
           <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
-          Besoin d'aide ? Utilisez le bouton <HelpCircle className="h-3 w-3 inline" /> pour obtenir des conseils de l'IA.
+          Besoin d'aide ? Cliquez sur <span className="font-semibold text-primary">Aide IA</span> pour obtenir des conseils méthodologiques.
         </motion.div>
       )}
 
       {/* ── Main content ── */}
-      <div className="flex-1 min-h-0 relative">
+      <div className="flex-1 min-h-0 overflow-hidden">
         {children}
       </div>
 

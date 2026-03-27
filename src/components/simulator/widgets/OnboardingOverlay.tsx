@@ -46,10 +46,10 @@ export function OnboardingOverlay({ modeDef, universeName, difficulty, aiAssista
         </motion.div>
 
         {/* Title */}
-        <div className="space-y-2">
-          <Badge variant="outline" className="text-[10px]">{universeName}</Badge>
-          <h2 className="text-xl font-bold">{modeDef.label}</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">{modeDef.description}</p>
+        <div className="space-y-3">
+          <Badge variant="outline" className="text-xs">{universeName}</Badge>
+          <h2 className="text-2xl font-bold tracking-tight">{modeDef.label}</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">{modeDef.description}</p>
         </div>
 
         {/* How it works */}
@@ -63,8 +63,8 @@ export function OnboardingOverlay({ modeDef, universeName, difficulty, aiAssista
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                   {step.icon}
                 </div>
-                <p className="text-[11px] font-semibold">{step.label}</p>
-                <p className="text-[10px] text-muted-foreground leading-tight">{step.desc}</p>
+                <p className="text-xs font-semibold">{step.label}</p>
+                <p className="text-xs text-muted-foreground leading-snug">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -77,7 +77,7 @@ export function OnboardingOverlay({ modeDef, universeName, difficulty, aiAssista
           </div>
           <div className="flex flex-wrap gap-1.5">
             {modeDef.evaluationDimensions.map((dim) => (
-              <Badge key={dim} variant="secondary" className="text-[10px] capitalize">{dim.replace(/_/g, " ")}</Badge>
+              <Badge key={dim} variant="secondary" className="text-xs capitalize">{dim.replace(/_/g, " ")}</Badge>
             ))}
           </div>
         </div>

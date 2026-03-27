@@ -273,13 +273,13 @@ export function ChatMode({
   const showStakeholders = "supporters" in gauges || "adoption" in gauges;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {hasTimer && timeLimitSeconds > 0 && !evaluation && (
         <TimerBar totalSeconds={timeLimitSeconds} onExpire={() => toast.info("Temps écoulé !")} />
       )}
 
       {(showTension || showKPIs || showFunnel || showStakeholders) && (
-        <div className="px-4 py-2 border-b bg-muted/20 flex flex-wrap gap-3">
+        <div className="px-4 py-2 border-b bg-muted/20 flex flex-wrap gap-3 shrink-0">
           {showTension && <TensionGauge tension={gauges.tension || 5} rapport={gauges.rapport || 5} progress={gauges.progress} />}
           {showKPIs && <KPIDashboard kpis={gauges} />}
           {showFunnel && (
@@ -336,7 +336,9 @@ export function ChatMode({
                   "max-w-[80%] rounded-2xl px-4 py-3 text-sm",
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                    : msg.id === "scenario"
+                    ? "bg-card border-l-4 border-primary shadow-sm border"
+                    : "bg-card border shadow-sm"
                 )}
               >
                 {msg.role === "assistant" ? (
@@ -378,7 +380,7 @@ export function ChatMode({
 
       {/* Input */}
       {!evaluation && (
-        <div className="p-4 border-t bg-background">
+        <div className="shrink-0 p-4 border-t bg-background">
           <div className="flex gap-2 items-end">
             <div className="flex-1 space-y-0">
               <Textarea
