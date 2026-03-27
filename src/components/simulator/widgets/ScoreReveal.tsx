@@ -14,13 +14,17 @@ interface ScoreRevealProps {
   dimensions?: { name: string; score: number }[];
   recommendations?: string[];
   practiceType?: string;
+  sessionId?: string;
   nextPractices?: { label: string; type: string }[];
   messages?: { role: "user" | "assistant"; content: string }[];
   onRestart?: () => void;
   onNextPractice?: (type: string) => void;
 }
 
-export function ScoreReveal({ score, feedback, dimensions, recommendations, practiceType, nextPractices: nextPracticesProp, messages, onRestart, onNextPractice }: ScoreRevealProps) {
+export function ScoreReveal({ score, feedback, dimensions, recommendations, practiceType, sessionId, nextPractices: nextPracticesProp, messages, onRestart, onNextPractice }: ScoreRevealProps) {
+  const nextPractices = nextPracticesProp ?? (practiceType ? getNextPractices(practiceType) : []);
+  const [showReplay, setShowReplay] = useState(false);
+  const navigate = useNavigate();
   const nextPractices = nextPracticesProp ?? (practiceType ? getNextPractices(practiceType) : []);
   const [showReplay, setShowReplay] = useState(false);
 
