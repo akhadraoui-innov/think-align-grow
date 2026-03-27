@@ -100,7 +100,7 @@ export function useSimulatorSession(practiceId: string | null, previewMode = fal
             .from("academy_practice_sessions")
             .insert({
               user_id: user.id,
-              practice_id: practiceId,
+              practice_id: practiceId || null,
               ...payload,
             } as any)
             .select("id")

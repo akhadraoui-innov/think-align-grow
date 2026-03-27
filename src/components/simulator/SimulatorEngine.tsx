@@ -73,13 +73,16 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
           content: m.content,
           timestamp: m.timestamp.toISOString(),
         }));
-        await completeSession(serialized, evaluation);
+        const returnedId = await completeSession(serialized, evaluation);
         props.onComplete?.(score);
+        if (returnedId) {
+          navigate(`/simulator/session/${returnedId}/report`);
+        }
       } else {
         props.onComplete?.(score);
       }
     },
-    [completeSession, props.onComplete]
+    [completeSession, props.onComplete, navigate]
   );
 
   const modeProps = {

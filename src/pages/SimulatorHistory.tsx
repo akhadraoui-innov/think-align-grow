@@ -67,11 +67,11 @@ export default function SimulatorHistory() {
   const groups = useMemo<PracticeGroup[]>(() => {
     const map = new Map<string, PracticeGroup>();
     sessions.forEach((s) => {
-      const key = s.practice_id;
+      const key = s.practice_id || "__standalone__";
       if (!map.has(key)) {
         map.set(key, {
           practiceId: key,
-          title: s.practice?.title ?? (key === "__standalone__" ? "Session libre" : "Session"),
+          title: s.practice?.title ?? "Session libre",
           practiceType: s.practice?.practice_type ?? "",
           difficulty: s.practice?.difficulty ?? null,
           sessions: [],

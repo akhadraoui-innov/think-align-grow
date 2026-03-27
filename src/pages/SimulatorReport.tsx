@@ -174,7 +174,7 @@ export default function SimulatorReport() {
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-display font-bold truncate">
-              {practice?.title ?? (session?.practice_id === "__standalone__" ? "Session libre" : "Session de simulation")}
+              {practice?.title ?? "Session de simulation"}
             </h1>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               {modeDef && <Badge variant="outline" className="text-[11px]">{modeDef.label}</Badge>}
