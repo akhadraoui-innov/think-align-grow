@@ -213,18 +213,17 @@ export function CodeMode({
 
       {/* Right: Chat */}
       <div className="w-1/2 flex flex-col overflow-hidden">
-        {/* Briefing Card */}
-        {scenarioMsg && (
-          <BriefingCard
-            content={cleanContent(scenarioMsg.content)}
-            practiceType={practiceType}
-            collapsed={!briefingOpen}
-            onToggle={() => setBriefingOpen(!briefingOpen)}
-          />
-        )}
-
-        {/* Chat messages */}
+        {/* Chat messages + Briefing in scroll */}
         <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
+          {/* Briefing Card inside scroll */}
+          {scenarioMsg && (
+            <BriefingCard
+              content={cleanContent(scenarioMsg.content)}
+              practiceType={practiceType}
+              collapsed={!briefingOpen}
+              onToggle={() => setBriefingOpen(!briefingOpen)}
+            />
+          )}
           <AnimatePresence initial={false}>
           {chatMessages.map((msg) => (
               <motion.div

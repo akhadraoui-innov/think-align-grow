@@ -225,18 +225,17 @@ export function ChatMode({
         </div>
       )}
 
-      {/* Briefing Card Atlassian */}
-      {scenarioMsg && (
-        <BriefingCard
-          content={cleanContent(scenarioMsg.content)}
-          practiceType={practiceType}
-          collapsed={!briefingOpen}
-          onToggle={() => setBriefingOpen(!briefingOpen)}
-        />
-      )}
-
-      {/* Messages */}
+      {/* Messages + Briefing in scrollable area */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
+        {/* Briefing Card Atlassian — inside scroll */}
+        {scenarioMsg && (
+          <BriefingCard
+            content={cleanContent(scenarioMsg.content)}
+            practiceType={practiceType}
+            collapsed={!briefingOpen}
+            onToggle={() => setBriefingOpen(!briefingOpen)}
+          />
+        )}
         <AnimatePresence initial={false}>
           {chatMessages.map((msg) => (
             <motion.div
