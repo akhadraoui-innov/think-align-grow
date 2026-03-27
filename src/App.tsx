@@ -78,6 +78,7 @@ function AnimatedRoutes() {
           <Route path="/academy" element={<Academy />} />
           <Route path="/simulator" element={<Simulator />} />
           <Route path="/simulator/history" element={<SimulatorHistory />} />
+          <Route path="/simulator/session" element={<SimulatorSession />} />
           <Route path="/academy/dashboard" element={<AcademyDashboard />} />
           <Route path="/academy/path/:id" element={<AcademyPath />} />
           <Route path="/academy/certificates" element={<AcademyCertificates />} />

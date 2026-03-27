@@ -83,6 +83,9 @@ function PageBreadcrumb() {
     "/profile": "Profil",
     "/workshop": "Workshop",
     "/academy": "Academy",
+    "/simulator": "Simulateur",
+    "/simulator/session": "Simulation en cours",
+    "/simulator/history": "Historique",
   };
   const label = map[location.pathname] || "Hack & Show";
 

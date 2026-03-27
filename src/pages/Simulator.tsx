@@ -403,28 +403,7 @@ export default function Simulator() {
         </Tabs>
       </div>
 
-      {/* Fullscreen Simulator Dialog */}
-      <Dialog open={!!activeSim} onOpenChange={(open) => !open && setActiveSim(null)}>
-        <DialogContent className="max-w-full w-full h-[100dvh] p-0 gap-0 [&>button]:hidden rounded-none border-0">
-          {activeSim && (
-            <div className="flex flex-col h-full overflow-hidden">
-              <SimulatorEngine
-                practiceType={activeSim.key}
-                typeConfig={activeSim.practice?.type_config || activeSim.def.defaultConfig || {}}
-                systemPrompt={activeSim.systemPrompt}
-                scenario={activeSim.scenario}
-                maxExchanges={activeSim.practice?.max_exchanges || 10}
-                practiceId={activeSim.practiceId || "__standalone__"}
-                previewMode={!activeSim.practiceId}
-                difficulty={activeSim.practice?.difficulty || "intermediate"}
-                aiAssistanceLevel={activeSim.aiLevel}
-                onClose={() => setActiveSim(null)}
-                sessionTitle={activeSim.practice?.title || activeSim.def.label}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      
     </PageTransition>
   );
 }
