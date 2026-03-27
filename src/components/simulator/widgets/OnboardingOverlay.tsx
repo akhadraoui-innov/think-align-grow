@@ -46,10 +46,10 @@ export function OnboardingOverlay({ modeDef, universeName, difficulty, aiAssista
         </motion.div>
 
         {/* Title */}
-        <div className="space-y-2">
-          <Badge variant="outline" className="text-[10px]">{universeName}</Badge>
-          <h2 className="text-xl font-bold">{modeDef.label}</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">{modeDef.description}</p>
+        <div className="space-y-3">
+          <Badge variant="outline" className="text-xs">{universeName}</Badge>
+          <h2 className="text-2xl font-bold tracking-tight">{modeDef.label}</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">{modeDef.description}</p>
         </div>
 
         {/* How it works */}
