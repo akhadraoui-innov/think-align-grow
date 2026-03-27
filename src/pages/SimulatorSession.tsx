@@ -23,8 +23,8 @@ export default function SimulatorSession() {
           systemPrompt={simConfig.systemPrompt}
           scenario={simConfig.scenario}
           maxExchanges={simConfig.practice?.max_exchanges || 10}
-          practiceId={simConfig.practiceId || "__standalone__"}
-          previewMode={!simConfig.practiceId}
+          practiceId={simConfig.practiceId || null}
+          previewMode={false}
           difficulty={simConfig.practice?.difficulty || "intermediate"}
           aiAssistanceLevel={simConfig.aiLevel}
           onClose={() => navigate("/simulator")}
