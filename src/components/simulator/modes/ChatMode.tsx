@@ -88,6 +88,7 @@ export function ChatMode({
   const [briefingOpen, setBriefingOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasScrolledInitially = useRef(false);
 
   const exchangeCount = messages.filter((m) => m.role === "user").length;
   const isLastExchange = exchangeCount >= maxExchanges - 1;
@@ -95,7 +96,17 @@ export function ChatMode({
   const timeLimitSeconds = (typeConfig.time_limit_seconds as number) || ((typeConfig.time_limit_minutes as number) || 0) * 60;
 
   useEffect(() => { onExchangeUpdate?.(exchangeCount); }, [exchangeCount, onExchangeUpdate]);
-  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
+  
+  // Scroll to top on mount, then auto-scroll to bottom on new messages
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    if (!hasScrolledInitially.current) {
+      scrollRef.current.scrollTop = 0;
+      hasScrolledInitially.current = true;
+    } else {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (messages.length === 0 && scenario) {
