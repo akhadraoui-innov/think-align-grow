@@ -648,7 +648,7 @@ export type Database = {
           evaluation: Json | null
           id: string
           messages: Json
-          practice_id: string
+          practice_id: string | null
           score: number | null
           started_at: string
           user_id: string
@@ -659,7 +659,7 @@ export type Database = {
           evaluation?: Json | null
           id?: string
           messages?: Json
-          practice_id: string
+          practice_id?: string | null
           score?: number | null
           started_at?: string
           user_id: string
@@ -670,7 +670,7 @@ export type Database = {
           evaluation?: Json | null
           id?: string
           messages?: Json
-          practice_id?: string
+          practice_id?: string | null
           score?: number | null
           started_at?: string
           user_id?: string
