@@ -180,6 +180,12 @@ ${msgRows ? `<h2>Échanges (${messages?.length || 0})</h2>${msgRows}` : ""}
 
       {/* Actions */}
       <div className="flex justify-center gap-2 pt-1">
+        {sessionId && (
+          <Button size="sm" onClick={() => navigate(`/simulator/session/${sessionId}/report`)} className="gap-2">
+            <FileText className="h-3.5 w-3.5" />
+            Voir le rapport complet
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={exportPDF} className="gap-2">
           <Download className="h-3.5 w-3.5" />
           Export PDF
