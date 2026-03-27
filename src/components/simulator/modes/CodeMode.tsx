@@ -235,15 +235,20 @@ export function CodeMode({
         {/* Chat messages */}
         <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
           <AnimatePresence initial={false}>
-            {chatMessages.map((msg) => (
+          {chatMessages.map((msg) => (
               <motion.div
                 key={msg.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
+                className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}
               >
+                {msg.role === "assistant" && (
+                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shrink-0 mt-1 shadow-sm">
+                    <Sparkles className="h-2.5 w-2.5 text-primary-foreground" />
+                  </div>
+                )}
                 <div className={cn(
-                  "max-w-[90%] rounded-2xl px-4 py-3 text-sm",
+                  "max-w-[85%] rounded-2xl px-4 py-3 text-sm",
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground"
                     : "bg-card border border-border/40 shadow-sm"

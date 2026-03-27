@@ -302,6 +302,14 @@ export function ChatMode({
 
       {!evaluation && (
         <div className="shrink-0 p-4 border-t bg-background">
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <span className="text-[11px] text-muted-foreground font-medium">
+              Réponse {exchangeCount + 1}/{maxExchanges}
+            </span>
+            {input.length > 0 && (
+              <span className="text-[11px] text-muted-foreground tabular-nums">{input.length} car.</span>
+            )}
+          </div>
           <div className="flex gap-2 items-end">
             <div className="flex-1 space-y-0">
               <Textarea
@@ -309,7 +317,7 @@ export function ChatMode({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Votre message..."
+                placeholder={getPlaceholder(practiceType)}
                 className="min-h-[44px] max-h-[120px] resize-none"
                 rows={1}
                 disabled={isStreaming}
@@ -324,4 +332,16 @@ export function ChatMode({
       )}
     </div>
   );
+}
+
+function getPlaceholder(type: string): string {
+  const map: Record<string, string> = {
+    coaching: "Proposez votre approche de coaching...",
+    negotiation: "Décrivez votre stratégie de négociation...",
+    pitch: "Présentez votre argumentaire...",
+    change_management: "Détaillez votre plan de conduite du changement...",
+    sales_call: "Formulez votre approche commerciale...",
+    crisis: "Exposez votre plan de gestion de crise...",
+  };
+  return map[type] || "Rédigez votre réponse...";
 }

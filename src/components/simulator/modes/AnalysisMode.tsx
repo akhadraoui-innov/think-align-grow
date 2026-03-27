@@ -220,8 +220,13 @@ export function AnalysisMode({
                 key={msg.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
+                className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}
               >
+                {msg.role === "assistant" && (
+                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shrink-0 mt-1 shadow-sm">
+                    <Sparkles className="h-2.5 w-2.5 text-primary-foreground" />
+                  </div>
+                )}
                 <div className={cn(
                   "max-w-[80%] rounded-2xl px-4 py-3 text-sm",
                   msg.role === "user"
