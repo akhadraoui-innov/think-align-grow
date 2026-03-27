@@ -74,13 +74,22 @@ export function AnalysisMode({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [briefingOpen, setBriefingOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasScrolledInitially = useRef(false);
 
   const modeDef = getModeDefinition(practiceType);
   const exchangeCount = messages.filter((m) => m.role === "user").length;
   const isLastExchange = exchangeCount >= maxExchanges - 1;
 
   useEffect(() => { onExchangeUpdate?.(exchangeCount); }, [exchangeCount, onExchangeUpdate]);
-  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    if (!hasScrolledInitially.current) {
+      scrollRef.current.scrollTop = 0;
+      hasScrolledInitially.current = true;
+    } else {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (messages.length === 0 && scenario) {
