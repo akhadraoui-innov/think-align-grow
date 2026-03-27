@@ -34,7 +34,7 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
   const [resetKey, setResetKey] = useState(0);
   const navigate = useNavigate();
 
-  const { persistSession, completeSession } = useSimulatorSession(
+  const { sessionId, persistSession, completeSession } = useSimulatorSession(
     props.practiceId,
     props.previewMode
   );
