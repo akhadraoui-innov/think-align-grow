@@ -4,7 +4,7 @@ import { Search, Sparkles, Code, FileText, FolderSearch, Layout, ClipboardCheck,
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MODE_REGISTRY, UNIVERSE_LABELS, getModeDefinition, type ModeFamily, type ModeUniverse } from "@/components/simulator/config/modeRegistry";
 import { SimulatorEngine } from "@/components/simulator/SimulatorEngine";
