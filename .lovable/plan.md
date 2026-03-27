@@ -1,63 +1,69 @@
 
 
-# Audit E2E du flux Pratique → Rapport → Historique — Bugs identifiés & Corrections
+# Diagnostic : Historique vide — Analyse des causes racines
 
-## Bugs critiques identifiés
+## Problemes identifiés
 
-### Bug 1 — Messages incomplets dans la session persistée
-**ChatMode.tsx ligne 175** : `onComplete(evalData.score, updatedMessages, evalData)` — `updatedMessages` ne contient que les messages jusqu'au dernier message utilisateur. La réponse assistant (contenant l'évaluation) n'est PAS incluse. Le transcript sauvegardé en DB est donc tronqué.
+### 1. Sessions standalone jamais sauvegardées
+Dans `SimulatorSession.tsx` ligne 27 : `previewMode={!simConfig.practiceId}`. Si aucun `practiceId` n'est fourni, `previewMode=true` et le hook `useSimulatorSession` court-circuite toute persistence (ligne 30 : `if (previewMode || !user) return`). Les sessions lancées depuis le catalogue sans practice DB ne sont jamais enregistrées.
 
-**Fix** : Au moment de l'appel `onComplete`, construire la liste complète incluant le message assistant final avec `fullContent`.
+### 2. `practice_id` est UUID — incompatible avec `"__standalone__"`
+La colonne `practice_id` de `academy_practice_sessions` est de type `uuid NOT NULL`. Le string `"__standalone__"` ne peut pas y etre inseré — l'insert Supabase echoue silencieusement.
 
-### Bug 2 — ScoreReveal sans sessionId → bouton "Voir rapport" invisible
-**ChatMode.tsx ligne 291** : `<ScoreReveal ... />` ne reçoit pas la prop `sessionId`. Or le sessionId est dans `SimulatorEngine` via `useSimulatorSession`, jamais transmis aux modes enfants.
+### 3. Pas de navigation automatique vers le rapport
+`SimulatorEngine.handleComplete` appelle `completeSession` mais n'utilise pas le `sessionId` retourné pour naviguer vers `/simulator/session/:id/report`. L'utilisateur reste sur ScoreReveal et doit cliquer manuellement.
 
-**Fix** : Ajouter une prop `sessionId` dans les modes. SimulatorEngine expose `sessionId` depuis le hook et le passe via `modeProps`.
+## Plan de correction
 
-### Bug 3 — Double navigation potentielle
-SimulatorEngine.handleComplete navigue vers `/report` après 600ms. Mais ScoreReveal s'affiche aussi dans ChatMode. Si ScoreReveal a un sessionId, l'utilisateur pourrait cliquer "Voir rapport" pendant le timeout.
+### Bloc 1 — Permettre la persistence des sessions standalone
 
-**Fix** : Supprimer le `setTimeout` navigate dans SimulatorEngine. Laisser ScoreReveal gérer la navigation via son bouton "Voir le rapport complet". OU supprimer ScoreReveal inline et naviguer directement.
+**`src/pages/SimulatorSession.tsx`** :
+- Supprimer `previewMode={!simConfig.practiceId}` — toujours `false` pour un utilisateur connecté
+- Garder `previewMode` uniquement pour le PracticeTestDialog admin
 
-**Choix** : Naviguer directement vers le rapport (pas de ScoreReveal intermédiaire) — c'est le flux validé dans le plan.
+**`src/hooks/useSimulatorSession.ts`** :
+- Accepter `practice_id` nullable : si pas de practice DB, insérer `practice_id = null`
 
-### Bug 4 — `onMessagesChange` appelé avec messages incomplets
-**ChatMode.tsx ligne 176** : `onMessagesChange(updatedMessages)` est appelé APRÈS le streaming, mais avec `updatedMessages` (snapshot pré-assistant). Les messages persistés via `persistSession` sont donc aussi incomplets.
+**Migration SQL** :
+- `ALTER TABLE academy_practice_sessions ALTER COLUMN practice_id DROP NOT NULL;`
+- Rendre `practice_id` nullable pour supporter les sessions standalone
 
-**Fix** : Appeler `onMessagesChange` avec la liste complète incluant l'assistant.
+### Bloc 2 — Navigation automatique vers le rapport
 
-### Bug 5 — Standalone practices (`__standalone__`) non retrouvées en historique
-Le `SimulatorHistory` fait un join `academy_practices(title, practice_type, difficulty)`. Pour les sessions `__standalone__`, `practice_id = "__standalone__"` ne correspond à aucune practice en DB → le join échoue silencieusement, la session apparaît sans titre.
+**`src/components/simulator/SimulatorEngine.tsx`** :
+- Injecter `useNavigate`
+- Dans `handleComplete`, après `completeSession`, naviguer vers `/simulator/session/${returnedId}/report`
+- Passer le `sessionId` retourné, pas celui du state (qui peut etre null au moment de l'insert)
 
-**Fix** : Gérer le fallback pour practice_id `__standalone__` dans l'historique (afficher le titre depuis les messages ou un label générique).
+### Bloc 3 — Historique : gérer les sessions sans practice
 
-## Plan de corrections
+**`src/pages/SimulatorHistory.tsx`** :
+- Adapter la query pour accepter `practice_id IS NULL`
+- Afficher "Session libre" comme titre quand `practice` est null
+- Grouper les sessions sans practice sous un groupe "Sessions libres"
 
-### Fichier 1 — `src/components/simulator/modes/ChatMode.tsx`
-- Ligne 175 : Construire `allMessages = [...updatedMessages, { id: assistantMsg.id, role: "assistant", content: fullContent, timestamp: assistantMsg.timestamp }]` et passer `allMessages` à `onComplete` et `onMessagesChange`
-- Ajouter prop `sessionId?: string` à `ChatModeProps`
-- Passer `sessionId` au ScoreReveal (ligne 291)
+### Bloc 4 — Rapport : gérer les sessions sans practice
 
-### Fichier 2 — `src/components/simulator/SimulatorEngine.tsx`
-- Exposer `sessionId` depuis `useSimulatorSession`
-- Passer `sessionId` dans `modeProps`
-- Retirer le `setTimeout(() => navigate(...))` dans handleComplete — la navigation se fait via ScoreReveal ou directement
+**`src/pages/SimulatorReport.tsx`** :
+- Utiliser `.maybeSingle()` au lieu de `.single()` pour la query practice (ligne 93)
+- Fallback "Session de simulation" quand practice est null
 
-### Fichier 3 — `src/components/simulator/modes/CodeMode.tsx` et `AnalysisMode.tsx`
-- Même fix : prop `sessionId`, messages complets dans onComplete/onMessagesChange
+## Fichiers impactés
 
-### Fichier 4 — `src/pages/SimulatorHistory.tsx`
-- Gérer le cas `practice_id === "__standalone__"` : afficher "Session libre" au lieu d'un titre vide
-- Utiliser un left join ou un fallback sur le titre
+| Fichier | Action |
+|---------|--------|
+| Migration SQL | `practice_id` nullable |
+| `src/pages/SimulatorSession.tsx` | Supprimer previewMode pour users connectés |
+| `src/hooks/useSimulatorSession.ts` | Gérer practice_id nullable |
+| `src/components/simulator/SimulatorEngine.tsx` | Navigation auto vers rapport |
+| `src/pages/SimulatorHistory.tsx` | Support sessions sans practice |
+| `src/pages/SimulatorReport.tsx` | `.maybeSingle()` + fallback |
 
-### Fichier 5 — `src/pages/SimulatorReport.tsx`
-- Gérer le cas où `practice` est null (session standalone) : afficher un titre fallback
+## Ordre
 
-## Ordre d'exécution
-
-1. ChatMode — fix messages complets + prop sessionId
-2. CodeMode + AnalysisMode — même pattern
-3. SimulatorEngine — exposer sessionId, retirer navigate auto
-4. SimulatorHistory — fallback standalone
-5. SimulatorReport — fallback standalone
+1. Migration SQL (practice_id nullable)
+2. useSimulatorSession (persistence nullable)
+3. SimulatorSession (supprimer previewMode)
+4. SimulatorEngine (navigation auto)
+5. SimulatorHistory + SimulatorReport (fallbacks)
 
