@@ -162,6 +162,7 @@ Termine ta réponse par un bloc JSON sur une nouvelle ligne au format :
         model: "google/gemini-2.5-flash",
         messages: aiMessages,
         stream: true,
+        max_tokens: 8192,
       }),
     });
 
