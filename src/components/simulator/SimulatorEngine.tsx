@@ -1,6 +1,5 @@
 // SimulatorEngine — Routes practice_type to the correct UI family component, wrapped in SimulatorShell
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { getModeDefinition, type ModeFamily } from "./config/modeRegistry";
 import { SimulatorShell } from "./SimulatorShell";
 import { ChatMode } from "./modes/ChatMode";
