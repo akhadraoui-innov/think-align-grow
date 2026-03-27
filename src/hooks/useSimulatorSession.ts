@@ -16,7 +16,7 @@ interface SessionEvaluation {
   recommendations?: string[];
 }
 
-export function useSimulatorSession(practiceId: string, previewMode = false) {
+export function useSimulatorSession(practiceId: string | null, previewMode = false) {
   const { user } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
