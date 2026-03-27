@@ -126,6 +126,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <OrgProvider>
           <AnimatedRoutes />
         </OrgProvider>
