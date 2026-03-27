@@ -1,9 +1,8 @@
 import { motion } from "framer-motion";
-import { Play, Target, Sparkles, MessageSquare, BarChart3, CheckCircle, HelpCircle, Shield } from "lucide-react";
+import { Play, Target, Sparkles, MessageSquare, BarChart3, HelpCircle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { ModeDefinition } from "../config/modeRegistry";
-import { getModeInsight } from "../config/modeInsights";
 import { cn } from "@/lib/utils";
 
 interface OnboardingOverlayProps {
@@ -27,12 +26,8 @@ const AI_LEVEL_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export function OnboardingOverlay({ modeDef, universeName, difficulty, aiAssistanceLevel, onStart }: OnboardingOverlayProps) {
-  const insight = getModeInsight(modeDef.label.toLowerCase().replace(/\s+/g, "_"));
   const levelInfo = AI_LEVEL_LABELS[aiAssistanceLevel || "guided"];
 
-  // Try to find insight by iterating — fallback with modeDef data
-  const practiceKeys = Object.keys(require("../config/modeInsights").MODE_INSIGHTS);
-  
   return (
     <div className="flex flex-col items-center justify-center h-full p-6 md:p-8 text-center overflow-y-auto">
       <motion.div
@@ -70,7 +65,6 @@ export function OnboardingOverlay({ modeDef, universeName, difficulty, aiAssista
                 </div>
                 <p className="text-[11px] font-semibold">{step.label}</p>
                 <p className="text-[10px] text-muted-foreground leading-tight">{step.desc}</p>
-                {i < STEPS.length - 1 && <div className="hidden" />}
               </div>
             ))}
           </div>
