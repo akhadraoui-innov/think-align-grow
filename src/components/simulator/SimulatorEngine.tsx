@@ -73,17 +73,13 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
           content: m.content,
           timestamp: m.timestamp.toISOString(),
         }));
-        const completedSessionId = await completeSession(serialized, evaluation);
+        await completeSession(serialized, evaluation);
         props.onComplete?.(score);
-        // Navigate to report page if we have a session ID
-        if (completedSessionId && !props.previewMode) {
-          setTimeout(() => navigate(`/simulator/session/${completedSessionId}/report`), 600);
-        }
       } else {
         props.onComplete?.(score);
       }
     },
-    [completeSession, props.onComplete, navigate, props.previewMode]
+    [completeSession, props.onComplete]
   );
 
   const modeProps = {
