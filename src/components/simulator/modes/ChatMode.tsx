@@ -174,6 +174,7 @@ export function ChatMode({
             practice_id: practiceId,
             messages: apiMessages,
             evaluate: isLastExchange,
+            ...(practiceId === "__standalone__" && systemPrompt ? { system_override: systemPrompt } : {}),
           }),
         }
       );

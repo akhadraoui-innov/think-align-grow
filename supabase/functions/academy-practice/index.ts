@@ -81,7 +81,7 @@ serve(async (req) => {
     let practiceType = "conversation";
     let typeConfig: Record<string, any> = {};
 
-    if (practice_id === "__persona_chat__" && system_override) {
+    if ((practice_id === "__persona_chat__" || practice_id === "__standalone__") && system_override) {
       systemPrompt = system_override;
     } else {
       const { data: practice, error: pErr } = await supabase

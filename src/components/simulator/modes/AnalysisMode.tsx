@@ -138,7 +138,7 @@ export function AnalysisMode({
         {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ practice_id: practiceId, messages: apiMessages, evaluate: isLastExchange }),
+          body: JSON.stringify({ practice_id: practiceId, messages: apiMessages, evaluate: isLastExchange, ...(practiceId === "__standalone__" && systemPrompt ? { system_override: systemPrompt } : {}) }),
         }
       );
 
