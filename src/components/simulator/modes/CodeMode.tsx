@@ -71,7 +71,7 @@ function extractCodeBlock(content: string, language: string): string | null {
 
 export function CodeMode({
   practiceType, typeConfig, systemPrompt, scenario, maxExchanges, practiceId,
-  previewMode = false, onComplete, onExchangeUpdate, onMessagesChange,
+  previewMode = false, sessionId, onComplete, onExchangeUpdate, onMessagesChange,
 }: CodeModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
