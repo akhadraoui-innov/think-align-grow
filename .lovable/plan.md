@@ -1,80 +1,122 @@
 
 
-# Diagnostic & Plan de correction — Structuration, Aide IA intégrée & Design Premium
+# Challenger le plan — Analyse critique pour un rendu Tier-One
 
-## Problemes identifiés (captures analysées)
+## Problemes fondamentaux du plan actuel
 
-### 1. Briefing qui envahit tout l'espace droit
-Le scénario riche généré par `generateRichScenario()` est injecté comme premier message assistant dans CodeMode. Il contient titre, compétences, critères, conseils — occupant 80% du panel droit. L'input est visible mais le contexte utile (réponses IA) sera noyé sous ce mur de texte. Le briefing doit etre une **card compacte et repliable** en haut du chat, pas un message plein écran.
+### 1. Le Dialog fullscreen reste — c'est l'erreur architecturale centrale
 
-### 2. HelpDrawer déconnecté du contexte
-Le drawer se superpose en `position: absolute` sur le bord droit, couvrant le contenu au lieu de s'intégrer. Dans un layout split (CodeMode = editeur + chat), il devrait remplacer ou s'insérer dans le flux, pas flotter dessus.
+Le plan propose de supprimer le header du Dialog et fusionner dans SimulatorShell. Mais le vrai probleme est que le **Dialog couvre 100% du viewport** (`h-[100dvh]`), supprimant tout contexte plateforme (sidebar, navigation). L'utilisateur perd ses repères.
 
-### 3. Design non-premium
-- Fond `bg-muted/20` grisatre sur le header code et le scoring — aspect terne
-- Badge `text-[9px]` illisible pour "typescript"
-- Icones basiques (Code, Copy) sans couleur ni poids visuel
-- Espacement `px-3 py-2` trop serré pour le header code, mais trop généreux pour le briefing
-- Messages assistant en `bg-muted` (gris) — pas tier-one
+**Challenge** : Remplacer le Dialog par une **route dédiée** `/simulator/session` qui s'affiche dans l'AppShell. L'AppShell (ligne 38) exclut déjà certaines routes du chrome — on ajoute le simulateur comme route normale (avec sidebar). Le header plateforme reste visible, la navigation aussi.
 
-## Plan de corrections
+Impact : `Simulator.tsx` ne gère plus de Dialog. On crée `SimulatorSession.tsx` comme page. L'utilisateur navigue avec `navigate("/simulator/session", { state: simConfig })`.
 
-### Fichier 1 — `CodeMode.tsx` : Briefing compact + design premium
+### 2. Le briefing est tronqué à 160px — anti-pattern Atlassian
 
-**Briefing card repliable** : Le message `id === "scenario"` ne s'affiche plus comme un message chat. Il est rendu dans une card dédiée en haut du panel droit avec :
-- Border-left primary (4px)
-- Titre tronqué + bouton expand/collapse
-- État replié par défaut après la première interaction
-- Max-height 120px replié, scroll interne déplié
+Le plan mentionne "supprimer max-h" mais ne définit pas la structure Atlassian. Un briefing Atlassian-grade doit être :
 
-**Design premium** :
-- Header code : fond blanc pur, separator subtil, badge language en `text-xs` (pas 9px)
-- Messages assistant : `bg-card border border-border/40 shadow-sm` au lieu de `bg-muted`
-- Input area : fond blanc, border plus visible, placeholder plus explicite
+```text
+┌────────────────────────────────────────────────┐
+│  🎯  BRIEFING                          [▼ ▲]  │
+├────────────────────────────────────────────────┤
+│                                                │
+│  CONTEXTE                                      │
+│  ──────────────────────────────────             │
+│  Paragraphe contexte...                        │
+│                                                │
+│  VOTRE MISSION                                 │
+│  ──────────────────────────────────             │
+│  Instructions...                               │
+│                                                │
+│  CRITÈRES D'ÉVALUATION                         │
+│  ┌──────┐ ┌──────────┐ ┌────────┐              │
+│  │ Strat │ │ Commun.  │ │ Impact │              │
+│  └──────┘ └──────────┘ └────────┘              │
+│                                                │
+│  💡 Commencez par analyser le contexte...      │
+│                                                │
+└────────────────────────────────────────────────┘
+```
 
-### Fichier 2 — `SimulatorShell.tsx` : HelpDrawer intégré dans le layout
+- Pas de max-height — le briefing est le premier élément dans la scrollable area, pas un header fixe
+- Sections avec titres uppercase, séparateurs, badges pour les critères
+- Collapsible seulement APRÈS le premier message utilisateur
+- Fond `bg-card` avec `border border-border/50 shadow-sm rounded-xl`, pas border-l-4
 
-Remplacer le positionnement `absolute` du HelpDrawer par un **panel intégré au flux** :
-- Quand `showHelp = true`, le children (mode) perd de la largeur et le HelpDrawer prend `w-80` à droite dans un flex row
-- Le shell devient `<div class="flex-1 flex min-h-0 overflow-hidden">` avec children + helpDrawer côte à côte
-- Le HelpDrawer n'est plus `absolute` mais un élément flex normal
-- Transition fluide via `AnimatePresence` avec animation de largeur
+### 3. Le SimulatorShell a un double rôle : header + layout
 
-### Fichier 3 — `HelpDrawer.tsx` : Design intégré + enrichissement
+Actuellement il fait header + objectives panel + help drawer + children. Si on passe à une route, le shell se simplifie : juste un toolbar compact + children. Le header plateforme (AppShell) fait le reste.
 
-- Supprimer `absolute inset-y-0 right-0` — devient un composant flex normal
-- Augmenter la taille du header (fond blanc, titre plus grand)
-- Messages avec fond `bg-card` + border au lieu de `bg-muted`
-- Quick questions avec icones et meilleur padding
-- Input height `h-9` au lieu de `h-8`
+### 4. Les messages assistant manquent de personnalité
 
-### Fichier 4 — `SimulatorInsightPanel.tsx` : Raffinement visuel
+Le plan dit "bg-card border" mais ne pousse pas assez. Pour du tier-one :
+- Avatar IA avec gradient (petit cercle coloré, pas d'icône)
+- Timestamp discret sous chaque message
+- Animation d'apparition par ligne (typewriter feel via le streaming déjà en place)
+- Séparateur visuel entre les échanges (pas juste `space-y-4`)
 
-- Critères d'évaluation : barres avec dégradé primaire au lieu de dots plats
-- Sections avec icones colorées (pas toutes `text-primary`)
-- Conseils : numérotation avec pastilles colorées au lieu de chiffres bruts
-- Fond de l'exemple : `bg-primary/5 border-primary/20` au lieu de `bg-muted/50`
+### 5. L'input zone est générique
 
-### Fichier 5 — `OnboardingOverlay.tsx` : Resserrer le contenu
+Pour un centre de formation premium, l'input doit communiquer la confiance :
+- Placeholder contextuel selon le mode ("Proposez votre stratégie...", "Décrivez votre approche...")
+- Compteur de caractères discret
+- Micro-label au-dessus ("Votre réponse" avec le numéro d'échange "2/8")
 
-- Moins d'espace vide, plus de contenu utile dans le viewport visible
-- Section "Comment ça marche" avec 3 étapes horizontales (pas verticales)
+---
 
-## Fichiers modifiés
+## Plan révisé — Haut niveau de rendu
+
+### Bloc 1 : Route dédiée (suppression du Dialog)
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/simulator/modes/CodeMode.tsx` | Briefing card repliable + design premium chat |
-| `src/components/simulator/SimulatorShell.tsx` | Layout flex intégré pour HelpDrawer |
-| `src/components/simulator/widgets/HelpDrawer.tsx` | Position relative + design enrichi |
-| `src/components/simulator/widgets/SimulatorInsightPanel.tsx` | Raffinement visuel premium |
-| `src/components/simulator/modes/ChatMode.tsx` | Meme traitement briefing card |
-| `src/components/simulator/modes/AnalysisMode.tsx` | Meme traitement briefing card |
+| `src/pages/SimulatorSession.tsx` | **Nouveau** — récupère state depuis `useLocation`, rend `SimulatorEngine` en pleine page |
+| `src/App.tsx` | Ajout route `/simulator/session` |
+| `src/pages/Simulator.tsx` | Supprimer Dialog, `navigate()` vers la route avec state |
+| `src/components/layout/AppShell.tsx` | S'assurer que `/simulator/session` n'est PAS exclu du chrome (sidebar visible) |
 
-## Ordre
+### Bloc 2 : Briefing Atlassian dans tous les modes
 
-1. SimulatorShell + HelpDrawer (intégration layout)
-2. CodeMode (briefing card + design)
-3. ChatMode + AnalysisMode (meme pattern)
-4. SimulatorInsightPanel (polish)
+Pattern commun extrait en composant `BriefingCard.tsx` :
+- Parse le Markdown du scénario pour identifier les sections (Contexte, Mission, Critères)
+- Rendu structuré avec `Separator`, icônes par section (Target, BookOpen, Award), badges critères
+- Collapsible : ouvert au départ, se ferme après le premier `sendMessage`
+- Placé DANS le scroll area comme premier élément (pas en header fixe)
+- Fond blanc, `rounded-xl border shadow-sm`, padding `p-5`
+
+| Fichier | Action |
+|---------|--------|
+| `src/components/simulator/widgets/BriefingCard.tsx` | **Nouveau** — composant réutilisable |
+| `ChatMode.tsx`, `AnalysisMode.tsx`, `CodeMode.tsx` | Remplacer le Collapsible inline par `<BriefingCard>` |
+
+### Bloc 3 : Messages premium + Input contextuel
+
+- Messages assistant : avatar gradient circle (6px) + `bg-card border-border/40 shadow-sm rounded-xl`
+- Messages user : `bg-primary rounded-xl` (déjà OK)
+- Input : placeholder dynamique par practiceType, label "Réponse 2/8" au-dessus
+- Compteur caractères discret (`text-muted-foreground text-[11px]`)
+
+| Fichier | Action |
+|---------|--------|
+| `ChatMode.tsx` | Messages + input enrichis |
+| `CodeMode.tsx` | Même pattern côté chat |
+
+### Bloc 4 : SimulatorShell allégé
+
+- Puisque le header plateforme est visible (route, pas Dialog), le shell devient une toolbar compacte :
+  - Titre + badge univers + progress bar + boutons (Objectifs, Aide IA, Reset)
+  - Hauteur : `h-12` max
+  - Fond : `bg-card/80 backdrop-blur border-b`
+
+| Fichier | Action |
+|---------|--------|
+| `SimulatorShell.tsx` | Simplification header, suppression doublon |
+
+### Ordre d'exécution
+
+1. Route + suppression Dialog (Bloc 1)
+2. BriefingCard component (Bloc 2)
+3. Messages + Input premium (Bloc 3)
+4. Shell allégé (Bloc 4)
 
