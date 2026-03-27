@@ -1,5 +1,6 @@
 // SimulatorEngine — Routes practice_type to the correct UI family component, wrapped in SimulatorShell
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { getModeDefinition, type ModeFamily } from "./config/modeRegistry";
 import { SimulatorShell } from "./SimulatorShell";
 import { ChatMode } from "./modes/ChatMode";
@@ -19,7 +20,7 @@ interface SimulatorEngineProps {
   systemPrompt: string;
   scenario: string;
   maxExchanges: number;
-  practiceId: string;
+  practiceId: string | null;
   previewMode?: boolean;
   difficulty?: string;
   aiAssistanceLevel?: AIAssistanceLevel;
