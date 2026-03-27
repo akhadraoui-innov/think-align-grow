@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getModeDefinition, UNIVERSE_LABELS } from "@/components/simulator/config/modeRegistry";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { History, Award, RotateCcw, TrendingUp, ArrowLeft, FileText, ChevronDown } from "lucide-react";
+import { History, Award, RotateCcw, TrendingUp, ArrowLeft, FileText, ChevronDown, MessageSquare, Brain, Zap, Target, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
