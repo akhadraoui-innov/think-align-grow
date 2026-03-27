@@ -77,7 +77,7 @@ export function OnboardingOverlay({ modeDef, universeName, difficulty, aiAssista
           </div>
           <div className="flex flex-wrap gap-1.5">
             {modeDef.evaluationDimensions.map((dim) => (
-              <Badge key={dim} variant="secondary" className="text-[10px] capitalize">{dim.replace(/_/g, " ")}</Badge>
+              <Badge key={dim} variant="secondary" className="text-xs capitalize">{dim.replace(/_/g, " ")}</Badge>
             ))}
           </div>
         </div>

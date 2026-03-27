@@ -24,6 +24,8 @@ interface SimulatorEngineProps {
   difficulty?: string;
   aiAssistanceLevel?: AIAssistanceLevel;
   onComplete?: (score: number) => void;
+  onClose?: () => void;
+  sessionTitle?: string;
 }
 
 export function SimulatorEngine(props: SimulatorEngineProps) {
@@ -114,6 +116,8 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
       difficulty={props.difficulty}
       aiAssistanceLevel={props.aiAssistanceLevel}
       onReset={handleReset}
+      onClose={props.onClose}
+      sessionTitle={props.sessionTitle}
     >
       {renderMode()}
     </SimulatorShell>

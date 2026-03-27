@@ -380,7 +380,7 @@ export function ChatMode({
 
       {/* Input */}
       {!evaluation && (
-        <div className="p-4 border-t bg-background">
+        <div className="shrink-0 p-4 border-t bg-background">
           <div className="flex gap-2 items-end">
             <div className="flex-1 space-y-0">
               <Textarea

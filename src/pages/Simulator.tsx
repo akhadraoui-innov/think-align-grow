@@ -409,34 +409,20 @@ export default function Simulator() {
       <Dialog open={!!activeSim} onOpenChange={(open) => !open && setActiveSim(null)}>
         <DialogContent className="max-w-full w-full h-[100dvh] p-0 gap-0 [&>button]:hidden rounded-none border-0">
           {activeSim && (
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between px-4 py-2 border-b bg-background">
-                <div className="flex items-center gap-2">
-                  <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center", UNIVERSE_COLORS[activeSim.def.universe])}>
-                    {FAMILY_ICONS[activeSim.def.family]}
-                  </div>
-                  <span className="text-sm font-semibold">{activeSim.practice?.title || activeSim.def.label}</span>
-                  <Badge variant="outline" className="text-[9px]">{UNIVERSE_LABELS[activeSim.def.universe]}</Badge>
-                  <Badge variant="secondary" className="text-[9px] capitalize">{activeSim.aiLevel}</Badge>
-                  {!activeSim.practiceId && <Badge className="text-[9px] bg-primary/10 text-primary border-primary/20">Mode libre</Badge>}
-                </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setActiveSim(null)}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex-1 min-h-0">
-                <SimulatorEngine
-                  practiceType={activeSim.key}
-                  typeConfig={activeSim.practice?.type_config || activeSim.def.defaultConfig || {}}
-                  systemPrompt={activeSim.systemPrompt}
-                  scenario={activeSim.scenario}
-                  maxExchanges={activeSim.practice?.max_exchanges || 10}
-                  practiceId={activeSim.practiceId || "__standalone__"}
-                  previewMode={!activeSim.practiceId}
-                  difficulty={activeSim.practice?.difficulty || "intermediate"}
-                  aiAssistanceLevel={activeSim.aiLevel}
-                />
-              </div>
+            <div className="flex flex-col h-full overflow-hidden">
+              <SimulatorEngine
+                practiceType={activeSim.key}
+                typeConfig={activeSim.practice?.type_config || activeSim.def.defaultConfig || {}}
+                systemPrompt={activeSim.systemPrompt}
+                scenario={activeSim.scenario}
+                maxExchanges={activeSim.practice?.max_exchanges || 10}
+                practiceId={activeSim.practiceId || "__standalone__"}
+                previewMode={!activeSim.practiceId}
+                difficulty={activeSim.practice?.difficulty || "intermediate"}
+                aiAssistanceLevel={activeSim.aiLevel}
+                onClose={() => setActiveSim(null)}
+                sessionTitle={activeSim.practice?.title || activeSim.def.label}
+              />
             </div>
           )}
         </DialogContent>

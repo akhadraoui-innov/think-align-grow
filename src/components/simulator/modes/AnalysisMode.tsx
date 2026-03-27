@@ -1,6 +1,4 @@
 // AnalysisMode — Briefing panel + data room + investigation chat
-// Used for: requirements, due_diligence, kpi_design, ai_usecase, valuation, audit, case_study
-
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, Loader2, FolderSearch, FileText, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
@@ -177,13 +175,11 @@ export function AnalysisMode({
         }
       }
 
-      // Parse findings
       const findingsData = parseInlineBlock(fullContent, "findings");
       if (findingsData && Array.isArray(findingsData)) {
         setFindings((prev) => [...prev, ...findingsData.map((f: any) => ({ label: f.label || f, severity: f.severity || "medium", timestamp: new Date() }))]);
       }
 
-      // Parse data room docs
       const drData = parseInlineBlock(fullContent, "dataroom");
       if (drData && Array.isArray(drData)) {
         setDataRoomDocs((prev) => [...new Set([...prev, ...drData])]);
@@ -222,25 +218,25 @@ export function AnalysisMode({
   const severityColor = { high: "text-destructive", medium: "text-amber-600", low: "text-emerald-600" };
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full overflow-hidden">
       {/* Left: Briefing + Data Room + Findings */}
-      <div className="w-72 border-r flex flex-col bg-muted/10 shrink-0">
-        <div className="px-3 py-2 border-b">
+      <div className="w-72 border-r flex flex-col bg-card shrink-0 overflow-hidden">
+        <div className="px-4 py-3 border-b shrink-0">
           <div className="flex items-center gap-2">
             <FolderSearch className="h-4 w-4 text-primary" />
-            <span className="text-xs font-semibold">{modeDef?.label || "Analysis"}</span>
+            <span className="text-sm font-semibold">{modeDef?.label || "Analysis"}</span>
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5">
           {/* Briefing */}
           <Collapsible open={briefingOpen} onOpenChange={setBriefingOpen}>
-            <CollapsibleTrigger className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider w-full">
-              {briefingOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            <CollapsibleTrigger className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-full">
+              {briefingOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
               Briefing
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2">
-              <div className="text-xs text-muted-foreground leading-relaxed bg-muted/50 rounded-lg p-2.5">
+              <div className="text-xs text-muted-foreground leading-relaxed bg-muted/30 rounded-lg p-3 border">
                 <EnrichedMarkdown content={scenario.substring(0, 500)} />
               </div>
             </CollapsibleContent>
@@ -248,11 +244,11 @@ export function AnalysisMode({
 
           {/* Data Room */}
           {dataRoomDocs.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Data Room</p>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Data Room</p>
               {dataRoomDocs.map((doc, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs bg-muted/50 rounded-lg px-2.5 py-1.5">
-                  <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
+                <div key={i} className="flex items-center gap-2 text-xs bg-muted/30 rounded-lg px-3 py-2 border">
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <span className="truncate">{doc}</span>
                 </div>
               ))}
@@ -261,8 +257,8 @@ export function AnalysisMode({
 
           {/* Findings */}
           {findings.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Findings ({findings.length})
               </p>
               {findings.map((f, i) => (
@@ -270,9 +266,9 @@ export function AnalysisMode({
                   key={i}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="flex items-start gap-2 text-xs bg-background rounded-lg px-2.5 py-1.5 border"
+                  className="flex items-start gap-2 text-xs bg-card rounded-lg px-3 py-2 border shadow-sm"
                 >
-                  <AlertTriangle className={cn("h-3 w-3 shrink-0 mt-0.5", severityColor[f.severity])} />
+                  <AlertTriangle className={cn("h-3.5 w-3.5 shrink-0 mt-0.5", severityColor[f.severity])} />
                   <span>{f.label}</span>
                 </motion.div>
               ))}
@@ -282,7 +278,7 @@ export function AnalysisMode({
       </div>
 
       {/* Right: Investigation Chat */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
           <AnimatePresence initial={false}>
             {messages.map((msg) => (
@@ -294,7 +290,11 @@ export function AnalysisMode({
               >
                 <div className={cn(
                   "max-w-[80%] rounded-2xl px-4 py-3 text-sm",
-                  msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : msg.id === "scenario"
+                    ? "bg-card border-l-4 border-primary shadow-sm border"
+                    : "bg-card border shadow-sm"
                 )}>
                   {msg.role === "assistant" ? (
                     <EnrichedMarkdown content={cleanContent(msg.content)} />
@@ -307,7 +307,7 @@ export function AnalysisMode({
           </AnimatePresence>
           {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="flex justify-start">
-              <div className="bg-muted rounded-2xl px-4 py-3">
+              <div className="bg-card border rounded-2xl px-4 py-3 shadow-sm">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
             </div>
@@ -323,7 +323,7 @@ export function AnalysisMode({
         )}
 
         {!evaluation && (
-          <div className="p-4 border-t bg-background">
+          <div className="shrink-0 p-4 border-t bg-background">
             <div className="flex gap-2 items-end">
               <div className="flex-1 space-y-0">
                 <Textarea
