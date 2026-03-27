@@ -36,6 +36,7 @@ import Academy from "./pages/Academy";
 import Simulator from "./pages/Simulator";
 import SimulatorHistory from "./pages/SimulatorHistory";
 import SimulatorSession from "./pages/SimulatorSession";
+import SimulatorReport from "./pages/SimulatorReport";
 import AcademyPath from "./pages/AcademyPath";
 import AcademyModule from "./pages/AcademyModule";
 import AcademyDashboard from "./pages/AcademyDashboard";
