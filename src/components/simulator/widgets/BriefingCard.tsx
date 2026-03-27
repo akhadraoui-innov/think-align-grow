@@ -59,7 +59,7 @@ export function BriefingCard({ content, practiceType, collapsed = false, onToggl
   };
 
   return (
-    <div className="mx-4 mt-4 mb-2">
+    <div className="mb-2">
       <div className="rounded-xl border border-border/50 bg-card shadow-sm overflow-hidden">
         {/* Header */}
         <button
