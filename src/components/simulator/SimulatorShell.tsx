@@ -52,6 +52,7 @@ export function SimulatorShell({
         modeDef={modeDef}
         universeName={universeName}
         difficulty={difficulty}
+        aiAssistanceLevel={aiAssistanceLevel}
         onStart={() => setShowOnboarding(false)}
       />
     );

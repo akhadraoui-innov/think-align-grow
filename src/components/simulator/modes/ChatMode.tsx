@@ -15,6 +15,7 @@ import { ScoreReveal } from "../widgets/ScoreReveal";
 import { SuggestionChips } from "../widgets/SuggestionChips";
 import { InputQualityIndicator } from "../widgets/InputQualityIndicator";
 import { getModeDefinition } from "../config/modeRegistry";
+import { getInitialSuggestions } from "../config/scenarioTemplates";
 
 interface Message {
   id: string;
@@ -116,7 +117,7 @@ export function ChatMode({
     }
   }, [messages]);
 
-  // Send initial scenario
+  // Send initial scenario + initial suggestions
   useEffect(() => {
     if (messages.length === 0 && scenario) {
       setMessages([{
@@ -125,8 +126,13 @@ export function ChatMode({
         content: scenario,
         timestamp: new Date(),
       }]);
+      // Set initial suggestions for guided/intensive modes
+      const initialChips = getInitialSuggestions(practiceType);
+      if (initialChips.length > 0) {
+        setSuggestions(initialChips);
+      }
     }
-  }, [scenario]);
+  }, [scenario, practiceType]);
 
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = overrideText || input.trim();
