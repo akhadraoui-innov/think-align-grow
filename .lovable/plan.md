@@ -1,122 +1,151 @@
 
 
-# Challenger le plan — Analyse critique pour un rendu Tier-One
+# Rapport Post-Session — PDF, Email, 5 KPIs, Premium++ Markdown
 
-## Problemes fondamentaux du plan actuel
-
-### 1. Le Dialog fullscreen reste — c'est l'erreur architecturale centrale
-
-Le plan propose de supprimer le header du Dialog et fusionner dans SimulatorShell. Mais le vrai probleme est que le **Dialog couvre 100% du viewport** (`h-[100dvh]`), supprimant tout contexte plateforme (sidebar, navigation). L'utilisateur perd ses repères.
-
-**Challenge** : Remplacer le Dialog par une **route dédiée** `/simulator/session` qui s'affiche dans l'AppShell. L'AppShell (ligne 38) exclut déjà certaines routes du chrome — on ajoute le simulateur comme route normale (avec sidebar). Le header plateforme reste visible, la navigation aussi.
-
-Impact : `Simulator.tsx` ne gère plus de Dialog. On crée `SimulatorSession.tsx` comme page. L'utilisateur navigue avec `navigate("/simulator/session", { state: simConfig })`.
-
-### 2. Le briefing est tronqué à 160px — anti-pattern Atlassian
-
-Le plan mentionne "supprimer max-h" mais ne définit pas la structure Atlassian. Un briefing Atlassian-grade doit être :
+## Flux UX cible
 
 ```text
-┌────────────────────────────────────────────────┐
-│  🎯  BRIEFING                          [▼ ▲]  │
-├────────────────────────────────────────────────┤
-│                                                │
-│  CONTEXTE                                      │
-│  ──────────────────────────────────             │
-│  Paragraphe contexte...                        │
-│                                                │
-│  VOTRE MISSION                                 │
-│  ──────────────────────────────────             │
-│  Instructions...                               │
-│                                                │
-│  CRITÈRES D'ÉVALUATION                         │
-│  ┌──────┐ ┌──────────┐ ┌────────┐              │
-│  │ Strat │ │ Commun.  │ │ Impact │              │
-│  └──────┘ └──────────┘ └────────┘              │
-│                                                │
-│  💡 Commencez par analyser le contexte...      │
-│                                                │
-└────────────────────────────────────────────────┘
+Session terminée → Rapport généré automatiquement → L'utilisateur le voit immédiatement
+→ Bouton "Envoyer par email" → Il peut revenir dessus depuis l'historique
 ```
 
-- Pas de max-height — le briefing est le premier élément dans la scrollable area, pas un header fixe
-- Sections avec titres uppercase, séparateurs, badges pour les critères
-- Collapsible seulement APRÈS le premier message utilisateur
-- Fond `bg-card` avec `border border-border/50 shadow-sm rounded-xl`, pas border-l-4
-
-### 3. Le SimulatorShell a un double rôle : header + layout
-
-Actuellement il fait header + objectives panel + help drawer + children. Si on passe à une route, le shell se simplifie : juste un toolbar compact + children. Le header plateforme (AppShell) fait le reste.
-
-### 4. Les messages assistant manquent de personnalité
-
-Le plan dit "bg-card border" mais ne pousse pas assez. Pour du tier-one :
-- Avatar IA avec gradient (petit cercle coloré, pas d'icône)
-- Timestamp discret sous chaque message
-- Animation d'apparition par ligne (typewriter feel via le streaming déjà en place)
-- Séparateur visuel entre les échanges (pas juste `space-y-4`)
-
-### 5. L'input zone est générique
-
-Pour un centre de formation premium, l'input doit communiquer la confiance :
-- Placeholder contextuel selon le mode ("Proposez votre stratégie...", "Décrivez votre approche...")
-- Compteur de caractères discret
-- Micro-label au-dessus ("Votre réponse" avec le numéro d'échange "2/8")
+Pas de page intermédiaire ScoreReveal lourde. La session se termine, l'utilisateur est redirigé vers une page de rapport dédiée, persistante, consultable à tout moment.
 
 ---
 
-## Plan révisé — Haut niveau de rendu
+## Bloc 1 — Enrichir le prompt d'évaluation IA
 
-### Bloc 1 : Route dédiée (suppression du Dialog)
+**Fichier** : `supabase/functions/academy-practice/index.ts`
+
+Modifier les deux blocs `evaluate` (lignes 135-152) pour exiger un JSON enrichi :
+
+```json
+{
+  "score": 72,
+  "feedback": "Synthèse globale dense et utile...",
+  "dimensions": [{"name": "Clarté", "score": 7}, ...],
+  "kpis": {
+    "communication_clarity": 7,
+    "analysis_depth": 6,
+    "adaptability": 8,
+    "response_relevance": 7,
+    "idea_structuring": 5
+  },
+  "strengths": [
+    {"title": "Reformulation efficace", "detail": "Vous avez systématiquement reformulé..."}
+  ],
+  "improvements": [
+    {"title": "Structuration", "detail": "Vos réponses manquent de structure...", "how": "Utilisez la méthode STAR : Situation → Tâche → Action → Résultat"}
+  ],
+  "learning_gaps": [
+    {"topic": "Analyse de risques", "detail": "Sujet non abordé...", "resources": "Commencez par la matrice AMDEC..."}
+  ],
+  "explore_next": [
+    {"topic": "Design Thinking", "why": "Votre approche centrée utilisateur est prometteuse..."}
+  ],
+  "best_practices": [
+    {"title": "La règle des 5 pourquoi", "content": "Méthode Toyota pour identifier les causes racines..."},
+    {"title": "Interagir avec l'IA", "content": "Structurez vos prompts : Contexte + Objectif + Contraintes + Format..."}
+  ]
+}
+```
+
+5 KPIs fixes : Clarté de communication, Profondeur d'analyse, Adaptabilité, Pertinence, Structuration. Chaque 0-10.
+
+---
+
+## Bloc 2 — Page de rapport en ligne (route persistante)
+
+**Nouveau fichier** : `src/pages/SimulatorReport.tsx`  
+**Route** : `/simulator/session/:sessionId/report`
+
+Page dans le layout AppShell (header plateforme visible). Charge la session depuis `academy_practice_sessions` par ID. Design éditorial premium++ :
+
+**Structure de la page :**
+
+1. **Header** : Titre pratique, badge mode, date, "Tentative N", score animé avec grade
+2. **5 KPIs** : 5 cards horizontales compactes avec icône, label, score /10, barre de progression colorée (vert ≥7, amber ≥4, rouge <4)
+3. **Synthèse du coach** : Card avec bordure gauche primary, texte `leading-relaxed`, fond `bg-card`
+4. **✅ Ce que vous faites bien** : Cards avec bordure gauche `emerald-500`, titre bold + détail prose
+5. **⚠️ Ce que vous devez améliorer** : Cards bordure `amber-500`, titre + détail + encart "📌 Comment progresser" avec fond `bg-amber-50`
+6. **📚 Ce que vous devez apprendre** : Cards bordure `blue-500`, sujet + pourquoi + "Par où commencer"
+7. **🔭 Ce qui devrait vous intéresser** : Cards bordure `violet-500`, sujets connexes + pourquoi
+8. **📖 Bonnes pratiques** : Section avec fond `bg-muted/30`, checklist stylisée, méthodes, retours d'expérience, tips IA
+9. **💬 Vos échanges** : Transcript collapsible (ouvert par défaut), bulles user/assistant
+10. **Actions** : "Envoyer par email" (primary), "Refaire la pratique", "Retour à l'historique"
+
+Typographie : titres `text-xl font-bold`, body `text-sm leading-relaxed`, sections séparées par `<Separator />` et espaces `space-y-6`.
+
+CSS `@media print` pour export PDF propre depuis le navigateur (masquer header, sidebar, boutons actions).
+
+---
+
+## Bloc 3 — Envoi par email (Edge Function)
+
+**Nouveau fichier** : `supabase/functions/send-session-report/index.ts`
+
+Edge function authentifiée qui :
+1. Reçoit `session_id` 
+2. Récupère la session + practice depuis DB (service role)
+3. Récupère l'email de l'utilisateur depuis `auth.users`
+4. Génère un HTML premium du rapport (même structure que la page)
+5. Envoie via Lovable AI gateway (ou construit un lien de téléchargement)
+
+Côté client : bouton "Envoyer par email" appelle cette function → toast de confirmation.
+
+---
+
+## Bloc 4 — Flux de fin de session
+
+**Fichier** : `src/hooks/useSimulatorSession.ts`
+- `completeSession` retourne le `sessionId` (actuellement void)
+
+**Fichier** : `src/components/simulator/SimulatorEngine.tsx`
+- `handleComplete` reçoit le `sessionId` retourné
+- Appelle `navigate(/simulator/session/${sessionId}/report)` au lieu de juste remonter le score
+
+**Fichier** : `src/components/simulator/widgets/ScoreReveal.tsx`
+- Simplifié : ne sert plus que de fallback si pas de sessionId
+- Ajout prop `sessionId` + bouton "Voir le rapport complet" qui navigue
+
+---
+
+## Bloc 5 — Historique multi-tentatives + lien rapport
+
+**Fichier** : `src/pages/SimulatorHistory.tsx`
+- Grouper sessions par `practice_id` 
+- Afficher "Tentative 1, 2, 3..." avec score et delta (↗ +12)
+- Chaque session terminée : bouton "Voir le rapport" → `/simulator/session/:id/report`
+
+---
+
+## Bloc 6 — Route
+
+**Fichier** : `src/App.tsx`
+- Ajouter : `<Route path="/simulator/session/:sessionId/report" element={<SimulatorReport />} />`
+
+---
+
+## Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/SimulatorSession.tsx` | **Nouveau** — récupère state depuis `useLocation`, rend `SimulatorEngine` en pleine page |
-| `src/App.tsx` | Ajout route `/simulator/session` |
-| `src/pages/Simulator.tsx` | Supprimer Dialog, `navigate()` vers la route avec state |
-| `src/components/layout/AppShell.tsx` | S'assurer que `/simulator/session` n'est PAS exclu du chrome (sidebar visible) |
+| `supabase/functions/academy-practice/index.ts` | Prompt évaluation enrichi (5 KPIs, strengths, improvements, learning_gaps, explore_next, best_practices) |
+| `src/pages/SimulatorReport.tsx` | **Nouveau** — rapport premium++ markdown |
+| `supabase/functions/send-session-report/index.ts` | **Nouveau** — envoi email du rapport |
+| `src/hooks/useSimulatorSession.ts` | Retourner sessionId depuis completeSession |
+| `src/components/simulator/SimulatorEngine.tsx` | Navigation auto vers rapport post-session |
+| `src/components/simulator/widgets/ScoreReveal.tsx` | Ajout lien rapport |
+| `src/pages/SimulatorHistory.tsx` | Multi-tentatives + lien rapport |
+| `src/App.tsx` | Route rapport |
 
-### Bloc 2 : Briefing Atlassian dans tous les modes
+## Ordre d'exécution
 
-Pattern commun extrait en composant `BriefingCard.tsx` :
-- Parse le Markdown du scénario pour identifier les sections (Contexte, Mission, Critères)
-- Rendu structuré avec `Separator`, icônes par section (Target, BookOpen, Award), badges critères
-- Collapsible : ouvert au départ, se ferme après le premier `sendMessage`
-- Placé DANS le scroll area comme premier élément (pas en header fixe)
-- Fond blanc, `rounded-xl border shadow-sm`, padding `p-5`
-
-| Fichier | Action |
-|---------|--------|
-| `src/components/simulator/widgets/BriefingCard.tsx` | **Nouveau** — composant réutilisable |
-| `ChatMode.tsx`, `AnalysisMode.tsx`, `CodeMode.tsx` | Remplacer le Collapsible inline par `<BriefingCard>` |
-
-### Bloc 3 : Messages premium + Input contextuel
-
-- Messages assistant : avatar gradient circle (6px) + `bg-card border-border/40 shadow-sm rounded-xl`
-- Messages user : `bg-primary rounded-xl` (déjà OK)
-- Input : placeholder dynamique par practiceType, label "Réponse 2/8" au-dessus
-- Compteur caractères discret (`text-muted-foreground text-[11px]`)
-
-| Fichier | Action |
-|---------|--------|
-| `ChatMode.tsx` | Messages + input enrichis |
-| `CodeMode.tsx` | Même pattern côté chat |
-
-### Bloc 4 : SimulatorShell allégé
-
-- Puisque le header plateforme est visible (route, pas Dialog), le shell devient une toolbar compacte :
-  - Titre + badge univers + progress bar + boutons (Objectifs, Aide IA, Reset)
-  - Hauteur : `h-12` max
-  - Fond : `bg-card/80 backdrop-blur border-b`
-
-| Fichier | Action |
-|---------|--------|
-| `SimulatorShell.tsx` | Simplification header, suppression doublon |
-
-### Ordre d'exécution
-
-1. Route + suppression Dialog (Bloc 1)
-2. BriefingCard component (Bloc 2)
-3. Messages + Input premium (Bloc 3)
-4. Shell allégé (Bloc 4)
+1. Edge function évaluation enrichie
+2. SimulatorReport.tsx (page rapport)
+3. Route App.tsx
+4. useSimulatorSession + SimulatorEngine (flux auto)
+5. send-session-report (email)
+6. SimulatorHistory (multi-tentatives)
+7. ScoreReveal (simplification)
 
