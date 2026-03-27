@@ -271,7 +271,7 @@ export function CodeMode({
         </div>
 
         {evaluation && (
-          <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} recommendations={evaluation.recommendations} messages={messages.map(m => ({ role: m.role, content: m.content }))} onRestart={resetSession} />
+          <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} recommendations={evaluation.recommendations} sessionId={sessionId ?? undefined} messages={messages.map(m => ({ role: m.role, content: m.content }))} onRestart={resetSession} />
         )}
 
         {!evaluation && (

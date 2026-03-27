@@ -71,7 +71,7 @@ export default function SimulatorHistory() {
       if (!map.has(key)) {
         map.set(key, {
           practiceId: key,
-          title: s.practice?.title ?? "Session",
+          title: s.practice?.title ?? (key === "__standalone__" ? "Session libre" : "Session"),
           practiceType: s.practice?.practice_type ?? "",
           difficulty: s.practice?.difficulty ?? null,
           sessions: [],

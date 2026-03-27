@@ -85,6 +85,7 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
   const modeProps = {
     ...props,
     key: resetKey,
+    sessionId,
     onExchangeUpdate: handleExchangeUpdate,
     onMessagesChange: handleMessagesChange,
     onComplete: handleComplete,
