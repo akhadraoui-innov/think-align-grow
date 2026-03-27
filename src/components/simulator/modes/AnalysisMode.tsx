@@ -13,6 +13,7 @@ import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
 import { ScoreReveal } from "../widgets/ScoreReveal";
 import { SuggestionChips } from "../widgets/SuggestionChips";
 import { InputQualityIndicator } from "../widgets/InputQualityIndicator";
+import { BriefingCard } from "../widgets/BriefingCard";
 import { getModeDefinition } from "../config/modeRegistry";
 
 interface Message { id: string; role: "user" | "assistant"; content: string; timestamp: Date; }
