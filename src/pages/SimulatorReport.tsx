@@ -86,12 +86,14 @@ export default function SimulatorReport() {
       if (!sess) { setLoading(false); return; }
       setSession(sess);
 
-      const { data: pract } = await supabase
-        .from("academy_practices")
-        .select("title, practice_type, difficulty, scenario")
-        .eq("id", sess.practice_id)
-        .single();
-      setPractice(pract);
+      if (sess.practice_id) {
+        const { data: pract } = await supabase
+          .from("academy_practices")
+          .select("title, practice_type, difficulty, scenario")
+          .eq("id", sess.practice_id)
+          .maybeSingle();
+        setPractice(pract);
+      }
 
       // Count attempt number
       if (sess.user_id && sess.practice_id) {
