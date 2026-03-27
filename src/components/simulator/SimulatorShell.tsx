@@ -53,7 +53,6 @@ export function SimulatorShell({
   if (showOnboarding && modeDef && !isExpert) {
     return (
       <div className="flex flex-col h-full overflow-hidden">
-        {/* Header even during onboarding for consistency */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b bg-card/80 backdrop-blur-sm shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-sm font-semibold truncate">{sessionTitle || modeDef?.label || practiceType}</span>
@@ -123,13 +122,16 @@ export function SimulatorShell({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant={showHelp ? "default" : "outline"}
                   size="sm"
                   className={cn(
-                    "h-8 gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10",
-                    aiAssistanceLevel === "intensive" && "animate-pulse"
+                    "h-8 gap-1.5 text-xs",
+                    showHelp
+                      ? ""
+                      : "border-primary/30 text-primary hover:bg-primary/10",
+                    aiAssistanceLevel === "intensive" && !showHelp && "animate-pulse"
                   )}
-                  onClick={() => setShowHelp(true)}
+                  onClick={() => setShowHelp(!showHelp)}
                 >
                   <HelpCircle className="h-3.5 w-3.5" />
                   Aide IA
@@ -170,7 +172,7 @@ export function SimulatorShell({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-b bg-muted/20 shrink-0"
+            className="overflow-hidden border-b bg-muted/10 shrink-0"
           >
             <div className="px-4 py-3 space-y-2">
               <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
@@ -204,18 +206,22 @@ export function SimulatorShell({
         </motion.div>
       )}
 
-      {/* ── Main content ── */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {children}
+      {/* ── Main content + Help Drawer side by side ── */}
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <div className="flex-1 min-w-0 overflow-hidden">
+          {children}
+        </div>
+        <AnimatePresence>
+          {showHelp && (
+            <HelpDrawer
+              open={showHelp}
+              onClose={() => setShowHelp(false)}
+              practiceId={practiceId}
+              practiceType={practiceType}
+            />
+          )}
+        </AnimatePresence>
       </div>
-
-      {/* ── Help Drawer ── */}
-      <HelpDrawer
-        open={showHelp}
-        onClose={() => setShowHelp(false)}
-        practiceId={practiceId}
-        practiceType={practiceType}
-      />
     </div>
   );
 }

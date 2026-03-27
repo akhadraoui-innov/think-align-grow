@@ -19,10 +19,18 @@ interface SimulatorInsightPanelProps {
   onClose: () => void;
 }
 
-const AI_LEVELS: { value: AIAssistanceLevel; label: string; icon: React.ReactNode; desc: string }[] = [
-  { value: "autonomous", label: "Autonome", icon: <Shield className="h-3.5 w-3.5" />, desc: "Vous êtes seul, évaluation en fin" },
-  { value: "guided", label: "Guidé", icon: <Sparkles className="h-3.5 w-3.5" />, desc: "Suggestions et aide sur demande" },
-  { value: "intensive", label: "Intensif", icon: <MessageSquare className="h-3.5 w-3.5" />, desc: "Coaching continu et proactif" },
+const AI_LEVELS: { value: AIAssistanceLevel; label: string; icon: React.ReactNode; desc: string; color: string }[] = [
+  { value: "autonomous", label: "Autonome", icon: <Shield className="h-3.5 w-3.5" />, desc: "Vous êtes seul, évaluation en fin", color: "text-muted-foreground" },
+  { value: "guided", label: "Guidé", icon: <Sparkles className="h-3.5 w-3.5" />, desc: "Suggestions et aide sur demande", color: "text-primary" },
+  { value: "intensive", label: "Intensif", icon: <MessageSquare className="h-3.5 w-3.5" />, desc: "Coaching continu et proactif", color: "text-emerald-600" },
+];
+
+const SECTION_ICONS = [
+  { icon: BookOpen, color: "text-blue-600 bg-blue-50" },
+  { icon: Target, color: "text-violet-600 bg-violet-50" },
+  { icon: Target, color: "text-emerald-600 bg-emerald-50" },
+  { icon: Lightbulb, color: "text-amber-600 bg-amber-50" },
+  { icon: Sparkles, color: "text-primary bg-primary/10" },
 ];
 
 export function SimulatorInsightPanel({ practiceType, modeDef, aiLevel, onAiLevelChange, onLaunch, onClose }: SimulatorInsightPanelProps) {
@@ -37,13 +45,13 @@ export function SimulatorInsightPanel({ practiceType, modeDef, aiLevel, onAiLeve
       className="w-[400px] border-l bg-background flex flex-col h-full shrink-0"
     >
       {/* Header */}
-      <div className="p-5 border-b space-y-3">
+      <div className="p-5 border-b space-y-3 shrink-0">
         <div className="flex items-start justify-between">
           <div className="space-y-1.5">
-            <Badge variant="outline" className="text-[10px] font-medium">{UNIVERSE_LABELS[modeDef.universe]}</Badge>
+            <Badge variant="outline" className="text-xs font-medium">{UNIVERSE_LABELS[modeDef.universe]}</Badge>
             <h2 className="text-lg font-bold leading-tight">{modeDef.label}</h2>
           </div>
-          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -57,8 +65,11 @@ export function SimulatorInsightPanel({ practiceType, modeDef, aiLevel, onAiLeve
         <div className="p-5 space-y-5">
           {/* Description */}
           <section className="space-y-2">
-            <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <BookOpen className="h-3.5 w-3.5 text-primary" /> Ce que vous allez pratiquer
+            <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className={cn("h-5 w-5 rounded flex items-center justify-center", SECTION_ICONS[0].color)}>
+                <BookOpen className="h-3 w-3" />
+              </div>
+              Ce que vous allez pratiquer
             </h3>
             <p className="text-sm leading-relaxed">{insight.longDescription}</p>
           </section>
@@ -67,37 +78,38 @@ export function SimulatorInsightPanel({ practiceType, modeDef, aiLevel, onAiLeve
 
           {/* Skills */}
           <section className="space-y-2">
-            <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Target className="h-3.5 w-3.5 text-primary" /> Compétences développées
+            <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className={cn("h-5 w-5 rounded flex items-center justify-center", SECTION_ICONS[1].color)}>
+                <Target className="h-3 w-3" />
+              </div>
+              Compétences développées
             </h3>
             <div className="flex flex-wrap gap-1.5">
               {insight.skills.map(s => (
-                <Badge key={s} variant="secondary" className="text-[11px]">{s}</Badge>
+                <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
               ))}
             </div>
           </section>
 
           <Separator />
 
-          {/* Evaluation criteria */}
+          {/* Evaluation criteria with gradient bars */}
           <section className="space-y-2.5">
-            <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Target className="h-3.5 w-3.5 text-primary" /> Critères d'évaluation
+            <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className={cn("h-5 w-5 rounded flex items-center justify-center", SECTION_ICONS[2].color)}>
+                <Target className="h-3 w-3" />
+              </div>
+              Critères d'évaluation
             </h3>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {modeDef.evaluationDimensions.map((dim, i) => (
-                <div key={dim} className="flex items-center gap-2">
-                  <span className="text-xs capitalize flex-1">{dim.replace(/_/g, " ")}</span>
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <div
-                        key={j}
-                        className={cn(
-                          "h-1.5 w-4 rounded-full",
-                          j <= Math.min(i + 2, 4) ? "bg-primary" : "bg-muted"
-                        )}
-                      />
-                    ))}
+                <div key={dim} className="space-y-1">
+                  <span className="text-xs capitalize">{dim.replace(/_/g, " ")}</span>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-primary/60 to-primary"
+                      style={{ width: `${Math.min(60 + i * 10, 100)}%` }}
+                    />
                   </div>
                 </div>
               ))}
@@ -106,20 +118,25 @@ export function SimulatorInsightPanel({ practiceType, modeDef, aiLevel, onAiLeve
 
           <Separator />
 
-          {/* Tips */}
+          {/* Tips with colored pills */}
           <section className="space-y-2">
-            <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Lightbulb className="h-3.5 w-3.5 text-amber-500" /> Conseils pour bien démarrer
+            <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className={cn("h-5 w-5 rounded flex items-center justify-center", SECTION_ICONS[3].color)}>
+                <Lightbulb className="h-3 w-3" />
+              </div>
+              Conseils pour bien démarrer
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {insight.tips.map((tip, i) => (
-                <div key={i} className="flex items-start gap-2 text-sm">
-                  <span className="text-primary font-bold text-xs mt-0.5">{i + 1}.</span>
+                <div key={i} className="flex items-start gap-2.5 text-sm">
+                  <span className="h-5 w-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
                   <span className="leading-relaxed">{tip}</span>
                 </div>
               ))}
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 mt-2">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mt-2">
               <p className="text-xs text-muted-foreground italic">
                 💬 Exemple : « {insight.exampleFirstMessage} »
               </p>
@@ -130,8 +147,11 @@ export function SimulatorInsightPanel({ practiceType, modeDef, aiLevel, onAiLeve
 
           {/* AI Assistance Level */}
           <section className="space-y-2.5">
-            <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5 text-primary" /> Niveau d'accompagnement
+            <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className={cn("h-5 w-5 rounded flex items-center justify-center", SECTION_ICONS[4].color)}>
+                <Sparkles className="h-3 w-3" />
+              </div>
+              Niveau d'accompagnement
             </h3>
             <div className="grid gap-2">
               {AI_LEVELS.map(level => (
@@ -153,7 +173,7 @@ export function SimulatorInsightPanel({ practiceType, modeDef, aiLevel, onAiLeve
                   </div>
                   <div>
                     <p className="text-sm font-medium">{level.label}</p>
-                    <p className="text-[11px] text-muted-foreground">{level.desc}</p>
+                    <p className="text-xs text-muted-foreground">{level.desc}</p>
                   </div>
                 </button>
               ))}
@@ -163,7 +183,7 @@ export function SimulatorInsightPanel({ practiceType, modeDef, aiLevel, onAiLeve
       </ScrollArea>
 
       {/* Launch button */}
-      <div className="p-5 border-t">
+      <div className="p-5 border-t shrink-0">
         <Button size="lg" className="w-full gap-2" onClick={onLaunch}>
           <Play className="h-4 w-4" />
           Lancer la simulation

@@ -16,18 +16,8 @@ import { SuggestionChips } from "../widgets/SuggestionChips";
 import { InputQualityIndicator } from "../widgets/InputQualityIndicator";
 import { getModeDefinition } from "../config/modeRegistry";
 
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
-
-interface Finding {
-  label: string;
-  severity: "high" | "medium" | "low";
-  timestamp: Date;
-}
+interface Message { id: string; role: "user" | "assistant"; content: string; timestamp: Date; }
+interface Finding { label: string; severity: "high" | "medium" | "low"; timestamp: Date; }
 
 interface AnalysisModeProps {
   practiceType: string;
@@ -52,20 +42,14 @@ function parseInlineBlock(content: string, tag: string): any | null {
 function parseEvaluation(content: string) {
   const match = content.match(/```evaluation\s*\n?([\s\S]*?)```/);
   if (!match) return null;
-  try {
-    const parsed = JSON.parse(match[1].trim());
-    if (typeof parsed.score === "number") return parsed;
-  } catch {}
+  try { const parsed = JSON.parse(match[1].trim()); if (typeof parsed.score === "number") return parsed; } catch {}
   return null;
 }
 
 function parseSuggestions(content: string): string[] {
   const match = content.match(/```suggestions\s*\n?([\s\S]*?)```/);
   if (!match) return [];
-  try {
-    const parsed = JSON.parse(match[1].trim());
-    if (Array.isArray(parsed)) return parsed.slice(0, 3);
-  } catch {}
+  try { const parsed = JSON.parse(match[1].trim()); if (Array.isArray(parsed)) return parsed.slice(0, 3); } catch {}
   return [];
 }
 
@@ -77,16 +61,8 @@ function cleanContent(content: string): string {
 }
 
 export function AnalysisMode({
-  practiceType,
-  typeConfig,
-  systemPrompt,
-  scenario,
-  maxExchanges,
-  practiceId,
-  previewMode = false,
-  onComplete,
-  onExchangeUpdate,
-  onMessagesChange,
+  practiceType, typeConfig, systemPrompt, scenario, maxExchanges, practiceId,
+  previewMode = false, onComplete, onExchangeUpdate, onMessagesChange,
 }: AnalysisModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -115,41 +91,31 @@ export function AnalysisMode({
   const sendMessage = useCallback(async (overrideText?: string) => {
     const text = overrideText || input.trim();
     if (!text || isStreaming || !user || evaluation) return;
-
     const userMsg: Message = { id: crypto.randomUUID(), role: "user", content: text, timestamp: new Date() };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setInput("");
     setSuggestions([]);
-    setIsStreaming(true);
     setBriefingOpen(false);
+    setIsStreaming(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
-
-      const apiMessages = updatedMessages
-        .filter((m) => m.id !== "scenario")
-        .map((m) => ({ role: m.role, content: m.content }));
+      const apiMessages = updatedMessages.filter((m) => m.id !== "scenario").map((m) => ({ role: m.role, content: m.content }));
       if (scenario) apiMessages.unshift({ role: "assistant", content: scenario });
 
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/academy-practice`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ practice_id: practiceId, messages: apiMessages, evaluate: isLastExchange, ...(practiceId === "__standalone__" && systemPrompt ? { system_override: systemPrompt } : {}) }),
-        }
-      );
-
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/academy-practice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ practice_id: practiceId, messages: apiMessages, evaluate: isLastExchange, ...(practiceId === "__standalone__" && systemPrompt ? { system_override: systemPrompt } : {}) }),
+      });
       if (!resp.ok) throw new Error(`Error ${resp.status}`);
 
       const reader = resp.body?.getReader();
       if (!reader) throw new Error("No stream");
-
       const assistantMsg: Message = { id: crypto.randomUUID(), role: "assistant", content: "", timestamp: new Date() };
       setMessages((prev) => [...prev, assistantMsg]);
-
       const decoder = new TextDecoder();
       let buffer = "";
       let fullContent = "";
@@ -164,14 +130,7 @@ export function AnalysisMode({
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6);
           if (data === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) {
-              fullContent += delta;
-              setMessages((prev) => prev.map((m) => (m.id === assistantMsg.id ? { ...m, content: fullContent } : m)));
-            }
-          } catch {}
+          try { const parsed = JSON.parse(data); const delta = parsed.choices?.[0]?.delta?.content; if (delta) { fullContent += delta; setMessages((prev) => prev.map((m) => (m.id === assistantMsg.id ? { ...m, content: fullContent } : m))); } } catch {}
         }
       }
 
@@ -179,43 +138,23 @@ export function AnalysisMode({
       if (findingsData && Array.isArray(findingsData)) {
         setFindings((prev) => [...prev, ...findingsData.map((f: any) => ({ label: f.label || f, severity: f.severity || "medium", timestamp: new Date() }))]);
       }
-
       const drData = parseInlineBlock(fullContent, "dataroom");
-      if (drData && Array.isArray(drData)) {
-        setDataRoomDocs((prev) => [...new Set([...prev, ...drData])]);
-      }
-
+      if (drData && Array.isArray(drData)) setDataRoomDocs((prev) => [...new Set([...prev, ...drData])]);
       const newSuggestions = parseSuggestions(fullContent);
       if (newSuggestions.length > 0) setSuggestions(newSuggestions);
-
       const evalData = parseEvaluation(fullContent);
-      if (evalData) {
-        setEvaluation(evalData);
-        onComplete?.(evalData.score, updatedMessages, evalData);
-      }
+      if (evalData) { setEvaluation(evalData); onComplete?.(evalData.score, updatedMessages, evalData); }
       onMessagesChange?.(updatedMessages);
-    } catch (err: any) {
-      toast.error(err.message || "Erreur de communication");
-    } finally {
-      setIsStreaming(false);
-    }
+    } catch (err: any) { toast.error(err.message || "Erreur de communication"); }
+    finally { setIsStreaming(false); }
   }, [input, isStreaming, messages, user, evaluation, practiceId, scenario, isLastExchange, onComplete]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  };
-
-  const resetSession = () => {
-    setMessages([]);
-    setEvaluation(null);
-    setFindings([]);
-    setDataRoomDocs([]);
-    setSuggestions([]);
-    setInput("");
-    setBriefingOpen(true);
-  };
-
+  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
+  const resetSession = () => { setMessages([]); setEvaluation(null); setFindings([]); setDataRoomDocs([]); setSuggestions([]); setInput(""); setBriefingOpen(true); };
   const severityColor = { high: "text-destructive", medium: "text-amber-600", low: "text-emerald-600" };
+
+  const scenarioMsg = messages.find((m) => m.id === "scenario");
+  const chatMessages = messages.filter((m) => m.id !== "scenario");
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -223,7 +162,9 @@ export function AnalysisMode({
       <div className="w-72 border-r flex flex-col bg-card shrink-0 overflow-hidden">
         <div className="px-4 py-3 border-b shrink-0">
           <div className="flex items-center gap-2">
-            <FolderSearch className="h-4 w-4 text-primary" />
+            <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center">
+              <FolderSearch className="h-3.5 w-3.5 text-primary" />
+            </div>
             <span className="text-sm font-semibold">{modeDef?.label || "Analysis"}</span>
           </div>
         </div>
@@ -236,26 +177,24 @@ export function AnalysisMode({
               Briefing
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2">
-              <div className="text-xs text-muted-foreground leading-relaxed bg-muted/30 rounded-lg p-3 border">
-                <EnrichedMarkdown content={scenario.substring(0, 500)} />
+              <div className="text-xs leading-relaxed border-l-4 border-primary bg-background rounded-r-lg p-3 shadow-sm">
+                <EnrichedMarkdown content={(scenarioMsg?.content || scenario).substring(0, 500)} />
               </div>
             </CollapsibleContent>
           </Collapsible>
 
-          {/* Data Room */}
           {dataRoomDocs.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Data Room</p>
               {dataRoomDocs.map((doc, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs bg-muted/30 rounded-lg px-3 py-2 border">
-                  <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <div key={i} className="flex items-center gap-2 text-xs bg-background rounded-lg px-3 py-2.5 border shadow-sm">
+                  <FileText className="h-3.5 w-3.5 text-primary/60 shrink-0" />
                   <span className="truncate">{doc}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Findings */}
           {findings.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -266,7 +205,7 @@ export function AnalysisMode({
                   key={i}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="flex items-start gap-2 text-xs bg-card rounded-lg px-3 py-2 border shadow-sm"
+                  className="flex items-start gap-2 text-xs bg-background rounded-lg px-3 py-2.5 border shadow-sm"
                 >
                   <AlertTriangle className={cn("h-3.5 w-3.5 shrink-0 mt-0.5", severityColor[f.severity])} />
                   <span>{f.label}</span>
@@ -281,7 +220,7 @@ export function AnalysisMode({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
           <AnimatePresence initial={false}>
-            {messages.map((msg) => (
+            {chatMessages.map((msg) => (
               <motion.div
                 key={msg.id}
                 initial={{ opacity: 0, y: 8 }}
@@ -292,9 +231,7 @@ export function AnalysisMode({
                   "max-w-[80%] rounded-2xl px-4 py-3 text-sm",
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground"
-                    : msg.id === "scenario"
-                    ? "bg-card border-l-4 border-primary shadow-sm border"
-                    : "bg-card border shadow-sm"
+                    : "bg-card border border-border/40 shadow-sm"
                 )}>
                   {msg.role === "assistant" ? (
                     <EnrichedMarkdown content={cleanContent(msg.content)} />
