@@ -135,14 +135,10 @@ export default function Simulator() {
     const fullPrompt = behaviorPrompt + assistanceInstructions;
     const richScenario = generateRichScenario(key, "intermediate", aiLevel);
 
-    setActiveSim({
-      key,
-      def,
-      systemPrompt: fullPrompt,
-      scenario: richScenario,
-      aiLevel,
-    });
     setSelectedMode(null);
+    navigate("/simulator/session", {
+      state: { key, def, systemPrompt: fullPrompt, scenario: richScenario, aiLevel },
+    });
   };
 
   const launchPractice = (pr: any) => {
