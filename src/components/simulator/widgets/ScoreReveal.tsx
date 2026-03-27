@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp, MessageSquare, Download } from "lucide-react";
+import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp, MessageSquare, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SessionReplay } from "./SessionReplay";
