@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MODE_REGISTRY, UNIVERSE_LABELS, getModeDefinition, type ModeFamily, type ModeUniverse } from "@/components/simulator/config/modeRegistry";
-import { SimulatorEngine } from "@/components/simulator/SimulatorEngine";
+
 import { SimulatorInsightPanel } from "@/components/simulator/widgets/SimulatorInsightPanel";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
