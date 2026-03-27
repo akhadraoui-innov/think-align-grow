@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp, MessageSquare, Download } from "lucide-react";
+import { Award, Star, Lightbulb, RotateCcw, ArrowRight, TrendingUp, MessageSquare, Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SessionReplay } from "./SessionReplay";
@@ -13,15 +14,17 @@ interface ScoreRevealProps {
   dimensions?: { name: string; score: number }[];
   recommendations?: string[];
   practiceType?: string;
+  sessionId?: string;
   nextPractices?: { label: string; type: string }[];
   messages?: { role: "user" | "assistant"; content: string }[];
   onRestart?: () => void;
   onNextPractice?: (type: string) => void;
 }
 
-export function ScoreReveal({ score, feedback, dimensions, recommendations, practiceType, nextPractices: nextPracticesProp, messages, onRestart, onNextPractice }: ScoreRevealProps) {
+export function ScoreReveal({ score, feedback, dimensions, recommendations, practiceType, sessionId, nextPractices: nextPracticesProp, messages, onRestart, onNextPractice }: ScoreRevealProps) {
   const nextPractices = nextPracticesProp ?? (practiceType ? getNextPractices(practiceType) : []);
   const [showReplay, setShowReplay] = useState(false);
+  const navigate = useNavigate();
 
   const grade = score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : "D";
   const gradeColor = score >= 80 ? "text-emerald-500" : score >= 60 ? "text-primary" : score >= 40 ? "text-amber-500" : "text-destructive";
@@ -175,6 +178,12 @@ ${msgRows ? `<h2>Échanges (${messages?.length || 0})</h2>${msgRows}` : ""}
 
       {/* Actions */}
       <div className="flex justify-center gap-2 pt-1">
+        {sessionId && (
+          <Button size="sm" onClick={() => navigate(`/simulator/session/${sessionId}/report`)} className="gap-2">
+            <FileText className="h-3.5 w-3.5" />
+            Voir le rapport complet
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={exportPDF} className="gap-2">
           <Download className="h-3.5 w-3.5" />
           Export PDF

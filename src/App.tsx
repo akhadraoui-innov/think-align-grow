@@ -36,6 +36,7 @@ import Academy from "./pages/Academy";
 import Simulator from "./pages/Simulator";
 import SimulatorHistory from "./pages/SimulatorHistory";
 import SimulatorSession from "./pages/SimulatorSession";
+import SimulatorReport from "./pages/SimulatorReport";
 import AcademyPath from "./pages/AcademyPath";
 import AcademyModule from "./pages/AcademyModule";
 import AcademyDashboard from "./pages/AcademyDashboard";
@@ -80,6 +81,7 @@ function AnimatedRoutes() {
           <Route path="/simulator" element={<Simulator />} />
           <Route path="/simulator/history" element={<SimulatorHistory />} />
           <Route path="/simulator/session" element={<SimulatorSession />} />
+          <Route path="/simulator/session/:sessionId/report" element={<SimulatorReport />} />
           <Route path="/academy/dashboard" element={<AcademyDashboard />} />
           <Route path="/academy/path/:id" element={<AcademyPath />} />
           <Route path="/academy/certificates" element={<AcademyCertificates />} />

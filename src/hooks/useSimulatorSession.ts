@@ -74,8 +74,8 @@ export function useSimulatorSession(practiceId: string, previewMode = false) {
   );
 
   const completeSession = useCallback(
-    async (messages: SessionMessage[], evaluation: SessionEvaluation) => {
-      if (previewMode || !user) return;
+    async (messages: SessionMessage[], evaluation: SessionEvaluation): Promise<string | null> => {
+      if (previewMode || !user) return null;
       if (debounceRef.current) clearTimeout(debounceRef.current);
 
       try {
@@ -94,17 +94,24 @@ export function useSimulatorSession(practiceId: string, previewMode = false) {
             .from("academy_practice_sessions")
             .update(payload)
             .eq("id", sessionId);
+          return sessionId;
         } else {
-          await supabase
+          const { data } = await supabase
             .from("academy_practice_sessions")
             .insert({
               user_id: user.id,
               practice_id: practiceId,
               ...payload,
-            } as any);
+            } as any)
+            .select("id")
+            .single();
+          const newId = data?.id ?? null;
+          if (newId) setSessionId(newId);
+          return newId;
         }
       } catch (err) {
         console.error("Session complete error:", err);
+        return sessionId;
       }
     },
     [user, practiceId, sessionId, previewMode]

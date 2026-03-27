@@ -132,23 +132,48 @@ Si l'apprenant semble bloqué ou donne des réponses courtes, relance-le avec de
       ...(messages || []),
     ];
 
+    const enrichedEvalFormat = `Termine ta réponse par un bloc JSON sur une nouvelle ligne au format :
+\`\`\`evaluation
+{
+  "score": <0-100>,
+  "feedback": "<synthèse globale dense et utile de la performance, 3-5 phrases>",
+  "dimensions": [{"name": "<critère>", "score": <0-10>}, ...],
+  "recommendations": ["<conseil 1>", "<conseil 2>", "<conseil 3>"],
+  "kpis": {
+    "communication_clarity": <0-10>,
+    "analysis_depth": <0-10>,
+    "adaptability": <0-10>,
+    "response_relevance": <0-10>,
+    "idea_structuring": <0-10>
+  },
+  "strengths": [
+    {"title": "<titre court>", "detail": "<explication détaillée avec exemples tirés de la conversation>"}
+  ],
+  "improvements": [
+    {"title": "<titre court>", "detail": "<explication du problème observé>", "how": "<méthode concrète, étapes précises pour progresser>"}
+  ],
+  "learning_gaps": [
+    {"topic": "<sujet à apprendre>", "detail": "<pourquoi c'est important>", "resources": "<par où commencer, méthodes, frameworks recommandés>"}
+  ],
+  "explore_next": [
+    {"topic": "<sujet connexe>", "why": "<pourquoi cela devrait intéresser l'apprenant>"}
+  ],
+  "best_practices": [
+    {"title": "<titre de la bonne pratique>", "content": "<description détaillée : méthode, retour d'expérience, façon d'interagir avec l'IA sur ce type de sujet>"}
+  ]
+}
+\`\`\`
+IMPORTANT : Génère au minimum 2-3 items pour chaque section (strengths, improvements, learning_gaps, explore_next, best_practices). Sois précis et concret, utilise des exemples tirés de la conversation. Les KPIs sont sur 10 et évaluent : Clarté de communication, Profondeur d'analyse, Adaptabilité, Pertinence des réponses, Structuration des idées. Tout en FRANÇAIS.`;
+
     if (evaluate && rubric.length > 0) {
       aiMessages.push({
         role: "system",
-        content: `C'est le dernier échange. Évalue la performance de l'apprenant en te basant sur ces critères : ${JSON.stringify(rubric)}. 
-Termine ta réponse par un bloc JSON sur une nouvelle ligne au format : 
-\`\`\`evaluation
-{"score": <0-100>, "feedback": "<résumé global>", "dimensions": [{"name": "<critère>", "score": <0-10>}, ...], "recommendations": ["<conseil 1>", "<conseil 2>", "<conseil 3>"]}
-\`\`\``,
+        content: `C'est le dernier échange. Évalue la performance de l'apprenant en te basant sur ces critères : ${JSON.stringify(rubric)}.\n${enrichedEvalFormat}`,
       });
     } else if (evaluate) {
       aiMessages.push({
         role: "system",
-        content: `C'est le dernier échange. Évalue la performance de l'apprenant. 
-Termine ta réponse par un bloc JSON sur une nouvelle ligne au format : 
-\`\`\`evaluation
-{"score": <0-100>, "feedback": "<résumé global>", "dimensions": [{"name": "<critère>", "score": <0-10>}, ...], "recommendations": ["<conseil 1>", "<conseil 2>", "<conseil 3>"]}
-\`\`\``,
+        content: `C'est le dernier échange. Évalue la performance globale de l'apprenant.\n${enrichedEvalFormat}`,
       });
     }
 
