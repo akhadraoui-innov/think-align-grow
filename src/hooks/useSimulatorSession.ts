@@ -16,7 +16,7 @@ interface SessionEvaluation {
   recommendations?: string[];
 }
 
-export function useSimulatorSession(practiceId: string, previewMode = false) {
+export function useSimulatorSession(practiceId: string | null, previewMode = false) {
   const { user } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
@@ -50,7 +50,7 @@ export function useSimulatorSession(practiceId: string, previewMode = false) {
           } else {
             const insertData: Record<string, unknown> = {
               user_id: user.id,
-              practice_id: practiceId,
+              practice_id: practiceId || null,
               messages: messagesJson,
             };
             if (evalJson) {
@@ -100,7 +100,7 @@ export function useSimulatorSession(practiceId: string, previewMode = false) {
             .from("academy_practice_sessions")
             .insert({
               user_id: user.id,
-              practice_id: practiceId,
+              practice_id: practiceId || null,
               ...payload,
             } as any)
             .select("id")

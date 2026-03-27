@@ -86,12 +86,14 @@ export default function SimulatorReport() {
       if (!sess) { setLoading(false); return; }
       setSession(sess);
 
-      const { data: pract } = await supabase
-        .from("academy_practices")
-        .select("title, practice_type, difficulty, scenario")
-        .eq("id", sess.practice_id)
-        .single();
-      setPractice(pract);
+      if (sess.practice_id) {
+        const { data: pract } = await supabase
+          .from("academy_practices")
+          .select("title, practice_type, difficulty, scenario")
+          .eq("id", sess.practice_id)
+          .maybeSingle();
+        setPractice(pract);
+      }
 
       // Count attempt number
       if (sess.user_id && sess.practice_id) {
@@ -172,7 +174,7 @@ export default function SimulatorReport() {
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-display font-bold truncate">
-              {practice?.title ?? (session?.practice_id === "__standalone__" ? "Session libre" : "Session de simulation")}
+              {practice?.title ?? "Session de simulation"}
             </h1>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               {modeDef && <Badge variant="outline" className="text-[11px]">{modeDef.label}</Badge>}

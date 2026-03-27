@@ -46,7 +46,7 @@ export default function SimulatorHistory() {
     (async () => {
       const { data } = await supabase
         .from("academy_practice_sessions")
-        .select("id, practice_id, score, started_at, completed_at, messages, evaluation, academy_practices(title, practice_type, difficulty)")
+        .select("id, practice_id, score, started_at, completed_at, messages, evaluation, academy_practices!left(title, practice_type, difficulty)")
         .eq("user_id", user.id)
         .order("started_at", { ascending: false })
         .limit(100);
@@ -67,11 +67,11 @@ export default function SimulatorHistory() {
   const groups = useMemo<PracticeGroup[]>(() => {
     const map = new Map<string, PracticeGroup>();
     sessions.forEach((s) => {
-      const key = s.practice_id;
+      const key = s.practice_id || "__standalone__";
       if (!map.has(key)) {
         map.set(key, {
           practiceId: key,
-          title: s.practice?.title ?? (key === "__standalone__" ? "Session libre" : "Session"),
+          title: s.practice?.title ?? "Session libre",
           practiceType: s.practice?.practice_type ?? "",
           difficulty: s.practice?.difficulty ?? null,
           sessions: [],

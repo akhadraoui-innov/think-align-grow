@@ -1,5 +1,6 @@
 // SimulatorEngine — Routes practice_type to the correct UI family component, wrapped in SimulatorShell
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { getModeDefinition, type ModeFamily } from "./config/modeRegistry";
 import { SimulatorShell } from "./SimulatorShell";
 import { ChatMode } from "./modes/ChatMode";
@@ -19,7 +20,7 @@ interface SimulatorEngineProps {
   systemPrompt: string;
   scenario: string;
   maxExchanges: number;
-  practiceId: string;
+  practiceId: string | null;
   previewMode?: boolean;
   difficulty?: string;
   aiAssistanceLevel?: AIAssistanceLevel;
@@ -29,6 +30,7 @@ interface SimulatorEngineProps {
 }
 
 export function SimulatorEngine(props: SimulatorEngineProps) {
+  const navigate = useNavigate();
   const [exchangeCount, setExchangeCount] = useState(0);
   const [resetKey, setResetKey] = useState(0);
 
@@ -71,13 +73,16 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
           content: m.content,
           timestamp: m.timestamp.toISOString(),
         }));
-        await completeSession(serialized, evaluation);
+        const returnedId = await completeSession(serialized, evaluation);
         props.onComplete?.(score);
+        if (returnedId) {
+          navigate(`/simulator/session/${returnedId}/report`);
+        }
       } else {
         props.onComplete?.(score);
       }
     },
-    [completeSession, props.onComplete]
+    [completeSession, props.onComplete, navigate]
   );
 
   const modeProps = {
