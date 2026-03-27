@@ -35,6 +35,7 @@ interface ChatModeProps {
   maxExchanges: number;
   practiceId: string;
   previewMode?: boolean;
+  sessionId?: string | null;
   onComplete?: (score: number, messages?: Message[], evaluation?: any) => void;
   onExchangeUpdate?: (count: number) => void;
   onMessagesChange?: (messages: Message[]) => void;
