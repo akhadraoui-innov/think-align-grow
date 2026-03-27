@@ -46,7 +46,7 @@ export default function SimulatorHistory() {
     (async () => {
       const { data } = await supabase
         .from("academy_practice_sessions")
-        .select("id, practice_id, score, started_at, completed_at, messages, evaluation, academy_practices(title, practice_type, difficulty)")
+        .select("id, practice_id, score, started_at, completed_at, messages, evaluation, academy_practices!left(title, practice_type, difficulty)")
         .eq("user_id", user.id)
         .order("started_at", { ascending: false })
         .limit(100);
