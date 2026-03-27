@@ -15,6 +15,7 @@ import { ScoreReveal } from "../widgets/ScoreReveal";
 import { SuggestionChips } from "../widgets/SuggestionChips";
 import { InputQualityIndicator } from "../widgets/InputQualityIndicator";
 import { getModeDefinition } from "../config/modeRegistry";
+import { getInitialSuggestions } from "../config/scenarioTemplates";
 
 interface Message {
   id: string;
