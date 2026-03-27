@@ -336,7 +336,9 @@ export function ChatMode({
                   "max-w-[80%] rounded-2xl px-4 py-3 text-sm",
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                    : msg.id === "scenario"
+                    ? "bg-card border-l-4 border-primary shadow-sm border"
+                    : "bg-card border shadow-sm"
                 )}
               >
                 {msg.role === "assistant" ? (
