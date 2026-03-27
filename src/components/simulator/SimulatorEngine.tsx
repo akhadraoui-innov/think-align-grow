@@ -31,7 +31,6 @@ interface SimulatorEngineProps {
 export function SimulatorEngine(props: SimulatorEngineProps) {
   const [exchangeCount, setExchangeCount] = useState(0);
   const [resetKey, setResetKey] = useState(0);
-  const navigate = useNavigate();
 
   const { sessionId, persistSession, completeSession } = useSimulatorSession(
     props.practiceId,
