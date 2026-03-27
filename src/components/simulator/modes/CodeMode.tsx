@@ -82,6 +82,7 @@ export function CodeMode({
   const [copied, setCopied] = useState(false);
   const [briefingOpen, setBriefingOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasScrolledInitially = useRef(false);
 
   const language = (typeConfig.language as string) || "typescript";
   const exchangeCount = messages.filter((m) => m.role === "user").length;
@@ -89,7 +90,13 @@ export function CodeMode({
   const isEditableCode = ["pair_programming", "tdd_kata", "refactoring", "vibe_coding", "prompt_to_app", "prompt_lab"].includes(practiceType);
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (!scrollRef.current) return;
+    if (!hasScrolledInitially.current) {
+      scrollRef.current.scrollTop = 0;
+      hasScrolledInitially.current = true;
+    } else {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages]);
 
   useEffect(() => { onExchangeUpdate?.(exchangeCount); }, [exchangeCount, onExchangeUpdate]);
