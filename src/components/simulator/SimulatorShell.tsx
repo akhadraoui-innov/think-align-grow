@@ -39,7 +39,7 @@ export function SimulatorShell({
   sessionTitle,
 }: SimulatorShellProps) {
   const [showOnboarding, setShowOnboarding] = useState(true);
-  const [showHelp, setShowHelp] = useState(false);
+  const [showHelp, setShowHelp] = useState(true);
   const [objectivesOpen, setObjectivesOpen] = useState(false);
 
   const modeDef = getModeDefinition(practiceType);
