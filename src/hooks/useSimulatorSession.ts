@@ -50,7 +50,7 @@ export function useSimulatorSession(practiceId: string | null, previewMode = fal
           } else {
             const insertData: Record<string, unknown> = {
               user_id: user.id,
-              practice_id: practiceId,
+              practice_id: practiceId || null,
               messages: messagesJson,
             };
             if (evalJson) {
