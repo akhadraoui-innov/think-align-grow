@@ -258,10 +258,15 @@ export function ChatMode({
               key={msg.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
+              className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}
             >
+              {msg.role === "assistant" && (
+                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shrink-0 mt-1 shadow-sm">
+                  <Sparkles className="h-3 w-3 text-primary-foreground" />
+                </div>
+              )}
               <div className={cn(
-                "max-w-[80%] rounded-2xl px-4 py-3 text-sm",
+                "max-w-[75%] rounded-2xl px-4 py-3 text-sm",
                 msg.role === "user"
                   ? "bg-primary text-primary-foreground"
                   : "bg-card border border-border/40 shadow-sm"
@@ -271,6 +276,9 @@ export function ChatMode({
                 ) : (
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 )}
+                <p className="text-[10px] mt-1.5 opacity-50">
+                  {msg.timestamp.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                </p>
               </div>
             </motion.div>
           ))}
