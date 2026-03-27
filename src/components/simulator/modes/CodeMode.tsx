@@ -1,11 +1,10 @@
 // CodeMode — Split layout: Code Editor (left) + Chat (right)
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Loader2, Code, Copy, Check, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowUp, Loader2, Code, Copy, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
