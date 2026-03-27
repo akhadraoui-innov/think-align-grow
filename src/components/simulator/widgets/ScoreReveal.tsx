@@ -25,8 +25,6 @@ export function ScoreReveal({ score, feedback, dimensions, recommendations, prac
   const nextPractices = nextPracticesProp ?? (practiceType ? getNextPractices(practiceType) : []);
   const [showReplay, setShowReplay] = useState(false);
   const navigate = useNavigate();
-  const nextPractices = nextPracticesProp ?? (practiceType ? getNextPractices(practiceType) : []);
-  const [showReplay, setShowReplay] = useState(false);
 
   const grade = score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : "D";
   const gradeColor = score >= 80 ? "text-emerald-500" : score >= 60 ? "text-primary" : score >= 40 ? "text-amber-500" : "text-destructive";
