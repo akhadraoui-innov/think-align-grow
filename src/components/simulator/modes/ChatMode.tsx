@@ -71,7 +71,7 @@ function cleanContent(content: string): string {
 
 export function ChatMode({
   practiceType, typeConfig, systemPrompt, scenario, maxExchanges, practiceId,
-  previewMode = false, onComplete, onExchangeUpdate, onMessagesChange,
+  previewMode = false, sessionId, onComplete, onExchangeUpdate, onMessagesChange,
 }: ChatModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
