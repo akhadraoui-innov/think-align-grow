@@ -200,83 +200,92 @@ export default function SimulatorHistory() {
                             return (
                               <div
                                 key={session.id}
-                                className="flex items-center gap-3 rounded-xl border p-3 hover:bg-muted/30 transition-colors"
+                                className="flex items-center gap-3 rounded-xl border border-border/60 px-3.5 py-2.5 hover:bg-accent/40 transition-all cursor-default group"
                               >
-                                {/* Score badge */}
+                                {/* Score pill */}
                                 <div className="shrink-0">
                                   {session.completed_at ? (
                                     <div className={cn(
-                                      "h-11 w-11 rounded-xl flex flex-col items-center justify-center font-black text-sm",
-                                      (session.score ?? 0) >= 60
-                                        ? "bg-emerald-500/10 text-emerald-500"
-                                        : "bg-amber-500/10 text-amber-500"
+                                      "h-9 w-9 rounded-lg flex items-center justify-center text-sm font-black tabular-nums",
+                                      (session.score ?? 0) >= 80
+                                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                        : (session.score ?? 0) >= 60
+                                          ? "bg-primary/10 text-primary"
+                                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                                     )}>
                                       {session.score ?? 0}
-                                      <span className="text-[8px] font-medium opacity-60">/100</span>
                                     </div>
                                   ) : (
-                                    <div className="h-11 w-11 rounded-xl bg-muted flex items-center justify-center">
-                                      <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center">
+                                      <RotateCcw className="h-3 w-3 text-muted-foreground" />
                                     </div>
                                   )}
                                 </div>
 
-                                {/* Info + mini KPIs */}
-                                <div className="flex-1 min-w-0 space-y-1.5">
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-xs font-semibold">Tentative {attemptNum}</p>
-                                    {delta !== null && delta !== 0 && (
-                                      <Badge variant={delta > 0 ? "default" : "destructive"} className="text-[9px] h-4 px-1.5">
-                                        {delta > 0 ? "+" : ""}{delta}
-                                      </Badge>
-                                    )}
-                                    <span className="text-[10px] text-muted-foreground ml-auto mr-1">
+                                {/* Content */}
+                                <div className="flex-1 min-w-0 flex items-center gap-4">
+                                  {/* Left: attempt + date */}
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <p className="text-xs font-medium">Tentative {attemptNum}</p>
+                                      {delta !== null && delta !== 0 && (
+                                        <span className={cn(
+                                          "text-[10px] font-bold",
+                                          delta > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+                                        )}>
+                                          {delta > 0 ? "+" : ""}{delta}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground mt-0.5">
                                       {format(new Date(session.started_at), "dd MMM yyyy · HH:mm", { locale: fr })}
-                                    </span>
+                                    </p>
                                   </div>
 
-                                  {/* Mini KPI row */}
+                                  {/* Right: KPI chips */}
                                   {session.completed_at && (() => {
                                     const eval_ = session.evaluation as any;
                                     const kpis = eval_?.kpis;
                                     const msgCount = Array.isArray(session.messages) ? session.messages.length : 0;
+                                    if (!kpis) return (
+                                      <span className="text-[10px] text-muted-foreground flex items-center gap-1 ml-auto">
+                                        <MessageSquare className="h-3 w-3" />{msgCount}
+                                      </span>
+                                    );
+                                    const chips: { label: string; val: number; icon: typeof Brain }[] = [
+                                      { label: "Clarté", val: kpis.communication_clarity, icon: Brain },
+                                      { label: "Pertinence", val: kpis.response_relevance, icon: Target },
+                                      { label: "Adapt.", val: kpis.adaptability, icon: Zap },
+                                    ];
                                     return (
-                                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                                        <span className="flex items-center gap-1">
-                                          <MessageSquare className="h-3 w-3" />
-                                          {msgCount} échanges
-                                        </span>
-                                        {kpis && (
-                                          <>
-                                            <span className="flex items-center gap-1" title="Clarté">
-                                              <Brain className="h-3 w-3" />
-                                              {kpis.communication_clarity ?? "–"}/10
-                                            </span>
-                                            <span className="flex items-center gap-1" title="Pertinence">
-                                              <Target className="h-3 w-3" />
-                                              {kpis.response_relevance ?? "–"}/10
-                                            </span>
-                                            <span className="flex items-center gap-1" title="Adaptabilité">
-                                              <Zap className="h-3 w-3" />
-                                              {kpis.adaptability ?? "–"}/10
-                                            </span>
-                                          </>
-                                        )}
+                                      <div className="hidden sm:flex items-center gap-2 ml-auto">
+                                        {chips.map(c => (
+                                          <div key={c.label} className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5" title={c.label}>
+                                            <c.icon className={cn("h-3 w-3", c.val >= 7 ? "text-emerald-500" : c.val >= 4 ? "text-amber-500" : "text-destructive")} />
+                                            <span className="text-[10px] font-semibold tabular-nums">{c.val}</span>
+                                          </div>
+                                        ))}
+                                        <div className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-0.5" title="Échanges">
+                                          <MessageSquare className="h-3 w-3 text-muted-foreground" />
+                                          <span className="text-[10px] font-semibold tabular-nums">{msgCount}</span>
+                                        </div>
                                       </div>
                                     );
                                   })()}
                                 </div>
 
-                                {session.completed_at && (
+                                {session.completed_at ? (
                                   <Button
-                                    variant="outline"
+                                    variant="ghost"
                                     size="sm"
                                     onClick={() => navigate(`/simulator/session/${session.id}/report`)}
-                                    className="gap-1.5 text-xs shrink-0"
+                                    className="gap-1.5 text-xs shrink-0 opacity-70 group-hover:opacity-100 transition-opacity"
                                   >
                                     <FileText className="h-3.5 w-3.5" />
-                                    Rapport
+                                    <span className="hidden sm:inline">Rapport</span>
                                   </Button>
+                                ) : (
+                                  <Badge variant="outline" className="text-[10px] shrink-0">En cours</Badge>
                                 )}
                               </div>
                             );
