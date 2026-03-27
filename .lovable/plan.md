@@ -1,119 +1,108 @@
 
 
-# Refonte Premium+ du Catalogue Simulateur — Design, Insights Panel & Expérience Guidée
+# Audit systémique du Simulateur — Diagnostic & Corrections
 
-## Problème constaté
+## Problèmes identifiés (analyse de la capture d'écran)
 
-1. **Catalogue plat** : grille de cards identiques, pas de hiérarchie visuelle, pas de mise en avant
-2. **Lancement brut** : le scénario initial est une phrase sèche sans contexte, sans consignes, sans guidance
-3. **Aucun panel d'insights** : l'utilisateur ne comprend pas ce qu'il va apprendre, quelles compétences sont visées, quel est le déroulé
-4. **Pas de sélecteur d'aide** avant lancement
-5. **OnboardingOverlay trop minimaliste** : icône + titre + badges — pas de "comment ça marche", pas d'exemple
+### P0 — Critique : Champ de saisie invisible
+La chaîne flex est correcte en théorie (`flex-col h-full` → `flex-1 min-h-0`) mais le Dialog fullscreen (100dvh) **+ le header Dialog + le header SimulatorShell + les badges critères** consomment ~120px de hauteur. Le scénario Markdown dans AnalysisMode (beige card) remplit tout l'espace restant. L'input est en dessous mais **poussé hors viewport** car le `overflow-y-auto` sur le chat scroll ne contraint pas correctement quand le contenu initial est massif. Le problème est amplifié en AnalysisMode car le left panel (w-72) + le right panel doivent TOUS DEUX être en `h-full` avec overflow contraint.
 
-## Plan d'implémentation
+**Correction** : Forcer `overflow: hidden` sur les conteneurs parents intermédiaires et s'assurer que chaque niveau de la chaîne flex a `min-h-0`.
 
-### 1. Refonte du catalogue `Simulator.tsx` — Design Premium+
+### P1 — Headers dupliqués / hors plateforme
+Le Dialog crée son propre header (ligne 413-425 de Simulator.tsx) ET SimulatorShell a son propre header (ligne 64-124). Résultat : **2 barres de header** + perte du header AppShell plateforme. L'utilisateur se retrouve dans un contexte déconnecté.
 
-- **Hero section** avec gradient subtil, titre éditorial ("Centre de Simulation Professionnelle"), sous-titre positionnement ("Acculturation · Certification · Support Métier"), stats animées (X modes, Y univers)
-- **Navigation par univers** : barre horizontale de pills/chips scrollable (12 univers) au lieu de Select dropdown — plus visuel, plus direct
-- **Cards enrichies** : hauteur uniforme, icône colorée par univers, indicateur de difficulté visuel (dots), nombre de sessions complétées (si dispo), hover avec preview du scénario
-- **Section "Recommandés pour vous"** en haut (3-4 cards mises en avant basées sur l'univers le plus populaire ou random featured)
+**Correction** : Supprimer le header du Dialog et fusionner les infos dans le header du SimulatorShell. Alternative : remplacer le Dialog fullscreen par une route dédiée `/simulator/session/:key` intégrée dans l'AppShell — mais c'est plus complexe. Pour l'instant, fusionner les headers et garder le Dialog mais avec un seul header propre.
 
-### 2. Panel d'Insights à droite — Nouveau composant `SimulatorInsightPanel.tsx`
+### P2 — Design "non-premium"
+- **Fond beige/crème** sur le scénario (bg-muted → `hsl(var(--muted))`) : donne un aspect "papier journal", pas tier-one
+- **Polices trop petites** : text-[10px], text-[9px] partout — illisible et non-professionnel
+- **Icônes génériques** : pas de couleurs différenciées pour les sections
+- **Espacements serrés** : padding 2-3 trop compact pour un environnement de formation premium
+- **Pas de hiérarchie visuelle** : le briefing, les findings et le chat ont le même poids visuel
 
-Quand l'utilisateur clique/hover une carte, un **panel latéral droit** s'ouvre (slide-in, ~380px) affichant en Markdown enrichi :
+**Correction** : 
+- Fond blanc pur pour le chat, fond `bg-muted/5` subtil pour le left panel
+- Taille minimum `text-xs` (12px) sauf badges
+- Padding `p-4` minimum partout
+- Sections avec titres plus grands et séparateurs
+- Messages assistant avec fond blanc + border au lieu de bg-muted
 
-```text
-┌─────────────────────────────────┐
-│ [Icône]  Adoption Strategy      │
-│ Univers: Transformation IA      │
-│ Interface: Chat & Coaching      │
-├─────────────────────────────────┤
-│ 📋 Ce que vous allez pratiquer  │
-│ Description immersive 3-4 lignes│
-│                                 │
-│ 🎯 Compétences développées      │
-│ • Gestion du changement         │
-│ • Communication stakeholders    │
-│ • Mesure d'adoption             │
-│                                 │
-│ 📊 Critères d'évaluation        │
-│ ┌──────────────┬──────────┐     │
-│ │ Stratégie    │ ████░░ 3 │     │
-│ │ Communication│ ████░░ 3 │     │
-│ │ Résultats    │ ███░░░ 2 │     │
-│ └──────────────┴──────────┘     │
-│                                 │
-│ 💡 Conseils pour bien démarrer  │
-│ "Commencez par cartographier    │
-│  les parties prenantes..."      │
-│                                 │
-│ ──── Niveau d'accompagnement ── │
-│ [Autonome] [Guidé ✓] [Intensif] │
-│                                 │
-│     [ ▶ Lancer la simulation ]  │
-└─────────────────────────────────┘
-```
+### P3 — Bouton aide IA trop estompé
+Le bouton HelpCircle dans SimulatorShell est `variant="ghost" size="icon" className="h-7 w-7"` — invisible, surtout en mode guidé/intensif où l'aide est le cœur de la proposition de valeur.
 
-Contenu généré statiquement par mode via un mapping `INSIGHT_DATA` dans un nouveau fichier `config/modeInsights.ts` — données riches : description longue, compétences cibles, conseils de démarrage, exemples de premier message.
+**Correction** : En mode `guided`/`intensive`, rendre le bouton plus visible : `variant="outline"` avec un badge "Aide IA" texte, une animation pulse subtile au premier affichage, et une couleur primary.
 
-### 3. Enrichir le scénario de lancement — `config/scenarioTemplates.ts`
+### P4 — OnboardingOverlay bypassed sans guidance
+L'overlay se dismiss avec un seul clic "Commencer" et l'utilisateur tombe directement dans l'interface sans savoir quoi faire. Le scénario Markdown est affiché comme un message assistant brut, pas comme un briefing structuré.
 
-Nouveau fichier contenant `generateRichScenario(practiceType, difficulty, aiLevel)` qui produit un message d'accueil structuré en Markdown :
-
-```markdown
-## 🎯 Simulation : Stratégie d'adoption
-
-**Contexte** — Vous êtes responsable du déploiement d'un nouvel outil IA dans une entreprise de 500 personnes. 30% des managers sont réticents.
-
-**Votre mission** — Construisez une stratégie d'adoption complète en interagissant avec les différentes parties prenantes.
-
-**Vous serez évalué sur :**
-- Qualité de la stratégie · Gestion des objections · Résultats mesurables
+**Correction** : Après l'onboarding, afficher le scénario dans un conteneur dédié "briefing card" au-dessus du chat (pas comme un message), avec un call-to-action clair "Commencez par écrire votre première réponse ci-dessous".
 
 ---
 
-💡 *Commencez par décrire votre approche ou posez une question pour comprendre la situation.*
+## Plan de corrections
+
+### Fichiers modifiés
+
+| Fichier | Corrections |
+|---------|-------------|
+| `src/pages/Simulator.tsx` | Supprimer le header dupliqué du Dialog, passer le titre/badges au SimulatorShell via props, forcer `overflow-hidden` sur le conteneur |
+| `src/components/simulator/SimulatorShell.tsx` | Accepter props `title`, `universeBadge`, `onClose` pour fusionner les headers. Bouton aide IA visible (outline + texte). Forcer `min-h-0 overflow-hidden` sur le conteneur children |
+| `src/components/simulator/modes/AnalysisMode.tsx` | Fix layout : `h-full overflow-hidden` sur root, `min-h-0` sur chaque flex child. Design premium : fond blanc chat, left panel plus aéré, input toujours visible |
+| `src/components/simulator/modes/ChatMode.tsx` | Même fix layout. Messages assistant : fond blanc + border. Scénario initial dans un "briefing card" dédié au lieu d'un message bulle |
+| `src/components/simulator/widgets/OnboardingOverlay.tsx` | Polices plus grandes, espacement premium |
+| `src/components/simulator/widgets/HelpDrawer.tsx` | Vérifier qu'il se superpose correctement |
+
+### Corrections détaillées
+
+**1. Fix input invisible (P0)**
+```
+// Simulator.tsx Dialog content
+<div className="flex flex-col h-full overflow-hidden">
+  {/* NO duplicate header — SimulatorShell handles it */}
+  <div className="flex-1 min-h-0 overflow-hidden">
+    <SimulatorEngine ... onClose={() => setActiveSim(null)} title={...} />
+  </div>
+</div>
+
+// SimulatorShell
+<div className="flex flex-col h-full overflow-hidden">
+  <header /> {/* merged header with close button */}
+  <div className="flex-1 min-h-0 overflow-hidden">
+    {children}
+  </div>
+</div>
+
+// AnalysisMode / ChatMode
+<div className="flex h-full overflow-hidden">
+  <aside className="w-72 flex flex-col overflow-hidden" />
+  <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div className="flex-1 min-h-0 overflow-y-auto" /> {/* messages */}
+    <div className="shrink-0 p-4 border-t" /> {/* input — ALWAYS visible */}
+  </main>
+</div>
 ```
 
-### 4. Suggestions initiales automatiques dans `ChatMode.tsx`
+**2. Header fusionné (P1)**
+- Supprimer le header dans le Dialog de Simulator.tsx (lignes 413-425)
+- Ajouter props `onClose`, `sessionTitle`, `badges` au SimulatorShell
+- Le SimulatorShell affiche : icon univers + titre + badges + bouton close (X)
 
-Quand `messages.length === 1` (seul le scenario) et `aiAssistanceLevel !== "autonomous"`, afficher 3 chips de suggestion contextuelle hardcodées par `practiceType` (dans `scenarioTemplates.ts`).
+**3. Design premium (P2)**
+- Messages assistant : `bg-white border border-border/50 shadow-sm` au lieu de `bg-muted`
+- Left panel AnalysisMode : `bg-card` avec border propre, titres en `text-sm font-semibold`
+- Briefing dans une card dédiée au-dessus du chat : fond blanc, border-l-4 primary, typographie claire
+- Minimum `text-xs` (jamais text-[9px] ou text-[10px] pour du contenu)
 
-Exemples pour `adoption_strategy` :
-- "Décris-moi l'organisation et ses résistances"
-- "Quels outils sont déjà en place ?"
-- "Je propose un plan en 3 phases"
+**4. Bouton aide visible (P3)**
+- En mode guided/intensive : `variant="outline"` + texte "Aide IA" + `border-primary/30`
+- Animation `animate-pulse` une seule fois au mount (puis static)
+- Icône colorée en primary
 
-### 5. OnboardingOverlay enrichi
+### Ordre d'exécution
 
-- Section "Comment ça marche" avec 3 étapes visuelles (icône + texte) : Briefing → Interaction → Évaluation
-- Afficher le niveau d'aide sélectionné
-- Exemple de premier message pour rassurer
-- Design premium : plus d'espace, typographie serif pour le titre, gradient léger
-
-### 6. System prompt injection pour standalone
-
-Dans `Simulator.tsx`, au lieu de `systemPrompt=""`, construire le prompt depuis `BEHAVIOR_INJECTIONS[key]` + instructions d'assistance selon le niveau choisi.
-
----
-
-## Fichiers
-
-| Fichier | Action |
-|---------|--------|
-| `src/components/simulator/config/modeInsights.ts` | Nouveau — données riches par mode (description, compétences, conseils) |
-| `src/components/simulator/config/scenarioTemplates.ts` | Nouveau — briefings Markdown + suggestions initiales par mode |
-| `src/components/simulator/widgets/SimulatorInsightPanel.tsx` | Nouveau — panel latéral Premium+ |
-| `src/pages/Simulator.tsx` | Refonte — hero, pills navigation, layout 2 colonnes, sélecteur aide, injection prompt |
-| `src/components/simulator/modes/ChatMode.tsx` | Modifié — suggestions initiales automatiques |
-| `src/components/simulator/widgets/OnboardingOverlay.tsx` | Modifié — enrichissement "comment ça marche" |
-
-## Ordre
-
-1. `modeInsights.ts` + `scenarioTemplates.ts` (données)
-2. `SimulatorInsightPanel.tsx` (panel)
-3. `Simulator.tsx` (refonte complète)
-4. `ChatMode.tsx` (suggestions initiales)
-5. `OnboardingOverlay.tsx` (enrichissement)
+1. Fix layout overflow (SimulatorShell + AnalysisMode + ChatMode) — résout P0
+2. Fusionner headers (Simulator.tsx + SimulatorShell) — résout P1
+3. Design premium (tous les modes) — résout P2 + P3
+4. Test visuel
 
