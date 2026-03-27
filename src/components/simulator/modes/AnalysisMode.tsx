@@ -171,17 +171,12 @@ export function AnalysisMode({
 
         <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5">
           {/* Briefing */}
-          <Collapsible open={briefingOpen} onOpenChange={setBriefingOpen}>
-            <CollapsibleTrigger className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-full">
-              {briefingOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-              Briefing
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2">
-              <div className="text-xs leading-relaxed border-l-4 border-primary bg-background rounded-r-lg p-3 shadow-sm">
-                <EnrichedMarkdown content={(scenarioMsg?.content || scenario).substring(0, 500)} />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+          <BriefingCard
+            content={(scenarioMsg?.content || scenario)}
+            practiceType={practiceType}
+            collapsed={!briefingOpen}
+            onToggle={() => setBriefingOpen(!briefingOpen)}
+          />
 
           {dataRoomDocs.length > 0 && (
             <div className="space-y-2">
