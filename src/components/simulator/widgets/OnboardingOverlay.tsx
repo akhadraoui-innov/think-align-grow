@@ -63,8 +63,8 @@ export function OnboardingOverlay({ modeDef, universeName, difficulty, aiAssista
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                   {step.icon}
                 </div>
-                <p className="text-[11px] font-semibold">{step.label}</p>
-                <p className="text-[10px] text-muted-foreground leading-tight">{step.desc}</p>
+                <p className="text-xs font-semibold">{step.label}</p>
+                <p className="text-xs text-muted-foreground leading-snug">{step.desc}</p>
               </div>
             ))}
           </div>
