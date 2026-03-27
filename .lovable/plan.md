@@ -1,151 +1,63 @@
 
 
-# Rapport Post-Session — PDF, Email, 5 KPIs, Premium++ Markdown
+# Audit E2E du flux Pratique → Rapport → Historique — Bugs identifiés & Corrections
 
-## Flux UX cible
+## Bugs critiques identifiés
 
-```text
-Session terminée → Rapport généré automatiquement → L'utilisateur le voit immédiatement
-→ Bouton "Envoyer par email" → Il peut revenir dessus depuis l'historique
-```
+### Bug 1 — Messages incomplets dans la session persistée
+**ChatMode.tsx ligne 175** : `onComplete(evalData.score, updatedMessages, evalData)` — `updatedMessages` ne contient que les messages jusqu'au dernier message utilisateur. La réponse assistant (contenant l'évaluation) n'est PAS incluse. Le transcript sauvegardé en DB est donc tronqué.
 
-Pas de page intermédiaire ScoreReveal lourde. La session se termine, l'utilisateur est redirigé vers une page de rapport dédiée, persistante, consultable à tout moment.
+**Fix** : Au moment de l'appel `onComplete`, construire la liste complète incluant le message assistant final avec `fullContent`.
 
----
+### Bug 2 — ScoreReveal sans sessionId → bouton "Voir rapport" invisible
+**ChatMode.tsx ligne 291** : `<ScoreReveal ... />` ne reçoit pas la prop `sessionId`. Or le sessionId est dans `SimulatorEngine` via `useSimulatorSession`, jamais transmis aux modes enfants.
 
-## Bloc 1 — Enrichir le prompt d'évaluation IA
+**Fix** : Ajouter une prop `sessionId` dans les modes. SimulatorEngine expose `sessionId` depuis le hook et le passe via `modeProps`.
 
-**Fichier** : `supabase/functions/academy-practice/index.ts`
+### Bug 3 — Double navigation potentielle
+SimulatorEngine.handleComplete navigue vers `/report` après 600ms. Mais ScoreReveal s'affiche aussi dans ChatMode. Si ScoreReveal a un sessionId, l'utilisateur pourrait cliquer "Voir rapport" pendant le timeout.
 
-Modifier les deux blocs `evaluate` (lignes 135-152) pour exiger un JSON enrichi :
+**Fix** : Supprimer le `setTimeout` navigate dans SimulatorEngine. Laisser ScoreReveal gérer la navigation via son bouton "Voir le rapport complet". OU supprimer ScoreReveal inline et naviguer directement.
 
-```json
-{
-  "score": 72,
-  "feedback": "Synthèse globale dense et utile...",
-  "dimensions": [{"name": "Clarté", "score": 7}, ...],
-  "kpis": {
-    "communication_clarity": 7,
-    "analysis_depth": 6,
-    "adaptability": 8,
-    "response_relevance": 7,
-    "idea_structuring": 5
-  },
-  "strengths": [
-    {"title": "Reformulation efficace", "detail": "Vous avez systématiquement reformulé..."}
-  ],
-  "improvements": [
-    {"title": "Structuration", "detail": "Vos réponses manquent de structure...", "how": "Utilisez la méthode STAR : Situation → Tâche → Action → Résultat"}
-  ],
-  "learning_gaps": [
-    {"topic": "Analyse de risques", "detail": "Sujet non abordé...", "resources": "Commencez par la matrice AMDEC..."}
-  ],
-  "explore_next": [
-    {"topic": "Design Thinking", "why": "Votre approche centrée utilisateur est prometteuse..."}
-  ],
-  "best_practices": [
-    {"title": "La règle des 5 pourquoi", "content": "Méthode Toyota pour identifier les causes racines..."},
-    {"title": "Interagir avec l'IA", "content": "Structurez vos prompts : Contexte + Objectif + Contraintes + Format..."}
-  ]
-}
-```
+**Choix** : Naviguer directement vers le rapport (pas de ScoreReveal intermédiaire) — c'est le flux validé dans le plan.
 
-5 KPIs fixes : Clarté de communication, Profondeur d'analyse, Adaptabilité, Pertinence, Structuration. Chaque 0-10.
+### Bug 4 — `onMessagesChange` appelé avec messages incomplets
+**ChatMode.tsx ligne 176** : `onMessagesChange(updatedMessages)` est appelé APRÈS le streaming, mais avec `updatedMessages` (snapshot pré-assistant). Les messages persistés via `persistSession` sont donc aussi incomplets.
 
----
+**Fix** : Appeler `onMessagesChange` avec la liste complète incluant l'assistant.
 
-## Bloc 2 — Page de rapport en ligne (route persistante)
+### Bug 5 — Standalone practices (`__standalone__`) non retrouvées en historique
+Le `SimulatorHistory` fait un join `academy_practices(title, practice_type, difficulty)`. Pour les sessions `__standalone__`, `practice_id = "__standalone__"` ne correspond à aucune practice en DB → le join échoue silencieusement, la session apparaît sans titre.
 
-**Nouveau fichier** : `src/pages/SimulatorReport.tsx`  
-**Route** : `/simulator/session/:sessionId/report`
+**Fix** : Gérer le fallback pour practice_id `__standalone__` dans l'historique (afficher le titre depuis les messages ou un label générique).
 
-Page dans le layout AppShell (header plateforme visible). Charge la session depuis `academy_practice_sessions` par ID. Design éditorial premium++ :
+## Plan de corrections
 
-**Structure de la page :**
+### Fichier 1 — `src/components/simulator/modes/ChatMode.tsx`
+- Ligne 175 : Construire `allMessages = [...updatedMessages, { id: assistantMsg.id, role: "assistant", content: fullContent, timestamp: assistantMsg.timestamp }]` et passer `allMessages` à `onComplete` et `onMessagesChange`
+- Ajouter prop `sessionId?: string` à `ChatModeProps`
+- Passer `sessionId` au ScoreReveal (ligne 291)
 
-1. **Header** : Titre pratique, badge mode, date, "Tentative N", score animé avec grade
-2. **5 KPIs** : 5 cards horizontales compactes avec icône, label, score /10, barre de progression colorée (vert ≥7, amber ≥4, rouge <4)
-3. **Synthèse du coach** : Card avec bordure gauche primary, texte `leading-relaxed`, fond `bg-card`
-4. **✅ Ce que vous faites bien** : Cards avec bordure gauche `emerald-500`, titre bold + détail prose
-5. **⚠️ Ce que vous devez améliorer** : Cards bordure `amber-500`, titre + détail + encart "📌 Comment progresser" avec fond `bg-amber-50`
-6. **📚 Ce que vous devez apprendre** : Cards bordure `blue-500`, sujet + pourquoi + "Par où commencer"
-7. **🔭 Ce qui devrait vous intéresser** : Cards bordure `violet-500`, sujets connexes + pourquoi
-8. **📖 Bonnes pratiques** : Section avec fond `bg-muted/30`, checklist stylisée, méthodes, retours d'expérience, tips IA
-9. **💬 Vos échanges** : Transcript collapsible (ouvert par défaut), bulles user/assistant
-10. **Actions** : "Envoyer par email" (primary), "Refaire la pratique", "Retour à l'historique"
+### Fichier 2 — `src/components/simulator/SimulatorEngine.tsx`
+- Exposer `sessionId` depuis `useSimulatorSession`
+- Passer `sessionId` dans `modeProps`
+- Retirer le `setTimeout(() => navigate(...))` dans handleComplete — la navigation se fait via ScoreReveal ou directement
 
-Typographie : titres `text-xl font-bold`, body `text-sm leading-relaxed`, sections séparées par `<Separator />` et espaces `space-y-6`.
+### Fichier 3 — `src/components/simulator/modes/CodeMode.tsx` et `AnalysisMode.tsx`
+- Même fix : prop `sessionId`, messages complets dans onComplete/onMessagesChange
 
-CSS `@media print` pour export PDF propre depuis le navigateur (masquer header, sidebar, boutons actions).
+### Fichier 4 — `src/pages/SimulatorHistory.tsx`
+- Gérer le cas `practice_id === "__standalone__"` : afficher "Session libre" au lieu d'un titre vide
+- Utiliser un left join ou un fallback sur le titre
 
----
-
-## Bloc 3 — Envoi par email (Edge Function)
-
-**Nouveau fichier** : `supabase/functions/send-session-report/index.ts`
-
-Edge function authentifiée qui :
-1. Reçoit `session_id` 
-2. Récupère la session + practice depuis DB (service role)
-3. Récupère l'email de l'utilisateur depuis `auth.users`
-4. Génère un HTML premium du rapport (même structure que la page)
-5. Envoie via Lovable AI gateway (ou construit un lien de téléchargement)
-
-Côté client : bouton "Envoyer par email" appelle cette function → toast de confirmation.
-
----
-
-## Bloc 4 — Flux de fin de session
-
-**Fichier** : `src/hooks/useSimulatorSession.ts`
-- `completeSession` retourne le `sessionId` (actuellement void)
-
-**Fichier** : `src/components/simulator/SimulatorEngine.tsx`
-- `handleComplete` reçoit le `sessionId` retourné
-- Appelle `navigate(/simulator/session/${sessionId}/report)` au lieu de juste remonter le score
-
-**Fichier** : `src/components/simulator/widgets/ScoreReveal.tsx`
-- Simplifié : ne sert plus que de fallback si pas de sessionId
-- Ajout prop `sessionId` + bouton "Voir le rapport complet" qui navigue
-
----
-
-## Bloc 5 — Historique multi-tentatives + lien rapport
-
-**Fichier** : `src/pages/SimulatorHistory.tsx`
-- Grouper sessions par `practice_id` 
-- Afficher "Tentative 1, 2, 3..." avec score et delta (↗ +12)
-- Chaque session terminée : bouton "Voir le rapport" → `/simulator/session/:id/report`
-
----
-
-## Bloc 6 — Route
-
-**Fichier** : `src/App.tsx`
-- Ajouter : `<Route path="/simulator/session/:sessionId/report" element={<SimulatorReport />} />`
-
----
-
-## Fichiers impactés
-
-| Fichier | Action |
-|---------|--------|
-| `supabase/functions/academy-practice/index.ts` | Prompt évaluation enrichi (5 KPIs, strengths, improvements, learning_gaps, explore_next, best_practices) |
-| `src/pages/SimulatorReport.tsx` | **Nouveau** — rapport premium++ markdown |
-| `supabase/functions/send-session-report/index.ts` | **Nouveau** — envoi email du rapport |
-| `src/hooks/useSimulatorSession.ts` | Retourner sessionId depuis completeSession |
-| `src/components/simulator/SimulatorEngine.tsx` | Navigation auto vers rapport post-session |
-| `src/components/simulator/widgets/ScoreReveal.tsx` | Ajout lien rapport |
-| `src/pages/SimulatorHistory.tsx` | Multi-tentatives + lien rapport |
-| `src/App.tsx` | Route rapport |
+### Fichier 5 — `src/pages/SimulatorReport.tsx`
+- Gérer le cas où `practice` est null (session standalone) : afficher un titre fallback
 
 ## Ordre d'exécution
 
-1. Edge function évaluation enrichie
-2. SimulatorReport.tsx (page rapport)
-3. Route App.tsx
-4. useSimulatorSession + SimulatorEngine (flux auto)
-5. send-session-report (email)
-6. SimulatorHistory (multi-tentatives)
-7. ScoreReveal (simplification)
+1. ChatMode — fix messages complets + prop sessionId
+2. CodeMode + AnalysisMode — même pattern
+3. SimulatorEngine — exposer sessionId, retirer navigate auto
+4. SimulatorHistory — fallback standalone
+5. SimulatorReport — fallback standalone
 
