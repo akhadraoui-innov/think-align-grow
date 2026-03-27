@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getModeDefinition, UNIVERSE_LABELS } from "@/components/simulator/config/modeRegistry";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { History, Award, RotateCcw, TrendingUp, ArrowLeft, FileText, ChevronDown } from "lucide-react";
+import { History, Award, RotateCcw, TrendingUp, ArrowLeft, FileText, ChevronDown, MessageSquare, Brain, Zap, Target, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -200,41 +200,71 @@ export default function SimulatorHistory() {
                             return (
                               <div
                                 key={session.id}
-                                className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/30 transition-colors"
+                                className="flex items-center gap-3 rounded-xl border p-3 hover:bg-muted/30 transition-colors"
                               >
+                                {/* Score badge */}
                                 <div className="shrink-0">
                                   {session.completed_at ? (
                                     <div className={cn(
-                                      "h-9 w-9 rounded-lg flex items-center justify-center font-black text-sm",
+                                      "h-11 w-11 rounded-xl flex flex-col items-center justify-center font-black text-sm",
                                       (session.score ?? 0) >= 60
                                         ? "bg-emerald-500/10 text-emerald-500"
                                         : "bg-amber-500/10 text-amber-500"
                                     )}>
                                       {session.score ?? 0}
+                                      <span className="text-[8px] font-medium opacity-60">/100</span>
                                     </div>
                                   ) : (
-                                    <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
+                                    <div className="h-11 w-11 rounded-xl bg-muted flex items-center justify-center">
                                       <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
                                     </div>
                                   )}
                                 </div>
 
-                                <div className="flex-1 min-w-0">
+                                {/* Info + mini KPIs */}
+                                <div className="flex-1 min-w-0 space-y-1.5">
                                   <div className="flex items-center gap-2">
-                                    <p className="text-xs font-medium">Tentative {attemptNum}</p>
+                                    <p className="text-xs font-semibold">Tentative {attemptNum}</p>
                                     {delta !== null && delta !== 0 && (
-                                      <span className={cn(
-                                        "text-[10px] font-bold",
-                                        delta > 0 ? "text-emerald-500" : "text-destructive"
-                                      )}>
-                                        {delta > 0 ? "↗" : "↘"} {delta > 0 ? "+" : ""}{delta}
-                                      </span>
+                                      <Badge variant={delta > 0 ? "default" : "destructive"} className="text-[9px] h-4 px-1.5">
+                                        {delta > 0 ? "+" : ""}{delta}
+                                      </Badge>
                                     )}
+                                    <span className="text-[10px] text-muted-foreground ml-auto mr-1">
+                                      {format(new Date(session.started_at), "dd MMM yyyy · HH:mm", { locale: fr })}
+                                    </span>
                                   </div>
-                                  <p className="text-[10px] text-muted-foreground">
-                                    {format(new Date(session.started_at), "dd MMM yyyy à HH:mm", { locale: fr })}
-                                    {session.completed_at && " · Terminée"}
-                                  </p>
+
+                                  {/* Mini KPI row */}
+                                  {session.completed_at && (() => {
+                                    const eval_ = session.evaluation as any;
+                                    const kpis = eval_?.kpis;
+                                    const msgCount = Array.isArray(session.messages) ? session.messages.length : 0;
+                                    return (
+                                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                                        <span className="flex items-center gap-1">
+                                          <MessageSquare className="h-3 w-3" />
+                                          {msgCount} échanges
+                                        </span>
+                                        {kpis && (
+                                          <>
+                                            <span className="flex items-center gap-1" title="Clarté">
+                                              <Brain className="h-3 w-3" />
+                                              {kpis.communication_clarity ?? "–"}/10
+                                            </span>
+                                            <span className="flex items-center gap-1" title="Pertinence">
+                                              <Target className="h-3 w-3" />
+                                              {kpis.response_relevance ?? "–"}/10
+                                            </span>
+                                            <span className="flex items-center gap-1" title="Adaptabilité">
+                                              <Zap className="h-3 w-3" />
+                                              {kpis.adaptability ?? "–"}/10
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
 
                                 {session.completed_at && (
