@@ -27,6 +27,7 @@ interface AnalysisModeProps {
   maxExchanges: number;
   practiceId: string;
   previewMode?: boolean;
+  sessionId?: string | null;
   onComplete?: (score: number, messages?: Message[], evaluation?: any) => void;
   onExchangeUpdate?: (count: number) => void;
   onMessagesChange?: (messages: Message[]) => void;
@@ -62,7 +63,7 @@ function cleanContent(content: string): string {
 
 export function AnalysisMode({
   practiceType, typeConfig, systemPrompt, scenario, maxExchanges, practiceId,
-  previewMode = false, onComplete, onExchangeUpdate, onMessagesChange,
+  previewMode = false, sessionId, onComplete, onExchangeUpdate, onMessagesChange,
 }: AnalysisModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -152,8 +153,9 @@ export function AnalysisMode({
       const newSuggestions = parseSuggestions(fullContent);
       if (newSuggestions.length > 0) setSuggestions(newSuggestions);
       const evalData = parseEvaluation(fullContent);
-      if (evalData) { setEvaluation(evalData); onComplete?.(evalData.score, updatedMessages, evalData); }
-      onMessagesChange?.(updatedMessages);
+      const allMessages = [...updatedMessages, { id: assistantMsg.id, role: "assistant" as const, content: fullContent, timestamp: assistantMsg.timestamp }];
+      if (evalData) { setEvaluation(evalData); onComplete?.(evalData.score, allMessages, evalData); }
+      onMessagesChange?.(allMessages);
     } catch (err: any) { toast.error(err.message || "Erreur de communication"); }
     finally { setIsStreaming(false); }
   }, [input, isStreaming, messages, user, evaluation, practiceId, scenario, isLastExchange, onComplete]);
@@ -261,7 +263,7 @@ export function AnalysisMode({
         </div>
 
         {evaluation && (
-          <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} recommendations={evaluation.recommendations} messages={messages.map(m => ({ role: m.role, content: m.content }))} onRestart={resetSession} />
+          <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} recommendations={evaluation.recommendations} sessionId={sessionId ?? undefined} messages={messages.map(m => ({ role: m.role, content: m.content }))} onRestart={resetSession} />
         )}
 
         {!evaluation && suggestions.length > 0 && !isStreaming && (

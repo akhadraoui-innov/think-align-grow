@@ -1,6 +1,5 @@
 // SimulatorEngine — Routes practice_type to the correct UI family component, wrapped in SimulatorShell
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { getModeDefinition, type ModeFamily } from "./config/modeRegistry";
 import { SimulatorShell } from "./SimulatorShell";
 import { ChatMode } from "./modes/ChatMode";
@@ -32,9 +31,8 @@ interface SimulatorEngineProps {
 export function SimulatorEngine(props: SimulatorEngineProps) {
   const [exchangeCount, setExchangeCount] = useState(0);
   const [resetKey, setResetKey] = useState(0);
-  const navigate = useNavigate();
 
-  const { persistSession, completeSession } = useSimulatorSession(
+  const { sessionId, persistSession, completeSession } = useSimulatorSession(
     props.practiceId,
     props.previewMode
   );
@@ -73,22 +71,19 @@ export function SimulatorEngine(props: SimulatorEngineProps) {
           content: m.content,
           timestamp: m.timestamp.toISOString(),
         }));
-        const completedSessionId = await completeSession(serialized, evaluation);
+        await completeSession(serialized, evaluation);
         props.onComplete?.(score);
-        // Navigate to report page if we have a session ID
-        if (completedSessionId && !props.previewMode) {
-          setTimeout(() => navigate(`/simulator/session/${completedSessionId}/report`), 600);
-        }
       } else {
         props.onComplete?.(score);
       }
     },
-    [completeSession, props.onComplete, navigate, props.previewMode]
+    [completeSession, props.onComplete]
   );
 
   const modeProps = {
     ...props,
     key: resetKey,
+    sessionId,
     onExchangeUpdate: handleExchangeUpdate,
     onMessagesChange: handleMessagesChange,
     onComplete: handleComplete,
