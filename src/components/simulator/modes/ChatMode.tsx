@@ -17,14 +17,8 @@ import { InputQualityIndicator } from "../widgets/InputQualityIndicator";
 import { BriefingCard } from "../widgets/BriefingCard";
 import { getModeDefinition } from "../config/modeRegistry";
 import { getInitialSuggestions } from "../config/scenarioTemplates";
-import { TimerBar } from "../widgets/TimerBar";
-import { TensionGauge } from "../widgets/TensionGauge";
-import { KPIDashboard } from "../widgets/KPIDashboard";
-import { ScoreReveal } from "../widgets/ScoreReveal";
-import { SuggestionChips } from "../widgets/SuggestionChips";
-import { InputQualityIndicator } from "../widgets/InputQualityIndicator";
-import { getModeDefinition } from "../config/modeRegistry";
-import { getInitialSuggestions } from "../config/scenarioTemplates";
+
+
 
 interface Message {
   id: string;
