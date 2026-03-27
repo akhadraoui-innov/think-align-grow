@@ -63,7 +63,7 @@ function cleanContent(content: string): string {
 
 export function AnalysisMode({
   practiceType, typeConfig, systemPrompt, scenario, maxExchanges, practiceId,
-  previewMode = false, onComplete, onExchangeUpdate, onMessagesChange,
+  previewMode = false, sessionId, onComplete, onExchangeUpdate, onMessagesChange,
 }: AnalysisModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
