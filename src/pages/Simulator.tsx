@@ -4,10 +4,10 @@ import { Search, Sparkles, Code, FileText, FolderSearch, Layout, ClipboardCheck,
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MODE_REGISTRY, UNIVERSE_LABELS, getModeDefinition, type ModeFamily, type ModeUniverse } from "@/components/simulator/config/modeRegistry";
-import { SimulatorEngine } from "@/components/simulator/SimulatorEngine";
+
 import { SimulatorInsightPanel } from "@/components/simulator/widgets/SimulatorInsightPanel";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
@@ -67,7 +67,7 @@ export default function Simulator() {
   const [filterFamily, setFilterFamily] = useState<string>("all");
   const [selectedMode, setSelectedMode] = useState<{ key: string; def: any } | null>(null);
   const [aiLevel, setAiLevel] = useState<AIAssistanceLevel>("guided");
-  const [activeSim, setActiveSim] = useState<{ key: string; def: any; practiceId?: string; practice?: any; systemPrompt: string; scenario: string; aiLevel: AIAssistanceLevel } | null>(null);
+  
   const [activeTab, setActiveTab] = useState("catalogue");
 
   // Fetch org-assigned standalone practices
@@ -135,26 +135,24 @@ export default function Simulator() {
     const fullPrompt = behaviorPrompt + assistanceInstructions;
     const richScenario = generateRichScenario(key, "intermediate", aiLevel);
 
-    setActiveSim({
-      key,
-      def,
-      systemPrompt: fullPrompt,
-      scenario: richScenario,
-      aiLevel,
-    });
     setSelectedMode(null);
+    navigate("/simulator/session", {
+      state: { key, def, systemPrompt: fullPrompt, scenario: richScenario, aiLevel },
+    });
   };
 
   const launchPractice = (pr: any) => {
     const def = getModeDefinition(pr.practice_type) || { family: "chat" as ModeFamily, label: pr.practice_type, universe: "leadership" as ModeUniverse, description: pr.scenario, evaluationDimensions: [], defaultConfig: {} };
-    setActiveSim({
-      key: pr.practice_type,
-      def,
-      practiceId: pr.id,
-      practice: pr,
-      systemPrompt: pr.system_prompt || "",
-      scenario: pr.scenario,
-      aiLevel: pr.ai_assistance_level || "guided",
+    navigate("/simulator/session", {
+      state: {
+        key: pr.practice_type,
+        def,
+        practiceId: pr.id,
+        practice: pr,
+        systemPrompt: pr.system_prompt || "",
+        scenario: pr.scenario,
+        aiLevel: pr.ai_assistance_level || "guided",
+      },
     });
   };
 
@@ -405,28 +403,7 @@ export default function Simulator() {
         </Tabs>
       </div>
 
-      {/* Fullscreen Simulator Dialog */}
-      <Dialog open={!!activeSim} onOpenChange={(open) => !open && setActiveSim(null)}>
-        <DialogContent className="max-w-full w-full h-[100dvh] p-0 gap-0 [&>button]:hidden rounded-none border-0">
-          {activeSim && (
-            <div className="flex flex-col h-full overflow-hidden">
-              <SimulatorEngine
-                practiceType={activeSim.key}
-                typeConfig={activeSim.practice?.type_config || activeSim.def.defaultConfig || {}}
-                systemPrompt={activeSim.systemPrompt}
-                scenario={activeSim.scenario}
-                maxExchanges={activeSim.practice?.max_exchanges || 10}
-                practiceId={activeSim.practiceId || "__standalone__"}
-                previewMode={!activeSim.practiceId}
-                difficulty={activeSim.practice?.difficulty || "intermediate"}
-                aiAssistanceLevel={activeSim.aiLevel}
-                onClose={() => setActiveSim(null)}
-                sessionTitle={activeSim.practice?.title || activeSim.def.label}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      
     </PageTransition>
   );
 }

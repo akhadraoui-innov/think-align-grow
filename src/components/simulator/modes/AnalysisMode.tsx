@@ -1,11 +1,10 @@
 // AnalysisMode — Briefing panel + data room + investigation chat
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Loader2, FolderSearch, FileText, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowUp, Loader2, FolderSearch, FileText, AlertTriangle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -14,6 +13,7 @@ import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
 import { ScoreReveal } from "../widgets/ScoreReveal";
 import { SuggestionChips } from "../widgets/SuggestionChips";
 import { InputQualityIndicator } from "../widgets/InputQualityIndicator";
+import { BriefingCard } from "../widgets/BriefingCard";
 import { getModeDefinition } from "../config/modeRegistry";
 
 interface Message { id: string; role: "user" | "assistant"; content: string; timestamp: Date; }
@@ -171,17 +171,12 @@ export function AnalysisMode({
 
         <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5">
           {/* Briefing */}
-          <Collapsible open={briefingOpen} onOpenChange={setBriefingOpen}>
-            <CollapsibleTrigger className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-full">
-              {briefingOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-              Briefing
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2">
-              <div className="text-xs leading-relaxed border-l-4 border-primary bg-background rounded-r-lg p-3 shadow-sm">
-                <EnrichedMarkdown content={(scenarioMsg?.content || scenario).substring(0, 500)} />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+          <BriefingCard
+            content={(scenarioMsg?.content || scenario)}
+            practiceType={practiceType}
+            collapsed={!briefingOpen}
+            onToggle={() => setBriefingOpen(!briefingOpen)}
+          />
 
           {dataRoomDocs.length > 0 && (
             <div className="space-y-2">
@@ -225,8 +220,13 @@ export function AnalysisMode({
                 key={msg.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
+                className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}
               >
+                {msg.role === "assistant" && (
+                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shrink-0 mt-1 shadow-sm">
+                    <Sparkles className="h-2.5 w-2.5 text-primary-foreground" />
+                  </div>
+                )}
                 <div className={cn(
                   "max-w-[80%] rounded-2xl px-4 py-3 text-sm",
                   msg.role === "user"

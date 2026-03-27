@@ -1,11 +1,10 @@
 // CodeMode — Split layout: Code Editor (left) + Chat (right)
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Loader2, Code, Copy, Check, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowUp, Loader2, Code, Copy, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -13,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
 import { CodeEditor } from "../widgets/CodeEditor";
 import { ScoreReveal } from "../widgets/ScoreReveal";
+import { BriefingCard } from "../widgets/BriefingCard";
 import { getModeDefinition } from "../config/modeRegistry";
 
 interface Message {
@@ -213,37 +213,33 @@ export function CodeMode({
 
       {/* Right: Chat */}
       <div className="w-1/2 flex flex-col overflow-hidden">
-        {/* Collapsible briefing card */}
+        {/* Briefing Card */}
         {scenarioMsg && (
-          <Collapsible open={briefingOpen} onOpenChange={setBriefingOpen}>
-            <div className="border-b shrink-0">
-              <CollapsibleTrigger className="flex items-center gap-2 w-full px-4 py-2.5 text-left hover:bg-muted/5 transition-colors">
-                {briefingOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Briefing</span>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="px-4 pb-3">
-                  <div className="border-l-4 border-primary bg-card rounded-r-lg p-3 shadow-sm text-sm leading-relaxed max-h-[140px] overflow-y-auto">
-                    <EnrichedMarkdown content={cleanContent(scenarioMsg.content)} />
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </div>
-          </Collapsible>
+          <BriefingCard
+            content={cleanContent(scenarioMsg.content)}
+            practiceType={practiceType}
+            collapsed={!briefingOpen}
+            onToggle={() => setBriefingOpen(!briefingOpen)}
+          />
         )}
 
         {/* Chat messages */}
         <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
           <AnimatePresence initial={false}>
-            {chatMessages.map((msg) => (
+          {chatMessages.map((msg) => (
               <motion.div
                 key={msg.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
+                className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}
               >
+                {msg.role === "assistant" && (
+                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary to-primary/50 flex items-center justify-center shrink-0 mt-1 shadow-sm">
+                    <Sparkles className="h-2.5 w-2.5 text-primary-foreground" />
+                  </div>
+                )}
                 <div className={cn(
-                  "max-w-[90%] rounded-2xl px-4 py-3 text-sm",
+                  "max-w-[85%] rounded-2xl px-4 py-3 text-sm",
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground"
                     : "bg-card border border-border/40 shadow-sm"
