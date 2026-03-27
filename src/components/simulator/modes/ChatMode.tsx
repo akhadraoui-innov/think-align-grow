@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Loader2, RotateCcw } from "lucide-react";
+import { ArrowUp, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -47,20 +48,14 @@ function parseInlineBlock(content: string, tag: string): Record<string, number> 
 function parseEvaluation(content: string): { score: number; feedback: string; dimensions?: { name: string; score: number }[]; recommendations?: string[] } | null {
   const match = content.match(/```evaluation\s*\n?([\s\S]*?)```/);
   if (!match) return null;
-  try {
-    const parsed = JSON.parse(match[1].trim());
-    if (typeof parsed.score === "number") return parsed;
-  } catch {}
+  try { const parsed = JSON.parse(match[1].trim()); if (typeof parsed.score === "number") return parsed; } catch {}
   return null;
 }
 
 function parseSuggestions(content: string): string[] {
   const match = content.match(/```suggestions\s*\n?([\s\S]*?)```/);
   if (!match) return [];
-  try {
-    const parsed = JSON.parse(match[1].trim());
-    if (Array.isArray(parsed)) return parsed.slice(0, 3);
-  } catch {}
+  try { const parsed = JSON.parse(match[1].trim()); if (Array.isArray(parsed)) return parsed.slice(0, 3); } catch {}
   return [];
 }
 
@@ -72,16 +67,8 @@ function cleanContent(content: string): string {
 }
 
 export function ChatMode({
-  practiceType,
-  typeConfig,
-  systemPrompt,
-  scenario,
-  maxExchanges,
-  practiceId,
-  previewMode = false,
-  onComplete,
-  onExchangeUpdate,
-  onMessagesChange,
+  practiceType, typeConfig, systemPrompt, scenario, maxExchanges, practiceId,
+  previewMode = false, onComplete, onExchangeUpdate, onMessagesChange,
 }: ChatModeProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -89,7 +76,6 @@ export function ChatMode({
   const [isStreaming, setIsStreaming] = useState(false);
   const [evaluation, setEvaluation] = useState<any>(null);
   const [gauges, setGauges] = useState<Record<string, number>>(() => {
-    // Initialize gauges from typeConfig defaults
     const init: Record<string, number> = {};
     if (typeConfig.tension_start) init.tension = typeConfig.tension_start as number;
     if (typeConfig.rapport_start) init.rapport = typeConfig.rapport_start as number;
@@ -97,6 +83,7 @@ export function ChatMode({
   });
   const [scoring, setScoring] = useState<Record<string, number> | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [briefingOpen, setBriefingOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -105,32 +92,14 @@ export function ChatMode({
   const hasTimer = practiceType === "pitch" || practiceType === "incident_response" || practiceType === "crisis";
   const timeLimitSeconds = (typeConfig.time_limit_seconds as number) || ((typeConfig.time_limit_minutes as number) || 0) * 60;
 
-  // Notify parent of exchange count changes
-  useEffect(() => {
-    onExchangeUpdate?.(exchangeCount);
-  }, [exchangeCount, onExchangeUpdate]);
+  useEffect(() => { onExchangeUpdate?.(exchangeCount); }, [exchangeCount, onExchangeUpdate]);
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages]);
 
-  // Auto-scroll
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  // Send initial scenario + initial suggestions
   useEffect(() => {
     if (messages.length === 0 && scenario) {
-      setMessages([{
-        id: "scenario",
-        role: "assistant",
-        content: scenario,
-        timestamp: new Date(),
-      }]);
-      // Set initial suggestions for guided/intensive modes
+      setMessages([{ id: "scenario", role: "assistant", content: scenario, timestamp: new Date() }]);
       const initialChips = getInitialSuggestions(practiceType);
-      if (initialChips.length > 0) {
-        setSuggestions(initialChips);
-      }
+      if (initialChips.length > 0) setSuggestions(initialChips);
     }
   }, [scenario, practiceType]);
 
@@ -138,63 +107,31 @@ export function ChatMode({
     const text = overrideText || input.trim();
     if (!text || isStreaming || !user || evaluation) return;
 
-    const userMsg: Message = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: text,
-      timestamp: new Date(),
-    };
+    const userMsg: Message = { id: crypto.randomUUID(), role: "user", content: text, timestamp: new Date() };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setInput("");
     setSuggestions([]);
+    setBriefingOpen(false);
     setIsStreaming(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
+      const apiMessages = updatedMessages.filter((m) => m.id !== "scenario").map((m) => ({ role: m.role, content: m.content }));
+      if (scenario) apiMessages.unshift({ role: "assistant", content: scenario });
 
-      const apiMessages = updatedMessages
-        .filter((m) => m.id !== "scenario")
-        .map((m) => ({ role: m.role, content: m.content }));
-
-      if (scenario) {
-        apiMessages.unshift({ role: "assistant", content: scenario });
-      }
-
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/academy-practice`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            practice_id: practiceId,
-            messages: apiMessages,
-            evaluate: isLastExchange,
-            ...(practiceId === "__standalone__" && systemPrompt ? { system_override: systemPrompt } : {}),
-          }),
-        }
-      );
-
-      if (!resp.ok) {
-        const errData = await resp.json().catch(() => ({}));
-        throw new Error(errData.error || `Error ${resp.status}`);
-      }
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/academy-practice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ practice_id: practiceId, messages: apiMessages, evaluate: isLastExchange, ...(practiceId === "__standalone__" && systemPrompt ? { system_override: systemPrompt } : {}) }),
+      });
+      if (!resp.ok) { const errData = await resp.json().catch(() => ({})); throw new Error(errData.error || `Error ${resp.status}`); }
 
       const reader = resp.body?.getReader();
       if (!reader) throw new Error("No stream");
-
-      const assistantMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: "",
-        timestamp: new Date(),
-      };
+      const assistantMsg: Message = { id: crypto.randomUUID(), role: "assistant", content: "", timestamp: new Date() };
       setMessages((prev) => [...prev, assistantMsg]);
-
       const decoder = new TextDecoder();
       let buffer = "";
       let fullContent = "";
@@ -202,76 +139,42 @@ export function ChatMode({
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
-
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6);
           if (data === "[DONE]") continue;
-
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) {
-              fullContent += delta;
-              setMessages((prev) =>
-                prev.map((m) => (m.id === assistantMsg.id ? { ...m, content: fullContent } : m))
-              );
-            }
-          } catch {}
+          try { const parsed = JSON.parse(data); const delta = parsed.choices?.[0]?.delta?.content; if (delta) { fullContent += delta; setMessages((prev) => prev.map((m) => (m.id === assistantMsg.id ? { ...m, content: fullContent } : m))); } } catch {}
         }
       }
 
-      // Parse data blocks
       for (const tag of ["gauges", "kpis", "funnel", "stakeholders"]) {
         const parsed = parseInlineBlock(fullContent, tag);
         if (parsed) setGauges(parsed);
       }
-
       const scoringData = parseInlineBlock(fullContent, "scoring");
       if (scoringData) setScoring(scoringData);
-
       const newSuggestions = parseSuggestions(fullContent);
       if (newSuggestions.length > 0) setSuggestions(newSuggestions);
-
       const evalData = parseEvaluation(fullContent);
-      if (evalData) {
-        setEvaluation(evalData);
-        onComplete?.(evalData.score, updatedMessages, evalData);
-      }
-
-      // Notify parent of messages change
+      if (evalData) { setEvaluation(evalData); onComplete?.(evalData.score, updatedMessages, evalData); }
       onMessagesChange?.(updatedMessages);
-    } catch (err: any) {
-      toast.error(err.message || "Erreur de communication");
-    } finally {
-      setIsStreaming(false);
-    }
+    } catch (err: any) { toast.error(err.message || "Erreur de communication"); }
+    finally { setIsStreaming(false); }
   }, [input, isStreaming, messages, user, evaluation, practiceId, scenario, isLastExchange, onComplete]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const resetSession = () => {
-    setMessages([]);
-    setEvaluation(null);
-    setGauges({});
-    setScoring(null);
-    setSuggestions([]);
-    setInput("");
-  };
+  const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
+  const resetSession = () => { setMessages([]); setEvaluation(null); setGauges({}); setScoring(null); setSuggestions([]); setInput(""); setBriefingOpen(true); };
 
   const showTension = "tension" in gauges || "rapport" in gauges;
   const showKPIs = "budget" in gauges || "morale" in gauges || "risk" in gauges;
   const showFunnel = "interest" in gauges || "closing_probability" in gauges;
   const showStakeholders = "supporters" in gauges || "adoption" in gauges;
+
+  const scenarioMsg = messages.find((m) => m.id === "scenario");
+  const chatMessages = messages.filter((m) => m.id !== "scenario");
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -280,7 +183,7 @@ export function ChatMode({
       )}
 
       {(showTension || showKPIs || showFunnel || showStakeholders) && (
-        <div className="px-4 py-2 border-b bg-muted/20 flex flex-wrap gap-3 shrink-0">
+        <div className="px-4 py-2.5 border-b bg-card flex flex-wrap gap-3 shrink-0">
           {showTension && <TensionGauge tension={gauges.tension || 5} rapport={gauges.rapport || 5} progress={gauges.progress} />}
           {showKPIs && <KPIDashboard kpis={gauges} />}
           {showFunnel && (
@@ -302,14 +205,12 @@ export function ChatMode({
       )}
 
       {scoring && (
-        <div className="px-4 py-2 border-b bg-muted/20">
+        <div className="px-4 py-2.5 border-b bg-card shrink-0">
           <div className="flex flex-wrap gap-4 text-xs">
             {Object.entries(scoring).filter(([k]) => k !== "attempt" && k !== "total").map(([k, v]) => (
               <div key={k} className="flex items-center gap-1.5">
                 <span className="capitalize text-muted-foreground">{k.replace(/_/g, " ")}:</span>
-                <span className={cn("font-bold", (v as number) >= 8 ? "text-emerald-600" : (v as number) >= 5 ? "text-amber-600" : "text-destructive")}>
-                  {v}/10
-                </span>
+                <span className={cn("font-bold", (v as number) >= 8 ? "text-emerald-600" : (v as number) >= 5 ? "text-amber-600" : "text-destructive")}>{v}/10</span>
               </div>
             ))}
             {scoring.total !== undefined && (
@@ -322,26 +223,41 @@ export function ChatMode({
         </div>
       )}
 
+      {/* Collapsible Briefing Card */}
+      {scenarioMsg && (
+        <Collapsible open={briefingOpen} onOpenChange={setBriefingOpen}>
+          <div className="border-b shrink-0">
+            <CollapsibleTrigger className="flex items-center gap-2 w-full px-4 py-2.5 text-left hover:bg-muted/5 transition-colors">
+              {briefingOpen ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Briefing de la mission</span>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-4 pb-3">
+                <div className="border-l-4 border-primary bg-card rounded-r-lg p-4 shadow-sm text-sm leading-relaxed max-h-[160px] overflow-y-auto">
+                  <EnrichedMarkdown content={cleanContent(scenarioMsg.content)} />
+                </div>
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+      )}
+
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
         <AnimatePresence initial={false}>
-          {messages.map((msg) => (
+          {chatMessages.map((msg) => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
             >
-              <div
-                className={cn(
-                  "max-w-[80%] rounded-2xl px-4 py-3 text-sm",
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : msg.id === "scenario"
-                    ? "bg-card border-l-4 border-primary shadow-sm border"
-                    : "bg-card border shadow-sm"
-                )}
-              >
+              <div className={cn(
+                "max-w-[80%] rounded-2xl px-4 py-3 text-sm",
+                msg.role === "user"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card border border-border/40 shadow-sm"
+              )}>
                 {msg.role === "assistant" ? (
                   <EnrichedMarkdown content={cleanContent(msg.content)} />
                 ) : (
@@ -351,35 +267,23 @@ export function ChatMode({
             </motion.div>
           ))}
         </AnimatePresence>
-
         {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-2xl px-4 py-3">
+            <div className="bg-card border rounded-2xl px-4 py-3 shadow-sm">
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             </div>
           </div>
         )}
       </div>
 
-      {/* Evaluation */}
       {evaluation && (
-        <ScoreReveal
-          score={evaluation.score}
-          feedback={evaluation.feedback}
-          dimensions={evaluation.dimensions}
-          recommendations={evaluation.recommendations}
-          practiceType={practiceType}
-          messages={messages.map(m => ({ role: m.role, content: m.content }))}
-          onRestart={resetSession}
-        />
+        <ScoreReveal score={evaluation.score} feedback={evaluation.feedback} dimensions={evaluation.dimensions} recommendations={evaluation.recommendations} practiceType={practiceType} messages={messages.map(m => ({ role: m.role, content: m.content }))} onRestart={resetSession} />
       )}
 
-      {/* Suggestion chips */}
       {!evaluation && suggestions.length > 0 && !isStreaming && (
         <SuggestionChips suggestions={suggestions} onSelect={(s) => sendMessage(s)} disabled={isStreaming} />
       )}
 
-      {/* Input */}
       {!evaluation && (
         <div className="shrink-0 p-4 border-t bg-background">
           <div className="flex gap-2 items-end">
@@ -396,12 +300,7 @@ export function ChatMode({
               />
               <InputQualityIndicator text={input} practiceType={practiceType} />
             </div>
-            <Button
-              size="icon"
-              onClick={() => sendMessage()}
-              disabled={!input.trim() || isStreaming}
-              className="shrink-0 h-[44px] w-[44px]"
-            >
+            <Button size="icon" onClick={() => sendMessage()} disabled={!input.trim() || isStreaming} className="shrink-0 h-[44px] w-[44px]">
               {isStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
             </Button>
           </div>

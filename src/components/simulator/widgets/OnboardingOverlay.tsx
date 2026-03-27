@@ -34,33 +34,33 @@ export function OnboardingOverlay({ modeDef, universeName, difficulty, aiAssista
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        className="max-w-lg w-full space-y-6"
+        className="max-w-lg w-full space-y-5"
       >
         {/* Icon */}
         <motion.div
           animate={{ y: [0, -6, 0] }}
           transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-          className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center"
+          className="mx-auto w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center"
         >
-          <Sparkles className="h-8 w-8 text-primary" />
+          <Sparkles className="h-7 w-7 text-primary" />
         </motion.div>
 
         {/* Title */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <Badge variant="outline" className="text-xs">{universeName}</Badge>
-          <h2 className="text-2xl font-bold tracking-tight">{modeDef.label}</h2>
+          <h2 className="text-xl font-bold tracking-tight">{modeDef.label}</h2>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto">{modeDef.description}</p>
         </div>
 
-        {/* How it works */}
-        <div className="bg-muted/30 rounded-xl p-4">
+        {/* How it works — horizontal */}
+        <div className="bg-card border rounded-xl p-4">
           <p className="text-xs font-semibold mb-3 flex items-center justify-center gap-1.5">
             <HelpCircle className="h-3.5 w-3.5 text-primary" /> Comment ça marche
           </p>
-          <div className="flex items-start gap-2 justify-center">
+          <div className="flex items-start gap-3 justify-center">
             {STEPS.map((step, i) => (
               <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                   {step.icon}
                 </div>
                 <p className="text-xs font-semibold">{step.label}</p>
@@ -71,7 +71,7 @@ export function OnboardingOverlay({ modeDef, universeName, difficulty, aiAssista
         </div>
 
         {/* Evaluation criteria */}
-        <div className="bg-muted/50 rounded-xl p-4 space-y-3 text-left">
+        <div className="bg-card border rounded-xl p-4 space-y-2.5 text-left">
           <div className="flex items-center gap-2 text-xs font-semibold">
             <Target className="h-3.5 w-3.5 text-primary" /> Critères d'évaluation
           </div>
