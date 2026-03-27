@@ -143,14 +143,16 @@ export default function Simulator() {
 
   const launchPractice = (pr: any) => {
     const def = getModeDefinition(pr.practice_type) || { family: "chat" as ModeFamily, label: pr.practice_type, universe: "leadership" as ModeUniverse, description: pr.scenario, evaluationDimensions: [], defaultConfig: {} };
-    setActiveSim({
-      key: pr.practice_type,
-      def,
-      practiceId: pr.id,
-      practice: pr,
-      systemPrompt: pr.system_prompt || "",
-      scenario: pr.scenario,
-      aiLevel: pr.ai_assistance_level || "guided",
+    navigate("/simulator/session", {
+      state: {
+        key: pr.practice_type,
+        def,
+        practiceId: pr.id,
+        practice: pr,
+        systemPrompt: pr.system_prompt || "",
+        scenario: pr.scenario,
+        aiLevel: pr.ai_assistance_level || "guided",
+      },
     });
   };
 
