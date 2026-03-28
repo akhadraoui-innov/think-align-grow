@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -20,6 +20,64 @@ export function useSimulatorSession(practiceId: string | null, previewMode = fal
   const { user } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const isFirstPersist = useRef(true);
+  const latestMessagesRef = useRef<SessionMessage[]>([]);
+
+  // Flush pending debounce on unmount (e.g. user navigates away)
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
+  const doPersist = useCallback(
+    async (
+      messages: SessionMessage[],
+      evaluation?: SessionEvaluation | null,
+      score?: number
+    ) => {
+      if (!user) return;
+      try {
+        const messagesJson = JSON.parse(JSON.stringify(messages));
+        const evalJson = evaluation ? JSON.parse(JSON.stringify(evaluation)) : undefined;
+
+        if (sessionId) {
+          const updateData: Record<string, unknown> = { messages: messagesJson };
+          if (evalJson) {
+            updateData.evaluation = evalJson;
+            updateData.score = score ?? evaluation!.score;
+            updateData.completed_at = new Date().toISOString();
+          }
+          await supabase
+            .from("academy_practice_sessions")
+            .update(updateData)
+            .eq("id", sessionId);
+        } else {
+          const insertData: Record<string, unknown> = {
+            user_id: user.id,
+            practice_id: practiceId || null,
+            messages: messagesJson,
+          };
+          if (evalJson) {
+            insertData.evaluation = evalJson;
+            insertData.score = score ?? evaluation!.score;
+            insertData.completed_at = new Date().toISOString();
+          }
+          const { data } = await supabase
+            .from("academy_practice_sessions")
+            .insert(insertData as any)
+            .select("id")
+            .single();
+          if (data) setSessionId(data.id);
+        }
+      } catch (err) {
+        console.error("Session persist error:", err);
+      }
+    },
+    [user, practiceId, sessionId]
+  );
 
   const persistSession = useCallback(
     async (
@@ -28,49 +86,19 @@ export function useSimulatorSession(practiceId: string | null, previewMode = fal
       score?: number
     ) => {
       if (previewMode || !user) return;
+      latestMessagesRef.current = messages;
+
+      // First persist is immediate to guarantee at least one DB record exists
+      if (isFirstPersist.current) {
+        isFirstPersist.current = false;
+        await doPersist(messages, evaluation, score);
+        return;
+      }
 
       if (debounceRef.current) clearTimeout(debounceRef.current);
-
-      debounceRef.current = setTimeout(async () => {
-        try {
-          const messagesJson = JSON.parse(JSON.stringify(messages));
-          const evalJson = evaluation ? JSON.parse(JSON.stringify(evaluation)) : undefined;
-
-          if (sessionId) {
-            const updateData: Record<string, unknown> = { messages: messagesJson };
-            if (evalJson) {
-              updateData.evaluation = evalJson;
-              updateData.score = score ?? evaluation!.score;
-              updateData.completed_at = new Date().toISOString();
-            }
-            await supabase
-              .from("academy_practice_sessions")
-              .update(updateData)
-              .eq("id", sessionId);
-          } else {
-            const insertData: Record<string, unknown> = {
-              user_id: user.id,
-              practice_id: practiceId || null,
-              messages: messagesJson,
-            };
-            if (evalJson) {
-              insertData.evaluation = evalJson;
-              insertData.score = score ?? evaluation!.score;
-              insertData.completed_at = new Date().toISOString();
-            }
-            const { data } = await supabase
-              .from("academy_practice_sessions")
-              .insert(insertData as any)
-              .select("id")
-              .single();
-            if (data) setSessionId(data.id);
-          }
-        } catch (err) {
-          console.error("Session persist error:", err);
-        }
-      }, 500);
+      debounceRef.current = setTimeout(() => doPersist(messages, evaluation, score), 500);
     },
-    [user, practiceId, sessionId, previewMode]
+    [user, previewMode, doPersist]
   );
 
   const completeSession = useCallback(
