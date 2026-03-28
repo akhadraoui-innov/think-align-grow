@@ -42,6 +42,8 @@ export const UNIVERSE_LABELS: Record<ModeUniverse, string> = {
   strategy: "Stratégie & Consulting",
   prompting: "Prompting & IA Literacy",
   sales_hr: "Vente, RH & Opérations",
+  personal_development: "Développement Personnel",
+  therapy: "Thérapie & Bien-être",
 };
 
 export const MODE_REGISTRY: Record<string, ModeDefinition> = {
