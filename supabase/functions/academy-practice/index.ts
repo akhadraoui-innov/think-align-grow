@@ -74,7 +74,6 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { practice_id, messages, evaluate, system_override } = await req.json();
-    if (!practice_id) throw new Error("Missing practice_id");
 
     let systemPrompt: string;
     let rubric: any[] = [];
