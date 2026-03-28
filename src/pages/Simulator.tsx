@@ -53,6 +53,8 @@ const UNIVERSE_COLORS: Record<ModeUniverse, string> = {
   strategy: "bg-purple-500/10 text-purple-700 border-purple-200",
   prompting: "bg-pink-500/10 text-pink-700 border-pink-200",
   sales_hr: "bg-teal-500/10 text-teal-700 border-teal-200",
+  personal_development: "bg-lime-500/10 text-lime-700 border-lime-200",
+  therapy: "bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-200",
 };
 
 const DIFFICULTY_DOTS: Record<string, number> = {
