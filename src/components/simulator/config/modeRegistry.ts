@@ -15,7 +15,9 @@ export type ModeUniverse =
   | "legal"
   | "strategy"
   | "prompting"
-  | "sales_hr";
+  | "sales_hr"
+  | "personal_development"
+  | "therapy";
 
 export interface ModeDefinition {
   family: ModeFamily;
