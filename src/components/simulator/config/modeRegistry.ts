@@ -15,7 +15,9 @@ export type ModeUniverse =
   | "legal"
   | "strategy"
   | "prompting"
-  | "sales_hr";
+  | "sales_hr"
+  | "personal_development"
+  | "therapy";
 
 export interface ModeDefinition {
   family: ModeFamily;
@@ -40,6 +42,8 @@ export const UNIVERSE_LABELS: Record<ModeUniverse, string> = {
   strategy: "Stratégie & Consulting",
   prompting: "Prompting & IA Literacy",
   sales_hr: "Vente, RH & Opérations",
+  personal_development: "Développement Personnel",
+  therapy: "Thérapie & Bien-être",
 };
 
 export const MODE_REGISTRY: Record<string, ModeDefinition> = {
@@ -569,6 +573,54 @@ export const MODE_REGISTRY: Record<string, ModeDefinition> = {
     icon: "Building",
     defaultConfig: { company_values: [] },
     evaluationDimensions: ["alignment", "understanding", "application"],
+  },
+  // ── Univers 13: Développement Personnel ──
+  stress_resilience: {
+    family: "chat",
+    universe: "personal_development",
+    label: "Gestion du Stress & Résilience",
+    description: "Coaching en psychologie positive, modèle PERMA, techniques de coping et pleine conscience.",
+    icon: "Heart",
+    defaultConfig: {},
+    evaluationDimensions: ["conscience_de_soi", "plan_action", "techniques", "engagement"],
+  },
+  emotional_intelligence: {
+    family: "chat",
+    universe: "personal_development",
+    label: "Intelligence Émotionnelle",
+    description: "Conversation difficile, CNV, gestion des émotions et résolution constructive.",
+    icon: "Brain",
+    defaultConfig: {},
+    evaluationDimensions: ["expression_emotionnelle", "ecoute_active", "cnv", "resolution"],
+  },
+  confidence_building: {
+    family: "chat",
+    universe: "personal_development",
+    label: "Confiance en Soi",
+    description: "Préparation mentale, recadrage cognitif, visualisation positive et ancrage PNL.",
+    icon: "Star",
+    defaultConfig: {},
+    evaluationDimensions: ["identification_blocages", "recadrage", "preparation_mentale", "visualisation"],
+  },
+
+  // ── Univers 14: Thérapie & Bien-être ──
+  theta_healing_practitioner: {
+    family: "chat",
+    universe: "therapy",
+    label: "Theta Healing — Thérapeute",
+    description: "Entraînement à conduire une séance complète : état thêta, croyances aux 4 niveaux, téléchargement de sentiments.",
+    icon: "Sparkles",
+    defaultConfig: {},
+    evaluationDimensions: ["posture_therapeutique", "protocole", "croyances", "telechargement", "ethique"],
+  },
+  theta_healing_self: {
+    family: "chat",
+    universe: "therapy",
+    label: "Theta Healing — Auto-guérison",
+    description: "Travail guidé sur soi avec aide contextuelle maximale, glossaire intégré et exercices d'ancrage.",
+    icon: "Leaf",
+    defaultConfig: { mode: "guided", help_bubbles: true, glossary: true },
+    evaluationDimensions: ["introspection", "engagement_emotionnel", "schemas", "intentions", "autonomie"],
   },
 };
 
