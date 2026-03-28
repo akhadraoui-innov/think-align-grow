@@ -74,15 +74,17 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { practice_id, messages, evaluate, system_override } = await req.json();
-    if (!practice_id) throw new Error("Missing practice_id");
 
     let systemPrompt: string;
     let rubric: any[] = [];
     let practiceType = "conversation";
     let typeConfig: Record<string, any> = {};
 
-    if ((practice_id === "__persona_chat__" || practice_id === "__standalone__") && system_override) {
+    if ((practice_id === "__persona_chat__" || practice_id === "__standalone__" || !practice_id) && system_override) {
       systemPrompt = system_override;
+    } else if (!practice_id) {
+      // Standalone session without system_override — use generic coach prompt
+      systemPrompt = `Tu es un coach pédagogique bienveillant et exigeant. Guide l'apprenant avec des questions pertinentes, donne du feedback constructif, et aide-le à progresser.\n\nAPRÈS chaque réponse, ajoute un bloc JSON de suggestions :\n\`\`\`suggestions\n["suggestion 1", "suggestion 2", "suggestion 3"]\n\`\`\`\n\nRÈGLE ABSOLUE : Tu réponds TOUJOURS intégralement en français.`;
     } else {
       const { data: practice, error: pErr } = await supabase
         .from("academy_practices")
