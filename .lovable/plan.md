@@ -1,69 +1,94 @@
 
 
-# Diagnostic : Historique vide — Analyse des causes racines
+# Challenge Theta Healing — Cas d'étude thérapeutique en 6 étapes
 
-## Problemes identifiés
+## Vue d'ensemble
 
-### 1. Sessions standalone jamais sauvegardées
-Dans `SimulatorSession.tsx` ligne 27 : `previewMode={!simConfig.practiceId}`. Si aucun `practiceId` n'est fourni, `previewMode=true` et le hook `useSimulatorSession` court-circuite toute persistence (ligne 30 : `if (previewMode || !user) return`). Les sessions lancées depuis le catalogue sans practice DB ne sont jamais enregistrées.
+Créer un challenge complet "Parcours Patient — Étude de Cas Theta Healing" en 6 étapes structurées autour d'un cas clinique type. Documenter exhaustivement le toolkit existant (champs vides) et le passer en statut `published`.
 
-### 2. `practice_id` est UUID — incompatible avec `"__standalone__"`
-La colonne `practice_id` de `academy_practice_sessions` est de type `uuid NOT NULL`. Le string `"__standalone__"` ne peut pas y etre inseré — l'insert Supabase echoue silencieusement.
+## Bloc 1 — Compléter le Toolkit Theta Healing
 
-### 3. Pas de navigation automatique vers le rapport
-`SimulatorEngine.handleComplete` appelle `completeSession` mais n'utilise pas le `sessionId` retourné pour naviguer vers `/simulator/session/:id/report`. L'utilisateur reste sur ScoreReveal et doit cliquer manuellement.
+**Table `toolkits`** — UPDATE du record `ff8cc6e2-76e8-4e05-9899-b376b31dda33` :
 
-## Plan de correction
+| Champ | Valeur |
+|-------|--------|
+| `status` | `published` |
+| `icon_emoji` | `🧠` |
+| `benefits` | Développer l'intuition thérapeutique, maîtriser le travail sur les croyances à 4 niveaux, accompagner les traumatismes en sécurité, intégrer le téléchargement de sentiments, structurer un suivi patient professionnel |
+| `usage_mode` | Formation certifiante et perfectionnement continu — adapté aux praticiens individuels et aux cabinets pluridisciplinaires |
+| `content_description` | 9 piliers couvrant les fondamentaux à la pratique professionnelle : état thêta, posture éthique, travail sur les croyances (4 niveaux), maîtrise émotionnelle, guérison des traumatismes, 7 plans d'existence, manifestation, lignées transgénérationnelles et accompagnement professionnel |
+| `terms` | Pratique complémentaire ne se substituant pas à un suivi médical. Le praticien s'engage à respecter le cadre déontologique, orienter vers un professionnel de santé si nécessaire, et ne jamais poser de diagnostic médical. |
+| `nomenclature` | TH-[Pilier]-[Phase]-[N°] (ex: TH-CROY-FOUND-01) |
+| `difficulty_level` | intermediate |
+| `estimated_duration` | 40 heures de formation + 20 heures de pratique supervisée |
+| `target_audience` | Thérapeutes, coachs, praticiens bien-être, psychologues souhaitant intégrer les techniques thêta à leur pratique |
+| `tags` | ["thérapie", "développement personnel", "énergie", "croyances", "traumatismes", "bien-être", "holistique"] |
 
-### Bloc 1 — Permettre la persistence des sessions standalone
+## Bloc 2 — Créer le Challenge Template
 
-**`src/pages/SimulatorSession.tsx`** :
-- Supprimer `previewMode={!simConfig.practiceId}` — toujours `false` pour un utilisateur connecté
-- Garder `previewMode` uniquement pour le PracticeTestDialog admin
+**Table `challenge_templates`** — INSERT :
+- `name` : Parcours Patient — Étude de Cas Theta Healing
+- `description` : Diagnostiquez et accompagnez un patient fictif présentant des blocages profonds (anxiété chronique, schéma d'auto-sabotage, traumatisme d'enfance). Construisez un protocole thérapeutique complet en 6 étapes, de l'anamnèse à l'autonomisation.
+- `difficulty` : intermediate
+- `toolkit_id` : ff8cc6e2-76e8-4e05-9899-b376b31dda33
 
-**`src/hooks/useSimulatorSession.ts`** :
-- Accepter `practice_id` nullable : si pas de practice DB, insérer `practice_id = null`
+**Table `challenge_template_toolkits`** — INSERT liaison.
 
-**Migration SQL** :
-- `ALTER TABLE academy_practice_sessions ALTER COLUMN practice_id DROP NOT NULL;`
-- Rendre `practice_id` nullable pour supporter les sessions standalone
+## Bloc 3 — Créer les 6 Sujets (Étapes)
 
-### Bloc 2 — Navigation automatique vers le rapport
+| # | Titre | Type | Description |
+|---|-------|------|-------------|
+| 0 | Anamnèse & Premier Contact | context | Accueillez le patient. Identifiez les symptômes, le contexte de vie, les attentes et les contre-indications. Posez le cadre thérapeutique et éthique. |
+| 1 | Exploration des Croyances Limitantes | challenge | Utilisez le test musculaire et le dialogue intuitif pour identifier les croyances aux 4 niveaux (fondamental, génétique, historique, âme) qui alimentent les blocages du patient. |
+| 2 | Protocole de Guérison des Traumatismes | challenge | Concevez un protocole sécurisé pour aborder le traumatisme identifié. Choisissez les outils adaptés : régression, libération énergétique, travail sur les peurs. |
+| 3 | Téléchargement de Sentiments & Reprogrammation | challenge | Définissez les nouveaux programmes positifs et les sentiments à télécharger pour remplacer les schémas destructeurs. Structurez la séquence d'intégration. |
+| 4 | Plan de Suivi & Ancrage | question | Construisez un plan de suivi : fréquence des séances, exercices d'ancrage entre séances, indicateurs de progression, critères de fin de thérapie. |
+| 5 | Autonomisation & Clôture | context | Préparez le patient à son autonomie. Transmettez les outils d'auto-guérison, formalisez les acquis, et planifiez la séance de clôture. |
 
-**`src/components/simulator/SimulatorEngine.tsx`** :
-- Injecter `useNavigate`
-- Dans `handleComplete`, après `completeSession`, naviguer vers `/simulator/session/${returnedId}/report`
-- Passer le `sessionId` retourné, pas celui du state (qui peut etre null au moment de l'insert)
+## Bloc 4 — Créer les Slots pour chaque Sujet
 
-### Bloc 3 — Historique : gérer les sessions sans practice
+**Étape 0 — Anamnèse** (4 slots) :
+- Symptôme principal (single, required) — La plainte centrale du patient
+- Contexte de vie (single, required) — Situation familiale, professionnelle, relationnelle
+- Antécédents thérapeutiques (multi) — Thérapies déjà suivies et résultats
+- Contre-indications identifiées (single) — Pathologies psychiatriques, médication, fragilités
 
-**`src/pages/SimulatorHistory.tsx`** :
-- Adapter la query pour accepter `practice_id IS NULL`
-- Afficher "Session libre" comme titre quand `practice` est null
-- Grouper les sessions sans practice sous un groupe "Sessions libres"
+**Étape 1 — Croyances** (4 slots) :
+- Croyance fondamentale (single, required) — La croyance acquise dans cette vie
+- Croyance génétique (single, required) — Le schéma hérité des ancêtres
+- Croyance historique (single) — Mémoire de vies antérieures ou karmique
+- Croyance niveau âme (single) — Programme inscrit au niveau identitaire profond
 
-### Bloc 4 — Rapport : gérer les sessions sans practice
+**Étape 2 — Traumatismes** (4 slots) :
+- Événement traumatique identifié (single, required) — Le trauma central à traiter
+- Technique de libération choisie (single, required) — Régression, extraction, transmutation
+- Mesures de sécurité (multi, required) — Protocole de protection énergétique et émotionnelle
+- Ressources du patient (single) — Forces et points d'appui existants
 
-**`src/pages/SimulatorReport.tsx`** :
-- Utiliser `.maybeSingle()` au lieu de `.single()` pour la query practice (ligne 93)
-- Fallback "Session de simulation" quand practice est null
+**Étape 3 — Reprogrammation** (4 slots) :
+- Programme positif principal (single, required) — La nouvelle croyance à installer
+- Sentiments à télécharger (multi, required) — Émotions jamais expérimentées par le patient
+- Séquence d'intégration (ranked) — Ordre des téléchargements par priorité
+- Vérification du consentement (single) — Validation que le patient est prêt
 
-## Fichiers impactés
+**Étape 4 — Suivi** (4 slots) :
+- Fréquence des séances (single, required) — Rythme recommandé
+- Exercices inter-séances (multi) — Méditations, journaling, ancrage
+- Indicateurs de progression (ranked, required) — KPIs thérapeutiques par priorité
+- Critères de fin de thérapie (single) — Conditions de sortie du protocole
 
-| Fichier | Action |
-|---------|--------|
-| Migration SQL | `practice_id` nullable |
-| `src/pages/SimulatorSession.tsx` | Supprimer previewMode pour users connectés |
-| `src/hooks/useSimulatorSession.ts` | Gérer practice_id nullable |
-| `src/components/simulator/SimulatorEngine.tsx` | Navigation auto vers rapport |
-| `src/pages/SimulatorHistory.tsx` | Support sessions sans practice |
-| `src/pages/SimulatorReport.tsx` | `.maybeSingle()` + fallback |
+**Étape 5 — Autonomisation** (3 slots) :
+- Outils transmis au patient (multi, required) — Techniques d'auto-guérison enseignées
+- Bilan des acquis (single, required) — Synthèse de la transformation
+- Plan de maintenance (single) — Fréquence des séances de rappel
 
-## Ordre
+Total : **23 slots** sur **6 sujets**.
 
-1. Migration SQL (practice_id nullable)
-2. useSimulatorSession (persistence nullable)
-3. SimulatorSession (supprimer previewMode)
-4. SimulatorEngine (navigation auto)
-5. SimulatorHistory + SimulatorReport (fallbacks)
+## Ordre d'exécution
+
+1. UPDATE toolkit (documentation + status published)
+2. INSERT challenge_template
+3. INSERT challenge_template_toolkits
+4. INSERT 6 challenge_subjects
+5. INSERT 23 challenge_slots
 
