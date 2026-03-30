@@ -14,6 +14,9 @@ interface CertificateDownloadProps {
   certificateId: string;
   difficulty?: string;
   modulesDetail?: { title: string; type: string; score: number; time_minutes: number }[];
+  skills?: { name: string; category: string; level: number }[];
+  aptitudes?: string[];
+  pathDescription?: string;
 }
 
 const VERIFY_BASE = "https://think-align-grow.lovable.app/verify";
