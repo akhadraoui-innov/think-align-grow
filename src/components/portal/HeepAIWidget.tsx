@@ -28,7 +28,7 @@ export function HeepAIWidget() {
               <Bot className="h-4 w-4 text-primary-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-foreground">Ask HEEP IA</p>
+              <p className="text-xs font-semibold text-foreground">Ask GROWTHINNOV IA</p>
               <p className="text-[10px] text-muted-foreground">Mentor spécialisé</p>
             </div>
             <button
