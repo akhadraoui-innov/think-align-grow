@@ -176,6 +176,7 @@ function AnimatedRoutes() {
           <Route path="/portal/academie/tracking" element={<PortalAcademieTracking />} />
           <Route path="/portal/academie/assets" element={<PortalAcademieAssets />} />
           <Route path="/portal/academie/modules/:id" element={<PortalAcademieModuleDetail />} />
+          <Route path="/portal/academie/certificates" element={<PortalAcademieCertificates />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
