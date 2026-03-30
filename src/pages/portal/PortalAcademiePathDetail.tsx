@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Plus, Save, BookOpen, Loader2,
   FileText, HelpCircle, Clock, Award, Target, Bot, Dumbbell, GraduationCap,
-  Users, BarChart3, Info, Image, Zap, RefreshCw
+  Users, BarChart3, Info, Image, Zap, RefreshCw, Sparkles
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
