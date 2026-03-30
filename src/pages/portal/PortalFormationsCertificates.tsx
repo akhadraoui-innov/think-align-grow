@@ -237,6 +237,9 @@ export default function PortalFormationsCertificates() {
                     certificateId={selectedCert.id}
                     difficulty={path?.difficulty}
                     modulesDetail={modulesDetail}
+                    skills={path?.skills as any}
+                    aptitudes={path?.aptitudes as any}
+                    pathDescription={path?.description}
                   />
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => copyVerifyLink(selectedCert.id)}>
                     <Copy className="h-4 w-4" /> Copier le lien
