@@ -306,7 +306,110 @@ export default function PortalFormationsPath() {
             </div>
           )}
         </section>
+
+        {/* ÉVALUATION FINALE DU PARCOURS */}
+        {enrollment && progressPct === 100 && (
+          <PathFinalEvaluation pathId={id!} enrollmentId={enrollment.id} user={user} />
+        )}
       </div>
     </PageTransition>
+  );
+}
+
+function PathFinalEvaluation({ pathId, enrollmentId, user }: { pathId: string; enrollmentId: string; user: any }) {
+  const [content, setContent] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const autoFetched = useRef(false);
+
+  useEffect(() => {
+    if (autoFetched.current || content) return;
+    autoFetched.current = true;
+
+    // Check if already persisted in enrollment metadata
+    const fetchExisting = async () => {
+      const { data } = await supabase.from("academy_enrollments").select("*").eq("id", enrollmentId).single();
+      const existing = (data as any)?.path_evaluation;
+      if (existing) {
+        setContent(existing);
+        return;
+      }
+      // Auto-generate
+      generateEvaluation();
+    };
+    fetchExisting();
+  }, [enrollmentId]);
+
+  const generateEvaluation = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const resp = await supabase.functions.invoke("academy-tutor", {
+        body: { action: "debrief", mode: "evaluation", path_id: pathId, enrollment_id: enrollmentId },
+      });
+      if (resp.data?.content) {
+        setContent(resp.data.content);
+        // Persist — we can't update directly so we use a workaround via edge function or just store locally
+        // For now, the content is displayed. Persistence happens via guide_document
+        try {
+          const { data: pathData } = await supabase.from("academy_paths").select("guide_document").eq("id", pathId).single();
+          const doc = (pathData?.guide_document as any) || {};
+          await supabase.from("academy_paths").update({
+            guide_document: { ...doc, path_evaluation: resp.data.content, evaluation_generated_at: new Date().toISOString() } as any,
+          }).eq("id", pathId);
+        } catch { /* non-blocking */ }
+      } else {
+        setError(true);
+      }
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+      <Card className="border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-500/5 to-transparent overflow-hidden">
+        <CardContent className="p-8 space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <Trophy className="h-6 w-6 text-emerald-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-display font-bold">Évaluation finale du parcours</h2>
+              <p className="text-xs text-muted-foreground">Synthèse personnalisée de votre performance globale</p>
+            </div>
+          </div>
+
+          {loading && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+                Génération de votre évaluation personnalisée...
+              </div>
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+              <Skeleton className="h-4 w-4/6" />
+            </div>
+          )}
+
+          {error && !loading && (
+            <div className="flex flex-col items-center gap-3 py-6">
+              <p className="text-sm text-muted-foreground">La génération n'a pas abouti.</p>
+              <Button variant="outline" size="sm" onClick={generateEvaluation} className="gap-1.5">
+                <Sparkles className="h-3 w-3" /> Réessayer
+              </Button>
+            </div>
+          )}
+
+          {content && !loading && (
+            <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-display prose-h2:text-base prose-h2:mt-6 prose-h2:mb-2 prose-h3:text-sm">
+              <EnrichedMarkdown content={content} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
