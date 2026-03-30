@@ -45,6 +45,19 @@ const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label
       { icon: LayoutGrid, label: "Mes challenges", path: "/portal/challenges" },
     ],
   },
+  "/portal/academie": {
+    title: "ACADEMIE",
+    items: [
+      { icon: GraduationCap, label: "Vue d'ensemble", path: "/portal/academie" },
+      { icon: Map, label: "Cartographie", path: "/portal/academie/map" },
+      { icon: Briefcase, label: "Fonctions", path: "/portal/academie/functions" },
+      { icon: Brain, label: "Personae", path: "/portal/academie/personae" },
+      { icon: Route, label: "Parcours", path: "/portal/academie/paths" },
+      { icon: Megaphone, label: "Campagnes", path: "/portal/academie/campaigns" },
+      { icon: BarChart3, label: "Suivi", path: "/portal/academie/tracking" },
+      { icon: Library, label: "Actifs pédagogiques", path: "/portal/academie/assets" },
+    ],
+  },
 };
 
 export function PortalSidebar({ open, onToggle, activeTab }: PortalSidebarProps) {
