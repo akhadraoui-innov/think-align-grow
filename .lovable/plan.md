@@ -1,41 +1,70 @@
 
 
-# Plan — Audit des routes portail + Renommage GROWTHINNOV
+# Plan — Workspace ACADEMIE dans le portail
 
-## 1. Routes portail pointant vers le cabinet (à corriger)
+## Scope
 
-| Fichier | Ligne problématique | Correction |
-|---------|---------------------|------------|
-| `PortalShell.tsx` | `to="/explore"` (lien "Cabinet") | Supprimer ce lien ou le pointer vers `/portal` |
-| `PortalWorkshops.tsx` | `navigate("/auth")` | Changer en `navigate("/portal/auth")` ou garder `/auth` (page partagée — acceptable) |
-| `PortalChallenges.tsx` | `navigate("/auth")` | Idem — `/auth` est la page de login commune, pas du cabinet |
+Dupliquer les 11 pages `/admin/academy/*` en pages portail `/portal/academie/*`, ajouter l'onglet ACADEMIE dans le header (après CHALLENGES), et configurer la sidebar contextuelle.
 
-**Verdict** : Le seul vrai problème est le lien "Cabinet" dans le header (`to="/explore"`). Les redirections vers `/auth` sont légitimes car c'est la page d'authentification partagée.
+## Pages admin → pages portail (11 pages)
 
-## 2. Renommage HEEP → GROWTHINNOV
+| Admin source | Nouvelle route portail | Sidebar label |
+|---|---|---|
+| `AdminAcademy.tsx` | `/portal/academie` | Vue d'ensemble |
+| `AdminAcademyMap.tsx` | `/portal/academie/map` | Cartographie |
+| `AdminAcademyFunctions.tsx` | `/portal/academie/functions` | Fonctions |
+| `AdminAcademyFunctionDetail.tsx` | `/portal/academie/functions/:id` | (detail) |
+| `AdminAcademyPersonae.tsx` | `/portal/academie/personae` | Personae |
+| `AdminAcademyPaths.tsx` | `/portal/academie/paths` | Parcours |
+| `AdminAcademyPathDetail.tsx` | `/portal/academie/paths/:id` | (detail) |
+| `AdminAcademyCampaigns.tsx` | `/portal/academie/campaigns` | Campagnes |
+| `AdminAcademyTracking.tsx` | `/portal/academie/tracking` | Suivi |
+| `AdminAcademyAssets.tsx` | `/portal/academie/assets` | Actifs pédagogiques |
+| `AdminAcademyModuleDetail.tsx` | `/portal/academie/modules/:id` | (detail) |
 
-Tous les fichiers à modifier :
+## Modifications par fichier
 
-| Fichier | Ce qui change |
-|---------|---------------|
-| `PortalShell.tsx` | Logo text "HEEP" → "GROWTHINNOV" |
-| `HeepAIWidget.tsx` | "Ask HEEP IA" → "Ask GROWTHINNOV IA", "mentor HEEP IA" → "mentor GROWTHINNOV IA" |
-| `AppSidebar.tsx` | "Portail HEEP" → "Portail GROWTHINNOV" |
-| `index.html` | `<title>` "Heeplab" → "GROWTHINNOV", meta descriptions |
-| `Logo.tsx` | "Hack & Show" → "GROWTHINNOV" |
-| `AuthPage.tsx` | "Hack & Show" → "GROWTHINNOV" |
-| `AppShell.tsx` | Breadcrumb "Hack & Show" → "GROWTHINNOV" |
-| `AppSidebar.tsx` | "Hack & Show" → "GROWTHINNOV" |
-| `AdminSidebar.tsx` | "Hack & Show" → "GROWTHINNOV" |
-| `AdminDashboard.tsx` | "Hack & Show" → "GROWTHINNOV" |
-| `OrgInfoTab.tsx` | "Hack & Show" → "GROWTHINNOV" |
-| `Index.tsx` | "Hack & Show" → "GROWTHINNOV" |
-| `defaultPrompts.ts` | "Hack & Show" → "GROWTHINNOV" |
+### 1. `PortalShell.tsx`
+- Ajouter onglet `{ label: "ACADEMIE", path: "/portal/academie", matchPrefix: "/portal/academie" }` après CHALLENGES
+- Ajouter les routes académie dans la regex `isImmersive` si nécessaire (module detail)
 
-## 3. Exécution
+### 2. `PortalSidebar.tsx`
+- Ajouter config sidebar pour `/portal/academie` avec 8 items : Vue d'ensemble, Cartographie, Fonctions, Personae, Parcours, Campagnes, Suivi, Actifs pédagogiques
 
-1. Supprimer le lien "Cabinet" du header portail (`PortalShell.tsx`)
-2. Renommer toutes les occurrences HEEP/Heep/heep → GROWTHINNOV dans les fichiers portail
-3. Renommer toutes les occurrences "Hack & Show" / "Heeplab" → GROWTHINNOV dans tout le projet
-4. Mettre à jour `index.html` (title + meta)
+### 3. Créer 11 pages portail dans `src/pages/portal/`
+Chaque page sera un wrapper qui :
+- Importe le contenu du composant admin correspondant (réutilise les hooks/queries)
+- Remplace `AdminShell` par `PortalShell`
+- Remappe les `navigate("/admin/academy/...")` vers `navigate("/portal/academie/...")`
+
+Fichiers créés :
+- `PortalAcademie.tsx` — dashboard KPIs
+- `PortalAcademieMap.tsx` — cartographie
+- `PortalAcademieFunctions.tsx` — liste fonctions
+- `PortalAcademieFunctionDetail.tsx` — detail fonction
+- `PortalAcademiePersonae.tsx` — liste personae
+- `PortalAcademiePaths.tsx` — liste parcours
+- `PortalAcademiePathDetail.tsx` — detail parcours
+- `PortalAcademieCampaigns.tsx` — campagnes
+- `PortalAcademieTracking.tsx` — suivi
+- `PortalAcademieAssets.tsx` — actifs pédagogiques
+- `PortalAcademieModuleDetail.tsx` — detail module
+
+### 4. `App.tsx`
+- Importer les 11 nouvelles pages
+- Ajouter 11 routes `/portal/academie/*`
+
+## Stratégie de duplication
+
+Chaque page admin sera copiée et adaptée :
+1. Retirer `<AdminShell>` wrapper (le `PortalShell` est déjà appliqué par `AppShell`)
+2. Remplacer toutes les navigations `/admin/academy/` → `/portal/academie/`
+3. Conserver les mêmes queries Supabase, hooks, composants UI, fonctionnalités IA
+4. Les données sont identiques (mêmes tables, mêmes RLS policies)
+
+## Ordre d'exécution
+
+1. `PortalShell.tsx` + `PortalSidebar.tsx` — ajout onglet + sidebar
+2. Créer les 11 pages portail (par lots parallèles)
+3. `App.tsx` — ajouter les routes
 
