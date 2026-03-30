@@ -165,7 +165,7 @@ export default function AdminSimulator() {
                       <Badge variant={s.completed_at ? "default" : "secondary"} className="text-[9px]">
                         {s.completed_at ? "Terminée" : "En cours"}
                       </Badge>
-                      <span className="text-muted-foreground truncate max-w-[200px]">{s.practice_id.slice(0, 8)}</span>
+                      <span className="text-muted-foreground truncate max-w-[200px]">{(s.practice_id || s.id)?.slice(0, 8)}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       {s.score !== null && (
