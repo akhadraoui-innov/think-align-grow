@@ -81,9 +81,9 @@ export default function AcademyPath() {
   const firstIncomplete = modules.find((pm: any) => { const p = progressMap.get(pm.module_id) as any; return !p || p.status !== "completed"; });
 
   const pathSkills: any[] = path ? (Array.isArray(path.skills) ? path.skills : []) : [];
-  const pathPrereqs: string[] = path ? (Array.isArray(path.prerequisites) ? path.prerequisites : []) : [];
-  const pathAptitudes: string[] = path ? (Array.isArray(path.aptitudes) ? path.aptitudes : []) : [];
-  const pathOutcomes: string[] = path ? (Array.isArray(path.professional_outcomes) ? path.professional_outcomes : []) : [];
+  const pathPrereqs: string[] = path ? (Array.isArray(path.prerequisites) ? (path.prerequisites as any[]).map(String) : []) : [];
+  const pathAptitudes: string[] = path ? (Array.isArray(path.aptitudes) ? (path.aptitudes as any[]).map(String) : []) : [];
+  const pathOutcomes: string[] = path ? (Array.isArray(path.professional_outcomes) ? (path.professional_outcomes as any[]).map(String) : []) : [];
   const hasSkillsData = pathSkills.length > 0 || pathPrereqs.length > 0 || pathAptitudes.length > 0 || pathOutcomes.length > 0;
 
   if (isLoading) return <PageTransition><div className="container max-w-4xl mx-auto px-4 py-8"><div className="animate-pulse space-y-4"><div className="h-6 bg-muted rounded w-1/3" /><div className="h-48 bg-muted rounded" /></div></div></PageTransition>;
