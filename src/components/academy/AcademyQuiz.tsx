@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 interface AcademyQuizProps {
   moduleId: string;
   enrollmentId?: string;
-  onComplete?: (score: number, total: number) => void;
+  onComplete?: (score: number, total: number, metadata?: Record<string, unknown>) => void;
 }
 
 interface QuizQuestion {
