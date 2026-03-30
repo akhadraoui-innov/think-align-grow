@@ -47,7 +47,7 @@ export default function AcademyCertificates() {
 
   const { data: certificates = [], isLoading } = useQuery({
     queryKey: ["user-certificates", user?.id], enabled: !!user?.id,
-    queryFn: async () => { const { data } = await supabase.from("academy_certificates").select("*, academy_paths(name, description, difficulty, estimated_hours)").eq("user_id", user!.id).order("issued_at", { ascending: false }); return data || []; },
+    queryFn: async () => { const { data } = await supabase.from("academy_certificates").select("*, academy_paths(name, description, difficulty, estimated_hours, skills, aptitudes, professional_outcomes)").eq("user_id", user!.id).order("issued_at", { ascending: false }); return data || []; },
   });
 
   const { data: profile } = useQuery({
