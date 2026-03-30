@@ -4,7 +4,9 @@ import {
   BookOpen, Sparkles, Users, LayoutGrid, Zap, Shield,
   Brain, Target, Award, BarChart3, Layers, Lightbulb,
   Code, Palette, FileText, MessageSquare, TrendingUp,
-  CheckCircle2, ArrowRight, Star, Rocket, Eye
+  CheckCircle2, ArrowRight, Star, Rocket, Eye, Compass,
+  Handshake, DollarSign, Clock, HeartHandshake, Building2,
+  GraduationCap, Puzzle, Globe, Repeat, ShieldCheck
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
