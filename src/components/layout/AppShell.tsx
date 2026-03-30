@@ -34,9 +34,17 @@ export function AppShell({ children }: AppShellProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  const isPortal = location.pathname.startsWith("/portal");
+
   // Landing page & auth: no shell chrome
   if (isLandingPage || isAuthPage || isWorkshopRoom || isAdminPage || isAcademyModule) {
     return <>{children}</>;
+  }
+
+  // Portal: dedicated shell
+  if (isPortal) {
+    const { PortalShell } = require("@/components/portal/PortalShell");
+    return <PortalShell>{children}</PortalShell>;
   }
 
   // Mobile: keep original bottom nav layout
