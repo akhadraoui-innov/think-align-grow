@@ -6,11 +6,15 @@ import {
   Code, Palette, FileText, MessageSquare, TrendingUp,
   CheckCircle2, ArrowRight, Star, Rocket, Eye, Compass,
   Handshake, DollarSign, Clock, HeartHandshake, Building2,
-  GraduationCap, Puzzle, Globe, Repeat, ShieldCheck
+  GraduationCap, Puzzle, Globe, Repeat, ShieldCheck,
+  Briefcase, ChevronDown, UserCheck, Settings, Workflow,
+  PenTool, Cpu, ClipboardCheck, MonitorPlay, Network
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PlatformFlow } from "./PlatformFlow";
 
 interface InsightContentProps {
