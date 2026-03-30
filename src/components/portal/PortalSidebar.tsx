@@ -68,6 +68,9 @@ const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label
       { icon: Users, label: "Workshops", path: "/portal/insight/workshops" },
       { icon: LayoutGrid, label: "Challenges", path: "/portal/insight/challenges" },
       { icon: Shield, label: "Plateforme", path: "/portal/insight/plateforme" },
+      { icon: Layers, label: "Discovery", path: "/portal/insight/discovery" },
+      { icon: Compass, label: "Décideurs", path: "/portal/insight/decideurs" },
+      { icon: Handshake, label: "Partenaires", path: "/portal/insight/partenaires" },
     ],
   },
 };

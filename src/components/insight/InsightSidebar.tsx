@@ -79,6 +79,26 @@ const MENU = [
       "Couche Data",
     ],
   },
+  {
+    id: "decideurs",
+    label: "Décideurs",
+    icon: Compass,
+    sub: [
+      "ROI & Impact",
+      "Cas d'usage",
+      "Pourquoi nous",
+    ],
+  },
+  {
+    id: "partenaires",
+    label: "Partenaires",
+    icon: Handshake,
+    sub: [
+      "Modèle partenaire",
+      "Intégration",
+      "Co-création",
+    ],
+  },
 ];
 
 export function InsightSidebar({ activeSection, onSectionChange }: InsightSidebarProps) {
