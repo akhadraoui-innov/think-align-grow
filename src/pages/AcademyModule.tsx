@@ -326,8 +326,8 @@ export default function AcademyModule() {
         <AcademyExercise
           moduleId={id!}
           enrollmentId={enrollment?.id}
-          onComplete={(score) => {
-            saveProgress(score, "completed");
+          onComplete={(score, meta) => {
+            saveProgress(score, "completed", meta);
             toast.success(`Exercice évalué : ${score}/100`);
             if (completedCount + 1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true);
           }}
