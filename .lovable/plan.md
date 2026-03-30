@@ -1,70 +1,43 @@
 
 
-# Plan — Workspace ACADEMIE dans le portail
+# Plan — Créer 5 simulations Process Mining complètes
 
-## Scope
+## Contexte
 
-Dupliquer les 11 pages `/admin/academy/*` en pages portail `/portal/academie/*`, ajouter l'onglet ACADEMIE dans le header (après CHALLENGES), et configurer la sidebar contextuelle.
+Le parcours "Process Mining IA Augmented" couvre : introduction PM+IA, extraction/préparation de données (event logs), découverte/conformité augmentée par IA, prédiction/optimisation, et cas pratiques industriels. Le toolkit "Process Minding Augmented" est également disponible.
 
-## Pages admin → pages portail (11 pages)
+Les 5 simulations couvriront des aspects complémentaires du process mining, chacune avec un `practice_type` adapté du `modeRegistry`, un scénario réaliste, un system prompt détaillé, des rubriques d'évaluation pondérées, et 15 échanges max.
 
-| Admin source | Nouvelle route portail | Sidebar label |
-|---|---|---|
-| `AdminAcademy.tsx` | `/portal/academie` | Vue d'ensemble |
-| `AdminAcademyMap.tsx` | `/portal/academie/map` | Cartographie |
-| `AdminAcademyFunctions.tsx` | `/portal/academie/functions` | Fonctions |
-| `AdminAcademyFunctionDetail.tsx` | `/portal/academie/functions/:id` | (detail) |
-| `AdminAcademyPersonae.tsx` | `/portal/academie/personae` | Personae |
-| `AdminAcademyPaths.tsx` | `/portal/academie/paths` | Parcours |
-| `AdminAcademyPathDetail.tsx` | `/portal/academie/paths/:id` | (detail) |
-| `AdminAcademyCampaigns.tsx` | `/portal/academie/campaigns` | Campagnes |
-| `AdminAcademyTracking.tsx` | `/portal/academie/tracking` | Suivi |
-| `AdminAcademyAssets.tsx` | `/portal/academie/assets` | Actifs pédagogiques |
-| `AdminAcademyModuleDetail.tsx` | `/portal/academie/modules/:id` | (detail) |
+## Les 5 simulations
 
-## Modifications par fichier
+| # | Titre | practice_type | family | Scénario résumé |
+|---|---|---|---|---|
+| 1 | **Diagnostic Process Mining d'une Supply Chain** | `case_study` | analysis | L'apprenant reçoit des event logs d'une chaîne logistique avec des anomalies. Il doit analyser, identifier les bottlenecks et proposer des optimisations augmentées par IA. |
+| 2 | **Pitcher le Process Mining Augmenté au COMEX** | `pitch` | chat | L'IA joue un CFO sceptique. L'apprenant doit convaincre d'investir dans un projet PM+IA avec ROI chiffré, cas d'usage concrets et réponse aux objections. |
+| 3 | **Conformance Checking : Détecter les déviations** | `process_mapping` | design | Processus Purchase-to-Pay présenté, l'apprenant doit mapper le processus attendu vs réel, identifier les déviations et proposer des contrôles IA. |
+| 4 | **Data Storytelling : Présenter un diagnostic PM au COMEX** | `data_storytelling` | document | Jeu de données PM fourni (KPIs, bottlenecks, variantes). L'apprenant construit un récit décisionnel convaincant enrichi par l'IA. |
+| 5 | **Négocier le périmètre d'un projet Process Mining** | `negotiation` | chat | L'IA joue un directeur ops qui veut tout analyser vs budget limité. L'apprenant négocie le périmètre, les priorités et le planning. |
 
-### 1. `PortalShell.tsx`
-- Ajouter onglet `{ label: "ACADEMIE", path: "/portal/academie", matchPrefix: "/portal/academie" }` après CHALLENGES
-- Ajouter les routes académie dans la regex `isImmersive` si nécessaire (module detail)
+## Exécution technique
 
-### 2. `PortalSidebar.tsx`
-- Ajouter config sidebar pour `/portal/academie` avec 8 items : Vue d'ensemble, Cartographie, Fonctions, Personae, Parcours, Campagnes, Suivi, Actifs pédagogiques
+Une seule migration SQL insérant 5 lignes dans `academy_practices` avec :
+- `organization_id` : `c20a26a5-9e57-4abb-a5c4-77652c1d3e00` (GrowthInnov)
+- `module_id` : NULL (simulations standalone)
+- `max_exchanges` : 15
+- `difficulty` : intermediate à advanced
+- `ai_assistance_level` : guided
+- `practice_type` : mappé au modeRegistry
+- `type_config` : paramètres spécifiques au mode
+- `system_prompt` : prompt détaillé (~300 mots chacun, rôle IA, comportement, objectifs cachés)
+- `scenario` : contexte apprenant (~150 mots)
+- `evaluation_rubric` : 4 critères pondérés par simulation
+- `evaluation_dimensions` : dimensions alignées au mode
 
-### 3. Créer 11 pages portail dans `src/pages/portal/`
-Chaque page sera un wrapper qui :
-- Importe le contenu du composant admin correspondant (réutilise les hooks/queries)
-- Remplace `AdminShell` par `PortalShell`
-- Remappe les `navigate("/admin/academy/...")` vers `navigate("/portal/academie/...")`
+## Fichiers impactés
 
-Fichiers créés :
-- `PortalAcademie.tsx` — dashboard KPIs
-- `PortalAcademieMap.tsx` — cartographie
-- `PortalAcademieFunctions.tsx` — liste fonctions
-- `PortalAcademieFunctionDetail.tsx` — detail fonction
-- `PortalAcademiePersonae.tsx` — liste personae
-- `PortalAcademiePaths.tsx` — liste parcours
-- `PortalAcademiePathDetail.tsx` — detail parcours
-- `PortalAcademieCampaigns.tsx` — campagnes
-- `PortalAcademieTracking.tsx` — suivi
-- `PortalAcademieAssets.tsx` — actifs pédagogiques
-- `PortalAcademieModuleDetail.tsx` — detail module
+| Fichier | Action |
+|---|---|
+| Migration SQL | INSERT 5 practices dans `academy_practices` |
 
-### 4. `App.tsx`
-- Importer les 11 nouvelles pages
-- Ajouter 11 routes `/portal/academie/*`
-
-## Stratégie de duplication
-
-Chaque page admin sera copiée et adaptée :
-1. Retirer `<AdminShell>` wrapper (le `PortalShell` est déjà appliqué par `AppShell`)
-2. Remplacer toutes les navigations `/admin/academy/` → `/portal/academie/`
-3. Conserver les mêmes queries Supabase, hooks, composants UI, fonctionnalités IA
-4. Les données sont identiques (mêmes tables, mêmes RLS policies)
-
-## Ordre d'exécution
-
-1. `PortalShell.tsx` + `PortalSidebar.tsx` — ajout onglet + sidebar
-2. Créer les 11 pages portail (par lots parallèles)
-3. `App.tsx` — ajouter les routes
+Aucun changement de code front — les simulations apparaîtront automatiquement dans le catalogue Pratique via les queries existantes.
 
