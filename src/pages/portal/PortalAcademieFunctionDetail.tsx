@@ -78,7 +78,7 @@ export default function AdminAcademyFunctionDetail() {
   };
 
   if (isLoading || !form) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <><div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div></>;
   }
 
   const difficultyColors: Record<string, string> = {
@@ -88,7 +88,7 @@ export default function AdminAcademyFunctionDetail() {
   };
 
   return (
-    
+    <>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -322,6 +322,6 @@ export default function AdminAcademyFunctionDetail() {
           </TabsContent>
         </Tabs>
       </div>
-    
+    </>
   );
 }

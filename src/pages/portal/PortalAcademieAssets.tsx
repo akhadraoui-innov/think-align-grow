@@ -796,7 +796,7 @@ export default function AdminAcademyAssets() {
   }, [quizzes, exercises, practices]);
 
   return (
-    
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center gap-3">
           <Library className="h-6 w-6 text-primary" />
@@ -829,6 +829,6 @@ export default function AdminAcademyAssets() {
           </Tabs>
         )}
       </div>
-    
+    </>
   );
 }

@@ -338,25 +338,25 @@ export default function AdminAcademyPathDetail() {
   // ─── Loading / Not found ────────────────────────────────────
   if (isLoading) {
     return (
-      
+      <>
         <div className="p-6 animate-pulse space-y-4">
           <div className="h-32 bg-muted rounded-xl" />
           <div className="h-6 bg-muted rounded w-1/3" />
         </div>
-      
+      </>
     );
   }
 
   if (!path) {
     return (
-      
+      <>
         <div className="p-6 text-center text-muted-foreground">
           <p>Parcours introuvable.</p>
           <Button variant="ghost" className="mt-4" onClick={() => navigate("/portal/academie/paths")}>
             <ArrowLeft className="h-4 w-4 mr-2" /> Retour
           </Button>
         </div>
-      
+      </>
     );
   }
 
@@ -365,7 +365,7 @@ export default function AdminAcademyPathDetail() {
   const personaData = (path as any).academy_personae;
 
   return (
-    
+    <>
       <div className="space-y-0">
         {/* ═══ HERO HEADER ═══ */}
         <div className={`bg-gradient-to-br ${diff.gradient} border-b`}>
@@ -549,6 +549,6 @@ export default function AdminAcademyPathDetail() {
           </div>
         </DialogContent>
       </Dialog>
-    
+    </>
   );
 }

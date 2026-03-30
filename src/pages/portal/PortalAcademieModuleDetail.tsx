@@ -121,11 +121,11 @@ export default function AdminAcademyModuleDetail() {
 
   if (isLoading || !mod) {
     return (
-      
+      <>
         <div className="p-6 flex items-center justify-center h-64">
           <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
         </div>
-      
+      </>
     );
   }
 
@@ -138,7 +138,7 @@ export default function AdminAcademyModuleDetail() {
   })();
 
   return (
-    
+    <>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -516,6 +516,6 @@ export default function AdminAcademyModuleDetail() {
         onOpenChange={setPracticeTestOpen}
         title={mod.title}
       />
-    
+    </>
   );
 }

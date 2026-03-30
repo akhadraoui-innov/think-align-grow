@@ -211,7 +211,7 @@ export default function AdminAcademyPaths() {
   }
 
   return (
-    
+    <>
       <div className="p-6 space-y-6">
         {/* ═══ HEADER ═══ */}
         <div className="space-y-4">
@@ -650,6 +650,6 @@ export default function AdminAcademyPaths() {
           </div>
         </DialogContent>
       </Dialog>
-    
+    </>
   );
 }

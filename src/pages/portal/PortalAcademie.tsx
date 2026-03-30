@@ -118,7 +118,7 @@ export default function AdminAcademy() {
   ];
 
   return (
-    
+    <>
       <div className="p-6 space-y-6">
         {/* Hero Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/8 via-accent/5 to-transparent border p-6">
@@ -295,6 +295,6 @@ export default function AdminAcademy() {
           </div>
         </div>
       </div>
-    
+    </>
   );
 }

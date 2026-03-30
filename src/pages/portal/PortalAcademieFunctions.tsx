@@ -90,7 +90,7 @@ export default function AdminAcademyFunctions() {
   });
 
   return (
-    
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -208,7 +208,7 @@ export default function AdminAcademyFunctions() {
 
       {/* Create Dialog */}
       <CreateFunctionDialog open={createOpen} onOpenChange={setCreateOpen} mode={createMode} onModeChange={setCreateMode} userId={user?.id || ""} onSuccess={() => { qc.invalidateQueries({ queryKey: ["admin-academy-functions"] }); setCreateOpen(false); }} />
-    
+    </>
   );
 }
 

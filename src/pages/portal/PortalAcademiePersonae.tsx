@@ -211,7 +211,7 @@ export default function AdminAcademyPersonae() {
   const updateTrait = (key: string, value: any) => setForm(f => ({ ...f, characteristics: { ...f.characteristics, [key]: value } }));
 
   return (
-    
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -400,7 +400,7 @@ export default function AdminAcademyPersonae() {
           </div>
         </DialogContent>
       </Dialog>
-    
+    </>
   );
 }
 
