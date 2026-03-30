@@ -7,7 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
   Pencil, Save, Loader2, FileText, Settings, Target,
-  Award, Database, X, Tag, CheckCircle2, Building2, Users, GraduationCap
+  Award, Database, X, Tag, CheckCircle2, Building2, Users, GraduationCap,
+  Sparkles, BookOpen, Briefcase, Lightbulb
 } from "lucide-react";
 import { VersionHistory } from "@/components/admin/VersionHistory";
 import { format } from "date-fns";
