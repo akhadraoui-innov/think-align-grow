@@ -1,130 +1,72 @@
 
 
-# Plan — Section "Discovery" interactive avec flow BPMN/n8n navigable
+# Plan — Refonte Discovery : 3 onglets interactifs (Architecture, Workflow Business, Métier)
 
-## Vision
+## Problème actuel
 
-Ajouter une 7ème section **"Discovery"** dans le module Insight avec une visualisation interactive type n8n/BPMN : des nœuds connectés par des flux, organisés en couches logiques filtrables. Cliquer sur un nœud ouvre un panneau latéral de détail. Le tout est construit en pur React/CSS (pas de librairie externe).
+La section Discovery ne contient qu'un seul flow technique (PlatformFlow). L'utilisateur veut une section riche avec **3 onglets distincts** offrant des perspectives différentes : architecture technique (BPM), workflows business, et présentation métier.
 
-## Architecture de la visualisation
+## Solution
 
-### Couches logiques (filtrables via toggle buttons)
+Transformer la `DiscoverySection` en une page à onglets avec `Tabs` (shadcn), chacun avec du contenu riche et interactif :
 
-1. **Expérience apprenant** — Parcours, Modules, Quiz, Exercices, Pratique IA, Workshops, Challenges
-2. **Intelligence artificielle** — IA Tutor, IA Coach, IA Évaluation, IA Génération, IA Analyse, Knowledge Brief
-3. **Administration** — Paramétrage, Observabilité, Rôles, Crédits, Facturation
-4. **Données & Persistance** — Progress tracking, Scores, Certificats, Documents, Sessions
+### Onglet 1 — Architecture plateforme (flow interactif existant)
+- Conserver le `PlatformFlow` existant (grille n8n avec couches filtrables)
+- Ajouter un court intro contextualisé
 
-### Nœuds du flow
+### Onglet 2 — Workflows Business
+Présentation des flux métier clés sous forme de workflow BPMN visuels (composants JSX) :
+- **Flux Onboarding apprenant** : Inscription → Profil → Parcours suggéré → Premier module → Certification
+- **Flux Création de contenu** : Brief métier → IA Génération → Review admin → Publication → Analytics
+- **Flux Évaluation** : Quiz → Exercice → Pratique IA → Score compétence → Certificat → Livret PDF
+- **Flux Workshop** : Toolkit sélection → Participants → Canevas live → Scores → Synthèse IA
 
-Chaque nœud = une card cliquable avec :
-- Icône + couleur par couche (bleu apprenant, violet IA, orange admin, vert données)
-- Titre court
-- Badge de couche
-- Connexions visuelles (lignes SVG) vers les nœuds liés
+Chaque workflow = une série de steps horizontaux connectés par des flèches, avec des badges de couche (Apprenant/IA/Admin) et un panneau de détail au clic sur chaque step.
 
-### Panneau de détail (slide-in droit)
+### Onglet 3 — Présentation Métier
+Contenu orienté cas d'usage concrets, organisé par domaine :
+- **RH & Formation** : Upskilling IA, certification, cartographie compétences
+- **Consulting & Stratégie** : Diagnostic, maturité, challenges autonomes
+- **Innovation & Produit** : Design thinking, workshops gamifiés, ideation
+- **Management** : Ateliers d'équipe, feedback, prise de décision
 
-Au clic sur un nœud :
-- Sheet/drawer qui s'ouvre à droite
-- Titre, description détaillée, fonctionnalités clés
-- Badges de technologie
-- Liens vers les nœuds connectés (navigables)
-- Indicateur de couche
-
-## Structure des données (statique, dans le composant)
-
-```typescript
-interface FlowNode {
-  id: string;
-  label: string;
-  description: string;       // résumé court
-  detail: string;            // description longue pour le panneau
-  layer: "learner" | "ai" | "admin" | "data";
-  icon: LucideIcon;
-  features: string[];        // liste de fonctionnalités
-  techBadges: string[];      // badges tech
-  connections: string[];     // ids des nœuds connectés
-  position: { col: number; row: number }; // position dans la grille
-}
-```
-
-~25 nœuds couvrant toute la plateforme, positionnés en grille 6 colonnes × 5 rangées.
-
-## Rendu du flow
-
-- **Grille CSS** (`grid-template-columns: repeat(6, 1fr)`) pour positionner les nœuds
-- **SVG overlay** par-dessus la grille pour dessiner les connexions entre nœuds (lignes courbes ou orthogonales type BPMN)
-- **Filtres de couche** : 4 toggle buttons en haut, chaque couche a sa couleur. Désactiver une couche grise les nœuds + connexions de cette couche
-- **Zoom** : pas de zoom libre, mais 2 modes (vue compacte / vue étendue)
-- **Animation** : transitions CSS sur les nœuds au hover et au filtre, pulse sur le nœud sélectionné
-
-## Panneau de détail
-
-Utiliser le composant `Sheet` (shadcn) côté droit :
-- Header avec icône gradient + titre + badge couche
-- Corps : description riche, liste de features avec check icons, badges tech
-- Footer : "Nœuds connectés" avec boutons cliquables qui naviguent vers l'autre nœud (ferme le sheet, ouvre l'autre)
+Chaque domaine = une card expandable avec pain points, solutions, KPIs et workflow simplifié.
 
 ## Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/insight/InsightContent.tsx` | Ajouter `DiscoverySection` + l'enregistrer dans `SECTIONS` |
-| `src/components/insight/InsightSidebar.tsx` | Ajouter entrée "Discovery" avec sous-items (Couche Apprenant, Couche IA, Couche Admin, Couche Data) |
-| `src/components/insight/PlatformFlow.tsx` | **Créer** — composant principal du flow interactif (grille, SVG, filtres, nœuds) |
-| `src/components/insight/FlowNodeCard.tsx` | **Créer** — composant d'un nœud individuel |
-| `src/components/insight/FlowDetailSheet.tsx` | **Créer** — panneau Sheet de détail d'un nœud |
-| `src/components/insight/flowData.ts` | **Créer** — données statiques des ~25 nœuds et connexions |
+| `src/components/insight/InsightContent.tsx` | Refonte `DiscoverySection` avec `Tabs` 3 onglets |
+| `src/components/insight/PlatformFlow.tsx` | Inchangé (réutilisé dans onglet 1) |
 
-## Détail des ~25 nœuds par couche
+## Détail technique
 
-### Couche Apprenant (bleu)
-1. **Parcours** — Parcours adaptatifs par fonction/persona
-2. **Leçons** — Contenu Markdown enrichi interactif
-3. **Quiz** — QCM avec scoring et feedback IA
-4. **Exercices** — Production libre évaluée par IA
-5. **Pratique IA** — Simulateur 7 modes conversationnels
-6. **Workshops** — Canevas collaboratif temps réel
-7. **Challenges** — Diagnostic stratégique drag & drop
+La `DiscoverySection` devient :
+```
+Tabs (defaultValue="architecture")
+├── TabsList
+│   ├── "Architecture" (icône Layers)
+│   ├── "Workflows Business" (icône ArrowRight)
+│   └── "Cas Métier" (icône Briefcase)
+├── TabsContent "architecture"
+│   └── PlatformFlow (existant)
+├── TabsContent "workflows"
+│   └── 4 BusinessWorkflow cards avec steps horizontaux cliquables
+└── TabsContent "metier"
+    └── 4 DomainCards expandables avec contenu riche
+```
 
-### Couche IA (violet)
-8. **IA Tutor** — Accompagnement personnalisé par module
-9. **IA Coach** — Guide contextuel workshops
-10. **IA Évaluation** — Scoring et feedback automatique
-11. **IA Génération** — Création de contenu pédagogique
-12. **IA Analyse** — Diagnostic et recommandations
-13. **Knowledge Brief** — Synthèse personnalisée pré-module
-14. **IA Document** — Livret de cours PDF complet
+### Composants internes (dans InsightContent.tsx)
 
-### Couche Admin (orange)
-15. **Paramétrage** — Fonctions, personae, compétences
-16. **Observabilité** — Dashboard, métriques, couverture
-17. **Rôles** — RBAC granulaire avec audit trail
-18. **Crédits** — Système de consommation IA
-19. **Organisations** — Multi-tenant, équipes, branding
+**BusinessWorkflow** : card avec titre + steps horizontaux. Chaque step = cercle numéroté + label + badge couche + flèche SVG. Au clic : expand avec description, acteurs, outils, IA impliquée.
 
-### Couche Data (vert)
-20. **Progress** — Suivi granulaire par module
-21. **Scores** — Évaluation par compétence persistée
-22. **Certificats** — Vérifiables, QR code, LinkedIn
-23. **Sessions** — Historique simulateur complet
-24. **Documents** — Livrets, analyses, rapports
+**DomainCard** : card avec icône gradient, titre, 3 pain points, solution, KPIs. Expand/collapse avec chevron.
 
-## Connexions clés (exemples)
+## Résultat attendu
 
-- Parcours → Leçons → Quiz → Exercices → Pratique IA (flux séquentiel)
-- IA Tutor → Leçons, Quiz, Exercices (accompagnement)
-- IA Évaluation → Scores → Certificats (flux évaluation)
-- Paramétrage → IA Génération → Parcours (flux admin)
-- Progress → IA Analyse → Knowledge Brief (flux data→IA)
-
-## Ordre d'exécution
-
-1. Créer `flowData.ts` (données des 25 nœuds + connexions)
-2. Créer `FlowNodeCard.tsx` (nœud cliquable)
-3. Créer `FlowDetailSheet.tsx` (panneau détail)
-4. Créer `PlatformFlow.tsx` (orchestrateur : grille, SVG, filtres)
-5. Ajouter `DiscoverySection` dans `InsightContent.tsx`
-6. Ajouter entrée sidebar dans `InsightSidebar.tsx`
+- 3 onglets riches et distincts dans Discovery
+- Onglet Architecture = le flow interactif existant
+- Onglet Workflows = 4 flux business animés avec détails au clic
+- Onglet Métier = 4 domaines d'application avec contenu business concret
+- Tout reste statique (pas de DB), coloré, premium, professionnel
 
