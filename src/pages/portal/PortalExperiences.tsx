@@ -187,7 +187,7 @@ export default function PortalExperiences() {
       : "";
     const richScenario = generateRichScenario(key, "intermediate", aiLevel);
     setSelectedMode(null);
-    navigate("/simulator/session", { state: { key, def, systemPrompt: behaviorPrompt + assistInstr, scenario: richScenario, aiLevel } });
+    navigate("/portal/pratique/session", { state: { key, def, systemPrompt: behaviorPrompt + assistInstr, scenario: richScenario, aiLevel } });
   };
 
   const launchPractice = (pr: any) => {
