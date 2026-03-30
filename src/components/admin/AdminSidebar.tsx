@@ -6,7 +6,7 @@ import {
 import {
   LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb, GraduationCap,
   CreditCard, ScrollText, Settings, ArrowLeft, Sparkles, Briefcase, Route, UserCircle,
-  Megaphone, Map, BarChart3, ChevronDown, Library, Activity, Zap, Award,
+  Megaphone, Map, BarChart3, ChevronDown, Library, Activity, Zap, Award, Rocket,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -39,6 +39,7 @@ export function AdminSidebar() {
     { path: "/admin/toolkits", icon: Layers, label: "Toolkits", show: perms.has("admin.toolkits.view") },
     { path: "/admin/workshops", icon: Presentation, label: "Workshops", show: perms.has("admin.workshops.view") },
     { path: "/admin/design-innovation", icon: Lightbulb, label: "Design Innovation", show: perms.has("admin.challenges.view") },
+    { path: "/admin/insight", icon: Rocket, label: "Insight", show: true },
   ];
 
   const observabilitySubItems = [

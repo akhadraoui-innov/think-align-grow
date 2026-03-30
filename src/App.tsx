@@ -90,6 +90,8 @@ import PortalAcademieModuleDetail from "./pages/portal/PortalAcademieModuleDetai
 import PortalAcademieCertificates from "./pages/portal/PortalAcademieCertificates";
 import PortalCertificateDetail from "./pages/portal/PortalCertificateDetail";
 import PortalGuideReader from "./pages/portal/PortalGuideReader";
+import PortalInsight from "./pages/portal/PortalInsight";
+import AdminInsight from "./pages/admin/AdminInsight";
 
 const queryClient = new QueryClient();
 
@@ -149,6 +151,7 @@ function AnimatedRoutes() {
            <Route path="/admin/observability/matrix" element={<AdminObservabilityMatrix />} />
           <Route path="/admin/simulator" element={<AdminSimulator />} />
           <Route path="/admin/simulator/templates" element={<AdminSimulatorTemplates />} />
+          <Route path="/admin/insight" element={<AdminInsight />} />
           {/* Portal routes */}
           <Route path="/portal" element={<PortalFormations />} />
           <Route path="/portal/dashboard" element={<PortalFormationsDashboard />} />
@@ -181,6 +184,8 @@ function AnimatedRoutes() {
           <Route path="/portal/academie/assets" element={<PortalAcademieAssets />} />
           <Route path="/portal/academie/modules/:id" element={<PortalAcademieModuleDetail />} />
           <Route path="/portal/academie/certificates" element={<PortalAcademieCertificates />} />
+          <Route path="/portal/insight" element={<PortalInsight />} />
+          <Route path="/portal/insight/:section" element={<PortalInsight />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

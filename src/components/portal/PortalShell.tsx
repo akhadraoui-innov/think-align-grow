@@ -23,6 +23,7 @@ const NAV_TABS = [
   { label: "WORKSHOPS", path: "/portal/workshops", matchPrefix: "/portal/workshops" },
   { label: "CHALLENGES", path: "/portal/challenges", matchPrefix: "/portal/challenges" },
   { label: "ACADEMIE", path: "/portal/academie", matchPrefix: "/portal/academie" },
+  { label: "INSIGHT", path: "/portal/insight", matchPrefix: "/portal/insight" },
 ] as const;
 
 export function PortalShell({ children }: PortalShellProps) {
