@@ -43,7 +43,7 @@ export function HeepAIWidget() {
           <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
             <div className="bg-muted/40 rounded-xl rounded-tl-sm px-3 py-2 max-w-[85%]">
               <p className="text-xs text-foreground leading-relaxed">
-                Bonjour ! Je suis votre mentor HEEP IA. Comment puis-je vous aider dans votre parcours ?
+                Bonjour ! Je suis votre mentor GROWTHINNOV IA. Comment puis-je vous aider dans votre parcours ?
               </p>
             </div>
           </div>

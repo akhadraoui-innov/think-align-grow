@@ -95,11 +95,11 @@ function PageBreadcrumb() {
     "/simulator/session": "Simulation en cours",
     "/simulator/history": "Historique",
   };
-  const label = map[location.pathname] || "Hack & Show";
+  const label = map[location.pathname] || "GROWTHINNOV";
 
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className="text-muted-foreground/60 text-xs font-medium">Hack & Show</span>
+      <span className="text-muted-foreground/60 text-xs font-medium">GROWTHINNOV</span>
       <span className="text-muted-foreground/40">/</span>
       <span className="font-semibold text-foreground text-xs">{label}</span>
     </div>

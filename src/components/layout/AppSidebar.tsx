@@ -249,7 +249,7 @@ export function AppSidebar({ onCommandPalette }: AppSidebarProps) {
             className="flex w-full items-center gap-2 rounded-xl bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
           >
             <ExternalLink className="h-3.5 w-3.5" />
-            Portail HEEP
+            Portail GROWTHINNOV
           </button>
         )}
         {user && (

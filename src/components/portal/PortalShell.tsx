@@ -111,12 +111,6 @@ export function PortalShell({ children }: PortalShellProps) {
           </button>
 
           {/* Cabinet link */}
-          <Link
-            to="/explore"
-            className="hidden lg:flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors ml-1 uppercase font-bold tracking-wide"
-          >
-            Cabinet <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
 
           {/* Mobile hamburger */}
           <Button

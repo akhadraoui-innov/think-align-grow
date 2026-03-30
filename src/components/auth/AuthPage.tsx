@@ -105,7 +105,7 @@ export function AuthPage() {
         <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-pillar-thinking shadow-lg shadow-primary/20 mb-3">
           <Sparkles className="h-7 w-7 text-primary-foreground" />
         </div>
-        <h1 className="font-display text-2xl font-bold uppercase tracking-tight">Hack & Show</h1>
+        <h1 className="font-display text-2xl font-bold uppercase tracking-tight">GROWTHINNOV</h1>
         <p className="text-xs text-muted-foreground mt-1">
           {mode === "login" ? "Bon retour !" : mode === "signup" ? "Créer votre compte stratégique" : "Réinitialiser le mot de passe"}
         </p>
