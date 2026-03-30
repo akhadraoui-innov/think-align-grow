@@ -531,49 +531,97 @@ const BUSINESS_WORKFLOWS = [
   {
     icon: UserCheck,
     title: "Flux Onboarding Apprenant",
-    subtitle: "De l'inscription à la certification",
+    subtitle: "De l'inscription à la certification — 5 étapes clés",
     steps: [
-      { title: "Inscription", desc: "L'apprenant s'inscrit et complète son profil professionnel (fonction, secteur, séniorité). L'organisation peut provisionner via SSO.", layer: "learner" as const, actors: ["Apprenant", "RH"], tools: ["SSO", "Profil"], aiRole: undefined },
-      { title: "Profil IA", desc: "L'IA analyse le profil pour personnaliser les recommandations de parcours, le niveau de difficulté et le style pédagogique.", layer: "ai" as const, actors: ["IA Tutor"], tools: ["Profil", "Fonctions"], aiRole: "Personnalisation automatique du parcours" },
-      { title: "Parcours suggéré", desc: "L'apprenant découvre les parcours recommandés basés sur sa fonction et ses objectifs. Il peut s'inscrire en un clic.", layer: "learner" as const, actors: ["Apprenant"], tools: ["Catalogue", "Enrollment"], aiRole: undefined },
-      { title: "Apprentissage", desc: "Progression module par module : leçons, quiz, exercices, pratiques IA. Chaque interaction est trackée et évaluée.", layer: "learner" as const, actors: ["Apprenant", "IA Tutor"], tools: ["Modules", "Quiz", "Exercices"], aiRole: "Feedback temps réel et brief personnalisé" },
-      { title: "Certification", desc: "Évaluation finale par compétence, génération du certificat vérifiable (QR code) et envoi du livret de cours complet par email.", layer: "ai" as const, actors: ["IA Évaluation"], tools: ["Certificat", "PDF", "Email"], aiRole: "Évaluation globale et génération du livret" },
+      { title: "Inscription", desc: "L'apprenant s'inscrit et complète son profil professionnel (fonction, secteur, séniorité). L'organisation peut provisionner via SSO. Le système détecte automatiquement la langue, le fuseau horaire et les préférences d'accessibilité.", layer: "learner" as const, actors: ["Apprenant", "RH"], tools: ["SSO", "Profil", "SCIM"], aiRole: undefined },
+      { title: "Profil IA", desc: "L'IA analyse le profil pour personnaliser les recommandations de parcours, le niveau de difficulté et le style pédagogique. Elle identifie les lacunes potentielles et les compétences transversales à développer.", layer: "ai" as const, actors: ["IA Tutor"], tools: ["Profil", "Fonctions", "Personae"], aiRole: "Personnalisation automatique du parcours et pré-diagnostic" },
+      { title: "Parcours suggéré", desc: "L'apprenant découvre les parcours recommandés basés sur sa fonction et ses objectifs. Il peut s'inscrire en un clic. L'IA affiche un brief d'introduction personnalisé pour chaque parcours.", layer: "learner" as const, actors: ["Apprenant"], tools: ["Catalogue", "Enrollment", "Brief IA"], aiRole: undefined },
+      { title: "Apprentissage", desc: "Progression module par module : leçons interactives, quiz évalués, exercices pratiques et mises en situation IA. Chaque interaction est trackée, scorée et exploitée pour adapter la suite du parcours.", layer: "learner" as const, actors: ["Apprenant", "IA Tutor"], tools: ["Modules", "Quiz", "Exercices", "Pratiques"], aiRole: "Feedback temps réel, brief personnalisé et coaching adaptatif" },
+      { title: "Certification", desc: "Évaluation finale par compétence avec radar de skills, génération du certificat vérifiable (QR code + LinkedIn), envoi du livret de cours complet (4-8 pages) par email et historisation permanente.", layer: "ai" as const, actors: ["IA Évaluation", "Système"], tools: ["Certificat", "PDF", "Email", "QR Code"], aiRole: "Évaluation globale, génération du livret et publication du certificat" },
     ],
   },
   {
     icon: Settings,
     title: "Flux Création de Contenu",
-    subtitle: "Du brief métier à la publication",
+    subtitle: "Du brief métier à la publication — Génération IA batch",
     steps: [
-      { title: "Brief métier", desc: "L'administrateur définit la fonction cible, les compétences visées et le contexte sectoriel. Il peut s'appuyer sur les personae existants.", layer: "admin" as const, actors: ["Admin", "Formateur"], tools: ["Fonctions", "Personae"], aiRole: undefined },
-      { title: "Génération IA", desc: "L'IA crée automatiquement le parcours complet : modules, leçons, quiz, exercices et pratiques conversationnelles.", layer: "ai" as const, actors: ["IA Génération"], tools: ["GPT", "Gemini", "Batch"], aiRole: "Génération complète du parcours en quelques minutes" },
-      { title: "Review & enrichissement", desc: "L'administrateur review, ajuste et enrichit chaque élément. Il peut régénérer individuellement chaque composant.", layer: "admin" as const, actors: ["Admin"], tools: ["Éditeur", "Preview"], aiRole: undefined },
-      { title: "Publication", desc: "Le parcours est publié et disponible pour les apprenants. Les campagnes peuvent cibler des groupes spécifiques.", layer: "admin" as const, actors: ["Admin"], tools: ["Campagnes", "Ciblage"], aiRole: undefined },
-      { title: "Analytics", desc: "Suivi temps réel de l'adoption, des scores et de la progression. Matrice de couverture compétences × fonctions.", layer: "admin" as const, actors: ["Admin", "Manager"], tools: ["Dashboard", "Observabilité"], aiRole: "Insights automatiques sur les performances" },
+      { title: "Brief métier", desc: "L'administrateur définit la fonction cible, les compétences visées, le contexte sectoriel et le niveau de difficulté. Il peut s'appuyer sur les personae et fonctions existants ou en créer de nouveaux.", layer: "admin" as const, actors: ["Admin", "Formateur"], tools: ["Fonctions", "Personae", "Skills"], aiRole: undefined },
+      { title: "Génération IA", desc: "L'IA crée automatiquement le parcours complet en batch : modules structurés, leçons Markdown enrichies, quiz avec feedback, exercices avec grilles d'évaluation et pratiques conversationnelles avec scénarios.", layer: "ai" as const, actors: ["IA Génération"], tools: ["GPT", "Gemini", "Batch", "Templates"], aiRole: "Génération complète du parcours en 3-5 minutes" },
+      { title: "Review & enrichissement", desc: "L'administrateur review chaque élément dans un éditeur riche. Il peut régénérer, enrichir ou réécrire individuellement chaque composant. L'historique des versions est conservé.", layer: "admin" as const, actors: ["Admin", "Expert métier"], tools: ["Éditeur", "Preview", "Versions"], aiRole: undefined },
+      { title: "Publication", desc: "Le parcours est publié et disponible pour les apprenants. Les campagnes de déploiement peuvent cibler des groupes, équipes ou organisations spécifiques avec des dates de début et de fin.", layer: "admin" as const, actors: ["Admin"], tools: ["Campagnes", "Ciblage", "Planification"], aiRole: undefined },
+      { title: "Analytics", desc: "Suivi temps réel de l'adoption, des scores moyens et de la progression. Matrice de couverture compétences × fonctions. Alertes automatiques sur les modules à faible complétion.", layer: "admin" as const, actors: ["Admin", "Manager"], tools: ["Dashboard", "Observabilité", "Alertes"], aiRole: "Insights automatiques et recommandations d'optimisation" },
     ],
   },
   {
     icon: ClipboardCheck,
     title: "Flux Évaluation Complète",
-    subtitle: "Du quiz au certificat vérifiable",
+    subtitle: "Du quiz au certificat vérifiable — Évaluation multi-dimensionnelle",
     steps: [
-      { title: "Quiz", desc: "QCM avec scoring automatique, feedback par question et explication IA. Les réponses sont persistées pour analyse.", layer: "learner" as const, actors: ["Apprenant"], tools: ["QCM", "Scoring"], aiRole: "Feedback et explication par question" },
-      { title: "Exercice", desc: "Production libre de l'apprenant évaluée par l'IA selon une grille de critères configurable par le formateur.", layer: "ai" as const, actors: ["Apprenant", "IA"], tools: ["Éditeur", "Grille"], aiRole: "Évaluation multicritère automatique" },
-      { title: "Pratique IA", desc: "Mise en situation conversationnelle avec évaluation multidimensionnelle (pertinence, profondeur, créativité).", layer: "ai" as const, actors: ["Apprenant", "IA Agent"], tools: ["Simulateur", "Phases"], aiRole: "Agent conversationnel + évaluation fine" },
-      { title: "Score compétences", desc: "Agrégation de tous les scores en un profil de compétences détaillé avec niveaux initial et final.", layer: "ai" as const, actors: ["IA Évaluation"], tools: ["Skills", "Radar"], aiRole: "Calcul du profil de compétences" },
-      { title: "Certificat", desc: "Génération du certificat vérifiable avec QR code, lien LinkedIn, et livret PDF envoyé par email.", layer: "ai" as const, actors: ["Système"], tools: ["QR Code", "PDF", "Email"], aiRole: "Génération et envoi automatique" },
+      { title: "Quiz", desc: "QCM avec scoring automatique, feedback IA par question et explication détaillée. Les réponses de l'apprenant sont persistées et consultables dans l'onglet 'Mes réponses'. Support des questions à choix multiple et unique.", layer: "learner" as const, actors: ["Apprenant"], tools: ["QCM", "Scoring", "Persistance"], aiRole: "Feedback et explication personnalisée par question" },
+      { title: "Exercice", desc: "Production libre de l'apprenant (texte, analyse, plan d'action) évaluée par l'IA selon une grille de critères configurable. L'évaluation est multidimensionnelle : pertinence, profondeur, structure, créativité.", layer: "ai" as const, actors: ["Apprenant", "IA"], tools: ["Éditeur", "Grille", "Critères"], aiRole: "Évaluation multicritère avec justification détaillée" },
+      { title: "Pratique IA", desc: "Mise en situation conversationnelle avec un agent IA spécialisé (négociation, coaching, analyse). Évaluation en temps réel sur plusieurs dimensions avec jauge de tension et scoring progressif.", layer: "ai" as const, actors: ["Apprenant", "IA Agent"], tools: ["Simulateur", "Phases", "Rubric"], aiRole: "Agent conversationnel adaptatif + évaluation fine en temps réel" },
+      { title: "Score compétences", desc: "Agrégation intelligente de tous les scores (quiz, exercices, pratiques) en un profil de compétences détaillé avec niveaux initial et final, progression et benchmark par cohorte.", layer: "ai" as const, actors: ["IA Évaluation"], tools: ["Skills", "Radar", "Benchmark"], aiRole: "Calcul du profil de compétences et analyse des écarts" },
+      { title: "Certificat & Livret", desc: "Génération automatique du certificat vérifiable (QR code, lien public, partage LinkedIn) et du livret de cours PDF complet (contenu, exercices, évaluations, annotations IA). Envoi par email et historisation.", layer: "ai" as const, actors: ["Système"], tools: ["QR Code", "PDF", "Email", "LinkedIn"], aiRole: "Génération, envoi et publication automatiques" },
     ],
   },
   {
     icon: MonitorPlay,
     title: "Flux Workshop Collaboratif",
-    subtitle: "De la préparation à la synthèse IA",
+    subtitle: "De la préparation à la synthèse IA — Intelligence collective",
     steps: [
-      { title: "Sélection toolkit", desc: "Le facilitateur choisit un toolkit stratégique (BMC, SWOT, Value Chain...) et configure le workshop.", layer: "admin" as const, actors: ["Facilitateur"], tools: ["Toolkits", "Cartes"], aiRole: undefined },
-      { title: "Invitation", desc: "Les participants sont invités par lien ou provisionnés. Le workshop peut être temps réel ou asynchrone.", layer: "admin" as const, actors: ["Facilitateur"], tools: ["Invitations", "QR"], aiRole: undefined },
-      { title: "Canevas live", desc: "Collaboration temps réel sur le canevas : placement de cartes, sticky notes, discussions, annotations.", layer: "learner" as const, actors: ["Participants", "Facilitateur"], tools: ["Canevas", "Drag & Drop"], aiRole: "Coach IA contextuel" },
-      { title: "Scoring", desc: "Gamification : points de valorisation par carte, niveaux de difficulté, classement des contributions.", layer: "learner" as const, actors: ["Système"], tools: ["Points", "Badges"], aiRole: undefined },
-      { title: "Synthèse IA", desc: "L'IA analyse l'ensemble des contributions et génère un rapport de synthèse avec recommandations stratégiques.", layer: "ai" as const, actors: ["IA Coach"], tools: ["Analyse", "Rapport"], aiRole: "Synthèse automatique et recommandations" },
+      { title: "Sélection toolkit", desc: "Le facilitateur choisit un toolkit stratégique (BMC, SWOT, Value Chain, Design Thinking...) parmi la bibliothèque. Chaque toolkit contient ses piliers, cartes, phases et plans de jeu pré-configurés.", layer: "admin" as const, actors: ["Facilitateur"], tools: ["Toolkits", "Cartes", "Piliers"], aiRole: undefined },
+      { title: "Configuration", desc: "Les participants sont invités par lien ou provisionnés via l'organisation. Le facilitateur configure le mode (temps réel ou asynchrone), les droits et la durée.", layer: "admin" as const, actors: ["Facilitateur"], tools: ["Invitations", "QR", "Config"], aiRole: undefined },
+      { title: "Canevas live", desc: "Collaboration temps réel sur le canevas interactif : placement de cartes stratégiques, sticky notes, textes, icônes, flèches et groupes. Discussions contextuelles par élément. L'IA Coach intervient pour guider.", layer: "learner" as const, actors: ["Participants", "Facilitateur", "IA"], tools: ["Canevas", "Drag & Drop", "Chat"], aiRole: "Coach IA contextuel : suggestions, challenges et enrichissement" },
+      { title: "Gamification", desc: "Système de points de valorisation par carte placée, niveaux de difficulté, badges de participation et classement des contributions. Chaque action est traçable et quantifiable.", layer: "learner" as const, actors: ["Système"], tools: ["Points", "Badges", "Classement"], aiRole: undefined },
+      { title: "Synthèse IA", desc: "L'IA analyse l'ensemble des contributions, identifie les patterns, les consensus et les divergences. Elle génère un rapport de synthèse avec recommandations stratégiques priorisées et plan d'action.", layer: "ai" as const, actors: ["IA Coach"], tools: ["Analyse", "Rapport", "Recommandations"], aiRole: "Synthèse automatique, identification des patterns et recommandations" },
+    ],
+  },
+  {
+    icon: Brain,
+    title: "Flux Diagnostic Stratégique (Challenge)",
+    subtitle: "Du template au plan d'action — Consulting augmenté par l'IA",
+    steps: [
+      { title: "Template", desc: "Sélection d'un template de challenge parmi les méthodologies disponibles (Maturité IA, Transformation Digitale, Innovation). Chaque template définit ses sujets, slots et critères d'évaluation.", layer: "admin" as const, actors: ["Admin", "Consultant"], tools: ["Templates", "Sujets", "Slots"], aiRole: undefined },
+      { title: "Sélection cartes", desc: "L'utilisateur parcourt les cartes stratégiques du toolkit, sélectionne celles pertinentes pour son organisation et les place dans la zone de staging avant de les affecter aux slots.", layer: "learner" as const, actors: ["Participant"], tools: ["Cartes", "Staging", "Filtres"], aiRole: undefined },
+      { title: "Placement board", desc: "Drag & drop des cartes dans les slots du board. Chaque sujet a ses slots spécifiques avec des contraintes (requis/optionnel, type de slot). L'interface guide l'utilisateur.", layer: "learner" as const, actors: ["Participant"], tools: ["Board", "Drag & Drop", "Slots"], aiRole: undefined },
+      { title: "Évaluation maturité", desc: "Pour chaque carte placée, l'utilisateur évalue le niveau de maturité actuel de son organisation (1-5 étoiles). Possibilité de choisir le format (individuel, équipe, organisation).", layer: "learner" as const, actors: ["Participant"], tools: ["Maturité", "Format", "Scoring"], aiRole: undefined },
+      { title: "Analyse IA", desc: "L'IA analyse la cohérence des choix, identifie les gaps stratégiques, calcule les scores de maturité par axe et génère un rapport détaillé avec recommandations priorisées et plan d'action.", layer: "ai" as const, actors: ["IA Analyse"], tools: ["Rapport", "Radar", "Actions"], aiRole: "Analyse de cohérence, scoring et recommandations stratégiques" },
+    ],
+  },
+  {
+    icon: Cpu,
+    title: "Flux Simulateur IA (7 Modes)",
+    subtitle: "De la mise en situation au rapport de compétences",
+    steps: [
+      { title: "Choix du mode", desc: "L'apprenant sélectionne un mode de simulation parmi 7 : Analyse, Design, Code, Document, Chat, Évaluation, Décision. Chaque mode a son interface, ses outils et ses critères d'évaluation spécifiques.", layer: "learner" as const, actors: ["Apprenant"], tools: ["7 Modes", "Templates"], aiRole: undefined },
+      { title: "Briefing", desc: "L'IA présente le scénario, les objectifs, les contraintes et les livrables attendus. Un timer et une jauge de qualité guident l'apprenant tout au long de la session.", layer: "ai" as const, actors: ["IA Coach"], tools: ["Briefing", "Timer", "Objectifs"], aiRole: "Présentation du scénario et calibrage du niveau" },
+      { title: "Session active", desc: "L'apprenant interagit avec l'IA dans le mode choisi : rédaction, analyse, coding, dialogue ou prise de décision. L'IA s'adapte en temps réel et fournit des suggestions contextuelles.", layer: "learner" as const, actors: ["Apprenant", "IA"], tools: ["Éditeur", "Chat", "Code"], aiRole: "Interaction adaptative, suggestions et challenges" },
+      { title: "Scoring", desc: "À la fin de la session, scoring multidimensionnel : score global, qualité des inputs, pertinence des décisions, créativité. Animation de révélation progressive du score.", layer: "ai" as const, actors: ["IA Évaluation"], tools: ["Score", "Radar", "Animation"], aiRole: "Évaluation multicritère et feedback détaillé" },
+      { title: "Rapport", desc: "Rapport de session complet : radar de compétences, timeline des interactions, points forts et axes d'amélioration, suggestions de prochaines sessions. Historique consultable.", layer: "ai" as const, actors: ["Système"], tools: ["Rapport", "Historique", "Export"], aiRole: "Génération du rapport et recommandations de progression" },
+    ],
+  },
+  {
+    icon: PenTool,
+    title: "Flux Personnalisation IA",
+    subtitle: "De la configuration au contenu sur-mesure — IA de génération",
+    steps: [
+      { title: "Fonction & persona", desc: "L'administrateur crée ou sélectionne une fonction métier (ex: Data Analyst, Chef de projet) et un persona apprenant avec ses caractéristiques spécifiques (séniorité, secteur, outils utilisés).", layer: "admin" as const, actors: ["Admin"], tools: ["Fonctions", "Personae", "Caractéristiques"], aiRole: undefined },
+      { title: "Configuration IA", desc: "Choix du provider IA (GPT, Gemini), du modèle, de la température et des prompts personnalisés. Possibilité de configurer par organisation avec clé API dédiée.", layer: "admin" as const, actors: ["Admin"], tools: ["Providers", "Modèles", "Prompts"], aiRole: undefined },
+      { title: "Génération batch", desc: "L'IA génère en batch tout le contenu nécessaire : parcours, modules, quiz, exercices, pratiques. Chaque élément est adapté à la fonction et au persona configurés.", layer: "ai" as const, actors: ["IA Génération"], tools: ["Batch", "Queue", "Preview"], aiRole: "Génération massive de contenu personnalisé en quelques minutes" },
+      { title: "Enrichissement", desc: "L'IA enrichit automatiquement le contenu avec des briefs d'introduction, des évaluations par compétence, des Knowledge Briefs personnalisés et des évaluations globales de parcours.", layer: "ai" as const, actors: ["IA Tutor"], tools: ["Brief", "Analyse", "Évaluation"], aiRole: "Enrichissement continu et personnalisation dynamique" },
+      { title: "Livraison", desc: "Le contenu personnalisé est livré à l'apprenant via le portail avec une expérience immersive : navigation par module, IA tutor contextuelle, livret PDF complet et certificat vérifiable.", layer: "learner" as const, actors: ["Apprenant"], tools: ["Portail", "PDF", "Certificat"], aiRole: undefined },
+    ],
+  },
+  {
+    icon: BarChart3,
+    title: "Flux Observabilité & Analytics",
+    subtitle: "Du tracking à l'optimisation continue — Data-driven",
+    steps: [
+      { title: "Tracking", desc: "Chaque interaction apprenant est automatiquement trackée : temps passé, réponses, scores, messages IA, progression. Les données sont stockées de façon granulaire et en temps réel.", layer: "admin" as const, actors: ["Système"], tools: ["Events", "Timestamps", "Metadata"], aiRole: undefined },
+      { title: "Dashboard", desc: "Tableau de bord temps réel avec KPIs clés : utilisateurs actifs, taux de complétion, scores moyens par parcours, distribution des compétences, consommation de crédits IA.", layer: "admin" as const, actors: ["Admin", "Manager"], tools: ["Dashboard", "Graphiques", "Filtres"], aiRole: undefined },
+      { title: "Catalogue assets", desc: "Vue consolidée de tous les assets pédagogiques : parcours, modules, quiz, exercices, pratiques. Statuts de publication, couverture par fonction et métriques d'utilisation.", layer: "admin" as const, actors: ["Admin"], tools: ["Catalogue", "Filtres", "Statuts"], aiRole: undefined },
+      { title: "Matrice couverture", desc: "Matrice interactive compétences × fonctions montrant les gaps de couverture. Identification automatique des domaines sous-couverts et recommandations de création de contenu.", layer: "ai" as const, actors: ["IA", "Admin"], tools: ["Matrice", "Heatmap", "Gaps"], aiRole: "Identification des gaps et recommandations de contenu" },
+      { title: "Optimisation", desc: "L'IA analyse les patterns d'usage et de performance pour recommander des optimisations : modules à retravailler, parcours à enrichir, nouvelles fonctions à couvrir.", layer: "ai" as const, actors: ["IA Analytics"], tools: ["Insights", "Recommandations", "Actions"], aiRole: "Analyse prédictive et recommandations d'optimisation" },
     ],
   },
 ];
@@ -584,14 +632,16 @@ const DOMAIN_CARDS = [
     title: "RH & Formation",
     gradient: "from-blue-500 to-blue-700",
     painPoints: [
-      "Les formations IA ne sont pas adaptées aux fonctions métier de l'entreprise",
+      "Les formations IA ne sont pas adaptées aux fonctions métier spécifiques de l'entreprise",
       "Impossible de mesurer l'acquisition réelle de compétences après une formation",
       "Aucun livrable exploitable ne sort des sessions de formation traditionnelles",
+      "Les responsables formation n'ont pas de vue consolidée sur le ROI formation",
     ],
     solutions: [
-      "Parcours adaptatifs par fonction avec IA tutor personnalisée",
-      "Évaluation granulaire par compétence avec radar et profil d'acquisition",
-      "Livret de cours PDF complet, certificat vérifiable et cartographie des skills",
+      "Parcours adaptatifs par fonction avec IA tutor personnalisée à chaque étape",
+      "Évaluation granulaire par compétence avec radar de skills et profil d'acquisition",
+      "Livret de cours PDF complet (4-8 pages), certificat vérifiable et cartographie des compétences",
+      "Dashboard d'observabilité avec KPIs d'adoption, de complétion et de performance",
     ],
     kpis: [
       { value: "×3", label: "Vitesse d'upskilling" },
@@ -606,13 +656,15 @@ const DOMAIN_CARDS = [
     gradient: "from-orange-500 to-orange-700",
     painPoints: [
       "Les diagnostics stratégiques sont coûteux et dépendent de consultants externes",
-      "Pas de méthodologie reproductible pour évaluer la maturité sur un sujet",
+      "Pas de méthodologie reproductible pour évaluer la maturité sur un sujet stratégique",
       "Les équipes ne savent pas passer de l'analyse à l'action concrète",
+      "Les rapports d'audit restent en PDF et ne sont jamais mis à jour",
     ],
     solutions: [
-      "Challenges de Design Innovation avec diagnostic en autonomie et analyse IA",
-      "Évaluation de maturité structurée avec benchmark et recommandations",
-      "Plan d'action généré automatiquement avec priorisation IA",
+      "Challenges de Design Innovation avec diagnostic en autonomie et analyse IA automatique",
+      "Évaluation de maturité structurée avec benchmark et recommandations priorisées",
+      "Plan d'action généré automatiquement avec priorisation IA et timeline",
+      "Rapports dynamiques consultables en ligne avec historique des versions",
     ],
     kpis: [
       { value: "×5", label: "ROI vs consulting" },
@@ -626,14 +678,16 @@ const DOMAIN_CARDS = [
     title: "Innovation & Produit",
     gradient: "from-violet-500 to-violet-700",
     painPoints: [
-      "Les ateliers d'idéation sont peu structurés et ne produisent pas de livrables",
-      "Le design thinking reste théorique sans outil d'application concret",
-      "L'engagement des participants chute après les premières sessions",
+      "Les ateliers d'idéation sont peu structurés et ne produisent pas de livrables actionnables",
+      "Le design thinking reste théorique sans outil d'application concret et digital",
+      "L'engagement des participants chute après les premières sessions d'innovation",
+      "Impossible de tracer et de mesurer la contribution individuelle aux workshops",
     ],
     solutions: [
       "Workshops gamifiés avec toolkits stratégiques et canevas collaboratif temps réel",
-      "Application concrète du design thinking via les cartes et les challenges",
-      "Gamification avec points, badges et classement pour maintenir l'engagement",
+      "Application concrète du design thinking via les cartes, les piliers et les challenges interactifs",
+      "Gamification avec points de valorisation, badges et classement pour maintenir l'engagement",
+      "Traçabilité complète de chaque contribution avec scoring individuel et collectif",
     ],
     kpis: [
       { value: "+85%", label: "Engagement" },
@@ -650,11 +704,13 @@ const DOMAIN_CARDS = [
       "Les managers manquent d'outils pour animer des ateliers stratégiques avec leurs équipes",
       "Le feedback sur les compétences des collaborateurs est subjectif et non documenté",
       "Pas de méthode pour accompagner la montée en compétences individualisée",
+      "Les entretiens annuels ne reflètent pas les compétences réellement acquises",
     ],
     solutions: [
-      "Ateliers d'équipe structurés avec le simulateur et les workshops collaboratifs",
-      "Évaluation objective par compétence avec l'IA et profils individuels",
-      "Parcours personnalisés par persona avec suivi granulaire et recommandations IA",
+      "Ateliers d'équipe structurés avec le simulateur IA et les workshops collaboratifs gamifiés",
+      "Évaluation objective par compétence avec l'IA et profils individuels détaillés",
+      "Parcours personnalisés par persona avec suivi granulaire et recommandations IA continues",
+      "Données de compétences factuelles exploitables pour les revues de performance",
     ],
     kpis: [
       { value: "+60%", label: "Productivité ateliers" },
@@ -663,6 +719,107 @@ const DOMAIN_CARDS = [
     ],
     workflow: ["Profil équipe", "Parcours ciblés", "Pratique IA", "Évaluation", "Feedback"],
   },
+  {
+    icon: Globe,
+    title: "Organismes de Formation",
+    gradient: "from-pink-500 to-pink-700",
+    painPoints: [
+      "La création de contenus pédagogiques de qualité prend des semaines de travail",
+      "Les formations ne sont pas personnalisables par client ou secteur d'activité",
+      "Pas de différenciation technologique face aux concurrents et aux formations en ligne",
+      "Le suivi des apprenants entre sessions est quasi inexistant",
+    ],
+    solutions: [
+      "IA de génération batch : parcours complets créés en minutes à partir d'un brief métier",
+      "Multi-tenant natif : chaque organisation a son branding, ses données et sa configuration",
+      "Simulateur IA et workshops collaboratifs comme différenciateurs technologiques majeurs",
+      "Portail apprenant immersif avec suivi continu, évaluations et certifications",
+    ],
+    kpis: [
+      { value: "×10", label: "Vitesse de production" },
+      { value: "∞", label: "Personnalisation" },
+      { value: "+40%", label: "Valeur perçue" },
+    ],
+    workflow: ["Brief client", "Génération IA", "White-label", "Déploiement", "Suivi"],
+  },
+  {
+    icon: Building2,
+    title: "ESN & Cabinets de Conseil",
+    gradient: "from-cyan-500 to-cyan-700",
+    painPoints: [
+      "Les missions de transformation IA manquent d'outils pédagogiques structurés",
+      "Le transfert de compétences vers les équipes client est difficile à formaliser",
+      "Les diagnostics de maturité sont manuels, subjectifs et non reproductibles",
+      "Pas de plateforme pour accompagner les clients entre les missions",
+    ],
+    solutions: [
+      "Parcours IA sur-mesure par fonction client avec génération automatique",
+      "Challenges de diagnostic structurés avec analyse IA et rapports professionnels",
+      "Plateforme de suivi inter-missions avec progression des compétences",
+      "Workshops collaboratifs pour les ateliers de cadrage et de co-construction",
+    ],
+    kpis: [
+      { value: "-60%", label: "Temps diagnostic" },
+      { value: "+80%", label: "Satisfaction client" },
+      { value: "×3", label: "Missions récurrentes" },
+    ],
+    workflow: ["Diagnostic", "Parcours sur-mesure", "Simulation", "Certification", "Suivi continu"],
+  },
+  {
+    icon: Award,
+    title: "Écoles & Universités",
+    gradient: "from-amber-500 to-amber-700",
+    painPoints: [
+      "Les cours sur l'IA deviennent obsolètes plus vite qu'ils ne sont mis à jour",
+      "Les étudiants manquent de cas pratiques concrets et de mise en situation",
+      "L'évaluation des compétences IA appliquées est subjective et non standardisée",
+      "Le gap entre théorie académique et pratique professionnelle reste trop important",
+    ],
+    solutions: [
+      "Contenu généré et mis à jour par l'IA en continu, toujours aligné sur l'état de l'art",
+      "Simulateur 7 modes pour des cas pratiques réalistes avec feedback IA instantané",
+      "Évaluation standardisée par compétence avec certificats vérifiables par les employeurs",
+      "Challenges et workshops qui reproduisent des situations professionnelles réelles",
+    ],
+    kpis: [
+      { value: "98%", label: "Contenu à jour" },
+      { value: "+70%", label: "Employabilité" },
+      { value: "×5", label: "Pratique vs théorie" },
+    ],
+    workflow: ["Cursus", "Modules IA", "Simulations", "Projets", "Certification"],
+  },
+  {
+    icon: Rocket,
+    title: "Startups & Scale-ups",
+    gradient: "from-red-500 to-red-700",
+    painPoints: [
+      "Pas de budget pour des formations classiques ni de temps pour des parcours longs",
+      "L'onboarding des nouveaux collaborateurs sur les outils IA est chaotique",
+      "Les équipes ont des niveaux très hétérogènes sur les compétences IA",
+      "Besoin de monter en compétences vite sans sacrifier la productivité",
+    ],
+    solutions: [
+      "Parcours courts et ciblés générés par l'IA en minutes, accessibles immédiatement",
+      "Onboarding structuré avec parcours adaptatifs au niveau de chaque collaborateur",
+      "Diagnostic de maturité rapide pour identifier et prioriser les besoins",
+      "Pratique IA immédiate dans le simulateur pour un apprentissage par l'action",
+    ],
+    kpis: [
+      { value: "24h", label: "Time-to-skill" },
+      { value: "-90%", label: "Coût formation" },
+      { value: "+50%", label: "Adoption IA" },
+    ],
+    workflow: ["Diagnostic rapide", "Parcours express", "Pratique IA", "Évaluation", "Itération"],
+  },
+];
+
+/* ─── Capability Matrix ─── */
+const CAPABILITIES = [
+  { category: "Apprentissage", items: ["Parcours adaptatifs", "Leçons Markdown enrichies", "Quiz avec feedback IA", "Exercices évalués par IA", "Pratique conversationnelle IA", "Knowledge Brief personnalisé"] },
+  { category: "Évaluation", items: ["Scoring multicritère", "Radar de compétences", "Évaluation globale IA", "Certificats vérifiables QR", "Livret PDF complet", "Profil de skills"] },
+  { category: "Collaboration", items: ["Workshops temps réel", "Canevas drag & drop", "Toolkits stratégiques", "Gamification & scoring", "IA Coach contextuel", "Discussions par élément"] },
+  { category: "Administration", items: ["Génération IA batch", "Multi-tenant & branding", "Rôles & permissions RBAC", "Crédits & facturation", "Observabilité temps réel", "Matrice de couverture"] },
+  { category: "Intelligence IA", items: ["GPT & Gemini intégrés", "IA Tutor personnalisée", "IA Évaluation avancée", "IA Génération de contenu", "IA Analyse stratégique", "IA Document & livret"] },
 ];
 
 function DiscoverySection() {
@@ -701,25 +858,84 @@ function DiscoverySection() {
 
         {/* Tab 2 — Workflows Business */}
         <TabsContent value="workflows">
-          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-            Découvrez les <strong>4 flux opérationnels clés</strong> de la plateforme. Cliquez sur chaque étape pour voir les acteurs, outils et le rôle de l'IA.
-          </p>
-          <div className="space-y-5">
-            {BUSINESS_WORKFLOWS.map(w => (
-              <BusinessWorkflow key={w.title} {...w} />
-            ))}
+          <div className="space-y-8">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
+                Découvrez les <strong>8 flux opérationnels clés</strong> de la plateforme. Cliquez sur chaque étape pour voir les acteurs, outils et le rôle de l'IA.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-6">
+                {BUSINESS_WORKFLOWS.map(w => (
+                  <Badge key={w.title} variant="outline" className="text-[10px]">{w.title.replace("Flux ", "")}</Badge>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-5">
+              {BUSINESS_WORKFLOWS.map(w => (
+                <BusinessWorkflow key={w.title} {...w} />
+              ))}
+            </div>
+
+            {/* Capabilities matrix */}
+            <div className="mt-10">
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Matrice des capacités
+              </h3>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="grid grid-cols-5 divide-x divide-border">
+                    {CAPABILITIES.map(cap => (
+                      <div key={cap.category} className="p-4">
+                        <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">{cap.category}</p>
+                        <div className="space-y-2">
+                          {cap.items.map(item => (
+                            <div key={item} className="flex items-center gap-1.5">
+                              <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
+                              <span className="text-[11px] text-foreground/80">{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
 
         {/* Tab 3 — Cas Métier */}
         <TabsContent value="metier">
-          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-            Explorez les <strong>cas d'usage concrets</strong> par domaine métier. Chaque domaine présente ses problématiques, nos solutions et les KPIs d'impact.
-          </p>
-          <div className="space-y-4">
-            {DOMAIN_CARDS.map(d => (
-              <DomainCard key={d.title} {...d} />
-            ))}
+          <div className="space-y-8">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
+                Explorez les <strong>8 cas d'usage concrets</strong> par domaine métier et type d'organisation. Chaque domaine présente ses problématiques, nos solutions et les KPIs d'impact.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-6">
+                {DOMAIN_CARDS.map(d => (
+                  <Badge key={d.title} variant="outline" className="text-[10px]">{d.title}</Badge>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {DOMAIN_CARDS.map(d => (
+                <DomainCard key={d.title} {...d} />
+              ))}
+            </div>
+
+            {/* Cross-domain value prop */}
+            <ValueProp>
+              Quelle que soit votre industrie ou votre taille, GROWTHINNOV s'adapte à vos enjeux avec des <strong>parcours personnalisés par fonction</strong>, une <strong>IA qui apprend de votre contexte</strong> et des <strong>métriques d'impact concrètes</strong> exploitables dès le premier parcours déployé.
+            </ValueProp>
+
+            {/* Bottom stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard icon={Brain} value="6" label="Types d'IA intégrées" />
+              <StatCard icon={Layers} value="7" label="Modes de simulation" />
+              <StatCard icon={Users} value="∞" label="Organisations supportées" />
+              <StatCard icon={Award} value="100%" label="Certificats vérifiables" />
+            </div>
           </div>
         </TabsContent>
       </Tabs>
