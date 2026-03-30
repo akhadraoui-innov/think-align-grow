@@ -184,6 +184,8 @@ function AnimatedRoutes() {
           <Route path="/portal/academie/assets" element={<PortalAcademieAssets />} />
           <Route path="/portal/academie/modules/:id" element={<PortalAcademieModuleDetail />} />
           <Route path="/portal/academie/certificates" element={<PortalAcademieCertificates />} />
+          <Route path="/portal/insight" element={<PortalInsight />} />
+          <Route path="/portal/insight/:section" element={<PortalInsight />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
