@@ -1,43 +1,83 @@
 
 
-# Plan — Créer 5 simulations Process Mining complètes
+# Plan — Complétion parcours Ammar Khadraoui + Module Certification E2E
 
-## Contexte
+## Deux axes majeurs
 
-Le parcours "Process Mining IA Augmented" couvre : introduction PM+IA, extraction/préparation de données (event logs), découverte/conformité augmentée par IA, prédiction/optimisation, et cas pratiques industriels. Le toolkit "Process Minding Augmented" est également disponible.
+### AXE 1 — Simuler la complétion du parcours Process Mining pour Ammar Khadraoui
 
-Les 5 simulations couvriront des aspects complémentaires du process mining, chacune avec un `practice_type` adapté du `modeRegistry`, un scénario réaliste, un system prompt détaillé, des rubriques d'évaluation pondérées, et 15 échanges max.
+Insérer des données réalistes dans la base via l'outil d'insertion SQL (pas de migration).
 
-## Les 5 simulations
+**User ID** : `315af24d-afe3-4162-9b78-45274c0fe5dc`
+**Path ID** : `036db7ea-359a-4359-9be2-2697a0a0d6f7`
+**Enrollment ID** : `4168351f-6a24-4589-917f-4ff0ff30f828`
 
-| # | Titre | practice_type | family | Scénario résumé |
-|---|---|---|---|---|
-| 1 | **Diagnostic Process Mining d'une Supply Chain** | `case_study` | analysis | L'apprenant reçoit des event logs d'une chaîne logistique avec des anomalies. Il doit analyser, identifier les bottlenecks et proposer des optimisations augmentées par IA. |
-| 2 | **Pitcher le Process Mining Augmenté au COMEX** | `pitch` | chat | L'IA joue un CFO sceptique. L'apprenant doit convaincre d'investir dans un projet PM+IA avec ROI chiffré, cas d'usage concrets et réponse aux objections. |
-| 3 | **Conformance Checking : Détecter les déviations** | `process_mapping` | design | Processus Purchase-to-Pay présenté, l'apprenant doit mapper le processus attendu vs réel, identifier les déviations et proposer des contrôles IA. |
-| 4 | **Data Storytelling : Présenter un diagnostic PM au COMEX** | `data_storytelling` | document | Jeu de données PM fourni (KPIs, bottlenecks, variantes). L'apprenant construit un récit décisionnel convaincant enrichi par l'IA. |
-| 5 | **Négocier le périmètre d'un projet Process Mining** | `negotiation` | chat | L'IA joue un directeur ops qui veut tout analyser vs budget limité. L'apprenant négocie le périmètre, les priorités et le planning. |
+| Opération | Table | Détail |
+|-----------|-------|--------|
+| INSERT x4 | `academy_progress` | Modules 2-5 avec scores (88-100%), temps réalistes, metadata riche (réponses quiz, soumissions exercices, évaluations IA) |
+| UPDATE x1 | `academy_enrollments` | Status → `completed`, `completed_at` = il y a 5 jours |
+| INSERT x1 | `academy_certificates` | Certificat avec `certificate_data` complet (score moyen 91%, modules_completed: 5, total_time_hours, détail par module) |
 
-## Exécution technique
+Chaque `metadata` JSONB contiendra :
+- **Exercise** : soumission textuelle réaliste sur l'extraction d'event logs SAP, évaluation IA (pertinence: 90, structure: 85, profondeur: 88)
+- **Quiz** : réponses par question avec scores, tentative #1, durée par question
+- **Lesson** : temps de lecture, sections visitées
+- **Practice** : résumé de session, score, nombre d'échanges
 
-Une seule migration SQL insérant 5 lignes dans `academy_practices` avec :
-- `organization_id` : `c20a26a5-9e57-4abb-a5c4-77652c1d3e00` (GrowthInnov)
-- `module_id` : NULL (simulations standalone)
-- `max_exchanges` : 15
-- `difficulty` : intermediate à advanced
-- `ai_assistance_level` : guided
-- `practice_type` : mappé au modeRegistry
-- `type_config` : paramètres spécifiques au mode
-- `system_prompt` : prompt détaillé (~300 mots chacun, rôle IA, comportement, objectifs cachés)
-- `scenario` : contexte apprenant (~150 mots)
-- `evaluation_rubric` : 4 critères pondérés par simulation
-- `evaluation_dimensions` : dimensions alignées au mode
+### AXE 2 — Module Certification de bout en bout
 
-## Fichiers impactés
+Fonctionnalités manquantes identifiées :
+
+| # | Fonctionnalité | État actuel | Action |
+|---|----------------|-------------|--------|
+| 1 | Auto-génération du certificat à 100% de complétion | Inexistant — aucun trigger/logique | Ajouter dans `useAcademyModule.ts` : quand `saveProgress` amène `completedCount + 1 >= pathModules.length` ET `certificate_enabled`, INSERT automatique dans `academy_certificates` |
+| 2 | Notification dans la célébration | Partiel — `PathCompletionCelebration` existe mais ne mentionne pas le certificat | Ajouter bouton "Voir mon certificat" dans l'écran de célébration |
+| 3 | Téléchargement PDF du certificat | Inexistant | Créer un composant `CertificatePDF` qui génère un PDF client-side via `html2canvas` + `jspdf` (ou canvas natif) |
+| 4 | Partage / lien public du certificat | Inexistant | Hors scope pour cette itération |
+| 5 | Vue certificat enrichie | Basique — dialog simple | Enrichir avec détails par module, scores, durée, bouton télécharger PDF |
+| 6 | Badge certificat dans le dashboard formations | Inexistant | Afficher un badge dans `PortalFormationsPath` et `PortalFormationsDashboard` quand certificat obtenu |
+
+#### Fichiers à modifier/créer
 
 | Fichier | Action |
-|---|---|
-| Migration SQL | INSERT 5 practices dans `academy_practices` |
+|---------|--------|
+| `src/hooks/useAcademyModule.ts` | Ajouter logique auto-certification après `saveProgress` quand path complété à 100% et `certificate_enabled` |
+| `src/components/academy/CertificateDownload.tsx` | **Créer** — Génère un PDF premium via canvas (nom, parcours, date, score, organisation, numéro unique) |
+| `src/pages/AcademyModule.tsx` | Ajouter bouton certificat dans `PathCompletionCelebration` |
+| `src/pages/portal/PortalFormationsModule.tsx` | Idem pour le portail |
+| `src/pages/AcademyCertificates.tsx` | Enrichir dialog avec détails par module + bouton télécharger PDF |
+| `src/pages/portal/PortalFormationsCertificates.tsx` | Idem portail |
+| `src/pages/portal/PortalFormationsPath.tsx` | Afficher badge certificat obtenu si `progressPct === 100` et certificat existant |
+| `src/pages/AcademyPath.tsx` | Idem cabinet |
 
-Aucun changement de code front — les simulations apparaîtront automatiquement dans le catalogue Pratique via les queries existantes.
+#### Logique auto-certification (dans `useAcademyModule.ts`)
+
+```text
+saveProgress() → si status === "completed"
+  → recalculer completedCount
+  → si completedCount >= totalModules ET pathData.certificate_enabled
+    → Vérifier qu'aucun certificat n'existe déjà
+    → Calculer score moyen, temps total, détails modules
+    → INSERT academy_certificates
+    → Retourner flag "certificateIssued" pour déclencher la célébration
+```
+
+#### PDF du certificat (client-side via canvas)
+
+Design premium avec :
+- Logo GROWTHINNOV + logo organisation
+- Titre "CERTIFICAT DE RÉUSSITE"
+- Nom du parcours, nom de l'apprenant
+- Score global, nombre de modules, heures de formation
+- Date d'émission, numéro unique (ID tronqué)
+- Bordures décoratives dorées
+
+### Ordre d'exécution
+
+1. **INSERT données** — Complétion du parcours Ammar Khadraoui (4 progress + 1 enrollment update + 1 certificat)
+2. **Logique auto-certification** — `useAcademyModule.ts`
+3. **Composant PDF** — `CertificateDownload.tsx`
+4. **Enrichir pages certificats** — AcademyCertificates + PortalFormationsCertificates (dialog + PDF)
+5. **Célébration** — Bouton certificat dans AcademyModule + PortalFormationsModule
+6. **Badge path** — AcademyPath + PortalFormationsPath
 
