@@ -119,6 +119,11 @@ function AnimatedRoutes() {
            <Route path="/admin/observability/matrix" element={<AdminObservabilityMatrix />} />
           <Route path="/admin/simulator" element={<AdminSimulator />} />
           <Route path="/admin/simulator/templates" element={<AdminSimulatorTemplates />} />
+          {/* Portal routes */}
+          <Route path="/portal" element={<PortalMarketplace />} />
+          <Route path="/portal/workspace" element={<PortalWorkspace />} />
+          <Route path="/portal/library" element={<PortalLibrary />} />
+          <Route path="/portal/analytics" element={<PortalAnalytics />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
