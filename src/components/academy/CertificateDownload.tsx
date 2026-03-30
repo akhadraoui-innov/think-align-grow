@@ -235,7 +235,7 @@ export function CertificateDownload(props: CertificateDownloadProps) {
         pdf.setFontSize(14);
         pdf.setTextColor(255, 255, 255);
         pdf.setFont("helvetica", "bold");
-        pdf.text("RELEVÉ DE NOTES", W2 - 20, 24, { align: "right" });
+        pdf.text("ÉVALUATION DÉTAILLÉE", W2 - 20, 24, { align: "right" });
 
         // Info block
         let y = 50;
