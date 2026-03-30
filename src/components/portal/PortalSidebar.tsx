@@ -54,7 +54,7 @@ export function PortalSidebar({ open, onToggle }: PortalSidebarProps) {
       <nav className="flex-1 px-2 py-2 space-y-0.5">
         {SIDEBAR_ITEMS.map((item) => {
           const active = location.pathname === item.path ||
-            (item.path !== "/portal/workspace" && location.pathname.startsWith(item.path));
+            (item.path !== "/portal" && location.pathname.startsWith(item.path));
           const Icon = item.icon;
           return (
             <Link
