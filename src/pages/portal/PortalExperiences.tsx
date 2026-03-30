@@ -187,12 +187,12 @@ export default function PortalExperiences() {
       : "";
     const richScenario = generateRichScenario(key, "intermediate", aiLevel);
     setSelectedMode(null);
-    navigate("/simulator/session", { state: { key, def, systemPrompt: behaviorPrompt + assistInstr, scenario: richScenario, aiLevel } });
+    navigate("/portal/pratique/session", { state: { key, def, systemPrompt: behaviorPrompt + assistInstr, scenario: richScenario, aiLevel } });
   };
 
   const launchPractice = (pr: any) => {
     const def = getModeDefinition(pr.practice_type) || { family: "chat" as ModeFamily, label: pr.practice_type, universe: "leadership" as ModeUniverse, description: pr.scenario, evaluationDimensions: [], defaultConfig: {} };
-    navigate("/simulator/session", { state: { key: pr.practice_type, def, practiceId: pr.id, practice: pr, systemPrompt: pr.system_prompt || "", scenario: pr.scenario, aiLevel: pr.ai_assistance_level || "guided" } });
+    navigate("/portal/pratique/session", { state: { key: pr.practice_type, def, practiceId: pr.id, practice: pr, systemPrompt: pr.system_prompt || "", scenario: pr.scenario, aiLevel: pr.ai_assistance_level || "guided" } });
   };
 
   return (
@@ -491,7 +491,7 @@ export default function PortalExperiences() {
                                   {session.completed_at ? (
                                     <Button
                                       variant="ghost" size="sm"
-                                      onClick={() => navigate(`/simulator/session/${session.id}/report`)}
+                                      onClick={() => navigate(`/portal/pratique/session/${session.id}/report`)}
                                       className="gap-1 text-[10px] shrink-0 opacity-60 group-hover/row:opacity-100"
                                     >
                                       <FileTextIcon className="h-3 w-3" /> Rapport
