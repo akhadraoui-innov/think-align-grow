@@ -1,42 +1,41 @@
 
 
-# Amélioration Catalogue Formations + Sidebar (Mes parcours + Organisation)
+# Plan — Audit des routes portail + Renommage GROWTHINNOV
 
-## Changements
+## 1. Routes portail pointant vers le cabinet (à corriger)
 
-### 1. Sidebar — Ajouter "Mes parcours" + Organisation
+| Fichier | Ligne problématique | Correction |
+|---------|---------------------|------------|
+| `PortalShell.tsx` | `to="/explore"` (lien "Cabinet") | Supprimer ce lien ou le pointer vers `/portal` |
+| `PortalWorkshops.tsx` | `navigate("/auth")` | Changer en `navigate("/portal/auth")` ou garder `/auth` (page partagée — acceptable) |
+| `PortalChallenges.tsx` | `navigate("/auth")` | Idem — `/auth` est la page de login commune, pas du cabinet |
 
-**`src/components/portal/PortalSidebar.tsx`**
+**Verdict** : Le seul vrai problème est le lien "Cabinet" dans le header (`to="/explore"`). Les redirections vers `/auth` sont légitimes car c'est la page d'authentification partagée.
 
-- Ajouter un item "Mes parcours" dans la config Formations (entre Catalogue et Dashboard), avec icône `Route`, pointant vers `/portal/dashboard` ou une ancre dédiée
-- En bas de la sidebar : afficher le nom (et logo si dispo) de l'organisation active via `useActiveOrg()`. En mode collapsed, afficher uniquement l'icône/logo. Réutilise le pattern de `OrgSwitcher.tsx`
-- Si l'org a un `logo_url` (champ `organizations`), afficher l'image ; sinon fallback sur l'icône `Building2`
+## 2. Renommage HEEP → GROWTHINNOV
 
-Config sidebar Formations mise à jour :
-```
-Catalogue → /portal
-Mes parcours → /portal/dashboard (section parcours en cours/terminés)
-Certificats → /portal/certificates
-```
+Tous les fichiers à modifier :
 
-### 2. Catalogue — Amélioration visuelle
+| Fichier | Ce qui change |
+|---------|---------------|
+| `PortalShell.tsx` | Logo text "HEEP" → "GROWTHINNOV" |
+| `HeepAIWidget.tsx` | "Ask HEEP IA" → "Ask GROWTHINNOV IA", "mentor HEEP IA" → "mentor GROWTHINNOV IA" |
+| `AppSidebar.tsx` | "Portail HEEP" → "Portail GROWTHINNOV" |
+| `index.html` | `<title>` "Heeplab" → "GROWTHINNOV", meta descriptions |
+| `Logo.tsx` | "Hack & Show" → "GROWTHINNOV" |
+| `AuthPage.tsx` | "Hack & Show" → "GROWTHINNOV" |
+| `AppShell.tsx` | Breadcrumb "Hack & Show" → "GROWTHINNOV" |
+| `AppSidebar.tsx` | "Hack & Show" → "GROWTHINNOV" |
+| `AdminSidebar.tsx` | "Hack & Show" → "GROWTHINNOV" |
+| `AdminDashboard.tsx` | "Hack & Show" → "GROWTHINNOV" |
+| `OrgInfoTab.tsx` | "Hack & Show" → "GROWTHINNOV" |
+| `Index.tsx` | "Hack & Show" → "GROWTHINNOV" |
+| `defaultPrompts.ts` | "Hack & Show" → "GROWTHINNOV" |
 
-**`src/pages/portal/PortalFormations.tsx`**
+## 3. Exécution
 
-- Séparer le contenu en 2 sections claires via la sidebar : le **Catalogue** (`/portal`) ne montre que la grille de parcours disponibles avec filtres améliorés ; les KPIs, heatmap, parcours en cours et activité récente sont dans **Mes parcours** (`/portal/dashboard`)
-- Améliorer les cards catalogue : ajouter une bande de couleur en haut basée sur la difficulté, icône de fonction métier, nombre d'inscrits (si dispo), tags visibles, et un CTA "Voir le parcours" plus visible
-- Ajouter un compteur de résultats ("12 parcours disponibles")
-- Améliorer le layout des filtres : pills plus larges, search plus proéminent
-
-### 3. Page "Mes parcours" existante
-
-**`src/pages/portal/PortalFormationsDashboard.tsx`** — Vérifier qu'elle existe déjà et contient les KPIs + heatmap + parcours en cours/terminés. Si c'est un doublon de PortalFormations, nettoyer pour que chaque page ait son rôle propre.
-
-## Fichiers impactés
-
-| Fichier | Action |
-|---|---|
-| `src/components/portal/PortalSidebar.tsx` | Ajouter "Mes parcours" + bloc organisation en bas |
-| `src/pages/portal/PortalFormations.tsx` | Nettoyer = catalogue seul, améliorer les cards |
-| `src/pages/portal/PortalFormationsDashboard.tsx` | S'assurer qu'il contient KPIs + parcours utilisateur |
+1. Supprimer le lien "Cabinet" du header portail (`PortalShell.tsx`)
+2. Renommer toutes les occurrences HEEP/Heep/heep → GROWTHINNOV dans les fichiers portail
+3. Renommer toutes les occurrences "Hack & Show" / "Heeplab" → GROWTHINNOV dans tout le projet
+4. Mettre à jour `index.html` (title + meta)
 
