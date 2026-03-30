@@ -159,6 +159,7 @@ export default function AcademyCertificates() {
                           modulesDetail={certData.modules_detail}
                           skills={path?.skills as any}
                           aptitudes={path?.aptitudes as any}
+                          professionalOutcomes={path?.professional_outcomes as any}
                           pathDescription={path?.description}
                         />
                       </div>
