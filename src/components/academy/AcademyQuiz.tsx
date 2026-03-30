@@ -267,7 +267,8 @@ export function AcademyQuiz({ moduleId, enrollmentId, onComplete }: AcademyQuizP
       const finalScores = [...scores];
       const finalEarned = finalScores.reduce((s, c, i) => s + (c ? questions[i].points : 0), 0);
       setFinished(true);
-      onComplete?.(finalEarned, totalPoints);
+      const quizMetadata = { quiz_answers: answersRef.current, best_streak: bestStreak, total_xp: totalXP };
+      onComplete?.(finalEarned, totalPoints, quizMetadata);
       return;
     }
     const nextQ = questions[currentIndex + 1];

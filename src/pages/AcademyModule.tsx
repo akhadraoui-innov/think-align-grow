@@ -313,8 +313,8 @@ export default function AcademyModule() {
         <AcademyQuiz
           moduleId={id!}
           enrollmentId={enrollment?.id}
-          onComplete={(score, total) => {
-            saveProgress(Math.round((score / total) * 100), "completed");
+          onComplete={(score, total, meta) => {
+            saveProgress(Math.round((score / total) * 100), "completed", meta);
             toast.success(`Quiz terminé : ${score}/${total} points`);
             if (completedCount + 1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true);
           }}

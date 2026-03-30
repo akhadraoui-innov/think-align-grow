@@ -137,7 +137,7 @@ export default function PortalFormationsModule() {
     if (isCompleted && (currentProgress as any)?.metadata && Object.keys((currentProgress as any).metadata).length > 0) {
       return <ModuleReviewView module={module} metadata={(currentProgress as any).metadata} contents={contents} enrollment={enrollment} pathId={pathId} onRefaire={() => { /* future: reset progress */ }} />;
     }
-    if (module.module_type === "quiz") return <AcademyQuiz moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score, total) => { saveProgress(Math.round((score/total)*100), "completed"); toast.success(`Quiz terminé : ${score}/${total}`); if (completedCount+1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }} />;
+    if (module.module_type === "quiz") return <AcademyQuiz moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score, total, meta) => { saveProgress(Math.round((score/total)*100), "completed", meta); toast.success(`Quiz terminé : ${score}/${total}`); if (completedCount+1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }} />;
     if (module.module_type === "exercise") return <AcademyExercise moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score) => { saveProgress(score, "completed"); toast.success(`Exercice : ${score}/100`); if (completedCount+1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }} />;
     if (module.module_type === "practice") return <AcademyPractice moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score) => { saveProgress(score, "completed"); toast.success(`Session : ${score}/100`); if (completedCount+1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }} />;
 
