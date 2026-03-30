@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,25 +9,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
-  Layers, BookOpen, Clock, Target, Users, Star, X,
-  ChevronRight, Puzzle, Award, BarChart3, FileText
+  Layers, Clock, Users, Star, X, ChevronRight, Puzzle, Award,
+  BarChart3, FileText, LayoutGrid, List, ArrowLeft
 } from "lucide-react";
+import { ToolkitCardsBrowser } from "@/components/admin/ToolkitCardsBrowser";
+import type { Tables } from "@/integrations/supabase/types";
 
-const phaseLabels: Record<string, string> = {
-  foundations: "Fondations",
-  growth: "Croissance",
-  optimization: "Optimisation",
-  mastery: "Maîtrise",
-};
-
-const difficultyColors: Record<string, string> = {
-  easy: "bg-emerald-500/15 text-emerald-600",
-  intermediate: "bg-amber-500/15 text-amber-600",
-  advanced: "bg-rose-500/15 text-rose-600",
+const DIFFICULTY_MAP: Record<string, { label: string; class: string }> = {
+  easy: { label: "Facile", class: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30" },
+  intermediate: { label: "Intermédiaire", class: "bg-amber-500/15 text-amber-700 border-amber-500/30" },
+  advanced: { label: "Avancé", class: "bg-rose-500/15 text-rose-700 border-rose-500/30" },
 };
 
 export default function PortalToolkits() {
   const [selectedToolkitId, setSelectedToolkitId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // All published toolkits
   const { data: toolkits = [], isLoading } = useQuery({
@@ -56,7 +52,7 @@ export default function PortalToolkits() {
     },
   });
 
-  // Cards for selected toolkit (via pillars)
+  // Cards for selected toolkit
   const { data: cards = [] } = useQuery({
     queryKey: ["portal-toolkit-cards", pillars.map((p: any) => p.id)],
     enabled: pillars.length > 0,
@@ -70,301 +66,181 @@ export default function PortalToolkits() {
     },
   });
 
+  // Pillar counts per toolkit (for catalogue badges)
+  const { data: pillarCounts = {} } = useQuery({
+    queryKey: ["portal-toolkit-pillar-counts"],
+    queryFn: async () => {
+      const { data } = await supabase.from("pillars").select("id, toolkit_id");
+      const counts: Record<string, number> = {};
+      (data || []).forEach((p: any) => {
+        counts[p.toolkit_id] = (counts[p.toolkit_id] || 0) + 1;
+      });
+      return counts;
+    },
+  });
+
   const selectedToolkit = toolkits.find((t: any) => t.id === selectedToolkitId);
 
-  // Group cards by pillar
-  const cardsByPillar = pillars.reduce((acc: Record<string, any[]>, p: any) => {
-    acc[p.id] = cards.filter((c: any) => c.pillar_id === p.id);
-    return acc;
-  }, {});
-
-  return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
-      {/* Main content */}
-      <div className="flex-1 overflow-auto p-8 space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">Toolkits</h1>
-          <p className="text-base text-muted-foreground">Explorez les référentiels stratégiques et leurs cartes</p>
-        </div>
-
-        <p className="text-sm text-muted-foreground">
-          {toolkits.length} toolkit{toolkits.length > 1 ? "s" : ""} disponible{toolkits.length > 1 ? "s" : ""}
-        </p>
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => <div key={i} className="h-52 rounded-xl bg-muted/50 animate-pulse" />)}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {toolkits.map((toolkit: any, idx: number) => {
-              const isSelected = selectedToolkitId === toolkit.id;
-              return (
-                <motion.div
-                  key={toolkit.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(idx * 0.05, 0.4) }}
-                  whileHover={{ y: -4 }}
-                >
-                  <Card
-                    className={cn(
-                      "cursor-pointer hover:shadow-lg transition-all group overflow-hidden",
-                      isSelected && "ring-2 ring-primary shadow-lg"
-                    )}
-                    onClick={() => setSelectedToolkitId(isSelected ? null : toolkit.id)}
-                  >
-                    <CardContent className="p-6 space-y-4">
-                      {/* Emoji + Name */}
-                      <div className="flex items-start gap-3">
-                        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
-                          {toolkit.icon_emoji || "🚀"}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-base font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                            {toolkit.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">v{toolkit.version}</p>
-                        </div>
-                      </div>
-
-                      {/* Description */}
-                      <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
-                        {toolkit.description || "Aucune description"}
-                      </p>
-
-                      {/* Meta */}
-                      <div className="flex flex-wrap gap-2">
-                        {toolkit.difficulty_level && (
-                          <Badge className={cn("text-xs", difficultyColors[toolkit.difficulty_level] || difficultyColors.intermediate)}>
-                            {toolkit.difficulty_level}
-                          </Badge>
-                        )}
-                        {toolkit.estimated_duration && (
-                          <Badge variant="outline" className="text-xs">
-                            <Clock className="h-3 w-3 mr-1" /> {toolkit.estimated_duration}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between pt-3 border-t border-border/50">
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          {toolkit.target_audience && (
-                            <span className="flex items-center gap-1.5">
-                              <Users className="h-4 w-4" /> {toolkit.target_audience}
-                            </span>
-                          )}
-                        </div>
-                        <span className={cn(
-                          "text-sm font-semibold flex items-center gap-1 transition-all",
-                          isSelected ? "text-primary" : "text-muted-foreground/50 group-hover:text-primary"
-                        )}>
-                          {isSelected ? "Ouvert" : "Voir"} <ChevronRight className="h-4 w-4" />
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Cards view when toolkit selected */}
-        <AnimatePresence>
-          {selectedToolkit && pillars.length > 0 && (
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-6 pt-4"
-            >
+  // ─── Toolkit detail view ───
+  if (selectedToolkit) {
+    return (
+      <div className="flex h-[calc(100vh-3.5rem)]">
+        {/* Main: Card browser */}
+        <div className="flex-1 overflow-auto">
+          <div className="p-8 space-y-6">
+            {/* Back + title */}
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedToolkitId(null)}
+                className="gap-2 text-sm"
+              >
+                <ArrowLeft className="h-4 w-4" /> Retour
+              </Button>
               <div className="flex items-center gap-3">
-                <h2 className="text-xl font-bold text-foreground">
-                  {selectedToolkit.icon_emoji} Cartes — {selectedToolkit.name}
-                </h2>
-                <Badge variant="secondary" className="text-xs">{cards.length} cartes</Badge>
-              </div>
-
-              {pillars.map((pillar: any) => {
-                const pillarCards = cardsByPillar[pillar.id] || [];
-                if (pillarCards.length === 0) return null;
-                return (
-                  <div key={pillar.id} className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: pillar.color || "hsl(var(--primary))" }}
-                      />
-                      <h3 className="text-base font-bold text-foreground">{pillar.name}</h3>
-                      <span className="text-sm text-muted-foreground">{pillarCards.length} cartes</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                      {pillarCards.map((card: any) => (
-                        <Card key={card.id} className="hover:shadow-md transition-all">
-                          <CardContent className="p-4 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="h-2 w-8 rounded-full"
-                                style={{ backgroundColor: pillar.color || "hsl(var(--primary))" }}
-                              />
-                              <Badge variant="outline" className="text-[10px]">
-                                {phaseLabels[card.phase] || card.phase}
-                              </Badge>
-                            </div>
-                            <p className="text-sm font-bold text-foreground leading-snug">{card.title}</p>
-                            {card.subtitle && (
-                              <p className="text-xs text-muted-foreground line-clamp-2">{card.subtitle}</p>
-                            )}
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                              {card.valorization > 0 && (
-                                <span className="flex items-center gap-1">
-                                  <Star className="h-3 w-3" /> {card.valorization} pts
-                                </span>
-                              )}
-                              {card.difficulty && (
-                                <Badge variant="outline" className="text-[9px] px-1.5">{card.difficulty}</Badge>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </motion.section>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Right sidebar — toolkit detail */}
-      <AnimatePresence>
-        {selectedToolkit && (
-          <motion.aside
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 360, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="border-l border-border/50 bg-card/50 overflow-hidden shrink-0"
-          >
-            <ScrollArea className="h-full">
-              <div className="p-6 space-y-6">
-                {/* Header */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center text-3xl">
-                      {selectedToolkit.icon_emoji || "🚀"}
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-foreground">{selectedToolkit.name}</p>
-                      <p className="text-xs text-muted-foreground">v{selectedToolkit.version}</p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => setSelectedToolkitId(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">
+                  {selectedToolkit.icon_emoji || "🚀"}
                 </div>
-
-                <Separator />
-
-                {/* Description */}
-                <div className="space-y-2">
-                  <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" /> Description
-                  </h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedToolkit.description || "—"}
+                <div>
+                  <h1 className="text-2xl font-display font-bold tracking-tight text-foreground">
+                    {selectedToolkit.name}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    {pillars.length} pilier{pillars.length > 1 ? "s" : ""} · {cards.length} carte{cards.length > 1 ? "s" : ""}
                   </p>
                 </div>
+              </div>
+            </div>
 
-                {/* Audience */}
-                {selectedToolkit.target_audience && (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" /> Public cible
-                    </h4>
-                    <p className="text-sm text-muted-foreground">{selectedToolkit.target_audience}</p>
+            {/* Reuse the full ToolkitCardsBrowser from admin */}
+            <ToolkitCardsBrowser
+              cards={cards as Tables<"cards">[]}
+              pillars={pillars as Tables<"pillars">[]}
+            />
+          </div>
+        </div>
+
+        {/* Right sidebar — always visible */}
+        <aside className="w-[340px] border-l border-border/50 bg-card/50 shrink-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-6 space-y-6">
+              {/* Header */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center text-3xl">
+                    {selectedToolkit.icon_emoji || "🚀"}
                   </div>
-                )}
-
-                {/* Benefits */}
-                {selectedToolkit.benefits && (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Award className="h-4 w-4 text-muted-foreground" /> Bénéfices
-                    </h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{selectedToolkit.benefits}</p>
-                  </div>
-                )}
-
-                {/* Content */}
-                {selectedToolkit.content_description && (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Layers className="h-4 w-4 text-muted-foreground" /> Contenu
-                    </h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{selectedToolkit.content_description}</p>
-                  </div>
-                )}
-
-                {/* Usage mode */}
-                {selectedToolkit.usage_mode && (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <Puzzle className="h-4 w-4 text-muted-foreground" /> Mode d'utilisation
-                    </h4>
-                    <p className="text-sm text-muted-foreground">{selectedToolkit.usage_mode}</p>
-                  </div>
-                )}
-
-                {/* Nomenclature */}
-                {selectedToolkit.nomenclature && (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4 text-muted-foreground" /> Nomenclature
-                    </h4>
-                    <p className="text-sm text-muted-foreground">{selectedToolkit.nomenclature}</p>
-                  </div>
-                )}
-
-                <Separator />
-
-                {/* Stats */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-bold text-foreground">Statistiques</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-muted/50 p-3 text-center">
-                      <p className="text-xl font-bold text-foreground">{pillars.length}</p>
-                      <p className="text-[10px] text-muted-foreground">Piliers</p>
-                    </div>
-                    <div className="rounded-xl bg-muted/50 p-3 text-center">
-                      <p className="text-xl font-bold text-foreground">{cards.length}</p>
-                      <p className="text-[10px] text-muted-foreground">Cartes</p>
-                    </div>
-                    <div className="rounded-xl bg-muted/50 p-3 text-center">
-                      <p className="text-xl font-bold text-foreground">{selectedToolkit.credit_cost_workshop || 0}</p>
-                      <p className="text-[10px] text-muted-foreground">Crédits / Workshop</p>
-                    </div>
-                    <div className="rounded-xl bg-muted/50 p-3 text-center">
-                      <p className="text-xl font-bold text-foreground">{selectedToolkit.credit_cost_challenge || 0}</p>
-                      <p className="text-[10px] text-muted-foreground">Crédits / Challenge</p>
-                    </div>
+                  <div>
+                    <p className="text-lg font-bold text-foreground">{selectedToolkit.name}</p>
+                    <p className="text-xs text-muted-foreground">v{selectedToolkit.version}</p>
                   </div>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => setSelectedToolkitId(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
 
-                {/* Pillar list */}
-                {pillars.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-bold text-foreground">Piliers</h4>
-                    <div className="space-y-2">
-                      {pillars.map((p: any) => (
+              <Separator />
+
+              {/* Description */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" /> Description
+                </h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {selectedToolkit.description || "—"}
+                </p>
+              </div>
+
+              {/* Audience */}
+              {selectedToolkit.target_audience && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground" /> Public cible
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{selectedToolkit.target_audience}</p>
+                </div>
+              )}
+
+              {/* Benefits */}
+              {selectedToolkit.benefits && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <Award className="h-4 w-4 text-muted-foreground" /> Bénéfices
+                  </h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{selectedToolkit.benefits}</p>
+                </div>
+              )}
+
+              {/* Content */}
+              {selectedToolkit.content_description && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-muted-foreground" /> Contenu
+                  </h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{selectedToolkit.content_description}</p>
+                </div>
+              )}
+
+              {/* Usage mode */}
+              {selectedToolkit.usage_mode && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <Puzzle className="h-4 w-4 text-muted-foreground" /> Mode d'utilisation
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{selectedToolkit.usage_mode}</p>
+                </div>
+              )}
+
+              {/* Nomenclature */}
+              {selectedToolkit.nomenclature && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" /> Nomenclature
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{selectedToolkit.nomenclature}</p>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Stats */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-foreground">Statistiques</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-muted/50 p-3 text-center">
+                    <p className="text-xl font-bold text-foreground">{pillars.length}</p>
+                    <p className="text-[11px] text-muted-foreground">Piliers</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/50 p-3 text-center">
+                    <p className="text-xl font-bold text-foreground">{cards.length}</p>
+                    <p className="text-[11px] text-muted-foreground">Cartes</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/50 p-3 text-center">
+                    <p className="text-xl font-bold text-foreground">{selectedToolkit.credit_cost_workshop || 0}</p>
+                    <p className="text-[11px] text-muted-foreground">Crédits / Workshop</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/50 p-3 text-center">
+                    <p className="text-xl font-bold text-foreground">{selectedToolkit.credit_cost_challenge || 0}</p>
+                    <p className="text-[11px] text-muted-foreground">Crédits / Challenge</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pillar list */}
+              {pillars.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-foreground">Piliers</h4>
+                  <div className="space-y-2">
+                    {pillars.map((p: any) => {
+                      const count = cards.filter((c: any) => c.pillar_id === p.id).length;
+                      return (
                         <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/30">
                           <div
                             className="h-4 w-4 rounded-full shrink-0"
@@ -372,32 +248,196 @@ export default function PortalToolkits() {
                           />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{p.name}</p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {(cardsByPillar[p.id] || []).length} cartes · Poids: {p.weight}
+                            <p className="text-[11px] text-muted-foreground">
+                              {count} cartes · Poids: {p.weight}
                             </p>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Tags */}
-                {Array.isArray(selectedToolkit.tags) && selectedToolkit.tags.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-bold text-foreground">Tags</h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedToolkit.tags.map((t: string) => (
-                        <Badge key={t} variant="outline" className="text-xs">{t}</Badge>
-                      ))}
+              {/* Tags */}
+              {Array.isArray(selectedToolkit.tags) && selectedToolkit.tags.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold text-foreground">Tags</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedToolkit.tags.map((tag: string, i: number) => (
+                      <Badge key={i} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </aside>
+      </div>
+    );
+  }
+
+  // ─── Catalogue view ───
+  return (
+    <div className="p-8 space-y-8">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">Toolkits</h1>
+          <p className="text-base text-muted-foreground">
+            Explorez les référentiels stratégiques et leurs cartes
+          </p>
+        </div>
+
+        {/* View toggle */}
+        <div className="flex items-center gap-1 rounded-lg bg-muted/50 p-1">
+          <Button
+            variant={viewMode === "grid" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("grid")}
+            className="gap-1.5 text-xs h-9"
+          >
+            <LayoutGrid className="h-4 w-4" /> Grille
+          </Button>
+          <Button
+            variant={viewMode === "list" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("list")}
+            className="gap-1.5 text-xs h-9"
+          >
+            <List className="h-4 w-4" /> Liste
+          </Button>
+        </div>
+      </div>
+
+      <p className="text-sm text-muted-foreground">
+        {toolkits.length} toolkit{toolkits.length > 1 ? "s" : ""} disponible{toolkits.length > 1 ? "s" : ""}
+      </p>
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => <div key={i} className="h-52 rounded-xl bg-muted/50 animate-pulse" />)}
+        </div>
+      ) : viewMode === "grid" ? (
+        /* ── Grid view ── */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {toolkits.map((toolkit: any, idx: number) => (
+            <motion.div
+              key={toolkit.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(idx * 0.05, 0.4) }}
+              whileHover={{ y: -4 }}
+            >
+              <Card
+                className="cursor-pointer hover:shadow-lg transition-all group overflow-hidden"
+                onClick={() => setSelectedToolkitId(toolkit.id)}
+              >
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
+                      {toolkit.icon_emoji || "🚀"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                        {toolkit.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">v{toolkit.version}</p>
                     </div>
                   </div>
+
+                  <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                    {toolkit.description || "Aucune description"}
+                  </p>
+
+                  {/* Harmonized badges */}
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="text-xs border-border">
+                      <Layers className="h-3 w-3 mr-1" /> {pillarCounts[toolkit.id] || 0} piliers
+                    </Badge>
+                    {toolkit.difficulty_level && (() => {
+                      const d = DIFFICULTY_MAP[toolkit.difficulty_level] || DIFFICULTY_MAP.intermediate;
+                      return (
+                        <Badge variant="outline" className={cn("text-xs border", d.class)}>
+                          {d.label}
+                        </Badge>
+                      );
+                    })()}
+                    {toolkit.estimated_duration && (
+                      <Badge variant="outline" className="text-xs border-border">
+                        <Clock className="h-3 w-3 mr-1" /> {toolkit.estimated_duration}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-border/50">
+                    {toolkit.target_audience && (
+                      <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Users className="h-4 w-4" /> {toolkit.target_audience}
+                      </span>
+                    )}
+                    <span className="text-sm font-semibold flex items-center gap-1 text-muted-foreground/50 group-hover:text-primary transition-all ml-auto">
+                      Voir <ChevronRight className="h-4 w-4" />
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        /* ── List view ── */
+        <div className="rounded-xl border border-border/50 bg-card divide-y divide-border/30">
+          {toolkits.map((toolkit: any, idx: number) => (
+            <motion.div
+              key={toolkit.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: Math.min(idx * 0.03, 0.3) }}
+              className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-muted/30 transition-colors"
+              onClick={() => setSelectedToolkitId(toolkit.id)}
+            >
+              <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">
+                {toolkit.icon_emoji || "🚀"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-bold text-foreground truncate">{toolkit.name}</p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {toolkit.description || "Aucune description"}
+                </p>
+              </div>
+
+              {/* Harmonized badges */}
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge variant="outline" className="text-xs border-border">
+                  <Layers className="h-3 w-3 mr-1" /> {pillarCounts[toolkit.id] || 0}
+                </Badge>
+                {toolkit.difficulty_level && (() => {
+                  const d = DIFFICULTY_MAP[toolkit.difficulty_level] || DIFFICULTY_MAP.intermediate;
+                  return (
+                    <Badge variant="outline" className={cn("text-xs border", d.class)}>
+                      {d.label}
+                    </Badge>
+                  );
+                })()}
+                {toolkit.target_audience && (
+                  <Badge variant="outline" className="text-xs border-border hidden lg:flex">
+                    <Users className="h-3 w-3 mr-1" /> {toolkit.target_audience}
+                  </Badge>
                 )}
               </div>
-            </ScrollArea>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+
+              <ChevronRight className="h-5 w-5 text-muted-foreground/40 shrink-0" />
+            </motion.div>
+          ))}
+          {toolkits.length === 0 && (
+            <div className="p-12 text-center text-sm text-muted-foreground">
+              Aucun toolkit disponible.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
