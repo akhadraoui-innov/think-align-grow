@@ -466,6 +466,8 @@ export default function AcademyModule() {
         {showCelebration && (
           <PathCompletionCelebration
             pathName={pathData?.name || "ce parcours"}
+            hasCertificate={certificateJustIssued || (pathData?.certificate_enabled && progressPct === 100)}
+            onViewCertificate={() => { setShowCelebration(false); navigate("/academy/certificates"); }}
             onContinue={() => {
               setShowCelebration(false);
               if (pathId) navigate(`/academy/path/${pathId}`);
