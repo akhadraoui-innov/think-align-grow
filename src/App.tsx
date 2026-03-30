@@ -70,6 +70,7 @@ import PortalWorkshops from "./pages/portal/PortalWorkshops";
 import PortalWorkshopRoom from "./pages/portal/PortalWorkshopRoom";
 import PortalChallenges from "./pages/portal/PortalChallenges";
 import PortalChallengeRoom from "./pages/portal/PortalChallengeRoom";
+import PortalToolkits from "./pages/portal/PortalToolkits";
 import PortalMarketplace from "./pages/portal/PortalMarketplace";
 import PortalLibrary from "./pages/portal/PortalLibrary";
 import PortalAnalytics from "./pages/portal/PortalAnalytics";
@@ -142,6 +143,7 @@ function AnimatedRoutes() {
           <Route path="/portal/pratique/history" element={<PortalPratiqueHistory />} />
           <Route path="/portal/pratique/session/:sessionId/report" element={<PortalPratiqueReport />} />
           <Route path="/portal/workshops" element={<PortalWorkshops />} />
+          <Route path="/portal/workshops/toolkits" element={<PortalToolkits />} />
           <Route path="/portal/workshops/:id" element={<PortalWorkshopRoom />} />
           <Route path="/portal/challenges" element={<PortalChallenges />} />
           <Route path="/portal/challenges/:id" element={<PortalChallengeRoom />} />
