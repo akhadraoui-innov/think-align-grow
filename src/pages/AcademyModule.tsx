@@ -3,7 +3,7 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import {
   ArrowLeft, BookOpen, HelpCircle, FileText, MessageSquare, CheckCircle2,
   Check, Bot, ChevronLeft, ChevronRight, Lock, Menu, GraduationCap,
-  Clock, Trophy, Sparkles, PartyPopper, ArrowRight,
+  Clock, Trophy, Sparkles, PartyPopper, ArrowRight, Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
