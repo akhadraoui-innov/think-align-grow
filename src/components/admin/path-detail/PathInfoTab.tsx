@@ -224,6 +224,26 @@ export function PathInfoTab({
             </div>
           )}
 
+          {/* Section F-bis — Aptitudes */}
+          {Array.isArray(path.aptitudes) && path.aptitudes.length > 0 && (
+            <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+              <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                <Lightbulb className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold text-sm text-foreground tracking-tight">Aptitudes professionnelles</h3>
+              </div>
+              <div className="p-5">
+                <ul className="space-y-2">
+                  {(path.aptitudes as string[]).map((a: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <Sparkles className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                      <span>{a}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
           {/* Section G — Options */}
           <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
             <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
