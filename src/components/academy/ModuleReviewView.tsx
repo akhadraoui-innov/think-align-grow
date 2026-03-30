@@ -24,8 +24,8 @@ interface ModuleReviewViewProps {
 }
 
 // ─── Executive AI Card ───
-function AIExecutiveCard({ title, subtitle, icon: Icon, content, loading, accentColor, generatedAt }: {
-  title: string; subtitle: string; icon: any; content: string | null; loading: boolean; accentColor: string; generatedAt?: string;
+function AIExecutiveCard({ title, subtitle, icon: Icon, content, loading, accentColor, generatedAt, onRetry }: {
+  title: string; subtitle: string; icon: any; content: string | null; loading: boolean; accentColor: string; generatedAt?: string; onRetry?: () => void;
 }) {
   if (loading) {
     return (
@@ -50,7 +50,21 @@ function AIExecutiveCard({ title, subtitle, icon: Icon, content, loading, accent
     );
   }
 
-  if (!content) return null;
+  if (!content) {
+    return (
+      <Card className={cn("border-l-4 border-dashed", accentColor)}>
+        <CardContent className="p-6 flex flex-col items-center justify-center gap-3 text-center">
+          <Icon className="h-8 w-8 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">La génération n'a pas abouti.</p>
+          {onRetry && (
+            <Button variant="outline" size="sm" onClick={onRetry} className="gap-1.5 text-xs">
+              <RotateCcw className="h-3 w-3" /> Réessayer
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className={cn("border-l-4 shadow-sm", accentColor)}>
@@ -64,9 +78,7 @@ function AIExecutiveCard({ title, subtitle, icon: Icon, content, loading, accent
             <p className="text-xs text-muted-foreground">{subtitle}</p>
           </div>
         </div>
-        <div className="prose prose-sm max-w-none dark:prose-invert leading-relaxed">
-          <ReactMarkdown>{content}</ReactMarkdown>
-        </div>
+        <EnrichedMarkdown content={content} />
         {generatedAt && (
           <p className="text-[10px] text-muted-foreground/60 pt-2 border-t border-border/30">
             Généré le {new Date(generatedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })} · IA Lovable
