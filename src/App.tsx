@@ -88,6 +88,7 @@ import PortalAcademieTracking from "./pages/portal/PortalAcademieTracking";
 import PortalAcademieAssets from "./pages/portal/PortalAcademieAssets";
 import PortalAcademieModuleDetail from "./pages/portal/PortalAcademieModuleDetail";
 import PortalAcademieCertificates from "./pages/portal/PortalAcademieCertificates";
+import PortalCertificateDetail from "./pages/portal/PortalCertificateDetail";
 
 const queryClient = new QueryClient();
 
@@ -153,6 +154,7 @@ function AnimatedRoutes() {
           <Route path="/portal/path/:id" element={<PortalFormationsPath />} />
           <Route path="/portal/module/:id" element={<PortalFormationsModule />} />
           <Route path="/portal/certificates" element={<PortalFormationsCertificates />} />
+          <Route path="/portal/certificates/:id" element={<PortalCertificateDetail />} />
           <Route path="/portal/pratique" element={<PortalPratique />} />
           <Route path="/portal/pratique/session" element={<PortalPratiqueSession />} />
           <Route path="/portal/pratique/history" element={<PortalPratiqueHistory />} />
