@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useMemo, useEffect, useCallback, useRef } from "react";
+import { useMemo, useEffect, useCallback, useRef, useState } from "react";
 
 export function useAcademyModule(moduleId: string | undefined, pathId: string | null) {
   const { user } = useAuth();
