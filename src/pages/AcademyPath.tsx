@@ -249,6 +249,9 @@ export default function AcademyPath() {
           </motion.div>
         )}
 
+        {/* GUIDE PÉDAGOGIQUE */}
+        <GuideSection pathId={id!} guideDocument={(path as any).guide_document} isCompleted={progressPct === 100} user={user} />
+
         {/* SYLLABUS */}
         <section className="space-y-4">
           <h2 className="text-lg font-display font-bold">Programme</h2>
