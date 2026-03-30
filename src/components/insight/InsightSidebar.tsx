@@ -68,6 +68,17 @@ const MENU = [
       "IA de génération",
     ],
   },
+  {
+    id: "discovery",
+    label: "Discovery",
+    icon: Layers,
+    sub: [
+      "Couche Apprenant",
+      "Couche IA",
+      "Couche Admin",
+      "Couche Data",
+    ],
+  },
 ];
 
 export function InsightSidebar({ activeSection, onSectionChange }: InsightSidebarProps) {
