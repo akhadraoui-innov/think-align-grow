@@ -15,7 +15,7 @@ import { EnrichedMarkdown } from "./EnrichedMarkdown";
 interface AcademyExerciseProps {
   moduleId: string;
   enrollmentId?: string;
-  onComplete?: (score: number) => void;
+  onComplete?: (score: number, metadata?: Record<string, unknown>) => void;
 }
 
 interface Feedback {
