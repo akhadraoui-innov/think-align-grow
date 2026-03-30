@@ -24,6 +24,7 @@ const API_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-certi
 export default function AdminAcademyCertificates() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
   const qc = useQueryClient();
 
   const { data: certs = [] } = useQuery({
