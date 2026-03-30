@@ -74,6 +74,17 @@ import PortalToolkits from "./pages/portal/PortalToolkits";
 import PortalMarketplace from "./pages/portal/PortalMarketplace";
 import PortalLibrary from "./pages/portal/PortalLibrary";
 import PortalAnalytics from "./pages/portal/PortalAnalytics";
+import PortalAcademie from "./pages/portal/PortalAcademie";
+import PortalAcademieMap from "./pages/portal/PortalAcademieMap";
+import PortalAcademieFunctions from "./pages/portal/PortalAcademieFunctions";
+import PortalAcademieFunctionDetail from "./pages/portal/PortalAcademieFunctionDetail";
+import PortalAcademiePersonae from "./pages/portal/PortalAcademiePersonae";
+import PortalAcademiePaths from "./pages/portal/PortalAcademiePaths";
+import PortalAcademiePathDetail from "./pages/portal/PortalAcademiePathDetail";
+import PortalAcademieCampaigns from "./pages/portal/PortalAcademieCampaigns";
+import PortalAcademieTracking from "./pages/portal/PortalAcademieTracking";
+import PortalAcademieAssets from "./pages/portal/PortalAcademieAssets";
+import PortalAcademieModuleDetail from "./pages/portal/PortalAcademieModuleDetail";
 
 const queryClient = new QueryClient();
 
