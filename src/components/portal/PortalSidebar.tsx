@@ -2,7 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import {
   BookOpen, Award, Sparkles, History,
   Users, LayoutGrid, PanelLeftClose, PanelLeftOpen,
-  Route, Building2, Layers
+  Route, Building2, Layers, GraduationCap, Map, Briefcase,
+  Brain, Megaphone, BarChart3, Library
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveOrg } from "@/contexts/OrgContext";
