@@ -255,7 +255,7 @@ export default function PortalFormations() {
                 >
                   <Card
                     className="overflow-hidden cursor-pointer hover:shadow-md transition-all group border-primary/15"
-                    onClick={() => navigate(`/academy/path/${e.path_id}`)}
+                    onClick={() => navigate(`/portal/path/${e.path_id}`)}
                   >
                     <div className="h-1.5 bg-gradient-to-r from-primary to-primary/50" style={{ width: `${pct}%` }} />
                     <CardContent className="p-4 space-y-2.5">
