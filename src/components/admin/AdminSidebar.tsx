@@ -6,7 +6,7 @@ import {
 import {
   LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb, GraduationCap,
   CreditCard, ScrollText, Settings, ArrowLeft, Sparkles, Briefcase, Route, UserCircle,
-  Megaphone, Map, BarChart3, ChevronDown, Library, Activity, Zap,
+  Megaphone, Map, BarChart3, ChevronDown, Library, Activity, Zap, Award,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
