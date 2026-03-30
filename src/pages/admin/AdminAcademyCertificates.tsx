@@ -16,6 +16,7 @@ import { fr } from "date-fns/locale";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CertPathDetail } from "@/components/admin/CertPathDetail";
 
 const VERIFY_BASE = "https://think-align-grow.lovable.app/verify";
 const API_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-certificate`;
@@ -23,6 +24,7 @@ const API_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-certi
 export default function AdminAcademyCertificates() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedPathId, setSelectedPathId] = useState<string | null>(null);
   const qc = useQueryClient();
 
   const { data: certs = [] } = useQuery({
@@ -224,33 +226,50 @@ export default function AdminAcademyCertificates() {
 
             {/* Settings */}
             <TabsContent value="settings" className="space-y-4">
-              <Card>
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BookOpen className="h-4 w-4" /> Certification par parcours</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {paths.map((p: any) => {
-                      const config = certConfigs.find((c: any) => c.path_id === p.id);
-                      return (
-                        <div key={p.id} className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-muted/20">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{p.name}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{p.difficulty || "Intermédiaire"}</p>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-xs text-muted-foreground">
-                              Score min: <span className="font-bold text-foreground">{config?.min_score || 70}%</span>
+              {selectedPathId ? (
+                <CertPathDetail
+                  pathId={selectedPathId}
+                  paths={paths}
+                  certConfigs={certConfigs}
+                  profiles={profiles}
+                  onBack={() => setSelectedPathId(null)}
+                />
+              ) : (
+                <Card>
+                  <CardHeader><CardTitle className="text-base flex items-center gap-2"><BookOpen className="h-4 w-4" /> Certification par parcours</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {paths.map((p: any) => {
+                        const config = certConfigs.find((c: any) => c.path_id === p.id);
+                        const pathCertCount = certs.filter((c: any) => c.path_id === p.id && c.status === "active").length;
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => setSelectedPathId(p.id)}
+                            className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-muted/20 cursor-pointer hover:bg-muted/40 hover:border-primary/30 transition-colors"
+                          >
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{p.name}</p>
+                              <p className="text-xs text-muted-foreground capitalize">{p.difficulty || "Intermédiaire"}</p>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Label className="text-xs">Certifiant</Label>
-                              <Switch checked={p.certificate_enabled} disabled />
+                            <div className="flex items-center gap-4">
+                              <div className="text-xs text-muted-foreground">
+                                <span className="font-bold text-foreground">{pathCertCount}</span> certifié{pathCertCount > 1 ? "s" : ""}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Score min: <span className="font-bold text-foreground">{config?.min_score || 70}%</span>
+                              </div>
+                              <Badge variant={p.certificate_enabled ? "default" : "outline"} className="text-xs">
+                                {p.certificate_enabled ? "Certifiant" : "Non certifiant"}
+                              </Badge>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* API */}
