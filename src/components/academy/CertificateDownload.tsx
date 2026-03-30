@@ -339,6 +339,192 @@ export function CertificateDownload(props: CertificateDownloadProps) {
         pdf.text("Ce document est généré électroniquement par GROWTHINNOV. Son authenticité peut être vérifiée via le QR code ci-dessus.", 20, H2 - 16);
       }
 
+      // ─── PAGE 3 — Attestation de compétences (portrait A4) ───
+      if ((props.skills && props.skills.length > 0) || (props.aptitudes && props.aptitudes.length > 0)) {
+        pdf.addPage("a4", "portrait");
+        const W3 = 210;
+        const H3 = 297;
+
+        // Background
+        pdf.setFillColor(255, 253, 245);
+        pdf.rect(0, 0, W3, H3, "F");
+
+        // Border
+        pdf.setDrawColor(212, 175, 55);
+        pdf.setLineWidth(1.2);
+        pdf.rect(8, 8, W3 - 16, H3 - 16);
+
+        // Header band
+        pdf.setFillColor(45, 45, 45);
+        pdf.rect(8, 8, W3 - 16, 28, "F");
+
+        pdf.setFontSize(14);
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("GROWTHINNOV", 20, 24);
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(200, 200, 200);
+        pdf.text("AI ACCELERATION", 20, 30);
+
+        pdf.setFontSize(14);
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("ATTESTATION DE COMPÉTENCES", W3 - 20, 24, { align: "right" });
+
+        // Nominative context
+        let y3 = 50;
+        pdf.setFontSize(10);
+        pdf.setTextColor(60, 60, 60);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Apprenant :", 20, y3);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(props.holderName, 55, y3);
+
+        y3 += 7;
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Parcours :", 20, y3);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(props.pathName, 55, y3);
+
+        if (props.difficulty) {
+          y3 += 7;
+          pdf.setFont("helvetica", "bold");
+          pdf.text("Niveau :", 20, y3);
+          pdf.setFont("helvetica", "normal");
+          pdf.text(difficultyLabels[props.difficulty] || props.difficulty, 55, y3);
+        }
+
+        y3 += 7;
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Score global :", 20, y3);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`${props.score}%`, 55, y3);
+
+        // Path description
+        if (props.pathDescription) {
+          y3 += 10;
+          pdf.setFillColor(250, 245, 230);
+          pdf.setDrawColor(212, 175, 55);
+          pdf.setLineWidth(0.3);
+          const descLines = pdf.splitTextToSize(props.pathDescription, W3 - 46);
+          const descH = Math.min(descLines.length * 4.5 + 6, 40);
+          pdf.roundedRect(18, y3 - 4, W3 - 36, descH, 2, 2, "FD");
+          pdf.setFontSize(7.5);
+          pdf.setTextColor(80, 70, 40);
+          pdf.text(descLines.slice(0, 7), 22, y3 + 2);
+          y3 += descH + 4;
+        }
+
+        // Skills table
+        if (props.skills && props.skills.length > 0) {
+          y3 += 6;
+          pdf.setFontSize(10);
+          pdf.setTextColor(50, 50, 50);
+          pdf.setFont("helvetica", "bold");
+          pdf.text("COMPÉTENCES ACQUISES", 20, y3);
+          y3 += 6;
+
+          // Table header
+          pdf.setFillColor(250, 245, 230);
+          pdf.setDrawColor(212, 175, 55);
+          pdf.setLineWidth(0.3);
+          pdf.rect(18, y3 - 4, W3 - 36, 8, "FD");
+          pdf.setFontSize(7);
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(80, 70, 40);
+          pdf.text("COMPÉTENCE", 22, y3 + 1);
+          pdf.text("CATÉGORIE", 110, y3 + 1);
+          pdf.text("NIVEAU", 150, y3 + 1);
+          y3 += 8;
+
+          const catLabels: Record<string, string> = { technique: "Technique", transversale: "Transversale", "métier": "Métier" };
+
+          props.skills.forEach((skill, idx) => {
+            if (y3 > H3 - 50) return;
+            if (idx % 2 === 0) {
+              pdf.setFillColor(252, 250, 242);
+              pdf.rect(18, y3 - 4, W3 - 36, 7, "F");
+            }
+            pdf.setFontSize(7);
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(50, 50, 50);
+            pdf.text(skill.name.slice(0, 50), 22, y3);
+            pdf.setTextColor(100, 100, 100);
+            pdf.text(catLabels[skill.category] || skill.category, 110, y3);
+            // Stars
+            const starStr = "★".repeat(skill.level) + "☆".repeat(5 - skill.level);
+            pdf.setTextColor(212, 175, 55);
+            pdf.text(starStr, 150, y3);
+            y3 += 7;
+          });
+
+          pdf.setDrawColor(212, 175, 55);
+          pdf.setLineWidth(0.3);
+          pdf.line(18, y3 - 2, W3 - 18, y3 - 2);
+        }
+
+        // Aptitudes
+        if (props.aptitudes && props.aptitudes.length > 0) {
+          y3 += 8;
+          pdf.setFontSize(10);
+          pdf.setTextColor(50, 50, 50);
+          pdf.setFont("helvetica", "bold");
+          pdf.text("APTITUDES DÉVELOPPÉES", 20, y3);
+          y3 += 6;
+
+          props.aptitudes.forEach((apt) => {
+            if (y3 > H3 - 50) return;
+            pdf.setFontSize(7.5);
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(60, 60, 60);
+            pdf.text(`• ${apt.slice(0, 80)}`, 22, y3);
+            y3 += 5.5;
+          });
+        }
+
+        // Module scores summary
+        if (props.modulesDetail && props.modulesDetail.length > 0) {
+          y3 += 8;
+          if (y3 < H3 - 60) {
+            pdf.setFontSize(10);
+            pdf.setTextColor(50, 50, 50);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("SCORES PAR MODULE", 20, y3);
+            y3 += 6;
+
+            props.modulesDetail.forEach((mod) => {
+              if (y3 > H3 - 50) return;
+              pdf.setFontSize(7);
+              pdf.setFont("helvetica", "normal");
+              pdf.setTextColor(50, 50, 50);
+              const title = mod.title.length > 45 ? mod.title.slice(0, 42) + "…" : mod.title;
+              pdf.text(title, 22, y3);
+              const sc = mod.score >= 90 ? [34, 139, 34] : mod.score >= 70 ? [200, 150, 30] : [200, 50, 50];
+              pdf.setTextColor(sc[0], sc[1], sc[2]);
+              pdf.setFont("helvetica", "bold");
+              pdf.text(`${mod.score}%`, 160, y3);
+              y3 += 5.5;
+            });
+          }
+        }
+
+        // QR Code on page 3
+        const qr3Size = 20;
+        const qr3X = W3 - 42;
+        const qr3Y = H3 - 46;
+        pdf.addImage(qrDataUrl, "PNG", qr3X, qr3Y, qr3Size, qr3Size);
+        pdf.setFontSize(5);
+        pdf.setTextColor(150, 150, 150);
+        pdf.setFont("helvetica", "normal");
+        pdf.text("Scanner pour vérifier", qr3X + qr3Size / 2, qr3Y + qr3Size + 3, { align: "center" });
+
+        // Legal
+        pdf.setFontSize(6);
+        pdf.setTextColor(170, 170, 170);
+        pdf.text("Cette attestation certifie les compétences acquises dans le cadre du parcours mentionné.", 20, H3 - 16);
+      }
+
       pdf.save(`Certificat_${props.pathName.replace(/\s+/g, "_")}.pdf`);
       toast.success("Certificat téléchargé !");
     } catch (err) {
