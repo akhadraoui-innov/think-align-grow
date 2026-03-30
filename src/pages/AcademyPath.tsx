@@ -211,8 +211,13 @@ export default function AcademyPath() {
                 </div>
                 <Progress value={progressPct} className="h-3" />
                 {progressPct === 100 && (
-                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
-                    <Award className="h-5 w-5" /> Parcours terminé ! Félicitations 🎉
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center gap-3">
+                    <span className="flex items-center gap-2 text-sm text-emerald-600 font-medium"><Award className="h-5 w-5" /> Parcours terminé ! 🎉</span>
+                    {path.certificate_enabled && (
+                      <Button size="sm" variant="outline" onClick={() => navigate("/academy/certificates")} className="gap-2 border-amber-500/30 text-amber-600 hover:bg-amber-500/5">
+                        <Trophy className="h-4 w-4" /> Mon certificat
+                      </Button>
+                    )}
                   </motion.div>
                 )}
                 {progressPct < 100 && firstIncomplete && (
