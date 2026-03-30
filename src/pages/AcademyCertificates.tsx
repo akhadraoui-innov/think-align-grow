@@ -223,6 +223,7 @@ export default function AcademyCertificates() {
                     modulesDetail={modulesDetail}
                     skills={path?.skills as any}
                     aptitudes={path?.aptitudes as any}
+                    professionalOutcomes={path?.professional_outcomes as any}
                     pathDescription={path?.description}
                   />
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => copyVerifyLink(selectedCert.id)}>
