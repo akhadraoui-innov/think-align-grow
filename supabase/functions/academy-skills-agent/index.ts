@@ -227,6 +227,14 @@ async function knowledgeChat(supabase: any, userId: string, params: any, apiKey:
   const { data: path } = await supabase.from("academy_paths").select("*").eq("id", path_id).single();
   const { data: pathModules } = await supabase.from("academy_path_modules").select("module_id, academy_modules(title, description, objectives, module_type)").eq("path_id", path_id).order("sort_order");
   
+  // Fetch user progress with metadata for RAG enrichment
+  const { data: userEnrollment } = await supabase.from("academy_enrollments").select("id").eq("path_id", path_id).eq("user_id", userId).maybeSingle();
+  let progressMetadata: any[] = [];
+  if (userEnrollment) {
+    const { data: progressData } = await supabase.from("academy_progress").select("module_id, score, status, metadata").eq("enrollment_id", userEnrollment.id);
+    progressMetadata = progressData || [];
+  }
+
   // Fetch contents (limit to avoid token overflow)
   const moduleIds = (pathModules || []).map((pm: any) => pm.module_id);
   const { data: contents } = await supabase.from("academy_contents").select("body, module_id").in("module_id", moduleIds).order("sort_order").limit(20);
