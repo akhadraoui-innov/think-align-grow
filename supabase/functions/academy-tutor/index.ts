@@ -175,7 +175,7 @@ ${modulesSummary.map((m: any, i: number) => `${i + 1}. ${m.title} (${m.type}) �
 
 Rédige une évaluation finale complète et personnalisée pour ${firstName}.`;
 
-    const content = await callAI(apiKey, [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }], 3000);
+    const content = await callAI(apiKey, [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }], 6000);
     return new Response(JSON.stringify({ content }), { headers: { ...cors, "Content-Type": "application/json" } });
   }
 
