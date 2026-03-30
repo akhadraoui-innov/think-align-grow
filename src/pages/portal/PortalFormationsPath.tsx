@@ -316,8 +316,9 @@ export default function PortalFormationsPath() {
   );
 }
 
-function PathFinalEvaluation({ pathId, enrollmentId, user }: { pathId: string; enrollmentId: string; user: any }) {
-  const [content, setContent] = useState<string | null>(null);
+function PathFinalEvaluation({ pathId, enrollmentId, user, guideDocument }: { pathId: string; enrollmentId: string; user: any; guideDocument: any }) {
+  const existingEval = guideDocument?.path_evaluation || null;
+  const [content, setContent] = useState<string | null>(existingEval);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const autoFetched = useRef(false);
@@ -325,39 +326,18 @@ function PathFinalEvaluation({ pathId, enrollmentId, user }: { pathId: string; e
   useEffect(() => {
     if (autoFetched.current || content) return;
     autoFetched.current = true;
-
-    // Check if already persisted in enrollment metadata
-    const fetchExisting = async () => {
-      const { data } = await supabase.from("academy_enrollments").select("*").eq("id", enrollmentId).single();
-      const existing = (data as any)?.path_evaluation;
-      if (existing) {
-        setContent(existing);
-        return;
-      }
-      // Auto-generate
-      generateEvaluation();
-    };
-    fetchExisting();
-  }, [enrollmentId]);
+    generateEvaluation();
+  }, []);
 
   const generateEvaluation = async () => {
     setLoading(true);
     setError(false);
     try {
       const resp = await supabase.functions.invoke("academy-tutor", {
-        body: { action: "debrief", mode: "evaluation", path_id: pathId, enrollment_id: enrollmentId },
+        body: { action: "debrief", mode: "evaluation", path_id: pathId, enrollment_id: enrollmentId, persist: true },
       });
       if (resp.data?.content) {
         setContent(resp.data.content);
-        // Persist — we can't update directly so we use a workaround via edge function or just store locally
-        // For now, the content is displayed. Persistence happens via guide_document
-        try {
-          const { data: pathData } = await supabase.from("academy_paths").select("guide_document").eq("id", pathId).single();
-          const doc = (pathData?.guide_document as any) || {};
-          await supabase.from("academy_paths").update({
-            guide_document: { ...doc, path_evaluation: resp.data.content, evaluation_generated_at: new Date().toISOString() } as any,
-          }).eq("id", pathId);
-        } catch { /* non-blocking */ }
       } else {
         setError(true);
       }
