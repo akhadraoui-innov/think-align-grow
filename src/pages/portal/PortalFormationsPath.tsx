@@ -309,7 +309,7 @@ export default function PortalFormationsPath() {
 
         {/* ÉVALUATION FINALE DU PARCOURS */}
         {enrollment && progressPct === 100 && (
-          <PathFinalEvaluation pathId={id!} enrollmentId={enrollment.id} user={user} />
+          <PathFinalEvaluation pathId={id!} enrollmentId={enrollment.id} user={user} guideDocument={(path as any)?.guide_document} />
         )}
       </div>
     </PageTransition>
