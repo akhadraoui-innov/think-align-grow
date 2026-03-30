@@ -15,9 +15,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { useState, useEffect, useRef } from "react";
 import { GuideSection } from "@/components/academy/GuideSection";
+import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const moduleTypeIcons: Record<string, any> = { lesson: BookOpen, quiz: HelpCircle, exercise: FileText, practice: MessageSquare };
 const moduleTypeLabels: Record<string, string> = { lesson: "Leçon", quiz: "Quiz", exercise: "Exercice", practice: "Pratique IA" };

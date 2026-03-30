@@ -155,6 +155,7 @@ function AnimatedRoutes() {
           <Route path="/portal/module/:id" element={<PortalFormationsModule />} />
           <Route path="/portal/certificates" element={<PortalFormationsCertificates />} />
           <Route path="/portal/certificates/:id" element={<PortalCertificateDetail />} />
+          <Route path="/portal/guide/:pathId" element={<PortalGuideReader />} />
           <Route path="/portal/pratique" element={<PortalPratique />} />
           <Route path="/portal/pratique/session" element={<PortalPratiqueSession />} />
           <Route path="/portal/pratique/history" element={<PortalPratiqueHistory />} />
