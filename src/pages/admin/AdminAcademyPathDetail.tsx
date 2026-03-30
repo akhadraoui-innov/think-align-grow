@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Plus, Save, BookOpen, Loader2,
   FileText, HelpCircle, Clock, Award, Target, Bot, Dumbbell, GraduationCap,
-  Users, BarChart3, Info, Image, Zap, RefreshCw
+  Users, BarChart3, Info, Image, Zap, RefreshCw, Sparkles
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +22,7 @@ import { PathModulesTab, moduleTypeConfig } from "@/components/admin/path-detail
 import { PathInfoTab } from "@/components/admin/path-detail/PathInfoTab";
 import { PathEnrollmentsTab } from "@/components/admin/path-detail/PathEnrollmentsTab";
 import { PathStatsTab } from "@/components/admin/path-detail/PathStatsTab";
+import { PathSkillsTab } from "@/components/admin/path-detail/PathSkillsTab";
 
 const difficultyConfig: Record<string, { gradient: string; label: string; color: string }> = {
   beginner: { gradient: "from-emerald-500/20 to-teal-500/10", label: "Débutant", color: "text-emerald-600" },
@@ -447,6 +448,9 @@ export default function AdminAcademyPathDetail() {
               <TabsTrigger value="stats" className="gap-1.5">
                 <BarChart3 className="h-3.5 w-3.5" /> Statistiques
               </TabsTrigger>
+              <TabsTrigger value="skills" className="gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" /> Skills
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="modules">
@@ -478,6 +482,10 @@ export default function AdminAcademyPathDetail() {
 
             <TabsContent value="stats">
               <PathStatsTab enrollments={enrollments} enrollmentCount={enrollmentCount} pathModules={pathModules} progress={progress} />
+            </TabsContent>
+
+            <TabsContent value="skills">
+              <PathSkillsTab path={path} id={id!} />
             </TabsContent>
           </Tabs>
         </div>

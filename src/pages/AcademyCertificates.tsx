@@ -47,7 +47,7 @@ export default function AcademyCertificates() {
 
   const { data: certificates = [], isLoading } = useQuery({
     queryKey: ["user-certificates", user?.id], enabled: !!user?.id,
-    queryFn: async () => { const { data } = await supabase.from("academy_certificates").select("*, academy_paths(name, description, difficulty, estimated_hours)").eq("user_id", user!.id).order("issued_at", { ascending: false }); return data || []; },
+    queryFn: async () => { const { data } = await supabase.from("academy_certificates").select("*, academy_paths(name, description, difficulty, estimated_hours, skills, aptitudes, professional_outcomes)").eq("user_id", user!.id).order("issued_at", { ascending: false }); return data || []; },
   });
 
   const { data: profile } = useQuery({
@@ -157,6 +157,9 @@ export default function AcademyCertificates() {
                           certificateId={cert.id}
                           difficulty={path?.difficulty}
                           modulesDetail={certData.modules_detail}
+                          skills={path?.skills as any}
+                          aptitudes={path?.aptitudes as any}
+                          pathDescription={path?.description}
                         />
                       </div>
                     </div>
@@ -217,6 +220,9 @@ export default function AcademyCertificates() {
                     certificateId={selectedCert.id}
                     difficulty={path?.difficulty}
                     modulesDetail={modulesDetail}
+                    skills={path?.skills as any}
+                    aptitudes={path?.aptitudes as any}
+                    pathDescription={path?.description}
                   />
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => copyVerifyLink(selectedCert.id)}>
                     <Copy className="h-4 w-4" /> Copier le lien
