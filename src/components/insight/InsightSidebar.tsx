@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import {
-  Rocket, BookOpen, Sparkles, Users, LayoutGrid, Shield,
+  Rocket, BookOpen, Sparkles, Users, LayoutGrid, Shield, Layers,
   ChevronDown, ChevronRight
 } from "lucide-react";
 import { useState } from "react";
@@ -66,6 +66,17 @@ const MENU = [
       "Portail immersif",
       "Administration",
       "IA de génération",
+    ],
+  },
+  {
+    id: "discovery",
+    label: "Discovery",
+    icon: Layers,
+    sub: [
+      "Couche Apprenant",
+      "Couche IA",
+      "Couche Admin",
+      "Couche Data",
     ],
   },
 ];

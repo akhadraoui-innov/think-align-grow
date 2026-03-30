@@ -9,6 +9,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PlatformFlow } from "./PlatformFlow";
 
 interface InsightContentProps {
   activeSection: string;
@@ -326,6 +327,23 @@ function PlateformeSection() {
   );
 }
 
+function DiscoverySection() {
+  return (
+    <div>
+      <SectionHero
+        icon={Layers}
+        title="Discovery"
+        subtitle="Architecture interactive de la plateforme — Vue flow n8n / BPMN"
+        pain="Comprendre l'architecture d'une plateforme complexe est difficile sans une vue d'ensemble interactive qui montre les connexions entre chaque composant."
+      />
+      <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+        Explorez l'architecture complète de GROWTHINNOV à travers un <strong>flow interactif</strong>. Filtrez par couche logique, cliquez sur un composant pour découvrir ses fonctionnalités et naviguez entre les nœuds connectés.
+      </p>
+      <PlatformFlow />
+    </div>
+  );
+}
+
 /* ═══════════════════════════════ MAIN ═══════════════════════════════ */
 
 const SECTIONS: Record<string, () => JSX.Element> = {
@@ -335,12 +353,16 @@ const SECTIONS: Record<string, () => JSX.Element> = {
   workshops: WorkshopsSection,
   challenges: ChallengesSection,
   plateforme: PlateformeSection,
+  discovery: DiscoverySection,
 };
 
 export function InsightContent({ activeSection }: InsightContentProps) {
   const Section = SECTIONS[activeSection] || OverviewSection;
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className={cn(
+      "mx-auto px-6 py-8",
+      activeSection === "discovery" ? "max-w-7xl" : "max-w-4xl"
+    )}>
       <Section />
     </div>
   );
