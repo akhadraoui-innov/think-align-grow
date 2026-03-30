@@ -22,6 +22,7 @@ import { PathModulesTab, moduleTypeConfig } from "@/components/admin/path-detail
 import { PathInfoTab } from "@/components/admin/path-detail/PathInfoTab";
 import { PathEnrollmentsTab } from "@/components/admin/path-detail/PathEnrollmentsTab";
 import { PathStatsTab } from "@/components/admin/path-detail/PathStatsTab";
+import { PathSkillsTab } from "@/components/admin/path-detail/PathSkillsTab";
 
 const difficultyConfig: Record<string, { gradient: string; label: string; color: string }> = {
   beginner: { gradient: "from-emerald-500/20 to-teal-500/10", label: "Débutant", color: "text-emerald-600" },
