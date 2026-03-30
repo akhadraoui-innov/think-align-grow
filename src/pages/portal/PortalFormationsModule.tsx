@@ -1,4 +1,5 @@
 // Portal wrapper for AcademyModule — reuses useAcademyModule hook, portal navigation
+// Includes ModuleReviewView for completed modules
 // This is a thin wrapper that imports the actual AcademyModule with portal-aware navigation
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { PageTransition } from "@/components/ui/PageTransition";
@@ -20,6 +21,7 @@ import { AcademyQuiz } from "@/components/academy/AcademyQuiz";
 import { AcademyExercise } from "@/components/academy/AcademyExercise";
 import { AcademyPractice } from "@/components/academy/AcademyPractice";
 import React, { useState } from "react";
+import { ModuleReviewView } from "@/components/academy/ModuleReviewView";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -76,7 +78,7 @@ export default function PortalFormationsModule() {
 
   const handleMarkComplete = async () => {
     setIsCompleting(true);
-    try { await saveProgress(100, "completed"); toast.success("Module terminé !"); if (completedCount + 1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }
+    try { await saveProgress(100, "completed", { read_at: new Date().toISOString() }); toast.success("Module terminé !"); if (completedCount + 1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }
     catch { toast.error("Erreur"); } finally { setIsCompleting(false); }
   };
 
@@ -131,8 +133,12 @@ export default function PortalFormationsModule() {
   );
 
   const renderContent = () => {
-    if (module.module_type === "quiz") return <AcademyQuiz moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score, total) => { saveProgress(Math.round((score/total)*100), "completed"); toast.success(`Quiz terminé : ${score}/${total}`); if (completedCount+1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }} />;
-    if (module.module_type === "exercise") return <AcademyExercise moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score) => { saveProgress(score, "completed"); toast.success(`Exercice : ${score}/100`); if (completedCount+1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }} />;
+    // Mode lecture post-complétion
+    if (isCompleted && (currentProgress as any)?.metadata && Object.keys((currentProgress as any).metadata).length > 0) {
+      return <ModuleReviewView module={module} metadata={(currentProgress as any).metadata} contents={contents} enrollment={enrollment} pathId={pathId} onRefaire={() => { /* future: reset progress */ }} />;
+    }
+    if (module.module_type === "quiz") return <AcademyQuiz moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score, total, meta) => { saveProgress(Math.round((score/total)*100), "completed", meta); toast.success(`Quiz terminé : ${score}/${total}`); if (completedCount+1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }} />;
+    if (module.module_type === "exercise") return <AcademyExercise moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score, meta) => { saveProgress(score, "completed", meta); toast.success(`Exercice : ${score}/100`); if (completedCount+1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }} />;
     if (module.module_type === "practice") return <AcademyPractice moduleId={id!} enrollmentId={enrollment?.id} onComplete={(score) => { saveProgress(score, "completed"); toast.success(`Session : ${score}/100`); if (completedCount+1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }} />;
 
     return (

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 interface AcademyQuizProps {
   moduleId: string;
   enrollmentId?: string;
-  onComplete?: (score: number, total: number) => void;
+  onComplete?: (score: number, total: number, metadata?: Record<string, unknown>) => void;
 }
 
 interface QuizQuestion {
@@ -156,6 +156,8 @@ export function AcademyQuiz({ moduleId, enrollmentId, onComplete }: AcademyQuizP
   const [timerActive, setTimerActive] = useState(true);
   const [totalXP, setTotalXP] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+  const answersRef = useRef<any[]>([]);
+  const questionStartRef = useRef(Date.now());
 
   const { data: quiz } = useQuery({
     queryKey: ["academy-quiz", moduleId],
@@ -224,6 +226,23 @@ export function AcademyQuiz({ moduleId, enrollmentId, onComplete }: AcademyQuizP
     setTimerActive(false);
     setScores(prev => [...prev, isCorrect]);
 
+    // Persist answer data
+    const questionTime = Math.round((Date.now() - questionStartRef.current) / 1000);
+    const userAnswer = current.question_type === "fill_blank" ? fillAnswer
+      : current.question_type === "ordering" ? orderItems.join(",")
+      : current.question_type === "matching" ? JSON.stringify(matchPairs)
+      : selectedAnswer || "";
+    answersRef.current.push({
+      question: current.question,
+      question_type: current.question_type,
+      user_answer: userAnswer,
+      correct_answer: current.correct_answer,
+      is_correct: isCorrect,
+      explanation: current.explanation,
+      points: current.points,
+      time_seconds: questionTime,
+    });
+
     if (isCorrect) {
       const newStreak = streak + 1;
       setStreak(newStreak);
@@ -248,7 +267,8 @@ export function AcademyQuiz({ moduleId, enrollmentId, onComplete }: AcademyQuizP
       const finalScores = [...scores];
       const finalEarned = finalScores.reduce((s, c, i) => s + (c ? questions[i].points : 0), 0);
       setFinished(true);
-      onComplete?.(finalEarned, totalPoints);
+      const quizMetadata = { quiz_answers: answersRef.current, best_streak: bestStreak, total_xp: totalXP };
+      onComplete?.(finalEarned, totalPoints, quizMetadata);
       return;
     }
     const nextQ = questions[currentIndex + 1];
@@ -261,6 +281,7 @@ export function AcademyQuiz({ moduleId, enrollmentId, onComplete }: AcademyQuizP
     setMatchSelected(null);
     setTimerActive(true);
     setShowXP(false);
+    questionStartRef.current = Date.now();
     if (nextQ.question_type === "ordering") {
       setOrderItems(shuffleArray(nextQ.options.map(o => o.value)));
     } else {

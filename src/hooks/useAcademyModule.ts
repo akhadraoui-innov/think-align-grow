@@ -116,12 +116,16 @@ export function useAcademyModule(moduleId: string | undefined, pathId: string | 
 
   const [certificateJustIssued, setCertificateJustIssued] = useState(false);
 
-  const saveProgress = useCallback(async (score: number | null, status: string = "completed") => {
+  const saveProgress = useCallback(async (score: number | null, status: string = "completed", metadata?: Record<string, unknown>) => {
     if (!enrollment || !moduleId || !user) return;
     const timeSpent = Math.round((Date.now() - startTimeRef.current) / 1000);
+    // Merge metadata with existing
+    const existingMeta = (currentProgress as any)?.metadata || {};
+    const mergedMetadata = metadata ? { ...existingMeta, ...metadata } : existingMeta;
     const payload = {
       enrollment_id: enrollment.id, module_id: moduleId, user_id: user.id, status, score,
       time_spent_seconds: timeSpent,
+      metadata: mergedMetadata,
       ...(status === "completed" ? { completed_at: new Date().toISOString() } : {}),
       ...(status === "in_progress" && !currentProgress ? { started_at: new Date().toISOString() } : {}),
     };
@@ -129,6 +133,7 @@ export function useAcademyModule(moduleId: string | undefined, pathId: string | 
       await supabase.from("academy_progress").update({
         status: payload.status, score: payload.score,
         time_spent_seconds: (currentProgress as any).time_spent_seconds + timeSpent,
+        metadata: mergedMetadata as any,
         ...(status === "completed" ? { completed_at: new Date().toISOString() } : {}),
       }).eq("id", (currentProgress as any).id);
     } else {

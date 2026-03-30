@@ -18,6 +18,7 @@ import { AcademyQuiz } from "@/components/academy/AcademyQuiz";
 import { AcademyExercise } from "@/components/academy/AcademyExercise";
 import { AcademyPractice } from "@/components/academy/AcademyPractice";
 import React, { useState } from "react";
+import { ModuleReviewView } from "@/components/academy/ModuleReviewView";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -125,7 +126,7 @@ export default function AcademyModule() {
   const handleMarkComplete = async () => {
     setIsCompleting(true);
     try {
-      await saveProgress(100, "completed");
+      await saveProgress(100, "completed", { read_at: new Date().toISOString() });
       toast.success("Module marqué comme terminé !");
       // Check if this was the last module
       const newCompleted = completedCount + 1;
@@ -303,13 +304,17 @@ export default function AcademyModule() {
 
   // ── Content ──
   const renderContent = () => {
+    // Mode lecture post-complétion
+    if (isCompleted && (currentProgress as any)?.metadata && Object.keys((currentProgress as any).metadata).length > 0) {
+      return <ModuleReviewView module={module} metadata={(currentProgress as any).metadata} contents={contents} enrollment={enrollment} pathId={pathId} onRefaire={() => {}} />;
+    }
     if (module.module_type === "quiz") {
       return (
         <AcademyQuiz
           moduleId={id!}
           enrollmentId={enrollment?.id}
-          onComplete={(score, total) => {
-            saveProgress(Math.round((score / total) * 100), "completed");
+          onComplete={(score, total, meta) => {
+            saveProgress(Math.round((score / total) * 100), "completed", meta);
             toast.success(`Quiz terminé : ${score}/${total} points`);
             if (completedCount + 1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true);
           }}
@@ -321,8 +326,8 @@ export default function AcademyModule() {
         <AcademyExercise
           moduleId={id!}
           enrollmentId={enrollment?.id}
-          onComplete={(score) => {
-            saveProgress(score, "completed");
+          onComplete={(score, meta) => {
+            saveProgress(score, "completed", meta);
             toast.success(`Exercice évalué : ${score}/100`);
             if (completedCount + 1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true);
           }}
