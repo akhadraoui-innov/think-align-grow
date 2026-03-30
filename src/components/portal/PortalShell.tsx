@@ -67,7 +67,7 @@ export function PortalShell({ children }: PortalShellProps) {
           </Link>
 
           {/* Desktop tabs */}
-          <nav className="hidden md:flex items-center gap-1 ml-2">
+          <nav className="hidden md:flex items-center gap-1 ml-auto mr-auto">
             {NAV_TABS.map((tab) => {
               const active = activeTab === tab.path;
               return (
