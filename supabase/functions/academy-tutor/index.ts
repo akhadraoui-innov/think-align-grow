@@ -176,6 +176,18 @@ ${modulesSummary.map((m: any, i: number) => `${i + 1}. ${m.title} (${m.type}) �
 Rédige une évaluation finale complète et personnalisée pour ${firstName}.`;
 
     const content = await callAI(apiKey, [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }], 6000);
+
+    // Persist evaluation in guide_document (service role — always succeeds)
+    if (persist && content) {
+      try {
+        const { data: pathData } = await supabase.from("academy_paths").select("guide_document").eq("id", path_id).single();
+        const doc = (pathData?.guide_document as any) || {};
+        await supabase.from("academy_paths").update({
+          guide_document: { ...doc, path_evaluation: content, evaluation_generated_at: new Date().toISOString() },
+        }).eq("id", path_id);
+      } catch (e) { console.error("Failed to persist evaluation:", e); }
+    }
+
     return new Response(JSON.stringify({ content }), { headers: { ...cors, "Content-Type": "application/json" } });
   }
 
