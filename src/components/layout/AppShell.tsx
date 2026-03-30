@@ -44,7 +44,6 @@ export function AppShell({ children }: AppShellProps) {
 
   // Portal: dedicated shell
   if (isPortal) {
-    const { PortalShell } = require("@/components/portal/PortalShell");
     return <PortalShell>{children}</PortalShell>;
   }
 
