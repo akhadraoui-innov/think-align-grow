@@ -1,4 +1,5 @@
 // Portal wrapper for AcademyModule — reuses useAcademyModule hook, portal navigation
+// Includes ModuleReviewView for completed modules
 // This is a thin wrapper that imports the actual AcademyModule with portal-aware navigation
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { PageTransition } from "@/components/ui/PageTransition";
