@@ -3,7 +3,7 @@ import {
   BookOpen, Award, Sparkles, History,
   Users, LayoutGrid, PanelLeftClose, PanelLeftOpen,
   Route, Building2, Layers, GraduationCap, Map, Briefcase,
-  Brain, Megaphone, BarChart3, Library, Rocket, Shield
+  Brain, Megaphone, BarChart3, Library, Rocket, Shield, Compass, Handshake
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveOrg } from "@/contexts/OrgContext";
@@ -68,6 +68,9 @@ const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label
       { icon: Users, label: "Workshops", path: "/portal/insight/workshops" },
       { icon: LayoutGrid, label: "Challenges", path: "/portal/insight/challenges" },
       { icon: Shield, label: "Plateforme", path: "/portal/insight/plateforme" },
+      { icon: Layers, label: "Discovery", path: "/portal/insight/discovery" },
+      { icon: Compass, label: "Décideurs", path: "/portal/insight/decideurs" },
+      { icon: Handshake, label: "Partenaires", path: "/portal/insight/partenaires" },
     ],
   },
 };

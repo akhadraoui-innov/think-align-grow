@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import {
   Rocket, BookOpen, Sparkles, Users, LayoutGrid, Shield, Layers,
-  ChevronDown, ChevronRight
+  Compass, Handshake, ChevronDown, ChevronRight
 } from "lucide-react";
 import { useState } from "react";
 
@@ -77,6 +77,26 @@ const MENU = [
       "Couche IA",
       "Couche Admin",
       "Couche Data",
+    ],
+  },
+  {
+    id: "decideurs",
+    label: "Décideurs",
+    icon: Compass,
+    sub: [
+      "ROI & Impact",
+      "Cas d'usage",
+      "Pourquoi nous",
+    ],
+  },
+  {
+    id: "partenaires",
+    label: "Partenaires",
+    icon: Handshake,
+    sub: [
+      "Modèle partenaire",
+      "Intégration",
+      "Co-création",
     ],
   },
 ];

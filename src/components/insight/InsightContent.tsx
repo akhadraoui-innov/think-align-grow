@@ -4,7 +4,9 @@ import {
   BookOpen, Sparkles, Users, LayoutGrid, Zap, Shield,
   Brain, Target, Award, BarChart3, Layers, Lightbulb,
   Code, Palette, FileText, MessageSquare, TrendingUp,
-  CheckCircle2, ArrowRight, Star, Rocket, Eye
+  CheckCircle2, ArrowRight, Star, Rocket, Eye, Compass,
+  Handshake, DollarSign, Clock, HeartHandshake, Building2,
+  GraduationCap, Puzzle, Globe, Repeat, ShieldCheck
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -344,6 +346,246 @@ function DiscoverySection() {
   );
 }
 
+/* ═══════════════════════════════ DÉCIDEURS ═══════════════════════════════ */
+
+function StatCard({ value, label, icon: Icon }: { value: string; label: string; icon: any }) {
+  return (
+    <div className="rounded-2xl border bg-gradient-to-br from-card to-muted/30 p-5 text-center">
+      <Icon className="h-6 w-6 text-primary mx-auto mb-2" />
+      <p className="text-3xl font-black text-foreground tracking-tight">{value}</p>
+      <p className="text-xs text-muted-foreground mt-1 font-medium">{label}</p>
+    </div>
+  );
+}
+
+function UseCaseCard({ persona, pain, solution, result, color }: { persona: string; pain: string; solution: string; result: string; color: string }) {
+  return (
+    <Card className={cn("overflow-hidden border-l-4", color)}>
+      <CardContent className="p-5 space-y-3">
+        <Badge variant="outline" className="text-[10px] font-bold">{persona}</Badge>
+        <div className="space-y-2">
+          <div className="flex items-start gap-2">
+            <Target className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground"><strong className="text-foreground">Problème :</strong> {pain}</p>
+          </div>
+          <div className="flex items-start gap-2">
+            <Lightbulb className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground"><strong className="text-foreground">Solution :</strong> {solution}</p>
+          </div>
+          <div className="flex items-start gap-2">
+            <TrendingUp className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground"><strong className="text-foreground">Résultat :</strong> {result}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CompareRow({ feature, us, others }: { feature: string; us: string; others: string }) {
+  return (
+    <div className="grid grid-cols-3 gap-4 py-3 border-b border-border/30 last:border-0">
+      <span className="text-sm font-medium text-foreground">{feature}</span>
+      <span className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold text-center">{us}</span>
+      <span className="text-sm text-muted-foreground text-center">{others}</span>
+    </div>
+  );
+}
+
+function DecideursSection() {
+  return (
+    <div>
+      <SectionHero
+        icon={Compass}
+        title="Pour les décideurs"
+        subtitle="ROI, cas d'usage concrets et avantages compétitifs"
+        pain="Investir dans une plateforme de formation sans garantie de résultats mesurables, d'adoption par les équipes ni de retour sur investissement tangible."
+      />
+
+      {/* KPI Impact */}
+      <h3 className="text-lg font-bold text-foreground mb-4">Impact mesurable</h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        <StatCard icon={TrendingUp} value="×3" label="Vitesse d'acquisition des compétences" />
+        <StatCard icon={Clock} value="-70%" label="Temps de création de parcours" />
+        <StatCard icon={Award} value="92%" label="Taux de complétion moyen" />
+        <StatCard icon={DollarSign} value="×5" label="ROI formation vs. consulting" />
+      </div>
+
+      {/* Use cases par persona */}
+      <h3 className="text-lg font-bold text-foreground mb-4">Cas d'usage par profil</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+        <UseCaseCard
+          persona="DRH / Responsable Formation"
+          pain="Formations génériques avec 0% de visibilité sur les compétences acquises."
+          solution="Parcours adaptatifs par fonction avec suivi granulaire par compétence et certificats vérifiables."
+          result="Cartographie complète des compétences IA de chaque collaborateur, ROI formation documenté."
+          color="border-l-primary"
+        />
+        <UseCaseCard
+          persona="Directeur Innovation / CDO"
+          pain="Les équipes ne savent pas appliquer l'IA à leurs métiers malgré les formations suivies."
+          solution="Simulateur IA avec 7 modes professionnels + Challenges de diagnostic stratégique autonome."
+          result="Équipes capables de mener des audits IA en autonomie, compétences mesurées par la pratique."
+          color="border-l-accent"
+        />
+        <UseCaseCard
+          persona="Manager / Chef de projet"
+          pain="Pas d'outil pour animer des ateliers stratégiques structurés avec ses équipes."
+          solution="Workshops collaboratifs gamifiés avec toolkits stratégiques et canevas interactif."
+          result="Ateliers productifs avec livrables exploitables, engagement mesurable de chaque participant."
+          color="border-l-emerald-500"
+        />
+        <UseCaseCard
+          persona="Consultant / Formateur"
+          pain="Créer un parcours complet prend des semaines et n'est pas reproductible."
+          solution="IA de génération batch : parcours, modules, quiz, exercices créés en minutes."
+          result="Catalogue de formations sur-mesure en quelques heures, mise à jour continue par l'IA."
+          color="border-l-orange-500"
+        />
+      </div>
+
+      {/* Comparatif */}
+      <h3 className="text-lg font-bold text-foreground mb-4">Pourquoi GROWTHINNOV</h3>
+      <Card className="mb-10">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-3 gap-4 pb-3 border-b-2 border-border mb-1">
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Fonctionnalité</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 text-center">GROWTHINNOV</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground text-center">LMS classique</span>
+          </div>
+          <CompareRow feature="IA intégrée à chaque étape" us="✅ Tutor, Coach, Évaluation, Génération" others="❌ Pas d'IA ou plugin basique" />
+          <CompareRow feature="Simulateur professionnel" us="✅ 7 modes avec scoring" others="❌ Aucun" />
+          <CompareRow feature="Workshops collaboratifs" us="✅ Canevas temps réel gamifié" others="❌ Forum / chat basique" />
+          <CompareRow feature="Diagnostic stratégique" us="✅ Challenges avec analyse IA" others="❌ Aucun" />
+          <CompareRow feature="Évaluation par compétence" us="✅ Granulaire, persistée, IA" others="⚠️ Score global uniquement" />
+          <CompareRow feature="Livret de cours PDF" us="✅ Auto-généré, envoyé par email" others="❌ Aucun" />
+          <CompareRow feature="Certificats vérifiables" us="✅ QR code + LinkedIn" others="⚠️ PDF simple" />
+          <CompareRow feature="Création de contenu IA" us="✅ Batch complet en minutes" others="❌ Manuel uniquement" />
+        </CardContent>
+      </Card>
+
+      {/* CTA */}
+      <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-accent/5 to-primary/10 border-2 border-primary/20 p-8 text-center">
+        <Compass className="h-10 w-10 text-primary mx-auto mb-3" />
+        <h3 className="text-xl font-black text-foreground mb-2">Prêt à transformer vos formations ?</h3>
+        <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto">
+          Découvrez comment GROWTHINNOV peut accélérer la montée en compétences de vos équipes avec un ROI mesurable dès le premier parcours.
+        </p>
+        <Button size="lg" className="gap-2">
+          <Rocket className="h-4 w-4" /> Demander une démo
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════ PARTENAIRES ═══════════════════════════════ */
+
+function PartnerModelCard({ icon: Icon, title, desc, benefits, color }: { icon: any; title: string; desc: string; benefits: string[]; color: string }) {
+  return (
+    <Card className={cn("overflow-hidden border-t-4", color)}>
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className={cn("h-11 w-11 rounded-xl flex items-center justify-center", color.replace("border-t-", "bg-").replace("500", "500/10"))}>
+            <Icon className={cn("h-5 w-5", color.replace("border-t-", "text-"))} />
+          </div>
+          <h4 className="text-base font-bold text-foreground">{title}</h4>
+        </div>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-4">{desc}</p>
+        <div className="space-y-2">
+          {benefits.map((b) => (
+            <div key={b} className="flex items-center gap-2">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+              <span className="text-xs text-foreground/70">{b}</span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PartenairesSection() {
+  return (
+    <div>
+      <SectionHero
+        icon={Handshake}
+        title="Partenaires"
+        subtitle="Intégration, co-création et modèle de revenus partagé"
+        pain="Les partenaires de formation manquent d'outils technologiques différenciants pour enrichir leur offre et fidéliser leurs clients."
+      />
+
+      {/* Pain points partenaires */}
+      <h3 className="text-lg font-bold text-foreground mb-4">Vos défis, nos solutions</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        <PainCard icon={Puzzle} title="Offre commoditisée" desc="Difficile de se différencier face aux LMS génériques et aux formations en ligne standardisées." />
+        <PainCard icon={Repeat} title="Pas de récurrence" desc="Les prestations ponctuelles ne génèrent pas de revenus récurrents ni de fidélisation durable." />
+        <PainCard icon={Globe} title="Scalabilité limitée" desc="Impossible de multiplier les formations sans multiplier proportionnellement les ressources humaines." />
+      </div>
+
+      {/* Modèles de partenariat */}
+      <h3 className="text-lg font-bold text-foreground mb-4">3 modèles de partenariat</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        <PartnerModelCard
+          icon={Building2}
+          title="Revendeur"
+          desc="Proposez GROWTHINNOV sous votre marque avec un modèle de revenus récurrent."
+          benefits={["White-label complet", "Marge sur abonnements", "Support technique inclus", "Formation commerciale"]}
+          color="border-t-primary"
+        />
+        <PartnerModelCard
+          icon={Puzzle}
+          title="Intégrateur"
+          desc="Intégrez GROWTHINNOV dans vos dispositifs de formation existants via API."
+          benefits={["API REST complète", "SSO et provisioning", "Webhooks événementiels", "SDK JavaScript"]}
+          color="border-t-accent"
+        />
+        <PartnerModelCard
+          icon={HeartHandshake}
+          title="Co-créateur"
+          desc="Co-développez des toolkits et parcours thématiques pour vos secteurs d'expertise."
+          benefits={["Toolkits sur-mesure", "Revenue share sur contenu", "Co-branding", "Accès IA de génération"]}
+          color="border-t-emerald-500"
+        />
+      </div>
+
+      {/* Workflow d'intégration */}
+      <h3 className="text-lg font-bold text-foreground mb-4">Parcours d'intégration</h3>
+      <div className="ml-2 mb-10">
+        <WorkflowStep step={1} title="Onboarding technique" desc="Configuration du tenant, branding, SSO et provisioning des utilisateurs en quelques heures." />
+        <WorkflowStep step={2} title="Création du catalogue" desc="L'IA génère vos premiers parcours à partir de vos contenus et expertises métier existants." />
+        <WorkflowStep step={3} title="Formation des équipes" desc="Vos formateurs et facilitateurs maîtrisent le simulateur, les workshops et les challenges." />
+        <WorkflowStep step={4} title="Lancement & itération" desc="Déploiement auprès de vos clients avec suivi d'adoption, métriques et optimisation continue." isLast />
+      </div>
+
+      {/* Avantages techniques */}
+      <h3 className="text-lg font-bold text-foreground mb-4">Avantages techniques</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+        <FeatureCard icon={ShieldCheck} title="Multi-tenant natif" desc="Chaque organisation est isolée avec son branding, ses données et sa configuration IA propre." badges={["Isolation", "RGPD"]} />
+        <FeatureCard icon={Zap} title="IA de génération batch" desc="Créez des centaines de modules, quiz et exercices en quelques minutes à partir de descriptions métier." badges={["GPT", "Gemini", "Batch"]} />
+        <FeatureCard icon={BarChart3} title="Observabilité partenaire" desc="Dashboard consolidé multi-organisations avec métriques d'adoption, de complétion et de satisfaction." badges={["Analytics", "Export"]} />
+        <FeatureCard icon={Globe} title="API & Webhooks" desc="Intégration complète avec vos outils existants : LMS, SIRH, CRM, outils de reporting." badges={["REST", "Webhooks", "SSO"]} />
+      </div>
+
+      <ValueProp>
+        Devenez partenaire GROWTHINNOV et offrez à vos clients une <strong>expérience de formation augmentée par l'IA</strong> qui vous différencie durablement — avec un modèle de revenus récurrent et une scalabilité sans limites.
+      </ValueProp>
+
+      {/* CTA */}
+      <div className="rounded-2xl bg-gradient-to-br from-emerald-500/10 via-primary/5 to-accent/10 border-2 border-emerald-500/20 p-8 text-center mt-8">
+        <Handshake className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
+        <h3 className="text-xl font-black text-foreground mb-2">Rejoignez l'écosystème</h3>
+        <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto">
+          Explorons ensemble comment intégrer GROWTHINNOV dans votre offre et créer de la valeur pour vos clients.
+        </p>
+        <Button size="lg" className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+          <HeartHandshake className="h-4 w-4" /> Devenir partenaire
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════ MAIN ═══════════════════════════════ */
 
 const SECTIONS: Record<string, () => JSX.Element> = {
@@ -354,6 +596,8 @@ const SECTIONS: Record<string, () => JSX.Element> = {
   challenges: ChallengesSection,
   plateforme: PlateformeSection,
   discovery: DiscoverySection,
+  decideurs: DecideursSection,
+  partenaires: PartenairesSection,
 };
 
 export function InsightContent({ activeSection }: InsightContentProps) {
