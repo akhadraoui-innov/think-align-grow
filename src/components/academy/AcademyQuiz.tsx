@@ -280,6 +280,7 @@ export function AcademyQuiz({ moduleId, enrollmentId, onComplete }: AcademyQuizP
     setMatchSelected(null);
     setTimerActive(true);
     setShowXP(false);
+    questionStartRef.current = Date.now();
     if (nextQ.question_type === "ordering") {
       setOrderItems(shuffleArray(nextQ.options.map(o => o.value)));
     } else {
