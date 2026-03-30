@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import {
-  Rocket, BookOpen, Sparkles, Users, LayoutGrid, Shield,
+  Rocket, BookOpen, Sparkles, Users, LayoutGrid, Shield, Layers,
   ChevronDown, ChevronRight
 } from "lucide-react";
 import { useState } from "react";
