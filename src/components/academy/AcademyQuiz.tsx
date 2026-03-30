@@ -226,6 +226,23 @@ export function AcademyQuiz({ moduleId, enrollmentId, onComplete }: AcademyQuizP
     setTimerActive(false);
     setScores(prev => [...prev, isCorrect]);
 
+    // Persist answer data
+    const questionTime = Math.round((Date.now() - questionStartRef.current) / 1000);
+    const userAnswer = current.question_type === "fill_blank" ? fillAnswer
+      : current.question_type === "ordering" ? orderItems.join(",")
+      : current.question_type === "matching" ? JSON.stringify(matchPairs)
+      : selectedAnswer || "";
+    answersRef.current.push({
+      question: current.question,
+      question_type: current.question_type,
+      user_answer: userAnswer,
+      correct_answer: current.correct_answer,
+      is_correct: isCorrect,
+      explanation: current.explanation,
+      points: current.points,
+      time_seconds: questionTime,
+    });
+
     if (isCorrect) {
       const newStreak = streak + 1;
       setStreak(newStreak);
