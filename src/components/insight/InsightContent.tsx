@@ -326,6 +326,23 @@ function PlateformeSection() {
   );
 }
 
+function DiscoverySection() {
+  return (
+    <div>
+      <SectionHero
+        icon={Layers}
+        title="Discovery"
+        subtitle="Architecture interactive de la plateforme — Vue flow n8n / BPMN"
+        pain="Comprendre l'architecture d'une plateforme complexe est difficile sans une vue d'ensemble interactive qui montre les connexions entre chaque composant."
+      />
+      <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+        Explorez l'architecture complète de GROWTHINNOV à travers un <strong>flow interactif</strong>. Filtrez par couche logique, cliquez sur un composant pour découvrir ses fonctionnalités et naviguez entre les nœuds connectés.
+      </p>
+      <PlatformFlow />
+    </div>
+  );
+}
+
 /* ═══════════════════════════════ MAIN ═══════════════════════════════ */
 
 const SECTIONS: Record<string, () => JSX.Element> = {
