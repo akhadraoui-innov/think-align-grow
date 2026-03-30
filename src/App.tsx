@@ -151,6 +151,7 @@ function AnimatedRoutes() {
            <Route path="/admin/observability/matrix" element={<AdminObservabilityMatrix />} />
           <Route path="/admin/simulator" element={<AdminSimulator />} />
           <Route path="/admin/simulator/templates" element={<AdminSimulatorTemplates />} />
+          <Route path="/admin/insight" element={<AdminInsight />} />
           {/* Portal routes */}
           <Route path="/portal" element={<PortalFormations />} />
           <Route path="/portal/dashboard" element={<PortalFormationsDashboard />} />
