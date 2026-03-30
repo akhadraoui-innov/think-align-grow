@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,13 +7,36 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   Layers, Clock, Users, Star, X, ChevronRight, Puzzle, Award,
-  BarChart3, FileText, LayoutGrid, List, ArrowLeft
+  BarChart3, FileText, LayoutGrid, List, ArrowLeft, Eye, Target, Zap,
+  Grid3X3
 } from "lucide-react";
-import { ToolkitCardsBrowser } from "@/components/admin/ToolkitCardsBrowser";
+import { GameCard } from "@/components/challenge/GameCard";
+import { getPillarCssColor, getPillarCssColorAlpha, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
 import type { Tables } from "@/integrations/supabase/types";
+import dynamicIconImports from "lucide-react/dynamicIconImports";
+
+const iconCache = new Map<string, React.LazyExoticComponent<React.ComponentType<{ className?: string }>>>();
+
+function DynamicIcon({ name, className }: { name: string; className?: string }) {
+  const kebab = name.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+  const importFn = dynamicIconImports[kebab as keyof typeof dynamicIconImports];
+  if (!importFn) return null;
+  if (!iconCache.has(kebab)) {
+    iconCache.set(kebab, lazy(importFn as () => Promise<{ default: React.ComponentType<{ className?: string }> }>));
+  }
+  const LazyIcon = iconCache.get(kebab)!;
+  return (
+    <Suspense fallback={<div className={className} />}>
+      <LazyIcon className={className} />
+    </Suspense>
+  );
+}
+
+type CardFormat = "preview" | "game" | "gamified";
 
 const DIFFICULTY_MAP: Record<string, { label: string; class: string }> = {
   easy: { label: "Facile", class: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30" },
