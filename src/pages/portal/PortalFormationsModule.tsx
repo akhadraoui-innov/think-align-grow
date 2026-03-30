@@ -182,7 +182,7 @@ export default function PortalFormationsModule() {
 
   return (
     <PageTransition>
-      <AnimatePresence>{showCelebration && <PathCompletionCelebration pathName={pathData?.name || "ce parcours"} onContinue={() => { setShowCelebration(false); if (pathId) navigate(`/portal/path/${pathId}`); }} />}</AnimatePresence>
+      <AnimatePresence>{showCelebration && <PathCompletionCelebration pathName={pathData?.name || "ce parcours"} hasCertificate={certificateJustIssued || (pathData?.certificate_enabled && progressPct === 100)} onViewCertificate={() => { setShowCelebration(false); navigate("/portal/certificates"); }} onContinue={() => { setShowCelebration(false); if (pathId) navigate(`/portal/path/${pathId}`); }} />}</AnimatePresence>
       <div className="flex h-screen overflow-hidden">
         {pathModules.length > 0 && !isMobile && <AnimatePresence initial={false}>{sidebarOpen && <motion.aside initial={{ width: 0, opacity: 0 }} animate={{ width: 288, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="border-r border-border/50 overflow-hidden shrink-0"><div className="w-[288px] h-full">{sidebarContent}</div></motion.aside>}</AnimatePresence>}
         {pathModules.length > 0 && isMobile && <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}><SheetContent side="left" className="w-[300px] p-0">{sidebarContent}</SheetContent></Sheet>}
