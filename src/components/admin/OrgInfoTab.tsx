@@ -286,7 +286,7 @@ export function OrgInfoTab({ organization, stats }: Props) {
           <div className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/30 p-4 mt-4">
             <div>
               <p className="text-sm font-medium text-foreground">🏢 Organisation éditrice SaaS</p>
-              <p className="text-xs text-muted-foreground">Marque cette organisation comme l'éditeur et exploitant de la plateforme Hack & Show (Growthinnov)</p>
+              <p className="text-xs text-muted-foreground">Marque cette organisation comme l'éditeur et exploitant de la plateforme GROWTHINNOV</p>
             </div>
             <Switch
               checked={!!(organization as any).is_platform_owner}

@@ -64,10 +64,10 @@ export function LogoFull({ className = "" }: { className?: string }) {
       <Logo size="sm" />
       <div className="flex flex-col leading-none">
         <span className="font-display text-sm font-bold uppercase tracking-wider text-foreground">
-          Hack & Show
+          GROWTHINNOV
         </span>
         <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Bootstrap in Business
+          AI Acceleration
         </span>
       </div>
     </div>

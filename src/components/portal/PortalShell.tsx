@@ -59,8 +59,8 @@ export function PortalShell({ children }: PortalShellProps) {
         <div className="flex items-center h-14 px-4 gap-4">
           {/* Logo — text only, no H icon */}
           <Link to="/portal" className="flex items-center mr-3 shrink-0">
-            <span className="text-lg font-black tracking-tight text-foreground uppercase">
-              HEEP
+            <span className="text-xl font-black tracking-tighter text-black uppercase">
+              GROWTHINNOV
             </span>
           </Link>
 
@@ -111,12 +111,6 @@ export function PortalShell({ children }: PortalShellProps) {
           </button>
 
           {/* Cabinet link */}
-          <Link
-            to="/explore"
-            className="hidden lg:flex items-center gap-1 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors ml-1 uppercase font-bold tracking-wide"
-          >
-            Cabinet <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
 
           {/* Mobile hamburger */}
           <Button

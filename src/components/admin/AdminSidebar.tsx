@@ -100,7 +100,7 @@ export function AdminSidebar() {
           {!collapsed && (
             <div>
               <p className="font-display font-bold text-sm uppercase tracking-wide">Administration</p>
-              <p className="text-[10px] text-muted-foreground">Hack & Show</p>
+              <p className="text-[10px] text-muted-foreground">GROWTHINNOV</p>
             </div>
           )}
         </div>

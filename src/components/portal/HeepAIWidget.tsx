@@ -28,7 +28,7 @@ export function HeepAIWidget() {
               <Bot className="h-4 w-4 text-primary-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-foreground">Ask HEEP IA</p>
+              <p className="text-xs font-semibold text-foreground">Ask GROWTHINNOV IA</p>
               <p className="text-[10px] text-muted-foreground">Mentor spécialisé</p>
             </div>
             <button
@@ -43,7 +43,7 @@ export function HeepAIWidget() {
           <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
             <div className="bg-muted/40 rounded-xl rounded-tl-sm px-3 py-2 max-w-[85%]">
               <p className="text-xs text-foreground leading-relaxed">
-                Bonjour ! Je suis votre mentor HEEP IA. Comment puis-je vous aider dans votre parcours ?
+                Bonjour ! Je suis votre mentor GROWTHINNOV IA. Comment puis-je vous aider dans votre parcours ?
               </p>
             </div>
           </div>
