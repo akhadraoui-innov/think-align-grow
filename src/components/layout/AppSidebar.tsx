@@ -14,7 +14,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Compass, Layers, Gamepad2, Sparkles, User, LogOut, Coins, Search, LayoutDashboard, Plus, List, LayoutGrid, Shield, GraduationCap, Cpu, History } from "lucide-react";
+import { Compass, Layers, Gamepad2, Sparkles, User, LogOut, Coins, Search, LayoutDashboard, Plus, List, LayoutGrid, Shield, GraduationCap, Cpu, History, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -242,6 +242,16 @@ export function AppSidebar({ onCommandPalette }: AppSidebarProps) {
 
       {/* Footer: org switcher + credits + user */}
       <SidebarFooter className="px-3 py-3 border-t border-border/50 space-y-2">
+        {/* Portal link */}
+        {!collapsed && (
+          <button
+            onClick={() => navigate("/portal")}
+            className="flex w-full items-center gap-2 rounded-xl bg-accent/10 px-3 py-2 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Portail HEEP
+          </button>
+        )}
         {user && (
           <OrgSwitcher collapsed={collapsed} />
         )}

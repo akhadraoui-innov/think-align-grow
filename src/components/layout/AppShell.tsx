@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useLocation } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { PortalShell } from "@/components/portal/PortalShell";
 import { BottomNav } from "./BottomNav";
 import { CommandPalette } from "./CommandPalette";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -34,9 +35,16 @@ export function AppShell({ children }: AppShellProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  const isPortal = location.pathname.startsWith("/portal");
+
   // Landing page & auth: no shell chrome
   if (isLandingPage || isAuthPage || isWorkshopRoom || isAdminPage || isAcademyModule) {
     return <>{children}</>;
+  }
+
+  // Portal: dedicated shell
+  if (isPortal) {
+    return <PortalShell>{children}</PortalShell>;
   }
 
   // Mobile: keep original bottom nav layout
