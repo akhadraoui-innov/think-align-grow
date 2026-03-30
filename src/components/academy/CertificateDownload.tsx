@@ -16,6 +16,7 @@ interface CertificateDownloadProps {
   modulesDetail?: { title: string; type: string; score: number; time_minutes: number }[];
   skills?: { name: string; category: string; level: number }[];
   aptitudes?: string[];
+  professionalOutcomes?: string[];
   pathDescription?: string;
 }
 
