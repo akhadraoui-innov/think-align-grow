@@ -284,6 +284,41 @@ export type Database = {
           },
         ]
       }
+      academy_document_sends: {
+        Row: {
+          document_version: number | null
+          email: string | null
+          id: string
+          path_id: string
+          sent_at: string | null
+          user_id: string
+        }
+        Insert: {
+          document_version?: number | null
+          email?: string | null
+          id?: string
+          path_id: string
+          sent_at?: string | null
+          user_id: string
+        }
+        Update: {
+          document_version?: number | null
+          email?: string | null
+          id?: string
+          path_id?: string
+          sent_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_document_sends_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "academy_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_enrollments: {
         Row: {
           campaign_id: string | null
@@ -635,6 +670,7 @@ export type Database = {
           estimated_hours: number | null
           function_id: string | null
           generation_mode: string
+          guide_document: Json | null
           id: string
           name: string
           organization_id: string | null
@@ -656,6 +692,7 @@ export type Database = {
           estimated_hours?: number | null
           function_id?: string | null
           generation_mode?: string
+          guide_document?: Json | null
           id?: string
           name: string
           organization_id?: string | null
@@ -677,6 +714,7 @@ export type Database = {
           estimated_hours?: number | null
           function_id?: string | null
           generation_mode?: string
+          guide_document?: Json | null
           id?: string
           name?: string
           organization_id?: string | null

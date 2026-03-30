@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.academy-tutor]
 verify_jwt = false
+
+[functions.academy-path-document]
+verify_jwt = false
