@@ -57,8 +57,9 @@ import AdminObservabilityCatalogue from "./pages/admin/AdminObservabilityCatalog
 import AdminObservabilityMatrix from "./pages/admin/AdminObservabilityMatrix";
 import AdminSimulator from "./pages/admin/AdminSimulator";
 import AdminSimulatorTemplates from "./pages/admin/AdminSimulatorTemplates";
+import PortalFormations from "./pages/portal/PortalFormations";
+import PortalExperiences from "./pages/portal/PortalExperiences";
 import PortalMarketplace from "./pages/portal/PortalMarketplace";
-import PortalWorkspace from "./pages/portal/PortalWorkspace";
 import PortalLibrary from "./pages/portal/PortalLibrary";
 import PortalAnalytics from "./pages/portal/PortalAnalytics";
 
