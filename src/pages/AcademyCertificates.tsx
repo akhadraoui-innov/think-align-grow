@@ -3,7 +3,7 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Award, Calendar, BookOpen, Trophy, Clock, FileText, HelpCircle, MessageSquare, Download, Copy, GraduationCap, BarChart3, Timer } from "lucide-react";
+import { ArrowLeft, Award, Calendar, BookOpen, Trophy, Clock, FileText, HelpCircle, MessageSquare, Download, Copy, GraduationCap, BarChart3, Timer, Linkedin, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -206,7 +206,7 @@ export default function AcademyCertificates() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <CertificateDownload
                     holderName={certData.holder_name || profile?.display_name || "Apprenant"}
                     pathName={path?.name || "Parcours"}
@@ -221,6 +221,14 @@ export default function AcademyCertificates() {
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => copyVerifyLink(selectedCert.id)}>
                     <Copy className="h-4 w-4" /> Copier le lien
                   </Button>
+                  <Button variant="outline" size="sm" className="gap-2" onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${VERIFY_BASE}/${selectedCert.id}`)}`, "_blank")}>
+                    <Linkedin className="h-4 w-4" /> LinkedIn
+                  </Button>
+                  {navigator.share && (
+                    <Button variant="outline" size="sm" className="gap-2" onClick={() => navigator.share({ title: `Certificat GROWTHINNOV — ${path?.name}`, url: `${VERIFY_BASE}/${selectedCert.id}` })}>
+                      <Share2 className="h-4 w-4" /> Partager
+                    </Button>
+                  )}
                 </div>
 
                 {modulesDetail.length > 0 && (

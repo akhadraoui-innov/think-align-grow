@@ -139,6 +139,53 @@ export type Database = {
           },
         ]
       }
+      academy_certificate_config: {
+        Row: {
+          api_key_hash: string | null
+          created_at: string
+          custom_signature: string | null
+          custom_title: string | null
+          id: string
+          min_score: number
+          path_id: string
+          template_key: string
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key_hash?: string | null
+          created_at?: string
+          custom_signature?: string | null
+          custom_title?: string | null
+          id?: string
+          min_score?: number
+          path_id: string
+          template_key?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key_hash?: string | null
+          created_at?: string
+          custom_signature?: string | null
+          custom_title?: string | null
+          id?: string
+          min_score?: number
+          path_id?: string
+          template_key?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_certificate_config_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: true
+            referencedRelation: "academy_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_certificates: {
         Row: {
           certificate_data: Json
@@ -146,6 +193,10 @@ export type Database = {
           id: string
           issued_at: string
           path_id: string
+          public_share_enabled: boolean
+          revoked_at: string | null
+          revoked_reason: string | null
+          status: string
           user_id: string
         }
         Insert: {
@@ -154,6 +205,10 @@ export type Database = {
           id?: string
           issued_at?: string
           path_id: string
+          public_share_enabled?: boolean
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          status?: string
           user_id: string
         }
         Update: {
@@ -162,6 +217,10 @@ export type Database = {
           id?: string
           issued_at?: string
           path_id?: string
+          public_share_enabled?: boolean
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          status?: string
           user_id?: string
         }
         Relationships: [

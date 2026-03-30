@@ -52,11 +52,13 @@ import AdminAcademyMap from "./pages/admin/AdminAcademyMap";
 import AdminAcademyTracking from "./pages/admin/AdminAcademyTracking";
 import AdminAcademyModuleDetail from "./pages/admin/AdminAcademyModuleDetail";
 import AdminAcademyAssets from "./pages/admin/AdminAcademyAssets";
+import AdminAcademyCertificates from "./pages/admin/AdminAcademyCertificates";
 import AdminObservability from "./pages/admin/AdminObservability";
 import AdminObservabilityCatalogue from "./pages/admin/AdminObservabilityCatalogue";
 import AdminObservabilityMatrix from "./pages/admin/AdminObservabilityMatrix";
 import AdminSimulator from "./pages/admin/AdminSimulator";
 import AdminSimulatorTemplates from "./pages/admin/AdminSimulatorTemplates";
+import VerifyCertificate from "./pages/VerifyCertificate";
 import PortalFormations from "./pages/portal/PortalFormations";
 import PortalFormationsDashboard from "./pages/portal/PortalFormationsDashboard";
 import PortalFormationsPath from "./pages/portal/PortalFormationsPath";
@@ -138,6 +140,7 @@ function AnimatedRoutes() {
           <Route path="/admin/academy/tracking" element={<AdminAcademyTracking />} />
           <Route path="/admin/academy/modules/:id" element={<AdminAcademyModuleDetail />} />
           <Route path="/admin/academy/assets" element={<AdminAcademyAssets />} />
+          <Route path="/admin/academy/certificates" element={<AdminAcademyCertificates />} />
            <Route path="/admin/observability" element={<AdminObservability />} />
            <Route path="/admin/observability/catalogue" element={<AdminObservabilityCatalogue />} />
            <Route path="/admin/observability/matrix" element={<AdminObservabilityMatrix />} />
@@ -186,9 +189,14 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
-        <OrgProvider>
-          <AnimatedRoutes />
-        </OrgProvider>
+        <Routes>
+          <Route path="/verify/:id" element={<VerifyCertificate />} />
+          <Route path="*" element={
+            <OrgProvider>
+              <AnimatedRoutes />
+            </OrgProvider>
+          } />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

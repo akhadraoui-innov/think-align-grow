@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.academy-practice]
 verify_jwt = false
+
+[functions.verify-certificate]
+verify_jwt = false
