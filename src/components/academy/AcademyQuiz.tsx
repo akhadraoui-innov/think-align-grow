@@ -242,14 +242,6 @@ export function AcademyQuiz({ moduleId, enrollmentId, onComplete }: AcademyQuizP
     }
   };
 
-  const handleTimerExpire = useCallback(() => {
-    if (!hasAnswered) {
-      setHasAnswered(true);
-      setTimerActive(false);
-      setScores(prev => [...prev, false]);
-      setStreak(0);
-    }
-  }, [hasAnswered]);
 
   const handleNext = () => {
     if (currentIndex + 1 >= questions.length) {
