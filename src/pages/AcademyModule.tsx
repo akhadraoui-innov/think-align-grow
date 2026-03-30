@@ -117,7 +117,7 @@ export default function AcademyModule() {
     enrollment, currentProgress, progressMap,
     currentIndex, nextModule, prevModule,
     completedCount, progressPct, isCompleted, totalTimeSpent,
-    saveProgress, getModuleStatus,
+    saveProgress, getModuleStatus, certificateJustIssued,
   } = useAcademyModule(id, pathId);
 
   const isPractice = module?.module_type === "practice";
