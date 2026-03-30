@@ -105,6 +105,130 @@ export default function PortalToolkits() {
 
   const selectedToolkit = toolkits.find((t: any) => t.id === selectedToolkitId);
 
+  const pillarMap = useMemo(() => {
+    const m = new Map<string, any>();
+    pillars.forEach((p: any) => m.set(p.id, p));
+    return m;
+  }, [pillars]);
+
+  const cardsByPillar = useMemo(() => {
+    const grouped: Record<string, any[]> = {};
+    pillars.forEach((p: any) => { grouped[p.id] = []; });
+    cards.forEach((c: any) => { if (grouped[c.pillar_id]) grouped[c.pillar_id].push(c); });
+    return grouped;
+  }, [pillars, cards]);
+
+  const renderCard = (card: any) => {
+    const pillar = pillarMap.get(card.pillar_id);
+    const slug = pillar?.slug || "";
+    const dbCol = pillar?.color || null;
+    const pillarColor = getPillarCssColor(slug, dbCol);
+    const pillarColorAlpha = (a: number) => getPillarCssColorAlpha(slug, dbCol, a);
+    const pillarIconName = pillar ? getPillarIconName(pillar.slug, pillar.icon_name) : "Circle";
+
+    if (cardFormat === "game") {
+      return (
+        <GameCard key={card.id} card={card} pillar={pillar} readOnly />
+      );
+    }
+
+    if (cardFormat === "gamified") {
+      return (
+        <div
+          key={card.id}
+          className="relative rounded-3xl overflow-hidden flex flex-col min-h-[300px] w-64"
+          style={{ background: `linear-gradient(145deg, ${pillarColor}, ${pillarColorAlpha(0.85)})` }}
+        >
+          <div className="absolute inset-0 opacity-[0.07] pointer-events-none" style={{
+            backgroundImage: `radial-gradient(circle at 20% 80%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)`,
+            backgroundSize: '30px 30px',
+          }} />
+          <div className="relative p-6 flex flex-col items-center text-center flex-1">
+            <div className="inline-flex px-3 py-1 rounded-full bg-white/15 backdrop-blur-sm mb-4">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90">
+                {PHASE_LABELS[card.phase] || card.phase}
+              </span>
+            </div>
+            <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4 shadow-inner">
+              <DynamicIcon name={pillarIconName} className="h-8 w-8 text-white" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/60 mb-1">
+              {pillar?.name || "Pilier"}
+            </span>
+            <h3 className="font-display font-black text-base uppercase tracking-tight leading-tight text-white mb-3 line-clamp-3">
+              {card.title}
+            </h3>
+            {card.subtitle && (
+              <p className="text-xs text-white/60 italic line-clamp-2">{card.subtitle}</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ── Preview (default) ──
+    return (
+      <div key={card.id} className="rounded-2xl bg-card border border-border/60 overflow-hidden flex flex-col hover:shadow-lg transition-shadow">
+        <div className="h-2 w-full shrink-0" style={{ background: pillarColor }} />
+        <div className="p-5 flex flex-col flex-1">
+          <div className="flex items-center gap-2 flex-wrap mb-3">
+            <span
+              className="font-black uppercase tracking-widest rounded-full text-[10px] px-2.5 py-0.5"
+              style={{ background: pillarColorAlpha(0.08), color: pillarColor }}
+            >
+              {pillar?.name || "Pilier"}
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {PHASE_LABELS[card.phase] || card.phase}
+            </span>
+          </div>
+
+          <h3 className="font-display font-black uppercase tracking-tight leading-tight text-lg mb-2 text-foreground">
+            {card.title}
+          </h3>
+
+          {card.subtitle && (
+            <p className="text-sm text-muted-foreground italic mb-2">{card.subtitle}</p>
+          )}
+
+          {card.definition && (
+            <p className="text-sm text-foreground/80 leading-relaxed mb-3 line-clamp-3">
+              {card.definition}
+            </p>
+          )}
+
+          {card.action && (
+            <div className="rounded-xl p-3 mb-3" style={{ background: pillarColorAlpha(0.04), borderLeft: `3px solid ${pillarColor}` }}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <Zap className="h-3.5 w-3.5" style={{ color: pillarColor }} />
+                <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: pillarColor }}>
+                  {card.step_name || "Action"}
+                </span>
+              </div>
+              <p className="text-sm text-foreground leading-relaxed line-clamp-2">{card.action}</p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 mt-auto pt-2 text-xs text-muted-foreground">
+            {card.valorization > 0 && (
+              <span className="flex items-center gap-1">
+                <Star className="h-3.5 w-3.5" /> {card.valorization} pts
+              </span>
+            )}
+            {card.difficulty && (
+              <Badge variant="outline" className="text-[10px]">{card.difficulty}</Badge>
+            )}
+            {card.kpi && (
+              <span className="flex items-center gap-1">
+                <BarChart3 className="h-3.5 w-3.5" /> KPI
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ─── Toolkit detail view ───
   if (selectedToolkit) {
     return (
@@ -112,36 +236,70 @@ export default function PortalToolkits() {
         {/* Main: Card browser */}
         <div className="flex-1 overflow-auto">
           <div className="p-8 space-y-6">
-            {/* Back + title */}
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedToolkitId(null)}
-                className="gap-2 text-sm"
-              >
-                <ArrowLeft className="h-4 w-4" /> Retour
-              </Button>
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">
-                  {selectedToolkit.icon_emoji || "🚀"}
+            {/* Back + title + format selector */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedToolkitId(null)}
+                  className="gap-2 text-sm"
+                >
+                  <ArrowLeft className="h-4 w-4" /> Retour
+                </Button>
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">
+                    {selectedToolkit.icon_emoji || "🚀"}
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-display font-bold tracking-tight text-foreground">
+                      {selectedToolkit.name}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                      {pillars.length} pilier{pillars.length > 1 ? "s" : ""} · {cards.length} carte{cards.length > 1 ? "s" : ""}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-display font-bold tracking-tight text-foreground">
-                    {selectedToolkit.name}
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    {pillars.length} pilier{pillars.length > 1 ? "s" : ""} · {cards.length} carte{cards.length > 1 ? "s" : ""}
-                  </p>
-                </div>
+              </div>
+
+              {/* Format selector */}
+              <div className="flex items-center gap-2">
+                <Eye className="h-4 w-4 text-muted-foreground" />
+                <Select value={cardFormat} onValueChange={(v: CardFormat) => setCardFormat(v)}>
+                  <SelectTrigger className="h-9 w-32 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="preview">Détaillée</SelectItem>
+                    <SelectItem value="game">Game</SelectItem>
+                    <SelectItem value="gamified">Gamifié</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            {/* Reuse the full ToolkitCardsBrowser from admin */}
-            <ToolkitCardsBrowser
-              cards={cards as Tables<"cards">[]}
-              pillars={pillars as Tables<"pillars">[]}
-            />
+            {/* Cards grouped by pillar */}
+            {pillars.map((pillar: any) => {
+              const pillarCards = cardsByPillar[pillar.id] || [];
+              if (pillarCards.length === 0) return null;
+              return (
+                <div key={pillar.id} className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="h-4 w-4 rounded-full shrink-0"
+                      style={{ backgroundColor: pillar.color || "hsl(var(--primary))" }}
+                    />
+                    <h3 className="text-lg font-bold text-foreground">{pillar.name}</h3>
+                    <Badge variant="outline" className="text-xs">{pillarCards.length} cartes</Badge>
+                  </div>
+                  <div className={cn(
+                    cardFormat === "game" || cardFormat === "gamified"
+                      ? "flex flex-wrap gap-5"
+                      : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+                  )}>
+                    {pillarCards.map(renderCard)}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
