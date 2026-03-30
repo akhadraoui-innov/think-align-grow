@@ -69,174 +69,140 @@ function getFirstName(profile: any, email: string | undefined): string {
   return name.split(" ")[0];
 }
 
-// ─── BRIEF: Pre-module personalized introduction ───
+// ─── BRIEF ───
 async function handleBrief(supabase: any, user: any, params: any, apiKey: string, cors: any) {
   const { module_id, path_id } = params;
-
   const [{ data: mod }, { data: path }, profile] = await Promise.all([
     supabase.from("academy_modules").select("title, description, objectives, module_type").eq("id", module_id).single(),
     path_id ? supabase.from("academy_paths").select("name, skills, aptitudes, description").eq("id", path_id).single() : { data: null },
     getProfile(supabase, user.id),
   ]);
-
   const firstName = getFirstName(profile, user.email);
-
   const systemPrompt = `Tu es un tuteur IA pédagogique professionnel et bienveillant. Tu tutoies l'apprenant et l'appelles par son prénom (${firstName}).
 Tu prépares l'apprenant à un module de formation. Sois concis (3-5 phrases max), engageant et personnalisé.
 Adapte ton discours au poste (${profile?.job_title || "collaborateur"}) et au service (${profile?.department || ""}).
 Utilise le markdown avec des emojis professionnels.`;
-
-  const userPrompt = `Module : ${mod?.title} (${mod?.module_type})
-Description : ${mod?.description}
-Objectifs : ${JSON.stringify(mod?.objectives)}
-Parcours : ${path?.name || "N/A"}
-Compétences visées : ${JSON.stringify(path?.skills || [])}
-
-Génère un brief personnalisé pour ${firstName} : pourquoi ce module est important pour lui/elle dans son rôle de ${profile?.job_title || "collaborateur"}, ce qu'il/elle va apprendre, et le lien avec les compétences du parcours.`;
-
-  const content = await callAI(apiKey, [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt },
-  ]);
-
-  return new Response(JSON.stringify({ content }), {
-    headers: { ...cors, "Content-Type": "application/json" },
-  });
+  const userPrompt = `Module : ${mod?.title} (${mod?.module_type})\nDescription : ${mod?.description}\nObjectifs : ${JSON.stringify(mod?.objectives)}\nParcours : ${path?.name || "N/A"}\nCompétences visées : ${JSON.stringify(path?.skills || [])}\n\nGénère un brief personnalisé pour ${firstName}.`;
+  const content = await callAI(apiKey, [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }]);
+  return new Response(JSON.stringify({ content }), { headers: { ...cors, "Content-Type": "application/json" } });
 }
 
-// ─── EXPLAIN: Post-quiz-answer contextual insight ───
+// ─── EXPLAIN ───
 async function handleExplain(supabase: any, user: any, _params: any, apiKey: string, cors: any) {
   const { question, user_answer, correct_answer, is_correct, module_title, explanation } = _params;
-
   const profile = await getProfile(supabase, user.id);
   const firstName = getFirstName(profile, user.email);
-
-  const systemPrompt = `Tu es un tuteur IA bienveillant. Tu tutoies ${firstName} et l'appelles par son prénom.
-Après une réponse de quiz, tu donnes un insight pédagogique enrichi en 2-3 phrases.
-Si la réponse est correcte, renforce et approfondis. Si incorrecte, explique sans juger et donne un angle nouveau.
-Adapte tes exemples au contexte professionnel de ${firstName} (${profile?.job_title || "collaborateur"}).
-Sois concis et professionnel. Utilise le markdown.`;
-
-  const userPrompt = `Module : ${module_title || ""}
-Question : ${question}
-Réponse de ${firstName} : ${user_answer}
-Bonne réponse : ${correct_answer}
-Résultat : ${is_correct ? "CORRECT" : "INCORRECT"}
-${explanation ? `Explication existante : ${explanation}` : ""}
-
-Donne un insight pédagogique enrichi (2-3 phrases) personnalisé pour ${firstName}.`;
-
-  const content = await callAI(apiKey, [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt },
-  ]);
-
-  return new Response(JSON.stringify({ content }), {
-    headers: { ...cors, "Content-Type": "application/json" },
-  });
+  const systemPrompt = `Tu es un tuteur IA bienveillant. Tu tutoies ${firstName}. Après une réponse de quiz, donne un insight pédagogique enrichi en 2-3 phrases. Adapte au contexte professionnel de ${firstName} (${profile?.job_title || "collaborateur"}). Markdown.`;
+  const userPrompt = `Module : ${module_title || ""}\nQuestion : ${question}\nRéponse de ${firstName} : ${user_answer}\nBonne réponse : ${correct_answer}\nRésultat : ${is_correct ? "CORRECT" : "INCORRECT"}\n${explanation ? `Explication existante : ${explanation}` : ""}\n\nDonne un insight pédagogique enrichi personnalisé pour ${firstName}.`;
+  const content = await callAI(apiKey, [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }]);
+  return new Response(JSON.stringify({ content }), { headers: { ...cors, "Content-Type": "application/json" } });
 }
 
-// ─── COACH: Exercise guidance ───
+// ─── COACH ───
 async function handleCoach(supabase: any, user: any, params: any, apiKey: string, cors: any) {
   const { module_id, instructions, submission, phase = "pre" } = params;
-
   const [{ data: mod }, profile] = await Promise.all([
     supabase.from("academy_modules").select("title, objectives").eq("id", module_id).single(),
     getProfile(supabase, user.id),
   ]);
-
   const firstName = getFirstName(profile, user.email);
-
   const systemPrompt = phase === "pre"
-    ? `Tu es un coach pédagogique bienveillant. Tu tutoies ${firstName}. Donne un guide méthodologique structuré et concis (5-6 points max) adapté à son rôle de ${profile?.job_title || "collaborateur"}. Sois professionnel. Markdown.`
-    : `Tu es un coach pédagogique bienveillant. Tu tutoies ${firstName}. Donne un feedback enrichi avec des questions de suivi adaptées à son contexte professionnel (${profile?.job_title || "collaborateur"}, ${profile?.department || ""}). Sois encourageant et précis. Markdown.`;
-
+    ? `Tu es un coach pédagogique bienveillant. Tu tutoies ${firstName}. Donne un guide méthodologique structuré et concis adapté à son rôle de ${profile?.job_title || "collaborateur"}. Markdown.`
+    : `Tu es un coach pédagogique bienveillant. Tu tutoies ${firstName}. Donne un feedback enrichi avec des questions de suivi. Markdown.`;
   const userPrompt = phase === "pre"
-    ? `Module : ${mod?.title}\nObjectifs : ${JSON.stringify(mod?.objectives)}\nConsignes de l'exercice : ${instructions}\n\nDonne un guide méthodologique pour aider ${firstName} à bien aborder cet exercice.`
-    : `Module : ${mod?.title}\nConsignes : ${instructions}\nSoumission de ${firstName} : ${submission}\n\nDonne un feedback enrichi avec des suggestions concrètes pour ${firstName}.`;
-
-  const content = await callAI(apiKey, [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt },
-  ]);
-
-  return new Response(JSON.stringify({ content }), {
-    headers: { ...cors, "Content-Type": "application/json" },
-  });
+    ? `Module : ${mod?.title}\nObjectifs : ${JSON.stringify(mod?.objectives)}\nConsignes : ${instructions}\n\nGuide méthodologique pour ${firstName}.`
+    : `Module : ${mod?.title}\nConsignes : ${instructions}\nSoumission de ${firstName} : ${submission}\n\nFeedback enrichi pour ${firstName}.`;
+  const content = await callAI(apiKey, [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }]);
+  return new Response(JSON.stringify({ content }), { headers: { ...cors, "Content-Type": "application/json" } });
 }
 
-// ─── DEBRIEF: Post-completion synthesis (analysis, knowledge, evaluation) ───
+// ─── DEBRIEF (module-level or path-level) ───
 async function handleDebrief(supabase: any, user: any, params: any, apiKey: string, cors: any) {
-  const { module_id, path_id, metadata, mode = "analysis" } = params;
+  const { module_id, path_id, metadata, mode = "analysis", enrollment_id } = params;
 
-  const [{ data: mod }, { data: path }, { data: contents }, profile] = await Promise.all([
+  const profile = await getProfile(supabase, user.id);
+  const firstName = getFirstName(profile, user.email);
+
+  // ─── PATH-LEVEL EVALUATION (module_id is null) ───
+  if (!module_id && path_id) {
+    const [{ data: path }, { data: allProgress }] = await Promise.all([
+      supabase.from("academy_paths").select("name, description, skills, aptitudes, professional_outcomes, difficulty, estimated_hours, academy_functions!academy_paths_function_id_fkey(name)").eq("id", path_id).single(),
+      enrollment_id
+        ? supabase.from("academy_progress").select("*, academy_modules(title, module_type)").eq("enrollment_id", enrollment_id).order("started_at")
+        : supabase.from("academy_progress").select("*, academy_modules(title, module_type)").eq("user_id", user.id).order("started_at"),
+    ]);
+
+    const modulesSummary = (allProgress || []).map((p: any) => ({
+      title: p.academy_modules?.title,
+      type: p.academy_modules?.module_type,
+      score: p.score,
+      status: p.status,
+      time_spent: p.time_spent_seconds,
+      quiz_answers: (p.metadata as any)?.quiz_answers?.length || 0,
+      exercise_submitted: !!(p.metadata as any)?.exercise_submission,
+    }));
+
+    const avgScore = modulesSummary.filter((m: any) => m.score != null).reduce((s: number, m: any) => s + m.score, 0) / (modulesSummary.filter((m: any) => m.score != null).length || 1);
+    const totalTime = modulesSummary.reduce((s: number, m: any) => s + (m.time_spent || 0), 0);
+
+    const systemPrompt = `Tu es un évaluateur pédagogique senior. Tu rédiges une évaluation finale complète et personnalisée du parcours de formation.
+Tu tutoies ${firstName} et l'appelles par son prénom. Sois bienveillant mais exigeant.
+Structure ton évaluation avec des sections Markdown riches (H2, H3), des tableaux, des callouts (💡, ⚠️, 📜, 🏆).
+Sections obligatoires :
+1. 🏆 Synthèse globale — niveau de maîtrise global, score moyen, temps total
+2. 📊 Performance par module — tableau avec titre, type, score, appréciation
+3. ✅ Compétences acquises — analyse des skills du parcours
+4. 💪 Points forts identifiés
+5. 📈 Axes d'amélioration prioritaires
+6. 🎯 Recommandations pour la suite professionnelle
+Ton corporate, professionnel et motivant. 2000 mots minimum.`;
+
+    const userPrompt = `Parcours : ${path?.name}
+Description : ${path?.description}
+Niveau : ${path?.difficulty || "Intermédiaire"}
+Durée estimée : ${path?.estimated_hours || "N/A"}h
+Fonction : ${(path as any)?.academy_functions?.name || "Tous profils"}
+Apprenant : ${firstName} — ${profile?.job_title || "Collaborateur"} (${profile?.department || ""})
+Score moyen : ${Math.round(avgScore)}%
+Temps total : ${Math.round(totalTime / 60)} minutes
+
+Compétences du parcours : ${JSON.stringify(path?.skills || [])}
+Aptitudes : ${JSON.stringify(path?.aptitudes || [])}
+Débouchés : ${JSON.stringify(path?.professional_outcomes || [])}
+
+Résultats par module :
+${modulesSummary.map((m: any, i: number) => `${i + 1}. ${m.title} (${m.type}) — Score: ${m.score ?? "N/A"}% — ${m.status} — ${Math.round((m.time_spent || 0) / 60)}min`).join("\n")}
+
+Rédige une évaluation finale complète et personnalisée pour ${firstName}.`;
+
+    const content = await callAI(apiKey, [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }], 3000);
+    return new Response(JSON.stringify({ content }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+
+  // ─── MODULE-LEVEL DEBRIEF (existing logic) ───
+  const [{ data: mod }, { data: path }, { data: contents }] = await Promise.all([
     supabase.from("academy_modules").select("title, description, objectives, module_type").eq("id", module_id).single(),
     path_id ? supabase.from("academy_paths").select("name, skills, aptitudes").eq("id", path_id).single() : { data: null },
     supabase.from("academy_contents").select("body").eq("module_id", module_id).order("sort_order").limit(5),
-    getProfile(supabase, user.id),
   ]);
 
-  const firstName = getFirstName(profile, user.email);
   const contentSummary = (contents || []).map((c: any) => c.body).join("\n").slice(0, 4000);
-
   let systemPrompt: string;
   let userPrompt: string;
 
-  const baseContext = `Module : ${mod?.title} (${mod?.module_type})
-Description : ${mod?.description}
-Objectifs : ${JSON.stringify(mod?.objectives)}
-Parcours : ${path?.name || "N/A"}
-Compétences : ${JSON.stringify(path?.skills || [])}
-Apprenant : ${firstName} — ${profile?.job_title || "Collaborateur"} (${profile?.department || ""})
-${metadata ? `Données de l'apprenant : ${JSON.stringify(metadata)}` : ""}`;
+  const baseContext = `Module : ${mod?.title} (${mod?.module_type})\nDescription : ${mod?.description}\nObjectifs : ${JSON.stringify(mod?.objectives)}\nParcours : ${path?.name || "N/A"}\nCompétences : ${JSON.stringify(path?.skills || [])}\nApprenant : ${firstName} — ${profile?.job_title || "Collaborateur"} (${profile?.department || ""})\n${metadata ? `Données : ${JSON.stringify(metadata)}` : ""}`;
 
   if (mode === "evaluation") {
-    systemPrompt = `Tu es un évaluateur pédagogique expert. Tu rédiges une évaluation globale professionnelle et personnalisée.
-Tu tutoies ${firstName} et l'appelles par son prénom. Sois bienveillant mais exigeant.
-Structure ton évaluation avec : 
-1. Note de synthèse (niveau de maîtrise global)
-2. Qualité des réponses (analyse de la pertinence)
-3. Points forts identifiés
-4. Axes d'amélioration prioritaires
-5. Recommandations pour la suite du parcours
-Utilise un ton corporate et professionnel. Markdown riche avec sections bien structurées.`;
-
-    userPrompt = `${baseContext}
-
-Rédige une évaluation globale détaillée et personnalisée de la performance de ${firstName} sur ce module.
-Analyse ses réponses, son niveau de maîtrise, la qualité de ses soumissions.
-Fais le lien avec son rôle de ${profile?.job_title || "collaborateur"} et les compétences du parcours.`;
-
+    systemPrompt = `Tu es un évaluateur pédagogique expert. Tu tutoies ${firstName}. Structure : note de synthèse, qualité des réponses, points forts, axes d'amélioration, recommandations. Markdown riche avec callouts (💡, ⚠️, 📜).`;
+    userPrompt = `${baseContext}\n\nÉvaluation globale détaillée et personnalisée de ${firstName} sur ce module.`;
   } else if (mode === "knowledge") {
-    systemPrompt = `Tu es un expert Knowledge qui synthétise les concepts clés d'un module de formation.
-Tu tutoies ${firstName}. Crée un brief de connaissances structuré : concepts clés, points à retenir, liens avec la suite du parcours.
-Adapte les exemples au contexte professionnel de ${firstName} (${profile?.job_title || "collaborateur"}).
-Markdown professionnel avec des sections claires.`;
-
-    userPrompt = `${baseContext}
-${mode === "knowledge" ? `Contenu de référence :\n${contentSummary}` : ""}
-
-Synthétise les concepts clés pour ${firstName}, les points à retenir, et prépare-le/la pour la suite du parcours.
-Donne des exemples concrets liés à son rôle.`;
-
+    systemPrompt = `Tu es un expert Knowledge. Tu tutoies ${firstName}. Concepts clés, points à retenir, liens avec la suite. Adapte au contexte professionnel. Markdown avec callouts.`;
+    userPrompt = `${baseContext}\nContenu :\n${contentSummary}\n\nSynthèse des concepts clés pour ${firstName}.`;
   } else {
-    // analysis mode
-    systemPrompt = `Tu es un analyste pédagogique expert. Tu tutoies ${firstName}.
-Analyse les résultats : patterns d'erreurs, compétences maîtrisées, axes d'amélioration, recommandations concrètes.
-Adapte ton analyse au contexte professionnel de ${firstName} (${profile?.job_title || "collaborateur"}).
-Sois professionnel et actionnable. Markdown riche.`;
-
-    userPrompt = `${baseContext}
-
-Analyse les résultats de ${firstName}, identifie les patterns, et donne des recommandations concrètes adaptées à son rôle.`;
+    systemPrompt = `Tu es un analyste pédagogique expert. Tu tutoies ${firstName}. Patterns d'erreurs, compétences maîtrisées, axes d'amélioration. Markdown riche.`;
+    userPrompt = `${baseContext}\n\nAnalyse des résultats de ${firstName} avec recommandations.`;
   }
 
-  const content = await callAI(apiKey, [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userPrompt },
-  ], mode === "evaluation" ? 2000 : 1500);
-
-  return new Response(JSON.stringify({ content }), {
-    headers: { ...cors, "Content-Type": "application/json" },
-  });
+  const content = await callAI(apiKey, [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }], mode === "evaluation" ? 2000 : 1500);
+  return new Response(JSON.stringify({ content }), { headers: { ...cors, "Content-Type": "application/json" } });
 }
