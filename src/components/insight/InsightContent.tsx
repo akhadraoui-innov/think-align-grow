@@ -6,11 +6,15 @@ import {
   Code, Palette, FileText, MessageSquare, TrendingUp,
   CheckCircle2, ArrowRight, Star, Rocket, Eye, Compass,
   Handshake, DollarSign, Clock, HeartHandshake, Building2,
-  GraduationCap, Puzzle, Globe, Repeat, ShieldCheck
+  GraduationCap, Puzzle, Globe, Repeat, ShieldCheck,
+  Briefcase, ChevronDown, UserCheck, Settings, Workflow,
+  PenTool, Cpu, ClipboardCheck, MonitorPlay, Network
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PlatformFlow } from "./PlatformFlow";
 
 interface InsightContentProps {
@@ -329,19 +333,396 @@ function PlateformeSection() {
   );
 }
 
+/* ─── Business Workflow Step ─── */
+interface BWorkflowStep {
+  title: string;
+  desc: string;
+  layer: "learner" | "ai" | "admin";
+  tools?: string[];
+  actors?: string[];
+  aiRole?: string;
+}
+
+const LAYER_BADGE: Record<string, { label: string; className: string }> = {
+  learner: { label: "Apprenant", className: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30" },
+  ai: { label: "IA", className: "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/30" },
+  admin: { label: "Admin", className: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30" },
+};
+
+const LAYER_COLORS: Record<string, string> = {
+  learner: "bg-blue-500",
+  ai: "bg-violet-500",
+  admin: "bg-orange-500",
+};
+
+function BusinessWorkflow({ icon: Icon, title, subtitle, steps }: { icon: any; title: string; subtitle: string; steps: BWorkflowStep[] }) {
+  const [expanded, setExpanded] = useState<number | null>(null);
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h4 className="font-bold text-foreground">{title}</h4>
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
+          </div>
+        </div>
+
+        {/* Horizontal flow */}
+        <div className="flex items-start gap-0 overflow-x-auto py-6 px-2">
+          {steps.map((s, i) => (
+            <div key={i} className="flex items-start shrink-0">
+              {/* Step */}
+              <button
+                onClick={() => setExpanded(expanded === i ? null : i)}
+                className={cn(
+                  "flex flex-col items-center text-center w-28 group cursor-pointer transition-all",
+                  expanded === i && "scale-105"
+                )}
+              >
+                <div className={cn(
+                  "h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-md transition-all",
+                  LAYER_COLORS[s.layer],
+                  expanded === i && "ring-4 ring-primary/20"
+                )}>
+                  {i + 1}
+                </div>
+                <p className="text-[11px] font-semibold text-foreground mt-2 leading-tight">{s.title}</p>
+                <Badge variant="outline" className={cn("text-[9px] mt-1.5 px-1.5 py-0", LAYER_BADGE[s.layer].className)}>
+                  {LAYER_BADGE[s.layer].label}
+                </Badge>
+              </button>
+              {/* Arrow */}
+              {i < steps.length - 1 && (
+                <div className="flex items-center pt-4 px-1 shrink-0">
+                  <div className="w-8 h-px bg-border" />
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/50 -ml-1" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Expanded detail */}
+        {expanded !== null && (
+          <div className="rounded-xl border bg-muted/30 p-5 animate-in fade-in-50 slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-2 mb-3">
+              <div className={cn("h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold text-white", LAYER_COLORS[steps[expanded].layer])}>
+                {expanded + 1}
+              </div>
+              <h5 className="font-bold text-sm text-foreground">{steps[expanded].title}</h5>
+              <Badge variant="outline" className={cn("text-[9px] ml-auto", LAYER_BADGE[steps[expanded].layer].className)}>
+                {LAYER_BADGE[steps[expanded].layer].label}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4">{steps[expanded].desc}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {steps[expanded].actors && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Acteurs</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {steps[expanded].actors!.map(a => <Badge key={a} variant="secondary" className="text-[10px]">{a}</Badge>)}
+                  </div>
+                </div>
+              )}
+              {steps[expanded].tools && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Outils</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {steps[expanded].tools!.map(t => <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>)}
+                  </div>
+                </div>
+              )}
+              {steps[expanded].aiRole && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Rôle de l'IA</p>
+                  <p className="text-xs text-violet-600 dark:text-violet-400 font-medium">{steps[expanded].aiRole}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ─── Domain Card (Métier tab) ─── */
+function DomainCard({ icon: Icon, title, gradient, painPoints, solutions, kpis, workflow }: {
+  icon: any; title: string; gradient: string;
+  painPoints: string[]; solutions: string[]; kpis: { value: string; label: string }[];
+  workflow: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card className="overflow-hidden transition-shadow hover:shadow-md">
+        <CollapsibleTrigger className="w-full text-left">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className={cn("h-12 w-12 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-md shrink-0", gradient)}>
+              <Icon className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-foreground">{title}</h4>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">{painPoints[0]}</p>
+            </div>
+            <ChevronDown className={cn("h-5 w-5 text-muted-foreground transition-transform shrink-0", open && "rotate-180")} />
+          </CardContent>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="px-6 pb-6 space-y-5 border-t border-border/30 pt-5">
+            {/* Pain points */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-destructive mb-2">Problématiques</p>
+              <div className="space-y-2">
+                {painPoints.map(p => (
+                  <div key={p} className="flex items-start gap-2">
+                    <Target className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
+                    <span className="text-xs text-muted-foreground">{p}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Solutions */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Solutions GROWTHINNOV</p>
+              <div className="space-y-2">
+                {solutions.map(s => (
+                  <div key={s} className="flex items-start gap-2">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                    <span className="text-xs text-foreground/80">{s}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* KPIs */}
+            <div className="grid grid-cols-3 gap-3">
+              {kpis.map(k => (
+                <div key={k.label} className="rounded-xl border bg-muted/30 p-3 text-center">
+                  <p className="text-lg font-black text-foreground">{k.value}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{k.label}</p>
+                </div>
+              ))}
+            </div>
+            {/* Workflow */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Workflow simplifié</p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {workflow.map((w, i) => (
+                  <span key={i} className="flex items-center gap-1.5">
+                    <Badge variant="secondary" className="text-[10px] font-semibold">{w}</Badge>
+                    {i < workflow.length - 1 && <ArrowRight className="h-3 w-3 text-muted-foreground/40" />}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+}
+
+/* ═══════════════ WORKFLOW DATA ═══════════════ */
+
+const BUSINESS_WORKFLOWS = [
+  {
+    icon: UserCheck,
+    title: "Flux Onboarding Apprenant",
+    subtitle: "De l'inscription à la certification",
+    steps: [
+      { title: "Inscription", desc: "L'apprenant s'inscrit et complète son profil professionnel (fonction, secteur, séniorité). L'organisation peut provisionner via SSO.", layer: "learner" as const, actors: ["Apprenant", "RH"], tools: ["SSO", "Profil"], aiRole: undefined },
+      { title: "Profil IA", desc: "L'IA analyse le profil pour personnaliser les recommandations de parcours, le niveau de difficulté et le style pédagogique.", layer: "ai" as const, actors: ["IA Tutor"], tools: ["Profil", "Fonctions"], aiRole: "Personnalisation automatique du parcours" },
+      { title: "Parcours suggéré", desc: "L'apprenant découvre les parcours recommandés basés sur sa fonction et ses objectifs. Il peut s'inscrire en un clic.", layer: "learner" as const, actors: ["Apprenant"], tools: ["Catalogue", "Enrollment"], aiRole: undefined },
+      { title: "Apprentissage", desc: "Progression module par module : leçons, quiz, exercices, pratiques IA. Chaque interaction est trackée et évaluée.", layer: "learner" as const, actors: ["Apprenant", "IA Tutor"], tools: ["Modules", "Quiz", "Exercices"], aiRole: "Feedback temps réel et brief personnalisé" },
+      { title: "Certification", desc: "Évaluation finale par compétence, génération du certificat vérifiable (QR code) et envoi du livret de cours complet par email.", layer: "ai" as const, actors: ["IA Évaluation"], tools: ["Certificat", "PDF", "Email"], aiRole: "Évaluation globale et génération du livret" },
+    ],
+  },
+  {
+    icon: Settings,
+    title: "Flux Création de Contenu",
+    subtitle: "Du brief métier à la publication",
+    steps: [
+      { title: "Brief métier", desc: "L'administrateur définit la fonction cible, les compétences visées et le contexte sectoriel. Il peut s'appuyer sur les personae existants.", layer: "admin" as const, actors: ["Admin", "Formateur"], tools: ["Fonctions", "Personae"], aiRole: undefined },
+      { title: "Génération IA", desc: "L'IA crée automatiquement le parcours complet : modules, leçons, quiz, exercices et pratiques conversationnelles.", layer: "ai" as const, actors: ["IA Génération"], tools: ["GPT", "Gemini", "Batch"], aiRole: "Génération complète du parcours en quelques minutes" },
+      { title: "Review & enrichissement", desc: "L'administrateur review, ajuste et enrichit chaque élément. Il peut régénérer individuellement chaque composant.", layer: "admin" as const, actors: ["Admin"], tools: ["Éditeur", "Preview"], aiRole: undefined },
+      { title: "Publication", desc: "Le parcours est publié et disponible pour les apprenants. Les campagnes peuvent cibler des groupes spécifiques.", layer: "admin" as const, actors: ["Admin"], tools: ["Campagnes", "Ciblage"], aiRole: undefined },
+      { title: "Analytics", desc: "Suivi temps réel de l'adoption, des scores et de la progression. Matrice de couverture compétences × fonctions.", layer: "admin" as const, actors: ["Admin", "Manager"], tools: ["Dashboard", "Observabilité"], aiRole: "Insights automatiques sur les performances" },
+    ],
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Flux Évaluation Complète",
+    subtitle: "Du quiz au certificat vérifiable",
+    steps: [
+      { title: "Quiz", desc: "QCM avec scoring automatique, feedback par question et explication IA. Les réponses sont persistées pour analyse.", layer: "learner" as const, actors: ["Apprenant"], tools: ["QCM", "Scoring"], aiRole: "Feedback et explication par question" },
+      { title: "Exercice", desc: "Production libre de l'apprenant évaluée par l'IA selon une grille de critères configurable par le formateur.", layer: "ai" as const, actors: ["Apprenant", "IA"], tools: ["Éditeur", "Grille"], aiRole: "Évaluation multicritère automatique" },
+      { title: "Pratique IA", desc: "Mise en situation conversationnelle avec évaluation multidimensionnelle (pertinence, profondeur, créativité).", layer: "ai" as const, actors: ["Apprenant", "IA Agent"], tools: ["Simulateur", "Phases"], aiRole: "Agent conversationnel + évaluation fine" },
+      { title: "Score compétences", desc: "Agrégation de tous les scores en un profil de compétences détaillé avec niveaux initial et final.", layer: "ai" as const, actors: ["IA Évaluation"], tools: ["Skills", "Radar"], aiRole: "Calcul du profil de compétences" },
+      { title: "Certificat", desc: "Génération du certificat vérifiable avec QR code, lien LinkedIn, et livret PDF envoyé par email.", layer: "ai" as const, actors: ["Système"], tools: ["QR Code", "PDF", "Email"], aiRole: "Génération et envoi automatique" },
+    ],
+  },
+  {
+    icon: MonitorPlay,
+    title: "Flux Workshop Collaboratif",
+    subtitle: "De la préparation à la synthèse IA",
+    steps: [
+      { title: "Sélection toolkit", desc: "Le facilitateur choisit un toolkit stratégique (BMC, SWOT, Value Chain...) et configure le workshop.", layer: "admin" as const, actors: ["Facilitateur"], tools: ["Toolkits", "Cartes"], aiRole: undefined },
+      { title: "Invitation", desc: "Les participants sont invités par lien ou provisionnés. Le workshop peut être temps réel ou asynchrone.", layer: "admin" as const, actors: ["Facilitateur"], tools: ["Invitations", "QR"], aiRole: undefined },
+      { title: "Canevas live", desc: "Collaboration temps réel sur le canevas : placement de cartes, sticky notes, discussions, annotations.", layer: "learner" as const, actors: ["Participants", "Facilitateur"], tools: ["Canevas", "Drag & Drop"], aiRole: "Coach IA contextuel" },
+      { title: "Scoring", desc: "Gamification : points de valorisation par carte, niveaux de difficulté, classement des contributions.", layer: "learner" as const, actors: ["Système"], tools: ["Points", "Badges"], aiRole: undefined },
+      { title: "Synthèse IA", desc: "L'IA analyse l'ensemble des contributions et génère un rapport de synthèse avec recommandations stratégiques.", layer: "ai" as const, actors: ["IA Coach"], tools: ["Analyse", "Rapport"], aiRole: "Synthèse automatique et recommandations" },
+    ],
+  },
+];
+
+const DOMAIN_CARDS = [
+  {
+    icon: GraduationCap,
+    title: "RH & Formation",
+    gradient: "from-blue-500 to-blue-700",
+    painPoints: [
+      "Les formations IA ne sont pas adaptées aux fonctions métier de l'entreprise",
+      "Impossible de mesurer l'acquisition réelle de compétences après une formation",
+      "Aucun livrable exploitable ne sort des sessions de formation traditionnelles",
+    ],
+    solutions: [
+      "Parcours adaptatifs par fonction avec IA tutor personnalisée",
+      "Évaluation granulaire par compétence avec radar et profil d'acquisition",
+      "Livret de cours PDF complet, certificat vérifiable et cartographie des skills",
+    ],
+    kpis: [
+      { value: "×3", label: "Vitesse d'upskilling" },
+      { value: "92%", label: "Taux de complétion" },
+      { value: "-70%", label: "Temps de conception" },
+    ],
+    workflow: ["Fonction cible", "Génération IA", "Parcours", "Certification", "Cartographie"],
+  },
+  {
+    icon: Briefcase,
+    title: "Consulting & Stratégie",
+    gradient: "from-orange-500 to-orange-700",
+    painPoints: [
+      "Les diagnostics stratégiques sont coûteux et dépendent de consultants externes",
+      "Pas de méthodologie reproductible pour évaluer la maturité sur un sujet",
+      "Les équipes ne savent pas passer de l'analyse à l'action concrète",
+    ],
+    solutions: [
+      "Challenges de Design Innovation avec diagnostic en autonomie et analyse IA",
+      "Évaluation de maturité structurée avec benchmark et recommandations",
+      "Plan d'action généré automatiquement avec priorisation IA",
+    ],
+    kpis: [
+      { value: "×5", label: "ROI vs consulting" },
+      { value: "48h", label: "Diagnostic complet" },
+      { value: "100%", label: "Autonomie équipe" },
+    ],
+    workflow: ["Template challenge", "Cartes stratégiques", "Maturité", "Analyse IA", "Plan d'action"],
+  },
+  {
+    icon: Lightbulb,
+    title: "Innovation & Produit",
+    gradient: "from-violet-500 to-violet-700",
+    painPoints: [
+      "Les ateliers d'idéation sont peu structurés et ne produisent pas de livrables",
+      "Le design thinking reste théorique sans outil d'application concret",
+      "L'engagement des participants chute après les premières sessions",
+    ],
+    solutions: [
+      "Workshops gamifiés avec toolkits stratégiques et canevas collaboratif temps réel",
+      "Application concrète du design thinking via les cartes et les challenges",
+      "Gamification avec points, badges et classement pour maintenir l'engagement",
+    ],
+    kpis: [
+      { value: "+85%", label: "Engagement" },
+      { value: "×4", label: "Idées actionnables" },
+      { value: "100%", label: "Traçabilité" },
+    ],
+    workflow: ["Toolkit", "Workshop live", "Ideation", "Scoring", "Synthèse IA"],
+  },
+  {
+    icon: Users,
+    title: "Management & Leadership",
+    gradient: "from-emerald-500 to-emerald-700",
+    painPoints: [
+      "Les managers manquent d'outils pour animer des ateliers stratégiques avec leurs équipes",
+      "Le feedback sur les compétences des collaborateurs est subjectif et non documenté",
+      "Pas de méthode pour accompagner la montée en compétences individualisée",
+    ],
+    solutions: [
+      "Ateliers d'équipe structurés avec le simulateur et les workshops collaboratifs",
+      "Évaluation objective par compétence avec l'IA et profils individuels",
+      "Parcours personnalisés par persona avec suivi granulaire et recommandations IA",
+    ],
+    kpis: [
+      { value: "+60%", label: "Productivité ateliers" },
+      { value: "360°", label: "Vue compétences" },
+      { value: "×2", label: "Rétention talents" },
+    ],
+    workflow: ["Profil équipe", "Parcours ciblés", "Pratique IA", "Évaluation", "Feedback"],
+  },
+];
+
 function DiscoverySection() {
   return (
     <div>
       <SectionHero
-        icon={Layers}
+        icon={Network}
         title="Discovery"
-        subtitle="Architecture interactive de la plateforme — Vue flow n8n / BPMN"
-        pain="Comprendre l'architecture d'une plateforme complexe est difficile sans une vue d'ensemble interactive qui montre les connexions entre chaque composant."
+        subtitle="Explorez la plateforme sous 3 perspectives : technique, business et métier"
+        pain="Comprendre une plateforme complexe nécessite plusieurs angles de vue : architecture technique, flux business concrets et cas d'usage par domaine métier."
       />
-      <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-        Explorez l'architecture complète de GROWTHINNOV à travers un <strong>flow interactif</strong>. Filtrez par couche logique, cliquez sur un composant pour découvrir ses fonctionnalités et naviguez entre les nœuds connectés.
-      </p>
-      <PlatformFlow />
+
+      <Tabs defaultValue="architecture" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsTrigger value="architecture" className="gap-2 text-xs sm:text-sm">
+            <Layers className="h-4 w-4" />
+            Architecture
+          </TabsTrigger>
+          <TabsTrigger value="workflows" className="gap-2 text-xs sm:text-sm">
+            <Workflow className="h-4 w-4" />
+            Workflows Business
+          </TabsTrigger>
+          <TabsTrigger value="metier" className="gap-2 text-xs sm:text-sm">
+            <Briefcase className="h-4 w-4" />
+            Cas Métier
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1 — Architecture */}
+        <TabsContent value="architecture">
+          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+            Explorez l'architecture complète de GROWTHINNOV à travers un <strong>flow interactif</strong>. Filtrez par couche logique, cliquez sur un composant pour découvrir ses fonctionnalités et naviguez entre les nœuds connectés.
+          </p>
+          <PlatformFlow />
+        </TabsContent>
+
+        {/* Tab 2 — Workflows Business */}
+        <TabsContent value="workflows">
+          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+            Découvrez les <strong>4 flux opérationnels clés</strong> de la plateforme. Cliquez sur chaque étape pour voir les acteurs, outils et le rôle de l'IA.
+          </p>
+          <div className="space-y-5">
+            {BUSINESS_WORKFLOWS.map(w => (
+              <BusinessWorkflow key={w.title} {...w} />
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* Tab 3 — Cas Métier */}
+        <TabsContent value="metier">
+          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+            Explorez les <strong>cas d'usage concrets</strong> par domaine métier. Chaque domaine présente ses problématiques, nos solutions et les KPIs d'impact.
+          </p>
+          <div className="space-y-4">
+            {DOMAIN_CARDS.map(d => (
+              <DomainCard key={d.title} {...d} />
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
