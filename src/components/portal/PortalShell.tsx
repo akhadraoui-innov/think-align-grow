@@ -35,8 +35,8 @@ export function PortalShell({ children }: PortalShellProps) {
   const isImmersive =
     /^\/portal\/module\//.test(location.pathname) ||
     /^\/portal\/pratique\/session/.test(location.pathname) ||
-    /^\/portal\/workshops\/[^/]+$/.test(location.pathname) && location.pathname !== "/portal/workshops" ||
-    /^\/portal\/challenges\/[^/]+$/.test(location.pathname) && location.pathname !== "/portal/challenges";
+    (/^\/portal\/workshops\/[^/]+$/.test(location.pathname) && location.pathname !== "/portal/workshops" && location.pathname !== "/portal/workshops/toolkits") ||
+    (/^\/portal\/challenges\/[^/]+$/.test(location.pathname) && location.pathname !== "/portal/challenges");
 
   const getActiveTab = () => {
     for (const tab of NAV_TABS) {
