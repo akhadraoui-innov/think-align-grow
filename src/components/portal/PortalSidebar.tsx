@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutGrid, Bot, GitBranch, Users, BarChart3,
-  BookOpen, Plus, PanelLeftClose, PanelLeftOpen
+  LayoutDashboard, BookOpen, Award, Sparkles, History, FileText,
+  Plus, Users, LogIn, LayoutGrid, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -9,18 +9,42 @@ import { Button } from "@/components/ui/button";
 interface PortalSidebarProps {
   open: boolean;
   onToggle: () => void;
+  activeTab: string;
 }
 
-const SIDEBAR_ITEMS = [
-  { icon: LayoutGrid, label: "Tableau de bord", path: "/portal" },
-  { icon: Bot, label: "Expériences", path: "/portal/experiences" },
-  { icon: GitBranch, label: "Marketplace", path: "/portal/marketplace" },
-  { icon: BarChart3, label: "Analytique", path: "/portal/analytics" },
-  { icon: BookOpen, label: "Bibliothèque", path: "/portal/library" },
-] as const;
+const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label: string; path: string }[] }> = {
+  "/portal": {
+    title: "Formations",
+    items: [
+      { icon: BookOpen, label: "Catalogue", path: "/portal" },
+      { icon: LayoutDashboard, label: "Mon tableau de bord", path: "/portal/dashboard" },
+      { icon: Award, label: "Certificats", path: "/portal/certificates" },
+    ],
+  },
+  "/portal/pratique": {
+    title: "Pratique",
+    items: [
+      { icon: Sparkles, label: "Catalogue", path: "/portal/pratique" },
+      { icon: History, label: "Historique", path: "/portal/pratique/history" },
+    ],
+  },
+  "/portal/workshops": {
+    title: "Workshops",
+    items: [
+      { icon: Users, label: "Mes workshops", path: "/portal/workshops" },
+    ],
+  },
+  "/portal/challenges": {
+    title: "Challenges",
+    items: [
+      { icon: LayoutGrid, label: "Mes challenges", path: "/portal/challenges" },
+    ],
+  },
+};
 
-export function PortalSidebar({ open, onToggle }: PortalSidebarProps) {
+export function PortalSidebar({ open, onToggle, activeTab }: PortalSidebarProps) {
   const location = useLocation();
+  const config = SIDEBAR_CONFIGS[activeTab] || SIDEBAR_CONFIGS["/portal"];
 
   return (
     <aside
@@ -32,15 +56,7 @@ export function PortalSidebar({ open, onToggle }: PortalSidebarProps) {
       {/* Header */}
       <div className={cn("flex items-center h-12 px-3", open ? "justify-between" : "justify-center")}>
         {open && (
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 rounded bg-accent/20 flex items-center justify-center">
-              <LayoutGrid className="h-3 w-3 text-accent" />
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold text-foreground leading-none">Training Hub</p>
-              <p className="text-[9px] text-muted-foreground mt-0.5">Global Workspace</p>
-            </div>
-          </div>
+          <p className="text-[11px] font-semibold text-foreground leading-none">{config.title}</p>
         )}
         <button
           onClick={onToggle}
@@ -52,9 +68,8 @@ export function PortalSidebar({ open, onToggle }: PortalSidebarProps) {
 
       {/* Nav items */}
       <nav className="flex-1 px-2 py-2 space-y-0.5">
-        {SIDEBAR_ITEMS.map((item) => {
-          const active = location.pathname === item.path ||
-            (item.path !== "/portal" && location.pathname.startsWith(item.path));
+        {config.items.map((item) => {
+          const active = location.pathname === item.path;
           const Icon = item.icon;
           return (
             <Link
@@ -74,21 +89,6 @@ export function PortalSidebar({ open, onToggle }: PortalSidebarProps) {
           );
         })}
       </nav>
-
-      {/* New Formation button */}
-      <div className="p-2 border-t border-border/30">
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn(
-            "w-full gap-1.5 text-xs h-8",
-            !open && "px-0"
-          )}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          {open && "New Formation"}
-        </Button>
-      </div>
     </aside>
   );
 }

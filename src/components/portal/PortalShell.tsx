@@ -18,10 +18,10 @@ interface PortalShellProps {
 }
 
 const NAV_TABS = [
-  { label: "Formations", path: "/portal" },
-  { label: "Expériences", path: "/portal/experiences" },
-  { label: "Marketplace", path: "/portal/marketplace" },
-  { label: "HEEP IA", path: "/portal/ai" },
+  { label: "Formations", path: "/portal", matchPrefix: "/portal/dashboard,/portal/path,/portal/module,/portal/certificates" },
+  { label: "Pratique", path: "/portal/pratique", matchPrefix: "/portal/pratique" },
+  { label: "Workshops", path: "/portal/workshops", matchPrefix: "/portal/workshops" },
+  { label: "Challenges", path: "/portal/challenges", matchPrefix: "/portal/challenges" },
 ] as const;
 
 export function PortalShell({ children }: PortalShellProps) {
@@ -32,16 +32,35 @@ export function PortalShell({ children }: PortalShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const isTraining = location.pathname.startsWith("/portal/training/");
+  // Detect immersive pages (module, session, workshop room, challenge room)
+  const isImmersive =
+    /^\/portal\/module\//.test(location.pathname) ||
+    /^\/portal\/pratique\/session/.test(location.pathname) ||
+    /^\/portal\/workshops\/[^/]+$/.test(location.pathname) && location.pathname !== "/portal/workshops" ||
+    /^\/portal\/challenges\/[^/]+$/.test(location.pathname) && location.pathname !== "/portal/challenges";
+
+  const getActiveTab = () => {
+    for (const tab of NAV_TABS) {
+      if (tab.path === "/portal") {
+        const prefixes = tab.matchPrefix.split(",");
+        if (location.pathname === "/portal" || prefixes.some(p => location.pathname.startsWith(p))) return tab.path;
+      } else if (location.pathname.startsWith(tab.path)) {
+        return tab.path;
+      }
+    }
+    return "/portal";
+  };
+
+  const activeTab = getActiveTab();
 
   return (
-    <div className="min-h-screen flex flex-col bg-background font-sans">
+    <div className="portal min-h-screen flex flex-col bg-background font-sans">
       {/* ── Top Nav ── */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-xl">
         <div className="flex items-center h-14 px-4 gap-3">
           {/* Logo */}
           <Link to="/portal" className="flex items-center gap-2 mr-2 shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-gradient-hero flex items-center justify-center">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-sm font-black text-primary-foreground tracking-tight">H</span>
             </div>
             <span className="text-base font-bold tracking-tight text-foreground hidden sm:block">
@@ -52,9 +71,7 @@ export function PortalShell({ children }: PortalShellProps) {
           {/* Desktop tabs */}
           <nav className="hidden md:flex items-center gap-1 ml-2">
             {NAV_TABS.map((tab) => {
-              const active = tab.path === "/portal"
-                ? location.pathname === "/portal"
-                : location.pathname.startsWith(tab.path);
+              const active = activeTab === tab.path;
               return (
                 <Link
                   key={tab.path}
@@ -93,19 +110,11 @@ export function PortalShell({ children }: PortalShellProps) {
           </button>
 
           {/* Help */}
-          <button className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors hidden sm:flex">
+          <button className="h-8 w-8 rounded-lg items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors hidden sm:flex">
             <HelpCircle className="h-4 w-4" />
           </button>
 
-          {/* Settings */}
-          <Link
-            to="/portal/settings"
-            className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors hidden sm:flex"
-          >
-            <Settings className="h-4 w-4" />
-          </Link>
-
-          {/* Cabinet link (admin/staff) */}
+          {/* Cabinet link */}
           <Link
             to="/explore"
             className="hidden lg:flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors ml-1"
@@ -128,9 +137,7 @@ export function PortalShell({ children }: PortalShellProps) {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border/30 px-4 py-2 flex flex-col gap-1 bg-background">
             {NAV_TABS.map((tab) => {
-              const active = tab.path === "/portal"
-                ? location.pathname === "/portal"
-                : location.pathname.startsWith(tab.path);
+              const active = activeTab === tab.path;
               return (
                 <Link
                   key={tab.path}
@@ -152,10 +159,11 @@ export function PortalShell({ children }: PortalShellProps) {
       {/* ── Body: Sidebar + Content ── */}
       <div className="flex flex-1 min-h-0">
         {/* Left Sidebar */}
-        {!isTraining && (
+        {!isImmersive && (
           <PortalSidebar
             open={sidebarOpen}
             onToggle={() => setSidebarOpen(!sidebarOpen)}
+            activeTab={activeTab}
           />
         )}
 
@@ -165,8 +173,8 @@ export function PortalShell({ children }: PortalShellProps) {
         </main>
       </div>
 
-      {/* Bottom bar (training mode) */}
-      {isTraining && <PortalBottomBar />}
+      {/* Bottom bar (immersive mode) */}
+      {isImmersive && <PortalBottomBar />}
 
       {/* Floating AI Widget */}
       <HeepAIWidget />
