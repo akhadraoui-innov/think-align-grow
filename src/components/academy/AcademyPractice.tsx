@@ -298,7 +298,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
         const evalResult = parseEvaluationFromContent(assistantContent);
         if (evalResult) {
           setEvaluation(evalResult);
-          onComplete?.(evalResult.score);
+          onComplete?.(evalResult.score, { practice_session_id: sessionId });
           const cleanedContent = assistantContent.replace(/```evaluation\s*\n?[\s\S]*?```/, "").trim();
           setMessages(prev => {
             const last = prev[prev.length - 1];
