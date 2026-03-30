@@ -140,6 +140,21 @@ Inclus au minimum 1 quiz et 1 exercice dans le parcours.`;
         type: "object",
         properties: {
           estimated_hours: { type: "number", description: "Total estimated hours" },
+          skills: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                category: { type: "string", enum: ["technique", "transversale", "métier"] },
+                level: { type: "number", description: "1-5" },
+              },
+              required: ["name", "category", "level"],
+            },
+          },
+          prerequisites: { type: "array", items: { type: "string" } },
+          aptitudes: { type: "array", items: { type: "string" } },
+          professional_outcomes: { type: "array", items: { type: "string" } },
           modules: {
             type: "array",
             items: {
@@ -155,7 +170,7 @@ Inclus au minimum 1 quiz et 1 exercice dans le parcours.`;
             },
           },
         },
-        required: ["estimated_hours", "modules"],
+        required: ["estimated_hours", "modules", "skills", "prerequisites", "aptitudes", "professional_outcomes"],
       },
     },
   }];
