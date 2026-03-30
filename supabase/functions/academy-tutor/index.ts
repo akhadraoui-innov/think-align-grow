@@ -118,7 +118,7 @@ async function handleCoach(supabase: any, user: any, params: any, apiKey: string
 
 // ─── DEBRIEF (module-level or path-level) ───
 async function handleDebrief(supabase: any, user: any, params: any, apiKey: string, cors: any) {
-  const { module_id, path_id, metadata, mode = "analysis", enrollment_id } = params;
+  const { module_id, path_id, metadata, mode = "analysis", enrollment_id, persist } = params;
 
   const profile = await getProfile(supabase, user.id);
   const firstName = getFirstName(profile, user.email);
