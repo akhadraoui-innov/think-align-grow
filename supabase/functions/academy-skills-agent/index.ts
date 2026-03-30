@@ -272,6 +272,9 @@ DÉBOUCHÉS : ${Array.isArray(path?.professional_outcomes) ? path.professional_o
 CONTENU DE RÉFÉRENCE :
 ${contentSummary}
 
+RÉSULTATS DE L'APPRENANT :
+${learnerContext || "Pas encore de résultats disponibles."}
+
 INSTRUCTIONS :
 - Tu es un expert du domaine, pas un simple chatbot
 - Réponds de manière précise, professionnelle et approfondie
