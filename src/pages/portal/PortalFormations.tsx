@@ -397,7 +397,7 @@ export default function PortalFormations() {
                       "cursor-pointer hover:shadow-md transition-all group",
                       isEnrolled && "ring-1 ring-primary/20"
                     )}
-                    onClick={() => navigate(`/academy/path/${path.id}`)}
+                    onClick={() => navigate(`/portal/path/${path.id}`)}
                   >
                     <CardContent className="p-4 space-y-2.5">
                       <div className="flex items-center gap-2">

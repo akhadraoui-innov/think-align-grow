@@ -491,7 +491,7 @@ export default function PortalExperiences() {
                                   {session.completed_at ? (
                                     <Button
                                       variant="ghost" size="sm"
-                                      onClick={() => navigate(`/simulator/session/${session.id}/report`)}
+                                      onClick={() => navigate(`/portal/pratique/session/${session.id}/report`)}
                                       className="gap-1 text-[10px] shrink-0 opacity-60 group-hover/row:opacity-100"
                                     >
                                       <FileTextIcon className="h-3 w-3" /> Rapport
