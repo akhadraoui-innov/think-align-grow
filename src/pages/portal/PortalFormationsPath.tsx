@@ -1,7 +1,7 @@
 // Portal wrapper for AcademyPath — same logic, portal navigation
 import { useParams, useNavigate } from "react-router-dom";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { ArrowLeft, BookOpen, Clock, GraduationCap, HelpCircle, FileText, MessageSquare, Lock, CheckCircle2, PlayCircle, Target, Users, Award, ChevronDown } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock, GraduationCap, HelpCircle, FileText, MessageSquare, Lock, CheckCircle2, PlayCircle, Target, Users, Award, ChevronDown, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -91,7 +91,16 @@ export default function PortalFormationsPath() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm"><span className="font-medium">Progression</span><span className="text-muted-foreground">{completedCount}/{totalModules} · {progressPct}%</span></div>
                 <Progress value={progressPct} className="h-3" />
-                {progressPct === 100 && <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center gap-2 text-sm text-emerald-600 font-medium"><Award className="h-5 w-5" /> Parcours terminé ! 🎉</motion.div>}
+                {progressPct === 100 && (
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center gap-3">
+                    <span className="flex items-center gap-2 text-sm text-emerald-600 font-medium"><Award className="h-5 w-5" /> Parcours terminé ! 🎉</span>
+                    {path.certificate_enabled && (
+                      <Button size="sm" variant="outline" onClick={() => navigate("/portal/certificates")} className="gap-2 border-amber-500/30 text-amber-600 hover:bg-amber-500/5">
+                        <Trophy className="h-4 w-4" /> Mon certificat
+                      </Button>
+                    )}
+                  </motion.div>
+                )}
                 {progressPct < 100 && firstIncomplete && <Button size="sm" onClick={() => navigate(`/portal/module/${firstIncomplete.module_id}?pathId=${id}`)} className="gap-2"><PlayCircle className="h-4 w-4" /> Continuer</Button>}
               </div>
             )}

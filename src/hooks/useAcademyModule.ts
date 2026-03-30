@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useMemo, useEffect, useCallback, useRef } from "react";
+import { useMemo, useEffect, useCallback, useRef, useState } from "react";
 
 export function useAcademyModule(moduleId: string | undefined, pathId: string | null) {
   const { user } = useAuth();
@@ -114,6 +114,8 @@ export function useAcademyModule(moduleId: string | undefined, pathId: string | 
     });
   }, [currentIndex, pathModules, nextModule, prevModule, qc]);
 
+  const [certificateJustIssued, setCertificateJustIssued] = useState(false);
+
   const saveProgress = useCallback(async (score: number | null, status: string = "completed") => {
     if (!enrollment || !moduleId || !user) return;
     const timeSpent = Math.round((Date.now() - startTimeRef.current) / 1000);
@@ -132,10 +134,73 @@ export function useAcademyModule(moduleId: string | undefined, pathId: string | 
     } else {
       await supabase.from("academy_progress").insert(payload);
     }
+
+    // Auto-certification: check if path is now fully completed
+    if (status === "completed" && pathData?.certificate_enabled && pathModules.length > 0) {
+      const newCompleted = completedCount + (isCompleted ? 0 : 1);
+      if (newCompleted >= pathModules.length) {
+        // Check no certificate exists yet
+        const { data: existingCert } = await supabase
+          .from("academy_certificates")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("path_id", pathId!)
+          .maybeSingle();
+        if (!existingCert) {
+          // Calculate average score
+          const allScores = allProgress
+            .filter((p: any) => p.module_id !== moduleId && p.score != null)
+            .map((p: any) => p.score as number);
+          if (score != null) allScores.push(score);
+          const avgScore = allScores.length > 0 ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length) : 0;
+          const totalTime = allProgress.reduce((s: number, p: any) => s + (p.time_spent_seconds || 0), 0) + timeSpent;
+
+          // Build modules detail
+          const modulesDetail = pathModules.map((pm: any) => {
+            const mod = pm.academy_modules;
+            const prog = pm.module_id === moduleId
+              ? { score, time_spent_seconds: timeSpent }
+              : allProgress.find((p: any) => p.module_id === pm.module_id);
+            return {
+              title: mod?.title || "",
+              type: mod?.module_type || "",
+              score: (prog as any)?.score || 0,
+              time_minutes: Math.round(((prog as any)?.time_spent_seconds || 0) / 60),
+            };
+          });
+
+          await supabase.from("academy_certificates").insert({
+            user_id: user.id,
+            path_id: pathId!,
+            enrollment_id: enrollment.id,
+            certificate_data: {
+              score: avgScore,
+              total_time_hours: Math.round(totalTime / 3600 * 10) / 10,
+              modules_completed: pathModules.length,
+              modules_total: pathModules.length,
+              holder_name: user.email?.split("@")[0] || "Apprenant",
+              path_name: pathData?.name || "",
+              modules_detail: modulesDetail,
+              issued_by: "GROWTHINNOV",
+            },
+          });
+
+          // Update enrollment status
+          await supabase.from("academy_enrollments").update({
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          }).eq("id", enrollment.id);
+
+          setCertificateJustIssued(true);
+        }
+      }
+    }
+
     qc.invalidateQueries({ queryKey: ["academy-module-progress"] });
     qc.invalidateQueries({ queryKey: ["academy-progress"] });
     qc.invalidateQueries({ queryKey: ["academy-all-progress-sidebar"] });
-  }, [enrollment, moduleId, user, currentProgress, qc]);
+    qc.invalidateQueries({ queryKey: ["user-certificates"] });
+  }, [enrollment, moduleId, user, currentProgress, qc, pathData, pathModules, completedCount, isCompleted, allProgress, pathId]);
 
   const getModuleStatus = useCallback((modId: string, idx: number) => {
     const p = progressMap.get(modId) as any;
@@ -155,6 +220,6 @@ export function useAcademyModule(moduleId: string | undefined, pathId: string | 
     enrollment, currentProgress, allProgress, progressMap,
     currentIndex, nextModule, prevModule,
     completedCount, progressPct, isCompleted, totalTimeSpent,
-    saveProgress, getModuleStatus,
+    saveProgress, getModuleStatus, certificateJustIssued,
   };
 }

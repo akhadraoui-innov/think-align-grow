@@ -5,7 +5,7 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import {
   ArrowLeft, BookOpen, HelpCircle, FileText, MessageSquare, CheckCircle2,
   Check, ChevronLeft, ChevronRight, Lock, Menu, GraduationCap,
-  Clock, Trophy, Sparkles, PartyPopper, ArrowRight,
+  Clock, Trophy, Sparkles, PartyPopper, ArrowRight, Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,7 +28,7 @@ import { useAcademyModule } from "@/hooks/useAcademyModule";
 const moduleTypeIcons: Record<string, any> = { lesson: BookOpen, quiz: HelpCircle, exercise: FileText, practice: MessageSquare };
 const moduleTypeLabels: Record<string, string> = { lesson: "Leçon", quiz: "Quiz", exercise: "Exercice", practice: "Pratique IA" };
 
-function PathCompletionCelebration({ pathName, onContinue }: { pathName: string; onContinue: () => void }) {
+function PathCompletionCelebration({ pathName, onContinue, onViewCertificate, hasCertificate }: { pathName: string; onContinue: () => void; onViewCertificate?: () => void; hasCertificate?: boolean }) {
   const colors = ["hsl(var(--primary))", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"];
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
@@ -41,8 +41,20 @@ function PathCompletionCelebration({ pathName, onContinue }: { pathName: string;
         <motion.div animate={{ rotate: [0,-10,10,-5,5,0] }} transition={{ delay: 0.6, duration: 0.6 }}>
           <div className="flex h-24 w-24 mx-auto items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 shadow-2xl shadow-amber-500/30"><Trophy className="h-12 w-12 text-white" /></div>
         </motion.div>
-        <div className="space-y-2"><h2 className="text-3xl font-display font-bold">Félicitations ! 🎉</h2><p className="text-muted-foreground text-lg">Vous avez terminé le parcours</p><p className="text-xl font-semibold text-primary">{pathName}</p></div>
-        <Button size="lg" onClick={onContinue} className="gap-2 shadow-lg"><PartyPopper className="h-5 w-5" /> Voir le parcours</Button>
+        <div className="space-y-2">
+          <h2 className="text-3xl font-display font-bold">Félicitations ! 🎉</h2>
+          <p className="text-muted-foreground text-lg">Vous avez terminé le parcours</p>
+          <p className="text-xl font-semibold text-primary">{pathName}</p>
+          {hasCertificate && <p className="text-sm text-amber-600 font-medium">🏆 Votre certificat a été généré !</p>}
+        </div>
+        <div className="flex items-center justify-center gap-3">
+          {hasCertificate && onViewCertificate && (
+            <Button size="lg" variant="outline" onClick={onViewCertificate} className="gap-2 border-amber-500/30 text-amber-600 hover:bg-amber-500/5">
+              <Award className="h-5 w-5" /> Voir mon certificat
+            </Button>
+          )}
+          <Button size="lg" onClick={onContinue} className="gap-2 shadow-lg"><PartyPopper className="h-5 w-5" /> Voir le parcours</Button>
+        </div>
       </motion.div>
     </motion.div>
   );
@@ -59,7 +71,7 @@ export default function PortalFormationsModule() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
-  const { module, isLoading, contents, pathData, pathModules, enrollment, currentProgress, progressMap, currentIndex, nextModule, prevModule, completedCount, progressPct, isCompleted, totalTimeSpent, saveProgress, getModuleStatus } = useAcademyModule(id, pathId);
+  const { module, isLoading, contents, pathData, pathModules, enrollment, currentProgress, progressMap, currentIndex, nextModule, prevModule, completedCount, progressPct, isCompleted, totalTimeSpent, saveProgress, getModuleStatus, certificateJustIssued } = useAcademyModule(id, pathId);
   const isPractice = module?.module_type === "practice";
 
   const handleMarkComplete = async () => {
@@ -170,7 +182,7 @@ export default function PortalFormationsModule() {
 
   return (
     <PageTransition>
-      <AnimatePresence>{showCelebration && <PathCompletionCelebration pathName={pathData?.name || "ce parcours"} onContinue={() => { setShowCelebration(false); if (pathId) navigate(`/portal/path/${pathId}`); }} />}</AnimatePresence>
+      <AnimatePresence>{showCelebration && <PathCompletionCelebration pathName={pathData?.name || "ce parcours"} hasCertificate={certificateJustIssued || (pathData?.certificate_enabled && progressPct === 100)} onViewCertificate={() => { setShowCelebration(false); navigate("/portal/certificates"); }} onContinue={() => { setShowCelebration(false); if (pathId) navigate(`/portal/path/${pathId}`); }} />}</AnimatePresence>
       <div className="flex h-screen overflow-hidden">
         {pathModules.length > 0 && !isMobile && <AnimatePresence initial={false}>{sidebarOpen && <motion.aside initial={{ width: 0, opacity: 0 }} animate={{ width: 288, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="border-r border-border/50 overflow-hidden shrink-0"><div className="w-[288px] h-full">{sidebarContent}</div></motion.aside>}</AnimatePresence>}
         {pathModules.length > 0 && isMobile && <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}><SheetContent side="left" className="w-[300px] p-0">{sidebarContent}</SheetContent></Sheet>}
