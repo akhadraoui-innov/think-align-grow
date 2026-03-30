@@ -121,8 +121,9 @@ function AnimatedRoutes() {
           <Route path="/admin/simulator" element={<AdminSimulator />} />
           <Route path="/admin/simulator/templates" element={<AdminSimulatorTemplates />} />
           {/* Portal routes */}
-          <Route path="/portal" element={<PortalMarketplace />} />
-          <Route path="/portal/workspace" element={<PortalWorkspace />} />
+          <Route path="/portal" element={<PortalFormations />} />
+          <Route path="/portal/experiences" element={<PortalExperiences />} />
+          <Route path="/portal/marketplace" element={<PortalMarketplace />} />
           <Route path="/portal/library" element={<PortalLibrary />} />
           <Route path="/portal/analytics" element={<PortalAnalytics />} />
           <Route path="*" element={<NotFound />} />
