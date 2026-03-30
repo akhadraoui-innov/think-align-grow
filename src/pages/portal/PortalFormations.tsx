@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
-  GraduationCap, BookOpen, Clock, ChevronRight, Search, ArrowRight
+  GraduationCap, BookOpen, Clock, Search, ArrowRight
 } from "lucide-react";
 
 const difficultyConfig: Record<string, { label: string; color: string; border: string }> = {
@@ -26,7 +26,6 @@ export default function PortalFormations() {
   const [search, setSearch] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState<string | null>(null);
 
-  // Enrolled path IDs for "Inscrit" badge
   const { data: enrolledIds = new Set<string>() } = useQuery({
     queryKey: ["portal-enrolled-ids", user?.id],
     enabled: !!user,
@@ -39,7 +38,6 @@ export default function PortalFormations() {
     },
   });
 
-  // Catalogue
   const { data: catalog = [], isLoading } = useQuery({
     queryKey: ["portal-catalog"],
     queryFn: async () => {
@@ -73,31 +71,31 @@ export default function PortalFormations() {
   });
 
   return (
-    <div className="p-6 max-w-6xl space-y-6">
+    <div className="p-8 max-w-7xl space-y-8">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-display font-bold tracking-tight text-foreground">Catalogue des formations</h1>
-        <p className="text-sm text-muted-foreground">Découvrez et inscrivez-vous aux parcours disponibles</p>
+      <div className="space-y-2">
+        <h1 className="text-3xl font-display font-bold tracking-tight text-foreground">Catalogue des formations</h1>
+        <p className="text-base text-muted-foreground">Découvrez et inscrivez-vous aux parcours disponibles</p>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher un parcours..."
-            className="pl-10 h-10"
+            className="pl-11 h-12 text-base"
           />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
           {(["beginner", "intermediate", "advanced"] as const).map(d => (
             <Button
               key={d}
               variant={filterDifficulty === d ? "default" : "outline"}
-              size="sm"
-              className="text-xs h-8 px-3"
+              size="default"
+              className="text-sm h-10 px-5"
               onClick={() => setFilterDifficulty(filterDifficulty === d ? null : d)}
             >
               {difficultyConfig[d].label}
@@ -107,18 +105,18 @@ export default function PortalFormations() {
       </div>
 
       {/* Results count */}
-      <p className="text-xs text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         {filtered.length} parcours disponible{filtered.length > 1 ? "s" : ""}
         {filterDifficulty && ` · filtre: ${difficultyConfig[filterDifficulty]?.label}`}
       </p>
 
       {/* Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-52 rounded-xl" />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-64 rounded-xl" />)}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((path: any, idx: number) => {
             const diff = difficultyConfig[path.difficulty] || difficultyConfig.intermediate;
             const modCount = (catalogModuleCounts as Record<string, number>)[path.id] || 0;
@@ -141,52 +139,52 @@ export default function PortalFormations() {
                   )}
                   onClick={() => navigate(`/portal/path/${path.id}`)}
                 >
-                  <CardContent className="p-5 space-y-3">
-                    {/* Top row: difficulty + enrolled */}
+                  <CardContent className="p-6 space-y-4">
+                    {/* Top row */}
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={cn("text-[10px]", diff.color)}>{diff.label}</Badge>
-                      {isEnrolled && <Badge className="text-[10px] bg-primary/10 text-primary border-0">Inscrit</Badge>}
+                      <Badge variant="outline" className={cn("text-xs px-3 py-0.5", diff.color)}>{diff.label}</Badge>
+                      {isEnrolled && <Badge className="text-xs bg-primary/10 text-primary border-0 px-3 py-0.5">Inscrit</Badge>}
                     </div>
 
                     {/* Title */}
-                    <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
+                    <p className="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
                       {path.name}
                     </p>
 
                     {/* Description */}
-                    <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">{path.description}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">{path.description}</p>
 
                     {/* Function / Persona tags */}
                     {((path as any).academy_functions || (path as any).academy_personae || tags.length > 0) && (
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1.5">
                         {(path as any).academy_functions && (
-                          <Badge variant="secondary" className="text-[9px]">{(path as any).academy_functions.name}</Badge>
+                          <Badge variant="secondary" className="text-xs">{(path as any).academy_functions.name}</Badge>
                         )}
                         {(path as any).academy_personae && (
-                          <Badge variant="outline" className="text-[9px]">{(path as any).academy_personae.name}</Badge>
+                          <Badge variant="outline" className="text-xs">{(path as any).academy_personae.name}</Badge>
                         )}
                         {tags.slice(0, 2).map((t: string) => (
-                          <Badge key={t} variant="outline" className="text-[9px] text-muted-foreground">{t}</Badge>
+                          <Badge key={t} variant="outline" className="text-xs text-muted-foreground">{t}</Badge>
                         ))}
                       </div>
                     )}
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                    <div className="flex items-center justify-between pt-3 border-t border-border/50">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         {modCount > 0 && (
-                          <span className="flex items-center gap-1">
-                            <BookOpen className="h-3 w-3" /> {modCount} module{modCount > 1 ? "s" : ""}
+                          <span className="flex items-center gap-1.5">
+                            <BookOpen className="h-4 w-4" /> {modCount} module{modCount > 1 ? "s" : ""}
                           </span>
                         )}
                         {Number(path.estimated_hours) > 0 && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" /> {path.estimated_hours}h
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4" /> {path.estimated_hours}h
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] font-semibold text-primary flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        Voir <ArrowRight className="h-3 w-3" />
+                      <span className="text-sm font-semibold text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        Voir <ArrowRight className="h-4 w-4" />
                       </span>
                     </div>
                   </CardContent>
@@ -198,10 +196,10 @@ export default function PortalFormations() {
       )}
 
       {!isLoading && filtered.length === 0 && (
-        <div className="text-center py-16 text-muted-foreground">
-          <GraduationCap className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="text-sm font-medium">Aucun parcours trouvé</p>
-          <p className="text-xs mt-1">Essayez de modifier vos filtres</p>
+        <div className="text-center py-20 text-muted-foreground">
+          <GraduationCap className="h-14 w-14 mx-auto mb-4 opacity-30" />
+          <p className="text-lg font-medium">Aucun parcours trouvé</p>
+          <p className="text-sm mt-2">Essayez de modifier vos filtres</p>
         </div>
       )}
     </div>
