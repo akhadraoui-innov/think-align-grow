@@ -31,7 +31,7 @@ const moduleTypeLabels: Record<string, string> = {
 };
 
 // ── Confetti for path completion ──
-function PathCompletionCelebration({ pathName, onContinue }: { pathName: string; onContinue: () => void }) {
+function PathCompletionCelebration({ pathName, onContinue, onViewCertificate, hasCertificate }: { pathName: string; onContinue: () => void; onViewCertificate?: () => void; hasCertificate?: boolean }) {
   const colors = ["hsl(var(--primary))", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4"];
   return (
     <motion.div
@@ -39,7 +39,6 @@ function PathCompletionCelebration({ pathName, onContinue }: { pathName: string;
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
     >
-      {/* Confetti particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {Array.from({ length: 40 }).map((_, i) => (
           <motion.div
@@ -83,8 +82,16 @@ function PathCompletionCelebration({ pathName, onContinue }: { pathName: string;
             Vous avez terminé le parcours
           </p>
           <p className="text-xl font-semibold text-primary">{pathName}</p>
+          {hasCertificate && (
+            <p className="text-sm text-amber-600 font-medium">🏆 Votre certificat a été généré !</p>
+          )}
         </div>
         <div className="flex items-center justify-center gap-3">
+          {hasCertificate && onViewCertificate && (
+            <Button size="lg" variant="outline" onClick={onViewCertificate} className="gap-2 border-amber-500/30 text-amber-600 hover:bg-amber-500/5">
+              <Award className="h-5 w-5" /> Voir mon certificat
+            </Button>
+          )}
           <Button size="lg" onClick={onContinue} className="gap-2 shadow-lg">
             <PartyPopper className="h-5 w-5" /> Voir le parcours
           </Button>
