@@ -105,6 +105,7 @@ async function generatePath(supabase: any, userId: string, params: any, apiKey: 
 Tu conçois des parcours de formation structurés, progressifs et orientés compétences.
 Chaque module doit avoir un objectif clair, des compétences visées, et une durée réaliste.
 Les modules doivent couvrir : introduction/contexte, concepts clés, application pratique, évaluation, synthèse.
+Tu génères également le référentiel de compétences, prérequis, aptitudes et débouchés professionnels du parcours.
 Réponds UNIQUEMENT via l'outil fourni.`;
 
   const userPrompt = `Crée un parcours de formation complet avec ${module_count} modules.
@@ -120,6 +121,12 @@ Pour chaque module, définis :
 - Le type de module (lesson, quiz, exercise, ou practice)
 - Les objectifs pédagogiques (2-4 par module)
 - La durée estimée en minutes (réaliste)
+
+Génère également :
+- skills : 4-8 compétences développées (nom, catégorie parmi technique/transversale/métier, niveau de 1 à 5)
+- prerequisites : 2-5 prérequis textuels
+- aptitudes : 3-6 aptitudes professionnelles développées
+- professional_outcomes : 2-4 débouchés professionnels concrets
 
 Assure une progression logique du plus simple au plus complexe.
 Inclus au minimum 1 quiz et 1 exercice dans le parcours.`;
