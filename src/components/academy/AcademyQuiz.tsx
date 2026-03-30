@@ -156,6 +156,8 @@ export function AcademyQuiz({ moduleId, enrollmentId, onComplete }: AcademyQuizP
   const [timerActive, setTimerActive] = useState(true);
   const [totalXP, setTotalXP] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+  const answersRef = useRef<any[]>([]);
+  const questionStartRef = useRef(Date.now());
 
   const { data: quiz } = useQuery({
     queryKey: ["academy-quiz", moduleId],
