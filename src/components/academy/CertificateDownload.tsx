@@ -16,6 +16,7 @@ interface CertificateDownloadProps {
   modulesDetail?: { title: string; type: string; score: number; time_minutes: number }[];
   skills?: { name: string; category: string; level: number }[];
   aptitudes?: string[];
+  professionalOutcomes?: string[];
   pathDescription?: string;
 }
 
@@ -234,7 +235,7 @@ export function CertificateDownload(props: CertificateDownloadProps) {
         pdf.setFontSize(14);
         pdf.setTextColor(255, 255, 255);
         pdf.setFont("helvetica", "bold");
-        pdf.text("RELEVÉ DE NOTES", W2 - 20, 24, { align: "right" });
+        pdf.text("ÉVALUATION DÉTAILLÉE", W2 - 20, 24, { align: "right" });
 
         // Info block
         let y = 50;
@@ -483,30 +484,105 @@ export function CertificateDownload(props: CertificateDownloadProps) {
           });
         }
 
-        // Module scores summary
-        if (props.modulesDetail && props.modulesDetail.length > 0) {
+        // Professional Outcomes
+        if (props.professionalOutcomes && props.professionalOutcomes.length > 0) {
           y3 += 8;
-          if (y3 < H3 - 60) {
+          if (y3 < H3 - 80) {
             pdf.setFontSize(10);
             pdf.setTextColor(50, 50, 50);
             pdf.setFont("helvetica", "bold");
-            pdf.text("SCORES PAR MODULE", 20, y3);
+            pdf.text("DÉBOUCHÉS PROFESSIONNELS", 20, y3);
             y3 += 6;
 
-            props.modulesDetail.forEach((mod) => {
-              if (y3 > H3 - 50) return;
-              pdf.setFontSize(7);
+            props.professionalOutcomes.forEach((outcome) => {
+              if (y3 > H3 - 70) return;
+              pdf.setFontSize(7.5);
               pdf.setFont("helvetica", "normal");
-              pdf.setTextColor(50, 50, 50);
-              const title = mod.title.length > 45 ? mod.title.slice(0, 42) + "…" : mod.title;
-              pdf.text(title, 22, y3);
-              const sc = mod.score >= 90 ? [34, 139, 34] : mod.score >= 70 ? [200, 150, 30] : [200, 50, 50];
-              pdf.setTextColor(sc[0], sc[1], sc[2]);
-              pdf.setFont("helvetica", "bold");
-              pdf.text(`${mod.score}%`, 160, y3);
+              pdf.setTextColor(60, 60, 60);
+              pdf.text(`→ ${outcome.slice(0, 80)}`, 22, y3);
               y3 += 5.5;
             });
           }
+        }
+
+        // Evaluation modalities
+        y3 += 8;
+        if (y3 < H3 - 70) {
+          pdf.setFontSize(10);
+          pdf.setTextColor(50, 50, 50);
+          pdf.setFont("helvetica", "bold");
+          pdf.text("MODALITÉS D'ÉVALUATION", 20, y3);
+          y3 += 6;
+
+          const modalities = [
+            `Évaluations : quiz, exercices pratiques et mises en situation professionnelle`,
+            `Seuil de certification : ${props.score >= 70 ? "atteint" : "non atteint"} (score obtenu : ${props.score}%)`,
+            `${props.modulesCompleted} modules validés sur un parcours de ${props.totalTimeHours} heures`,
+          ];
+          modalities.forEach(m => {
+            if (y3 > H3 - 60) return;
+            pdf.setFontSize(7.5);
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(60, 60, 60);
+            pdf.text(`• ${m}`, 22, y3);
+            y3 += 5.5;
+          });
+        }
+
+        // Points forts / Axes d'amélioration from module scores
+        if (props.modulesDetail && props.modulesDetail.length > 0) {
+          const strengths = props.modulesDetail.filter(m => m.score >= 85);
+          const improvements = props.modulesDetail.filter(m => m.score < 70);
+
+          if (strengths.length > 0 && y3 < H3 - 60) {
+            y3 += 8;
+            pdf.setFontSize(9);
+            pdf.setTextColor(34, 139, 34);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("POINTS FORTS", 20, y3);
+            y3 += 5;
+            strengths.forEach(s => {
+              if (y3 > H3 - 50) return;
+              pdf.setFontSize(7);
+              pdf.setFont("helvetica", "normal");
+              pdf.setTextColor(60, 60, 60);
+              pdf.text(`✓ ${s.title.slice(0, 50)} — ${s.score}%`, 22, y3);
+              y3 += 5;
+            });
+          }
+
+          if (improvements.length > 0 && y3 < H3 - 55) {
+            y3 += 6;
+            pdf.setFontSize(9);
+            pdf.setTextColor(200, 130, 30);
+            pdf.setFont("helvetica", "bold");
+            pdf.text("AXES D'AMÉLIORATION", 20, y3);
+            y3 += 5;
+            improvements.forEach(s => {
+              if (y3 > H3 - 50) return;
+              pdf.setFontSize(7);
+              pdf.setFont("helvetica", "normal");
+              pdf.setTextColor(60, 60, 60);
+              pdf.text(`○ ${s.title.slice(0, 50)} — ${s.score}%`, 22, y3);
+              y3 += 5;
+            });
+          }
+        }
+
+        // Narrative attestation
+        y3 += 8;
+        if (y3 < H3 - 55) {
+          pdf.setFillColor(250, 245, 230);
+          pdf.setDrawColor(212, 175, 55);
+          pdf.setLineWidth(0.3);
+          const narrative = `La présente attestation certifie que ${props.holderName} a suivi et validé l'intégralité du parcours « ${props.pathName} » dispensé par GROWTHINNOV. Ce parcours, d'une durée totale de ${props.totalTimeHours} heures, a permis à l'apprenant d'acquérir les compétences et aptitudes détaillées ci-dessus, avec un score global de ${props.score}%.`;
+          const narrativeLines = pdf.splitTextToSize(narrative, W3 - 50);
+          const narrativeH = narrativeLines.length * 4.5 + 8;
+          pdf.roundedRect(18, y3 - 4, W3 - 36, narrativeH, 2, 2, "FD");
+          pdf.setFontSize(7.5);
+          pdf.setTextColor(80, 70, 40);
+          pdf.setFont("helvetica", "italic");
+          pdf.text(narrativeLines, 22, y3 + 2);
         }
 
         // QR Code on page 3
@@ -519,10 +595,20 @@ export function CertificateDownload(props: CertificateDownloadProps) {
         pdf.setFont("helvetica", "normal");
         pdf.text("Scanner pour vérifier", qr3X + qr3Size / 2, qr3Y + qr3Size + 3, { align: "center" });
 
+        // Footer signature
+        pdf.setFontSize(7);
+        pdf.setTextColor(100, 100, 100);
+        pdf.setFont("helvetica", "italic");
+        pdf.text("Direction pédagogique — GROWTHINNOV", 20, H3 - 22);
+        pdf.setDrawColor(80, 80, 80);
+        pdf.setLineWidth(0.3);
+        pdf.line(20, H3 - 19, 80, H3 - 19);
+
         // Legal
         pdf.setFontSize(6);
         pdf.setTextColor(170, 170, 170);
-        pdf.text("Cette attestation certifie les compétences acquises dans le cadre du parcours mentionné.", 20, H3 - 16);
+        pdf.setFont("helvetica", "normal");
+        pdf.text("Cette attestation certifie les compétences acquises dans le cadre du parcours mentionné. Document généré électroniquement.", 20, H3 - 14);
       }
 
       pdf.save(`Certificat_${props.pathName.replace(/\s+/g, "_")}.pdf`);

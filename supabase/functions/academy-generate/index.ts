@@ -105,6 +105,7 @@ async function generatePath(supabase: any, userId: string, params: any, apiKey: 
 Tu conçois des parcours de formation structurés, progressifs et orientés compétences.
 Chaque module doit avoir un objectif clair, des compétences visées, et une durée réaliste.
 Les modules doivent couvrir : introduction/contexte, concepts clés, application pratique, évaluation, synthèse.
+Tu génères également le référentiel de compétences, prérequis, aptitudes et débouchés professionnels du parcours.
 Réponds UNIQUEMENT via l'outil fourni.`;
 
   const userPrompt = `Crée un parcours de formation complet avec ${module_count} modules.
@@ -121,6 +122,12 @@ Pour chaque module, définis :
 - Les objectifs pédagogiques (2-4 par module)
 - La durée estimée en minutes (réaliste)
 
+Génère également :
+- skills : 4-8 compétences développées (nom, catégorie parmi technique/transversale/métier, niveau de 1 à 5)
+- prerequisites : 2-5 prérequis textuels
+- aptitudes : 3-6 aptitudes professionnelles développées
+- professional_outcomes : 2-4 débouchés professionnels concrets
+
 Assure une progression logique du plus simple au plus complexe.
 Inclus au minimum 1 quiz et 1 exercice dans le parcours.`;
 
@@ -133,6 +140,21 @@ Inclus au minimum 1 quiz et 1 exercice dans le parcours.`;
         type: "object",
         properties: {
           estimated_hours: { type: "number", description: "Total estimated hours" },
+          skills: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                category: { type: "string", enum: ["technique", "transversale", "métier"] },
+                level: { type: "number", description: "1-5" },
+              },
+              required: ["name", "category", "level"],
+            },
+          },
+          prerequisites: { type: "array", items: { type: "string" } },
+          aptitudes: { type: "array", items: { type: "string" } },
+          professional_outcomes: { type: "array", items: { type: "string" } },
           modules: {
             type: "array",
             items: {
@@ -148,7 +170,7 @@ Inclus au minimum 1 quiz et 1 exercice dans le parcours.`;
             },
           },
         },
-        required: ["estimated_hours", "modules"],
+        required: ["estimated_hours", "modules", "skills", "prerequisites", "aptitudes", "professional_outcomes"],
       },
     },
   }];
@@ -163,6 +185,10 @@ Inclus au minimum 1 quiz et 1 exercice dans le parcours.`;
       description,
       difficulty,
       estimated_hours: result.estimated_hours,
+      skills: result.skills || [],
+      prerequisites: result.prerequisites || [],
+      aptitudes: result.aptitudes || [],
+      professional_outcomes: result.professional_outcomes || [],
       status: "draft",
       generation_mode: "ai",
       created_by: userId,

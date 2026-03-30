@@ -501,6 +501,7 @@ export default function PortalCertificateDetail() {
                 modulesDetail={modulesDetail}
                 skills={path?.skills as any}
                 aptitudes={path?.aptitudes as any}
+                professionalOutcomes={path?.professional_outcomes as any}
                 pathDescription={path?.description}
               />
               <Button variant="outline" size="sm" className="gap-2" onClick={shareLinkedIn}><Linkedin className="h-4 w-4" /> LinkedIn</Button>
