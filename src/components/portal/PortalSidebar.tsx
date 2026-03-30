@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   BookOpen, Award, Sparkles, History,
   Users, LayoutGrid, PanelLeftClose, PanelLeftOpen,
-  Route, Building2
+  Route, Building2, Layers
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveOrg } from "@/contexts/OrgContext";
@@ -17,7 +17,7 @@ interface PortalSidebarProps {
 
 const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label: string; path: string }[] }> = {
   "/portal": {
-    title: "Formations",
+    title: "FORMATIONS",
     items: [
       { icon: BookOpen, label: "Catalogue", path: "/portal" },
       { icon: Route, label: "Mes parcours", path: "/portal/dashboard" },
@@ -25,20 +25,21 @@ const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label
     ],
   },
   "/portal/pratique": {
-    title: "Pratique",
+    title: "PRATIQUE",
     items: [
       { icon: Sparkles, label: "Catalogue", path: "/portal/pratique" },
       { icon: History, label: "Historique", path: "/portal/pratique/history" },
     ],
   },
   "/portal/workshops": {
-    title: "Workshops",
+    title: "WORKSHOPS",
     items: [
       { icon: Users, label: "Mes workshops", path: "/portal/workshops" },
+      { icon: Layers, label: "Toolkits", path: "/portal/workshops/toolkits" },
     ],
   },
   "/portal/challenges": {
-    title: "Challenges",
+    title: "CHALLENGES",
     items: [
       { icon: LayoutGrid, label: "Mes challenges", path: "/portal/challenges" },
     ],
@@ -66,14 +67,47 @@ export function PortalSidebar({ open, onToggle, activeTab }: PortalSidebarProps)
   return (
     <aside
       className={cn(
-        "border-r border-border/50 bg-card/50 flex flex-col transition-all duration-200 shrink-0",
+        "border-r border-border/50 bg-card/50 flex flex-col transition-all duration-200 shrink-0 h-[calc(100vh-3.5rem)]",
         open ? "w-60" : "w-16"
       )}
     >
-      {/* Header */}
-      <div className={cn("flex items-center h-14 px-4", open ? "justify-between" : "justify-center")}>
+      {/* Organisation block — always visible at top */}
+      {activeOrg && (
+        <div className={cn("border-b border-border/50 p-3", open ? "px-4 py-4" : "px-2 py-3")}>
+          <div className={cn(
+            "flex items-center gap-3",
+            open ? "" : "justify-center"
+          )}>
+            {orgDetails?.logo_url ? (
+              <img
+                src={orgDetails.logo_url}
+                alt={activeOrg.org_name}
+                className={cn(
+                  "rounded-lg object-contain shrink-0",
+                  open ? "h-10 w-10" : "h-9 w-9"
+                )}
+              />
+            ) : (
+              <div className={cn(
+                "rounded-lg bg-primary/10 flex items-center justify-center shrink-0",
+                open ? "h-10 w-10" : "h-9 w-9"
+              )}>
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+            )}
+            {open && (
+              <span className="text-sm font-bold text-foreground truncate leading-tight">
+                {activeOrg.org_name}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Section title */}
+      <div className={cn("flex items-center h-12 px-4", open ? "justify-between" : "justify-center")}>
         {open && (
-          <p className="text-sm font-semibold text-foreground leading-none">{config.title}</p>
+          <p className="text-[11px] font-bold text-muted-foreground tracking-widest uppercase">{config.title}</p>
         )}
         <button
           onClick={onToggle}
@@ -84,7 +118,7 @@ export function PortalSidebar({ open, onToggle, activeTab }: PortalSidebarProps)
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 px-3 py-3 space-y-1">
+      <nav className="flex-1 px-3 py-1 space-y-1">
         {config.items.map((item) => {
           const active = location.pathname === item.path;
           const Icon = item.icon;
@@ -106,33 +140,6 @@ export function PortalSidebar({ open, onToggle, activeTab }: PortalSidebarProps)
           );
         })}
       </nav>
-
-      {/* Organisation block */}
-      {activeOrg && (
-        <div className={cn("border-t border-border/50 p-3", open ? "px-4" : "px-3")}>
-          <div className={cn(
-            "flex items-center gap-3 rounded-lg py-2.5",
-            open ? "px-3" : "justify-center px-0"
-          )}>
-            {orgDetails?.logo_url ? (
-              <img
-                src={orgDetails.logo_url}
-                alt={activeOrg.org_name}
-                className="h-8 w-8 rounded-md object-contain shrink-0"
-              />
-            ) : (
-              <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                <Building2 className="h-4 w-4 text-primary" />
-              </div>
-            )}
-            {open && (
-              <span className="text-xs font-semibold text-foreground truncate leading-tight">
-                {activeOrg.org_name}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
     </aside>
   );
 }

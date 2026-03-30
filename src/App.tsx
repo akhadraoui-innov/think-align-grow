@@ -70,6 +70,7 @@ import PortalWorkshops from "./pages/portal/PortalWorkshops";
 import PortalWorkshopRoom from "./pages/portal/PortalWorkshopRoom";
 import PortalChallenges from "./pages/portal/PortalChallenges";
 import PortalChallengeRoom from "./pages/portal/PortalChallengeRoom";
+import PortalToolkits from "./pages/portal/PortalToolkits";
 import PortalMarketplace from "./pages/portal/PortalMarketplace";
 import PortalLibrary from "./pages/portal/PortalLibrary";
 import PortalAnalytics from "./pages/portal/PortalAnalytics";
