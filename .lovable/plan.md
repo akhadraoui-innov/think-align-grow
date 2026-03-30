@@ -1,81 +1,67 @@
 
 
-# Plan — Livret de cours complet, lecture pleine page, et évaluation finale du parcours
+# Plan — Module INSIGHT (Portail + Admin)
 
-## Analyse des demandes
+## Vision
 
-1. **Le guide actuel est une fiche technique** (structure du parcours, compétences, objectifs). L'utilisateur veut un **livret de restitution complet** : tout le contenu pédagogique documenté, illustré, annoté — comme un livre de cours que le formateur donnerait.
-2. **Ouverture en mode lecture pleine page** (pas dans une card inline) — expérience "livre premium".
-3. **Évaluation finale globale du parcours** visible comme une section dédiée après les étapes du programme (pas cachée dans un module).
+Un espace de découverte interactif de la plateforme GROWTHINNOV, accessible à tous (prospects, clients, partenaires). Pas de base de données — contenu statique en Markdown enrichi, structuré en sections navigables avec menu latéral. Chaque module produit est présenté avec ses pain points, sa proposition de valeur, ses modalités et ses IA.
 
-## Changements
+## Structure du contenu — 6 sections
 
-### 1. Nouvelle page `/portal/guide/:pathId` — Lecture en mode livre
+1. **Vue d'ensemble** — Pitch global, workflow visuel des 4 piliers, proposition de valeur
+2. **Formations** — Parcours adaptatifs, types de modules (leçon/quiz/exercice/pratique IA), IA tutor, évaluations, certificats, livret PDF
+3. **Pratique** — Simulateur IA, 7 modes (analyse, design, code...), scoring, historique, rapports
+4. **Workshops** — Intelligence collective, toolkits, canevas collaboratif, gamification, cartes stratégiques
+5. **Challenges** — Design Innovation, diagnostic stratégique, maturité, analyse IA
+6. **Plateforme** — Portail immersif, administration, observabilité, IA de paramétrage/génération, crédits
 
-Créer `src/pages/portal/PortalGuideReader.tsx` : une page pleine largeur dédiée à la lecture du livret.
+## Fichiers à créer
 
-- Layout : fond blanc pur, `max-w-4xl`, `prose prose-lg` avec typographie magazine
-- Header : titre du parcours, metadata (durée, niveau, fonction), bouton retour, bouton "Recevoir par email"
-- Body : rendu `EnrichedMarkdown` du contenu du livret
-- Si le livret n'existe pas encore : bouton "Générer le livret" centré avec loading state
-- Route : `/portal/guide/:pathId` dans `App.tsx`
+| Fichier | Rôle |
+|---------|------|
+| `src/pages/portal/PortalInsight.tsx` | Page principale avec sidebar menu + contenu par section |
+| `src/pages/admin/AdminInsight.tsx` | Même contenu, wrappé dans AdminShell |
+| `src/components/insight/InsightContent.tsx` | Composant partagé — tout le contenu structuré |
+| `src/components/insight/InsightSidebar.tsx` | Menu latéral des sections/sous-sections |
 
-### 2. Enrichir le prompt de `academy-path-document` — Livret complet (pas fiche technique)
+## Fichiers à modifier
 
-Le prompt actuel génère une fiche technique (couverture, objectifs, programme, évaluation). Il faut le transformer en **livret de cours complet** :
+| Fichier | Modification |
+|---------|-------------|
+| `src/components/portal/PortalShell.tsx` | Ajouter onglet "INSIGHT" dans NAV_TABS |
+| `src/components/portal/PortalSidebar.tsx` | Ajouter config sidebar `/portal/insight` |
+| `src/components/admin/AdminSidebar.tsx` | Ajouter entrée "Insight" dans la section Gestion |
+| `src/App.tsx` | Ajouter routes `/portal/insight`, `/portal/insight/:section`, `/admin/insight` |
 
-- Inclure le **contenu réel de chaque module** (leçons, quiz, exercices) en chargeant `academy_contents` pour chaque module
-- Structure du livret :
-  1. Couverture (titre, sous-titre, cible, durée)
-  2. Introduction et enjeux
-  3. **Pour chaque module** : chapitre complet avec le contenu rédigé, les exercices, les points clés annotés, les illustrations conceptuelles
-  4. Référentiel de compétences
-  5. Glossaire et ressources
-- Augmenter `max_tokens` à 12000 (livret de 8-15 pages)
-- Le livret est un document de **restitution** du contenu, pas un résumé
+## Design du contenu `InsightContent.tsx`
 
-### 3. Section "Évaluation finale" sur la page parcours `PortalFormationsPath.tsx`
+Composant unique réutilisé portail + admin. Contenu 100% statique en JSX avec `EnrichedMarkdown` pour les blocs texte.
 
-Après la section "Programme" (syllabus), ajouter une section visible uniquement quand `progressPct === 100` :
+Chaque section :
+- **Hero** : titre + sous-titre + icône gradient + 1 phrase pain point
+- **Pain points** : 3 cards avec icône, problème client, impact
+- **Solution** : description avec callouts `💡 À retenir`, workflow ASCII ou diagramme Markdown
+- **Fonctionnalités clés** : grille de features avec badges (IA, Gamification, Certification...)
+- **Proposition de valeur** : card premium avec border-l-4 gradient
+- **CTA** : bouton "Découvrir" ou "Demander une démo"
 
-- Card "Évaluation finale du parcours" avec design premium (gradient emerald, border-l-4)
-- Auto-génération via `academy-tutor` action `debrief` mode `evaluation` avec `module_id = null` et `path_id` (évaluation globale du parcours, pas d'un module)
-- Persisté dans `academy_paths.guide_document.path_evaluation` ou dans une colonne séparée sur `academy_enrollments`
-- Contenu : synthèse de tous les scores par module, maîtrise globale, points forts, axes d'amélioration, recommandations
-- Rendu avec `EnrichedMarkdown` + executive card style
+Navigation par `section` URL param → scroll-to ou conditional render.
 
-### 4. Modifier `GuideSection` → lien vers page lecture
+## Sidebar Insight
 
-Le composant `GuideSection` ne montre plus le contenu inline. Il devient un lien vers la page de lecture :
-- Affiche le titre "Livret de cours complet"
-- Bouton "Consulter le livret" → `navigate(/portal/guide/${pathId})`
-- Bouton "Recevoir par email" reste
-- Si pas encore généré : bouton "Générer le livret"
-
-### 5. Enrichir `academy-tutor` — Mode évaluation parcours (pas module)
-
-Ajouter une branche dans `handleDebrief` quand `module_id` est null mais `path_id` est fourni :
-- Charger tous les `academy_progress` de l'enrollment
-- Agréger scores, metadata, quiz_answers de tous les modules
-- Prompt : "Rédige une évaluation finale complète du parcours {path.name} pour {firstName}. Couvre : synthèse globale, score par module, compétences acquises, points forts, axes d'amélioration, recommandations pour la suite professionnelle."
-
-## Fichiers impactés
-
-| Fichier | Action |
-|---------|--------|
-| `src/pages/portal/PortalGuideReader.tsx` | Créer — page lecture pleine page |
-| `src/App.tsx` | Ajouter route `/portal/guide/:pathId` |
-| `src/components/academy/GuideSection.tsx` | Modifier — lien vers page lecture au lieu de contenu inline |
-| `supabase/functions/academy-path-document/index.ts` | Enrichir — charger contenu modules, prompt livret complet |
-| `src/pages/portal/PortalFormationsPath.tsx` | Ajouter section évaluation finale après Programme |
-| `supabase/functions/academy-tutor/index.ts` | Enrichir — mode évaluation parcours global (module_id null) |
+Menu avec 6 entrées principales + sous-entrées :
+- Vue d'ensemble
+- Formations (Parcours adaptatifs, Modules pédagogiques, IA Tutor, Évaluations & Certificats)
+- Pratique (Simulateur IA, Modes & Scénarios, Scoring & Rapports)
+- Workshops (Toolkits & Cartes, Canevas collaboratif, Gamification)
+- Challenges (Diagnostic stratégique, Analyse IA, Maturité)
+- Plateforme (Portail immersif, Administration, IA de génération)
 
 ## Ordre d'exécution
 
-1. Enrichir `academy-tutor` (évaluation parcours global)
-2. Enrichir `academy-path-document` (livret complet avec contenu)
-3. Créer `PortalGuideReader.tsx` (page lecture mode livre)
-4. Ajouter route dans `App.tsx`
-5. Modifier `GuideSection.tsx` (lien vers page)
-6. Ajouter section évaluation finale dans `PortalFormationsPath.tsx`
+1. Créer `InsightContent.tsx` avec tout le contenu structuré des 6 sections
+2. Créer `InsightSidebar.tsx` (menu navigable)
+3. Créer `PortalInsight.tsx` et `AdminInsight.tsx` (wrappers)
+4. Ajouter routes dans `App.tsx`
+5. Intégrer dans PortalShell, PortalSidebar, AdminSidebar
 
