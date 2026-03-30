@@ -126,7 +126,7 @@ export default function AcademyModule() {
   const handleMarkComplete = async () => {
     setIsCompleting(true);
     try {
-      await saveProgress(100, "completed");
+      await saveProgress(100, "completed", { read_at: new Date().toISOString() });
       toast.success("Module marqué comme terminé !");
       // Check if this was the last module
       const newCompleted = completedCount + 1;

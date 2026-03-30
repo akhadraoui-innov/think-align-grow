@@ -83,14 +83,20 @@ export function AcademyExercise({ moduleId, enrollmentId, onComplete }: AcademyE
       if (data?.feedback) {
         const fb = data.feedback as Feedback;
         setCurrentFeedback(fb);
-        setHistory(prev => [...prev, {
+        const newHistory = [...history, {
           id: Date.now(),
           text: submission.trim(),
           feedback: fb,
           submittedAt: new Date(),
-        }]);
+        }];
+        setHistory(newHistory);
         if (fb.score >= 70) {
-          onComplete?.(fb.score);
+          const submissionsMeta = newHistory.map(h => ({
+            text: h.text, score: h.feedback.score,
+            strengths: h.feedback.strengths, improvements: h.feedback.improvements,
+            summary: h.feedback.summary, submitted_at: h.submittedAt.toISOString(),
+          }));
+          onComplete?.(fb.score, { submissions: submissionsMeta });
         }
       }
     } catch (e) {

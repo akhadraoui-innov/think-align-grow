@@ -78,7 +78,7 @@ export default function PortalFormationsModule() {
 
   const handleMarkComplete = async () => {
     setIsCompleting(true);
-    try { await saveProgress(100, "completed"); toast.success("Module terminé !"); if (completedCount + 1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }
+    try { await saveProgress(100, "completed", { read_at: new Date().toISOString() }); toast.success("Module terminé !"); if (completedCount + 1 >= pathModules.length && pathModules.length > 0) setShowCelebration(true); }
     catch { toast.error("Erreur"); } finally { setIsCompleting(false); }
   };
 
