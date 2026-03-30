@@ -16,7 +16,7 @@ import { SimulatorEngine } from "@/components/simulator/SimulatorEngine";
 interface AcademyPracticeProps {
   moduleId: string;
   enrollmentId?: string;
-  onComplete?: (score: number) => void;
+  onComplete?: (score: number, metadata?: Record<string, unknown>) => void;
   previewMode?: boolean;
 }
 
