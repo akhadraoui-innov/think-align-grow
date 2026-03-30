@@ -57,6 +57,10 @@ import AdminObservabilityCatalogue from "./pages/admin/AdminObservabilityCatalog
 import AdminObservabilityMatrix from "./pages/admin/AdminObservabilityMatrix";
 import AdminSimulator from "./pages/admin/AdminSimulator";
 import AdminSimulatorTemplates from "./pages/admin/AdminSimulatorTemplates";
+import PortalMarketplace from "./pages/portal/PortalMarketplace";
+import PortalWorkspace from "./pages/portal/PortalWorkspace";
+import PortalLibrary from "./pages/portal/PortalLibrary";
+import PortalAnalytics from "./pages/portal/PortalAnalytics";
 
 const queryClient = new QueryClient();
 
