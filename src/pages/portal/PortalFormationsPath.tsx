@@ -1,7 +1,10 @@
-// Portal wrapper for AcademyPath — same logic, portal navigation
 import { useParams, useNavigate } from "react-router-dom";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { ArrowLeft, BookOpen, Clock, GraduationCap, HelpCircle, FileText, MessageSquare, Lock, CheckCircle2, PlayCircle, Target, Users, Award, ChevronDown, Trophy } from "lucide-react";
+import {
+  ArrowLeft, BookOpen, Clock, GraduationCap, HelpCircle, FileText, MessageSquare,
+  Lock, CheckCircle2, PlayCircle, Target, Users, Award, ChevronDown, Trophy,
+  Star, Briefcase, Lightbulb, Layers, Sparkles
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +19,17 @@ import { useState } from "react";
 
 const moduleTypeIcons: Record<string, any> = { lesson: BookOpen, quiz: HelpCircle, exercise: FileText, practice: MessageSquare };
 const moduleTypeLabels: Record<string, string> = { lesson: "Leçon", quiz: "Quiz", exercise: "Exercice", practice: "Pratique IA" };
+const categoryIcons: Record<string, any> = { technique: Layers, transversale: Users, métier: Briefcase };
+
+function StarRating({ level }: { level: number }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(i => (
+        <Star key={i} className={cn("h-3 w-3", i <= level ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20")} />
+      ))}
+    </div>
+  );
+}
 
 export default function PortalFormationsPath() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +37,7 @@ export default function PortalFormationsPath() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [expandedObjectives, setExpandedObjectives] = useState(false);
+  const [expandedSkills, setExpandedSkills] = useState(false);
 
   const { data: path, isLoading } = useQuery({
     queryKey: ["academy-path", id], enabled: !!id,
@@ -44,6 +59,10 @@ export default function PortalFormationsPath() {
     queryKey: ["academy-path-enrollment-count", id], enabled: !!id,
     queryFn: async () => { const { count } = await supabase.from("academy_enrollments").select("id", { count: "exact", head: true }).eq("path_id", id!); return count || 0; },
   });
+  const { data: certificate } = useQuery({
+    queryKey: ["user-certificate-for-path", id, user?.id], enabled: !!id && !!user,
+    queryFn: async () => { const { data } = await supabase.from("academy_certificates").select("id").eq("path_id", id!).eq("user_id", user!.id).eq("status", "active").maybeSingle(); return data; },
+  });
 
   const enrollMutation = useMutation({
     mutationFn: async () => { if (!user || !id) throw new Error("Missing data"); const { error } = await supabase.from("academy_enrollments").insert({ path_id: id, user_id: user.id, status: "active" }); if (error) throw error; },
@@ -61,6 +80,12 @@ export default function PortalFormationsPath() {
   const totalHoursCalc = Math.round(totalMinutes / 60 * 10) / 10;
   const firstIncomplete = modules.find((pm: any) => { const p = progressMap.get(pm.module_id) as any; return !p || p.status !== "completed"; });
 
+  const pathSkills: any[] = path ? (Array.isArray(path.skills) ? path.skills : []) : [];
+  const pathPrereqs: string[] = path ? (Array.isArray(path.prerequisites) ? path.prerequisites : []) : [];
+  const pathAptitudes: string[] = path ? (Array.isArray(path.aptitudes) ? path.aptitudes : []) : [];
+  const pathOutcomes: string[] = path ? (Array.isArray(path.professional_outcomes) ? path.professional_outcomes : []) : [];
+  const hasSkillsData = pathSkills.length > 0 || pathPrereqs.length > 0 || pathAptitudes.length > 0 || pathOutcomes.length > 0;
+
   if (isLoading) return <PageTransition><div className="container max-w-4xl mx-auto px-4 py-8"><div className="animate-pulse space-y-4"><div className="h-6 bg-muted rounded w-1/3" /><div className="h-48 bg-muted rounded" /></div></div></PageTransition>;
   if (!path) return <PageTransition><div className="container max-w-4xl mx-auto px-4 py-8 text-center"><p className="text-muted-foreground">Parcours introuvable.</p><Button variant="ghost" className="mt-4" onClick={() => navigate("/portal")}><ArrowLeft className="h-4 w-4 mr-2" /> Retour</Button></div></PageTransition>;
 
@@ -75,7 +100,10 @@ export default function PortalFormationsPath() {
             <div className="flex items-start gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20 shrink-0"><GraduationCap className="h-7 w-7 text-primary" /></div>
               <div className="flex-1">
-                <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight">{path.name}</h1>
+                <div className="flex items-center gap-2 mb-1">
+                  <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight">{path.name}</h1>
+                  {path.certificate_enabled && <Badge className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/30 gap-1"><Award className="h-3 w-3" /> Certifiant</Badge>}
+                </div>
                 <p className="text-muted-foreground mt-1.5 leading-relaxed">{path.description}</p>
               </div>
             </div>
@@ -92,11 +120,16 @@ export default function PortalFormationsPath() {
                 <div className="flex items-center justify-between text-sm"><span className="font-medium">Progression</span><span className="text-muted-foreground">{completedCount}/{totalModules} · {progressPct}%</span></div>
                 <Progress value={progressPct} className="h-3" />
                 {progressPct === 100 && (
-                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center gap-3">
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center gap-3 flex-wrap">
                     <span className="flex items-center gap-2 text-sm text-emerald-600 font-medium"><Award className="h-5 w-5" /> Parcours terminé ! 🎉</span>
-                    {path.certificate_enabled && (
+                    {path.certificate_enabled && certificate && (
+                      <Button size="sm" variant="outline" onClick={() => navigate(`/portal/certificates/${certificate.id}`)} className="gap-2 border-amber-500/30 text-amber-600 hover:bg-amber-500/5">
+                        <Trophy className="h-4 w-4" /> Voir mon certificat
+                      </Button>
+                    )}
+                    {path.certificate_enabled && !certificate && (
                       <Button size="sm" variant="outline" onClick={() => navigate("/portal/certificates")} className="gap-2 border-amber-500/30 text-amber-600 hover:bg-amber-500/5">
-                        <Trophy className="h-4 w-4" /> Mon certificat
+                        <Trophy className="h-4 w-4" /> Mes certificats
                       </Button>
                     )}
                   </motion.div>
@@ -106,6 +139,78 @@ export default function PortalFormationsPath() {
             )}
           </div>
         </motion.div>
+
+        {/* SKILLS & COMPETENCES */}
+        {hasSkillsData && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+            <Card>
+              <CardContent className="p-6 space-y-5">
+                <button onClick={() => setExpandedSkills(!expandedSkills)} className="flex items-center justify-between w-full text-left">
+                  <h2 className="text-sm font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Compétences & Aptitudes</h2>
+                  <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", expandedSkills && "rotate-180")} />
+                </button>
+                <AnimatePresence>
+                  {(expandedSkills || (pathSkills.length + pathAptitudes.length + pathOutcomes.length) <= 6) && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden space-y-4">
+                      {/* Skills */}
+                      {pathSkills.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5"><Target className="h-3 w-3" /> Compétences développées</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {pathSkills.map((s: any, i: number) => {
+                              const CatIcon = categoryIcons[s.category] || Layers;
+                              return (
+                                <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/20 border border-border/30">
+                                  <CatIcon className="h-4 w-4 text-primary shrink-0" />
+                                  <span className="text-sm flex-1">{s.name}</span>
+                                  <StarRating level={s.level || 3} />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Prerequisites */}
+                      {pathPrereqs.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5"><BookOpen className="h-3 w-3" /> Prérequis</p>
+                          <div className="flex flex-wrap gap-2">
+                            {pathPrereqs.map((p, i) => <Badge key={i} variant="outline" className="text-xs px-3 py-1.5 gap-1.5"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {p}</Badge>)}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Aptitudes */}
+                      {pathAptitudes.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5"><Lightbulb className="h-3 w-3" /> Aptitudes professionnelles</p>
+                          <ul className="space-y-1.5">
+                            {pathAptitudes.map((a, i) => <li key={i} className="flex items-start gap-2 text-sm"><Sparkles className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />{a}</li>)}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Professional outcomes */}
+                      {pathOutcomes.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5"><Briefcase className="h-3 w-3" /> Débouchés professionnels</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {pathOutcomes.map((o, i) => (
+                              <div key={i} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-muted/20">
+                                <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />{o}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* OBJECTIVES */}
         {uniqueObjectives.length > 0 && (
@@ -124,6 +229,29 @@ export default function PortalFormationsPath() {
               )}
             </AnimatePresence>
           </CardContent></Card>
+        )}
+
+        {/* CERTIFICATION INFO */}
+        {path.certificate_enabled && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className="border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 shrink-0">
+                    <Award className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold mb-1">Parcours certifiant</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Ce parcours délivre un certificat de réussite attestant des compétences acquises.
+                      Le certificat inclut une attestation détaillée avec QR code de vérification, vos scores par module,
+                      et le référentiel de compétences validées.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
 
         {/* SYLLABUS */}
