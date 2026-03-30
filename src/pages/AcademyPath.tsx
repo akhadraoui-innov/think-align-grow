@@ -3,7 +3,7 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import {
   ArrowLeft, BookOpen, Clock, GraduationCap, HelpCircle, FileText, MessageSquare,
   Lock, CheckCircle2, PlayCircle, Target, Users, Award, ChevronDown, Trophy,
-  Star, Briefcase, Lightbulb, Layers, Sparkles
+  Star, Briefcase, Lightbulb, Layers, Sparkles, Loader2, ScrollText, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 const moduleTypeIcons: Record<string, any> = { lesson: BookOpen, quiz: HelpCircle, exercise: FileText, practice: MessageSquare };
 const moduleTypeLabels: Record<string, string> = { lesson: "Leçon", quiz: "Quiz", exercise: "Exercice", practice: "Pratique IA" };
