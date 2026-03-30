@@ -16,7 +16,7 @@ import { SimulatorEngine } from "@/components/simulator/SimulatorEngine";
 interface AcademyPracticeProps {
   moduleId: string;
   enrollmentId?: string;
-  onComplete?: (score: number) => void;
+  onComplete?: (score: number, metadata?: Record<string, unknown>) => void;
   previewMode?: boolean;
 }
 
@@ -298,7 +298,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
         const evalResult = parseEvaluationFromContent(assistantContent);
         if (evalResult) {
           setEvaluation(evalResult);
-          onComplete?.(evalResult.score);
+          onComplete?.(evalResult.score, { practice_session_id: sessionId });
           const cleanedContent = assistantContent.replace(/```evaluation\s*\n?[\s\S]*?```/, "").trim();
           setMessages(prev => {
             const last = prev[prev.length - 1];
@@ -405,7 +405,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
       const evalResult = parseEvaluationFromContent(assistantContent);
       if (evalResult) {
         setEvaluation(evalResult);
-        onComplete?.(evalResult.score);
+        onComplete?.(evalResult.score, { practice_session_id: sessionId });
         const cleanedContent = assistantContent.replace(/```evaluation\s*\n?[\s\S]*?```/, "").trim();
         setMessages(prev => {
           const last = prev[prev.length - 1];
@@ -420,7 +420,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
         const score = Math.round((exchangeCount / maxExchanges) * 70);
         const fallbackEval = { score, feedback: "Session terminée. Votre score est basé sur votre niveau d'engagement dans la conversation." };
         setEvaluation(fallbackEval);
-        onComplete?.(score);
+        onComplete?.(score, { practice_session_id: sessionId });
         await persistSession(messages, fallbackEval, score);
       }
     } catch (e: any) {
@@ -428,7 +428,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
       const score = Math.round((exchangeCount / maxExchanges) * 70);
       const fallbackEval = { score, feedback: "Session terminée. L'évaluation automatique n'a pas pu aboutir." };
       setEvaluation(fallbackEval);
-      onComplete?.(score);
+      onComplete?.(score, { practice_session_id: sessionId });
       await persistSession(messages, fallbackEval, score);
     } finally {
       setIsStreaming(false);

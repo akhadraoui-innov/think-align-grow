@@ -227,6 +227,14 @@ async function knowledgeChat(supabase: any, userId: string, params: any, apiKey:
   const { data: path } = await supabase.from("academy_paths").select("*").eq("id", path_id).single();
   const { data: pathModules } = await supabase.from("academy_path_modules").select("module_id, academy_modules(title, description, objectives, module_type)").eq("path_id", path_id).order("sort_order");
   
+  // Fetch user progress with metadata for RAG enrichment
+  const { data: userEnrollment } = await supabase.from("academy_enrollments").select("id").eq("path_id", path_id).eq("user_id", userId).maybeSingle();
+  let progressMetadata: any[] = [];
+  if (userEnrollment) {
+    const { data: progressData } = await supabase.from("academy_progress").select("module_id, score, status, metadata").eq("enrollment_id", userEnrollment.id);
+    progressMetadata = progressData || [];
+  }
+
   // Fetch contents (limit to avoid token overflow)
   const moduleIds = (pathModules || []).map((pm: any) => pm.module_id);
   const { data: contents } = await supabase.from("academy_contents").select("body, module_id").in("module_id", moduleIds).order("sort_order").limit(20);
@@ -238,6 +246,16 @@ async function knowledgeChat(supabase: any, userId: string, params: any, apiKey:
   }).join("\n");
 
   const skillsSummary = Array.isArray(path?.skills) ? path.skills.map((s: any) => `${s.name} (${s.category}, niveau ${s.level})`).join(", ") : "";
+
+  // Build learner performance context from metadata
+  const learnerContext = progressMetadata.map((p: any) => {
+    const mod = (pathModules || []).find((pm: any) => pm.module_id === p.module_id);
+    const meta = p.metadata || {};
+    let details = `${mod?.academy_modules?.title || "Module"} (${mod?.academy_modules?.module_type}): score ${p.score || "N/A"}`;
+    if (meta.quiz_answers) details += `, ${(meta.quiz_answers as any[]).filter((a: any) => a.is_correct).length}/${(meta.quiz_answers as any[]).length} bonnes réponses`;
+    if (meta.submissions) details += `, ${(meta.submissions as any[]).length} soumission(s)`;
+    return details;
+  }).join("\n");
 
   const systemPrompt = `Tu es un expert Knowledge IA spécialisé dans le domaine du parcours "${path?.name}".
 
@@ -253,6 +271,9 @@ DÉBOUCHÉS : ${Array.isArray(path?.professional_outcomes) ? path.professional_o
 
 CONTENU DE RÉFÉRENCE :
 ${contentSummary}
+
+RÉSULTATS DE L'APPRENANT :
+${learnerContext || "Pas encore de résultats disponibles."}
 
 INSTRUCTIONS :
 - Tu es un expert du domaine, pas un simple chatbot

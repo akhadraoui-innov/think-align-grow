@@ -348,7 +348,14 @@ export function AcademyExercise({ moduleId, enrollmentId, onComplete }: AcademyE
                   <RotateCcw className="h-4 w-4 mr-2" /> Réessayer
                 </Button>
                 {currentFeedback.score >= 70 && (
-                  <Button className="flex-1" onClick={() => onComplete?.(currentFeedback.score)}>
+                  <Button className="flex-1" onClick={() => {
+                    const submissionsMeta = history.map(h => ({
+                      text: h.text, score: h.feedback.score,
+                      strengths: h.feedback.strengths, improvements: h.feedback.improvements,
+                      summary: h.feedback.summary, submitted_at: h.submittedAt.toISOString(),
+                    }));
+                    onComplete?.(currentFeedback.score, { submissions: submissionsMeta });
+                  }}>
                     <CheckCircle2 className="h-4 w-4 mr-2" /> Valider et continuer
                   </Button>
                 )}
