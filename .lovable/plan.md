@@ -1,159 +1,77 @@
 
 
-# Plan — Refonte totale de l'expérience apprenant avec IA intégrée et mode lecture post-complétion
+# Plan — Jeu de test complet pour le parcours Process Mining IA Augmented (Ammar Khadraoui)
 
-## Vision
+## Audit de l'existant
 
-Chaque interaction de l'apprenant (réponse quiz, soumission exercice, échange pratique, lecture leçon) est **persistée dans `academy_progress.metadata`**. Une fois le module terminé, l'apprenant voit le **même contenu enrichi de ses données** (réponses, feedback IA, échanges) en mode lecture seule. Le Knowledge IA exploite tout ce contexte pour ses analyses.
+**Utilisateur** : Ammar Khadraoui (`315af24d-afe3-4162-9b78-45274c0fe5dc`)
+**Parcours** : Process Mining IA Augmented (`036db7ea-359a-4359-9be2-2697a0a0d6f7`)
+**Enrollment** : `4168351f-6a24-4589-917f-4ff0ff30f828` — status `completed`
+**Certificat** : `64c9a665-2903-42a5-bf7a-24a01d01f920` — actif
 
-## Architecture
+### État par module
 
-```text
-┌──────────────────────────────────────────────────────┐
-│  PortalFormationsModule / AcademyModule               │
-│                                                       │
-│  isCompleted ?                                        │
-│  ├─ NON → Mode Apprentissage (actuel, inchangé)      │
-│  │         + IA inline (brief pré-module, feedback)   │
-│  │         + Persistance auto dans metadata           │
-│  │                                                    │
-│  └─ OUI → Mode Lecture (ModuleReviewView)             │
-│            Même UI enrichie des données utilisateur   │
-│            + Onglets: Résultat | Analyse IA | Brief   │
-│            + Bouton "Refaire" → repasse en mode actif │
-└──────────────────────────────────────────────────────┘
-         ↕
-┌──────────────────────────────────────────────────────┐
-│  academy-tutor (edge function)                        │
-│  Actions: brief | explain | coach | debrief           │
-│  Contexte: path skills, module objectives, metadata,  │
-│  user profile, progression complète                   │
-└──────────────────────────────────────────────────────┘
-```
+| # | Module | Type | Score | Metadata | Problèmes |
+|---|--------|------|-------|----------|------------|
+| 0 | Introduction PM + IA | lesson | 100 | `{}` vide | ❌ Pas de metadata (read_at, time_seconds manquants). time_spent=11s irréaliste. started_at=null |
+| 1 | Extraction et Préparation | exercise | 88 | Riche (submission, evaluation, criteria) | ✅ Bon. Manque `submitted_at` dans le format attendu par ModuleReviewView |
+| 2 | Découverte et Conformité | lesson | 100 | Riche (bookmarks, sections, reading_time) | ✅ Bon |
+| 3 | Prédiction et Optimisation | quiz | 92 | Riche (12 answers détaillées) | ⚠️ Format incomplet : manque `explanation`, `points`, `question_type` par réponse. Pas de `best_streak`, `total_xp` |
+| 4 | Cas Pratiques Industriels | practice | 85 | Evaluation + session_summary | ❌ Pas de `practice_session_id` → ModuleReviewView ne peut pas charger la session |
 
----
+### Données associées
+- **Feedback parcours** : ✅ Existe (5★, testimonial)
+- **Skill assessments** : ✅ 8 compétences évaluées (mais skills ne matchent pas les skills du path)
+- **Practice session liée** : ❌ Aucune session avec `enrollment_id` correspondant
+- **Certificat** : ✅ Existe mais `certificate_data.modules_detail` a des titres tronqués
 
-## 1. Persistance des données utilisateur — `useAcademyModule.ts`
+## Corrections et enrichissements à effectuer
 
-Ajouter un paramètre `metadata` optionnel à `saveProgress`. Le metadata est **mergé** avec l'existant (pas remplacé) pour accumuler les tentatives.
+### 1. Module 0 (Leçon) — Enrichir metadata + corriger timing
+UPDATE `academy_progress` pour le module `b131e819-42be-4429-a378-33a1680909ac` :
+- `started_at` → `2026-03-02T09:00:00Z`
+- `completed_at` → `2026-03-02T10:30:00Z`
+- `time_spent_seconds` → `5400` (1h30)
+- `metadata` → metadata riche de type leçon avec `read_at`, `time_seconds`, `sections_visited`, `bookmarks`, `ai_brief`, `ai_debrief`
 
-```typescript
-saveProgress(score, "completed", {
-  quiz_answers: [...],           // Quiz
-  submissions: [...],            // Exercice
-  practice_session_id: "..."     // Pratique
-})
-```
+### 2. Module 3 (Quiz) — Enrichir les réponses avec le format complet
+UPDATE metadata pour ajouter `explanation`, `question_type`, `points` à chaque réponse. Ajouter `best_streak`, `total_xp`, format conforme à ce que `AcademyQuiz.tsx` produit maintenant.
 
----
+### 3. Module 4 (Pratique) — Créer une session complète et lier
+INSERT une `academy_practice_sessions` avec :
+- `enrollment_id` = enrollment ID
+- Messages réalistes (12 échanges consultant/IA sur diagnostic Supply Chain)
+- Évaluation avec dimensions, scores, feedback
+- Score 85
+UPDATE `academy_progress.metadata` pour ajouter `practice_session_id`
 
-## 2. Persistance par type de pédagogie
+### 4. Module 1 (Exercice) — Normaliser le format metadata
+UPDATE pour aligner le format avec ce que `AcademyExercise.tsx` produit : `submissions[]` array avec `text`, `score`, `strengths`, `improvements`, `submitted_at`
 
-### Quiz (`AcademyQuiz.tsx`)
-- Après chaque réponse (`handleConfirm`), accumuler dans un ref local : `{ question, question_type, user_answer, correct_answer, is_correct, explanation, points, time_seconds }`
-- Au `onComplete`, passer le tableau complet via metadata : `{ quiz_answers: [...], best_streak, total_xp, attempt: N }`
-- **IA inline** : après chaque réponse (correct ou non), appeler `academy-tutor` action `explain` pour 2-3 phrases contextuelles. Afficher sous la réponse dans une card "Insight IA" avec icone Sparkles.
+### 5. Skill assessments — Aligner avec les skills du parcours
+Les skills du path sont : Modélisation de processus, Analyse de conformité, Event log mining, Découverte automatique, Analyse prédictive IA, Optimisation de processus, Data storytelling, Gestion du changement, KPI process performance, Celonis/ProM/Disco.
+Les assessments actuels ne matchent que partiellement. INSERT les skills manquants (Event log mining, Découverte automatique, Analyse prédictive IA, Data storytelling, KPI process performance).
 
-### Exercice (`AcademyExercise.tsx`)
-- Chaque soumission + feedback IA est déjà en state local (`history[]`). Au `onComplete`, passer via metadata : `{ submissions: [{ text, score, strengths, improvements, summary, submitted_at }] }`
-- **IA inline pré-soumission** : card "Guide méthodologique" auto-chargée (appel `academy-tutor` action `coach` phase `pre`), affichée au-dessus du textarea.
+### 6. Certificat — Enrichir certificate_data
+UPDATE avec modules_detail complets (titres complets, scores, time_minutes cohérents), skills acquises, aptitudes, score moyen recalculé.
 
-### Pratique (`AcademyPractice.tsx`)
-- Déjà persistée dans `academy_practice_sessions`. Au `onComplete`, passer le `session_id` dans metadata : `{ practice_session_id: "..." }`
-- Aucun changement d'UI nécessaire, la pratique a déjà l'IA intégrée.
+### 7. Profil — Compléter les infos manquantes
+UPDATE `profiles` pour Ammar : `job_title`, `department`, `email` — nécessaire pour le contexte IA du tuteur.
 
-### Leçon
-- Au `handleMarkComplete`, persister : `{ read_at: ISO, time_seconds: N }`
-- **IA inline** : card "Brief" auto-chargée en haut (appel `academy-tutor` action `brief`) avec objectifs personnalisés. Card "Debrief" en bas après le contenu (appel `debrief`) avec synthèse concepts clés.
+## Méthode d'exécution
 
----
+Toutes les opérations sont des UPDATEs/INSERTs de données → utiliser l'outil `insert` (pas de migration). Exécution en séquence :
 
-## 3. Edge Function `academy-tutor`
+1. UPDATE profil Ammar (job_title, department)
+2. UPDATE module 0 metadata + timing
+3. UPDATE module 3 quiz metadata enrichi
+4. UPDATE module 1 exercise metadata normalisé
+5. INSERT practice session complète (12 messages)
+6. UPDATE module 4 metadata avec practice_session_id
+7. INSERT skill assessments manquants (5 skills)
+8. UPDATE certificat certificate_data enrichi
 
-Nouvelle edge function. Modèle : `google/gemini-2.5-flash`.
+## Fichiers code impactés
 
-| Action | Déclencheur | Input | Output |
-|--------|------------|-------|--------|
-| `brief` | Ouverture module non-complété | module title/objectives, path skills, user function | Markdown : objectifs, importance, lien compétences |
-| `explain` | Après réponse quiz | question, user_answer, correct_answer, is_correct, module context | Markdown : explication enrichie 2-3 phrases |
-| `coach` | Avant/après soumission exercice | instructions, submission (opt), phase (pre/post) | Markdown : guide méthodo ou feedback itératif |
-| `debrief` | Module complété | module metadata, scores, path context | Markdown : concepts clés, prépa module suivant |
-
-Contexte RAG injecté dans chaque appel : contents du module, objectives, skills du parcours, profil utilisateur (via `profiles` + `academy_function_users`).
-
----
-
-## 4. Mode Lecture post-complétion — `ModuleReviewView.tsx`
-
-Nouveau composant. Quand `currentProgress.status === "completed"`, remplace le contenu actif par une vue lecture avec **3 onglets** :
-
-### Onglet "Résultat" (défaut)
-Varie selon le type de module, affiche les données de `metadata` :
-
-- **Leçon** : contenu original + badge "Terminé" + temps passé + brief/debrief IA s'ils existent dans metadata
-- **Quiz** : chaque question avec la réponse de l'utilisateur (badge vert/rouge), bonne réponse, explication. Score global, stats (streak, XP). Graphique correct/incorrect
-- **Exercice** : dernière soumission formatée, feedback IA détaillé (strengths/improvements/score). Historique des tentatives en accordéon
-- **Pratique** : charge la session complète depuis `academy_practice_sessions` (messages + évaluation). Affiche la conversation en lecture + radar d'évaluation
-
-### Onglet "Analyse IA"
-Appel `academy-tutor` action `debrief` étendu avec metadata complète : patterns d'erreurs, compétences maîtrisées vs à travailler, recommandations. Résultat mis en cache dans metadata.
-
-### Onglet "Knowledge Brief"
-Synthèse des concepts clés du module, liens avec les modules suivants, ressources. Appel `academy-tutor` action `debrief` focalisé sur le knowledge.
-
-### Bouton "Refaire"
-Visible pour quiz/exercice/pratique. Permet de recommencer tout en gardant l'historique dans metadata (append, pas replace).
-
----
-
-## 5. Intégration dans les pages module
-
-### `PortalFormationsModule.tsx` + `AcademyModule.tsx`
-
-Modifier `renderContent()` :
-```
-if (isCompleted && currentProgress?.metadata) {
-  return <ModuleReviewView module={module} metadata={currentProgress.metadata}
-    contents={contents} enrollment={enrollment} onRefaire={() => { /* reset */ }} />
-}
-// ... sinon, mode apprentissage actuel (inchangé)
-```
-
-Le mode apprentissage actuel reste **strictement identique**. Le mode lecture est un ajout conditionnel.
-
----
-
-## 6. Impact sur Knowledge IA
-
-Le Knowledge IA (onglet "Analyse & REX" du certificat) appelle `academy-skills-agent` action `knowledge`. On enrichit le contexte RAG injecté pour inclure les **metadata de chaque module** : réponses quiz, soumissions exercice, échanges pratique, analyses IA. Cela permet à l'agent de faire des retours précis basés sur ce que l'apprenant a réellement fait.
-
-Modification dans `academy-skills-agent/index.ts` fonction `knowledgeChat` : requêter `academy_progress.metadata` en plus des contents.
-
----
-
-## Fichiers impactés
-
-| Fichier | Action |
-|---------|--------|
-| `supabase/functions/academy-tutor/index.ts` | **Créer** — Agent IA pédagogique (brief, explain, coach, debrief) |
-| `src/components/academy/ModuleReviewView.tsx` | **Créer** — Vue lecture post-complétion 3 onglets |
-| `src/hooks/useAcademyModule.ts` | Ajouter `metadata` à `saveProgress`, merger avec existant |
-| `src/components/academy/AcademyQuiz.tsx` | Persister réponses dans metadata + card "Insight IA" inline après chaque réponse |
-| `src/components/academy/AcademyExercise.tsx` | Persister soumissions dans metadata + card "Guide IA" pré-soumission |
-| `src/components/academy/AcademyPractice.tsx` | Passer `practice_session_id` dans metadata au onComplete |
-| `src/pages/portal/PortalFormationsModule.tsx` | Toggle mode lecture si complété |
-| `src/pages/AcademyModule.tsx` | Miroir portail |
-| `supabase/functions/academy-skills-agent/index.ts` | Enrichir contexte RAG avec metadata progress |
-| `supabase/config.toml` | Ajouter `[functions.academy-tutor]` |
-
-## Ordre d'exécution
-
-1. Modifier `useAcademyModule.ts` — saveProgress avec metadata merge
-2. Modifier `AcademyQuiz.tsx` — persistance réponses + IA inline explain
-3. Modifier `AcademyExercise.tsx` — persistance soumissions + IA guide
-4. Modifier `AcademyPractice.tsx` — lier session_id dans metadata
-5. Créer edge function `academy-tutor` (brief, explain, coach, debrief)
-6. Créer `ModuleReviewView.tsx` — vue lecture post-complétion
-7. Intégrer dans PortalFormationsModule + AcademyModule (toggle lecture/apprentissage)
-8. Enrichir `academy-skills-agent` avec metadata dans le contexte RAG
+Aucun — il s'agit uniquement de données de test en base.
 
