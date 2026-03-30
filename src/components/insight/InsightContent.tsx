@@ -356,6 +356,8 @@ const SECTIONS: Record<string, () => JSX.Element> = {
   challenges: ChallengesSection,
   plateforme: PlateformeSection,
   discovery: DiscoverySection,
+  decideurs: DecideursSection,
+  partenaires: PartenairesSection,
 };
 
 export function InsightContent({ activeSection }: InsightContentProps) {
