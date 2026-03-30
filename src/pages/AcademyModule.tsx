@@ -18,6 +18,7 @@ import { AcademyQuiz } from "@/components/academy/AcademyQuiz";
 import { AcademyExercise } from "@/components/academy/AcademyExercise";
 import { AcademyPractice } from "@/components/academy/AcademyPractice";
 import React, { useState } from "react";
+import { ModuleReviewView } from "@/components/academy/ModuleReviewView";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
