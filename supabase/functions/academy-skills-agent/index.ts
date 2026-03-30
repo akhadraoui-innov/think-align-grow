@@ -247,6 +247,16 @@ async function knowledgeChat(supabase: any, userId: string, params: any, apiKey:
 
   const skillsSummary = Array.isArray(path?.skills) ? path.skills.map((s: any) => `${s.name} (${s.category}, niveau ${s.level})`).join(", ") : "";
 
+  // Build learner performance context from metadata
+  const learnerContext = progressMetadata.map((p: any) => {
+    const mod = (pathModules || []).find((pm: any) => pm.module_id === p.module_id);
+    const meta = p.metadata || {};
+    let details = `${mod?.academy_modules?.title || "Module"} (${mod?.academy_modules?.module_type}): score ${p.score || "N/A"}`;
+    if (meta.quiz_answers) details += `, ${(meta.quiz_answers as any[]).filter((a: any) => a.is_correct).length}/${(meta.quiz_answers as any[]).length} bonnes réponses`;
+    if (meta.submissions) details += `, ${(meta.submissions as any[]).length} soumission(s)`;
+    return details;
+  }).join("\n");
+
   const systemPrompt = `Tu es un expert Knowledge IA spécialisé dans le domaine du parcours "${path?.name}".
 
 CONTEXTE DU PARCOURS :

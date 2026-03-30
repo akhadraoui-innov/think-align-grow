@@ -428,7 +428,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
       const score = Math.round((exchangeCount / maxExchanges) * 70);
       const fallbackEval = { score, feedback: "Session terminée. L'évaluation automatique n'a pas pu aboutir." };
       setEvaluation(fallbackEval);
-      onComplete?.(score);
+      onComplete?.(score, { practice_session_id: sessionId });
       await persistSession(messages, fallbackEval, score);
     } finally {
       setIsStreaming(false);
