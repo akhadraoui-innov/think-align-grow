@@ -29,6 +29,7 @@ export function GuideSection({ pathId, guideDocument, isCompleted, user }: Guide
       });
       if (resp.data?.document) {
         setGuide(resp.data.document);
+        setExpanded(true);
         toast.success("Guide pédagogique généré !");
       } else {
         toast.error("Erreur lors de la génération");
