@@ -1,64 +1,29 @@
 
 
-# Plan — Page de paramétrage détaillé par parcours (onglet Certificats)
+# Plan — Dupliquer le module Pilotage des Certificats dans le portail ACADEMIE
 
-## Problème actuel
+## Contexte
 
-L'onglet "Paramétrage" de `/admin/academy/certificates` affiche une simple liste de parcours avec score min et toggle "Certifiant" — tout est en lecture seule, pas cliquable, pas de détail.
+Le module admin `/admin/academy/certificates` (AdminAcademyCertificates + CertPathDetail) gère le pilotage global des certificats (Dashboard KPI, liste, paramétrage par parcours, API). Il doit être dupliqué dans le portail workspace sous `/portal/academie/certificates`. Les certificats personnels de l'apprenant restent dans Formations (`/portal/certificates`).
 
-## Solution
+## Actions
 
-Quand l'utilisateur clique sur un parcours dans l'onglet Paramétrage, on affiche une **page complète de paramétrage certification** pour ce parcours, avec plusieurs sections :
+### 1. Créer la page portail `PortalAcademieCertificates.tsx`
+- Copie de `AdminAcademyCertificates.tsx` sans `<AdminShell>`
+- Remplacer tous les liens internes `/admin/academy/` → `/portal/academie/`
+- Réutiliser le même composant `CertPathDetail` (il est déjà découplé du shell)
 
-### Vue cible : Page détail certification parcours
+### 2. Ajouter la route dans `App.tsx`
+- `/portal/academie/certificates` → `PortalAcademieCertificates`
 
-**Option retenue** : Remplacer la liste par un mode liste/détail dans le même onglet (pas de nouvelle route). Un state `selectedPathId` contrôle l'affichage.
+### 3. Ajouter l'entrée sidebar dans `PortalSidebar.tsx`
+- Ajouter `{ icon: Award, label: "Certificats", path: "/portal/academie/certificates" }` dans la section `/portal/academie`
 
-#### Sections de la page détail :
-
-1. **Header parcours** — Nom, difficulté (badge), description, bouton retour à la liste
-
-2. **Paramétrage certification** (Card éditable)
-   - Toggle Certifiant (oui/non) — mutation UPDATE `academy_paths.certificate_enabled`
-   - Score minimum — Input numérique — mutation UPDATE `academy_certificate_config.min_score`
-   - Template certificat (select)
-   - Signature personnalisée (input)
-   - Bouton Sauvegarder
-
-3. **KPIs Certifiés** (Cards stats)
-   - Nombre de certifiés, score moyen des certifiés, temps moyen passé, dernière certification
-   - Table des certifiés : nom, score, date, temps passé, statut
-
-4. **Détail des connaissances** (Onglet interne)
-   - Objectifs pédagogiques du parcours (tags)
-   - Compétences visées (depuis description/tags du path)
-
-5. **Webflow du parcours** (Onglet interne) — Timeline verticale ultra-design
-   - Chaque module affiché comme une carte dans un flow vertical avec connecteurs
-   - Icône par type (Cours, Quiz, Exercice, Pratique)
-   - Pour chaque module : titre, type (badge couleur), durée estimée, statut
-   - Alternance gauche/droite (timeline style)
-   - Couleurs par type : bleu (leçon), violet (quiz), orange (exercice), vert (pratique)
-
-### Données nécessaires (queries Supabase)
-
-- `academy_paths` — info parcours (déjà chargé)
-- `academy_path_modules` + `academy_modules` — modules du parcours avec sort_order
-- `academy_certificates` filtré par `path_id` — certifiés de ce parcours
-- `academy_certificate_config` — config (déjà chargé)
-- `profiles` — noms des certifiés (déjà chargé)
-
-### Fichier impacté
+## Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/admin/AdminAcademyCertificates.tsx` | Refonte de l'onglet "settings" — ajout state `selectedPathId`, vue détail avec sous-onglets (Paramétrage, Certifiés, Connaissances, Parcours), queries conditionnelles pour modules et certifiés du path sélectionné |
-
-### Ordre d'exécution
-
-1. Ajouter state `selectedPathId` + queries conditionnelles (modules, certifiés par path)
-2. Rendre la liste de parcours cliquable → sélectionne le path
-3. Construire la vue détail avec 4 sections/sous-onglets
-4. Implémenter le webflow timeline des modules (design premium avec connecteurs SVG)
-5. Ajouter mutations pour sauvegarder score min + toggle certifiant
+| `src/pages/portal/PortalAcademieCertificates.tsx` | **Créer** — miroir portail de AdminAcademyCertificates |
+| `src/App.tsx` | Ajouter route |
+| `src/components/portal/PortalSidebar.tsx` | Ajouter entrée "Certificats" |
 
