@@ -86,6 +86,17 @@
     --sidebar-border: 220 12% 88%;
     --sidebar-ring: 22 95% 52%;
   }
+
+  /* Portal HEEP — blue theme */
+  .portal {
+    --primary: 233 82% 62%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 233 82% 62%;
+    --shadow-primary: 0 8px 24px -4px hsl(233 82% 62% / 0.35);
+    --sidebar-primary: 233 82% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-ring: 233 82% 62%;
+  }
 }
 
 @layer base {
