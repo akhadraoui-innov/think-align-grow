@@ -87,6 +87,7 @@ import PortalAcademieCampaigns from "./pages/portal/PortalAcademieCampaigns";
 import PortalAcademieTracking from "./pages/portal/PortalAcademieTracking";
 import PortalAcademieAssets from "./pages/portal/PortalAcademieAssets";
 import PortalAcademieModuleDetail from "./pages/portal/PortalAcademieModuleDetail";
+import PortalAcademieCertificates from "./pages/portal/PortalAcademieCertificates";
 
 const queryClient = new QueryClient();
 
@@ -175,6 +176,7 @@ function AnimatedRoutes() {
           <Route path="/portal/academie/tracking" element={<PortalAcademieTracking />} />
           <Route path="/portal/academie/assets" element={<PortalAcademieAssets />} />
           <Route path="/portal/academie/modules/:id" element={<PortalAcademieModuleDetail />} />
+          <Route path="/portal/academie/certificates" element={<PortalAcademieCertificates />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

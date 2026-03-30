@@ -56,6 +56,7 @@ const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label
       { icon: Megaphone, label: "Campagnes", path: "/portal/academie/campaigns" },
       { icon: BarChart3, label: "Suivi", path: "/portal/academie/tracking" },
       { icon: Library, label: "Actifs pédagogiques", path: "/portal/academie/assets" },
+      { icon: Award, label: "Certificats", path: "/portal/academie/certificates" },
     ],
   },
 };
