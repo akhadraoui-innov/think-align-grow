@@ -420,7 +420,7 @@ export function AcademyPractice({ moduleId, enrollmentId, onComplete, previewMod
         const score = Math.round((exchangeCount / maxExchanges) * 70);
         const fallbackEval = { score, feedback: "Session terminée. Votre score est basé sur votre niveau d'engagement dans la conversation." };
         setEvaluation(fallbackEval);
-        onComplete?.(score);
+        onComplete?.(score, { practice_session_id: sessionId });
         await persistSession(messages, fallbackEval, score);
       }
     } catch (e: any) {
