@@ -252,6 +252,7 @@ export function AppSidebar({ onCommandPalette }: AppSidebarProps) {
             Portail HEEP
           </button>
         )}
+        {user && (
           <OrgSwitcher collapsed={collapsed} />
         )}
 
