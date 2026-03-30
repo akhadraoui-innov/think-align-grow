@@ -20,6 +20,7 @@ const academySubItems = [
   { path: "/admin/academy/campaigns", icon: Megaphone, label: "Campagnes" },
   { path: "/admin/academy/tracking", icon: BarChart3, label: "Suivi" },
   { path: "/admin/academy/assets", icon: Library, label: "Actifs pédagogiques" },
+  { path: "/admin/academy/certificates", icon: GraduationCap, label: "Certificats" },
 ];
 
 export function AdminSidebar() {
