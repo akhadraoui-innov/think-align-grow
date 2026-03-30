@@ -1,10 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, BookOpen, Award, Sparkles, History, FileText,
-  Plus, Users, LogIn, LayoutGrid, PanelLeftClose, PanelLeftOpen
+  BookOpen, Award, Sparkles, History,
+  Users, LayoutGrid, PanelLeftClose, PanelLeftOpen,
+  LayoutDashboard, Route, Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useActiveOrg } from "@/contexts/OrgContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PortalSidebarProps {
   open: boolean;
@@ -17,7 +20,7 @@ const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label
     title: "Formations",
     items: [
       { icon: BookOpen, label: "Catalogue", path: "/portal" },
-      { icon: LayoutDashboard, label: "Mon tableau de bord", path: "/portal/dashboard" },
+      { icon: Route, label: "Mes parcours", path: "/portal/dashboard" },
       { icon: Award, label: "Certificats", path: "/portal/certificates" },
     ],
   },
@@ -45,6 +48,21 @@ const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label
 export function PortalSidebar({ open, onToggle, activeTab }: PortalSidebarProps) {
   const location = useLocation();
   const config = SIDEBAR_CONFIGS[activeTab] || SIDEBAR_CONFIGS["/portal"];
+  const { activeOrg } = useActiveOrg();
+
+  // Fetch org details (logo_url) if we have an active org
+  const { data: orgDetails } = useQuery({
+    queryKey: ["portal-org-details", activeOrg?.organization_id],
+    enabled: !!activeOrg?.organization_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("organizations")
+        .select("name, logo_url, primary_color")
+        .eq("id", activeOrg!.organization_id)
+        .single();
+      return data;
+    },
+  });
 
   return (
     <aside
@@ -89,6 +107,33 @@ export function PortalSidebar({ open, onToggle, activeTab }: PortalSidebarProps)
           );
         })}
       </nav>
+
+      {/* Organisation block */}
+      {activeOrg && (
+        <div className={cn("border-t border-border/50 p-2", open ? "px-3" : "px-2")}>
+          <div className={cn(
+            "flex items-center gap-2 rounded-lg py-2",
+            open ? "px-2" : "justify-center px-0"
+          )}>
+            {orgDetails?.logo_url ? (
+              <img
+                src={orgDetails.logo_url}
+                alt={activeOrg.org_name}
+                className="h-7 w-7 rounded-md object-contain shrink-0"
+              />
+            ) : (
+              <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+              </div>
+            )}
+            {open && (
+              <span className="text-[10px] font-semibold text-foreground truncate leading-tight">
+                {activeOrg.org_name}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
