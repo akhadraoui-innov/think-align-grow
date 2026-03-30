@@ -3,7 +3,7 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Award, Calendar, BookOpen, Trophy, Clock, FileText, HelpCircle, MessageSquare, Download, Copy, GraduationCap, BarChart3, Timer } from "lucide-react";
+import { ArrowLeft, Award, Calendar, BookOpen, Trophy, Clock, FileText, HelpCircle, MessageSquare, Download, Copy, GraduationCap, BarChart3, Timer, Linkedin, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
