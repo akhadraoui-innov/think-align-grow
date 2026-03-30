@@ -227,6 +227,7 @@ export function ModuleReviewView({ module, metadata, contents, enrollment, pathI
             loading={loadingEvaluation}
             accentColor="border-emerald-500"
             generatedAt={generatedTimestamps.evaluation}
+            onRetry={() => fetchAI("evaluation")}
           />
         </TabsContent>
 
@@ -240,6 +241,7 @@ export function ModuleReviewView({ module, metadata, contents, enrollment, pathI
             loading={loadingAnalysis}
             accentColor="border-primary"
             generatedAt={generatedTimestamps.analysis}
+            onRetry={() => fetchAI("analysis")}
           />
         </TabsContent>
 
@@ -253,6 +255,7 @@ export function ModuleReviewView({ module, metadata, contents, enrollment, pathI
             loading={loadingKnowledge}
             accentColor="border-amber-500"
             generatedAt={generatedTimestamps.knowledge}
+            onRetry={() => fetchAI("knowledge")}
           />
         </TabsContent>
       </Tabs>

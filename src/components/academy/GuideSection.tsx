@@ -97,8 +97,8 @@ export function GuideSection({ pathId, guideDocument, isCompleted, user }: Guide
           <AnimatePresence>
             {expanded && guide?.content && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-                <div className="prose prose-sm max-w-none dark:prose-invert leading-relaxed border-t pt-4 mt-2">
-                  <ReactMarkdown>{guide.content}</ReactMarkdown>
+                <div className="border-t pt-4 mt-2">
+                  <EnrichedMarkdown content={guide.content} />
                 </div>
               </motion.div>
             )}
