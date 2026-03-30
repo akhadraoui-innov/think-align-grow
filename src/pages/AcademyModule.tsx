@@ -304,6 +304,10 @@ export default function AcademyModule() {
 
   // ── Content ──
   const renderContent = () => {
+    // Mode lecture post-complétion
+    if (isCompleted && (currentProgress as any)?.metadata && Object.keys((currentProgress as any).metadata).length > 0) {
+      return <ModuleReviewView module={module} metadata={(currentProgress as any).metadata} contents={contents} enrollment={enrollment} pathId={pathId} onRefaire={() => {}} />;
+    }
     if (module.module_type === "quiz") {
       return (
         <AcademyQuiz

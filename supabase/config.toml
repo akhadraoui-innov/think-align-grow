@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.academy-skills-agent]
 verify_jwt = false
+
+[functions.academy-tutor]
+verify_jwt = false
