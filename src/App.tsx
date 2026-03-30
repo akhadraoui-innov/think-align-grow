@@ -189,9 +189,14 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
-        <OrgProvider>
-          <AnimatedRoutes />
-        </OrgProvider>
+        <Routes>
+          <Route path="/verify/:id" element={<VerifyCertificate />} />
+          <Route path="*" element={
+            <OrgProvider>
+              <AnimatedRoutes />
+            </OrgProvider>
+          } />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
