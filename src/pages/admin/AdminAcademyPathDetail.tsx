@@ -448,6 +448,9 @@ export default function AdminAcademyPathDetail() {
               <TabsTrigger value="stats" className="gap-1.5">
                 <BarChart3 className="h-3.5 w-3.5" /> Statistiques
               </TabsTrigger>
+              <TabsTrigger value="skills" className="gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" /> Skills
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="modules">
@@ -479,6 +482,10 @@ export default function AdminAcademyPathDetail() {
 
             <TabsContent value="stats">
               <PathStatsTab enrollments={enrollments} enrollmentCount={enrollmentCount} pathModules={pathModules} progress={progress} />
+            </TabsContent>
+
+            <TabsContent value="skills">
+              <PathSkillsTab path={path} id={id!} />
             </TabsContent>
           </Tabs>
         </div>
