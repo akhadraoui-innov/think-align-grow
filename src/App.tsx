@@ -88,6 +88,7 @@ import PortalAcademieTracking from "./pages/portal/PortalAcademieTracking";
 import PortalAcademieAssets from "./pages/portal/PortalAcademieAssets";
 import PortalAcademieModuleDetail from "./pages/portal/PortalAcademieModuleDetail";
 import PortalAcademieCertificates from "./pages/portal/PortalAcademieCertificates";
+import PortalCertificateDetail from "./pages/portal/PortalCertificateDetail";
 
 const queryClient = new QueryClient();
 
