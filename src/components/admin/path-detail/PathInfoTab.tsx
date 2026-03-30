@@ -163,7 +163,68 @@ export function PathInfoTab({
             </div>
           </div>
 
-          {/* Section D — Options */}
+          {/* Section D — Compétences clés (read-only summary) */}
+          {Array.isArray(path.skills) && path.skills.length > 0 && (
+            <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+              <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold text-sm text-foreground tracking-tight">Compétences clés</h3>
+              </div>
+              <div className="p-5">
+                <div className="flex flex-wrap gap-2">
+                  {(path.skills as any[]).slice(0, 8).map((s: any, i: number) => (
+                    <Badge key={i} variant="outline" className="text-xs px-2.5 py-1 gap-1">
+                      <Sparkles className="h-3 w-3 text-primary" /> {s.name}
+                    </Badge>
+                  ))}
+                  {(path.skills as any[]).length > 8 && (
+                    <Badge variant="secondary" className="text-[10px]">+{(path.skills as any[]).length - 8}</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Section E — Prérequis */}
+          {Array.isArray(path.prerequisites) && path.prerequisites.length > 0 && (
+            <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+              <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                <BookOpen className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold text-sm text-foreground tracking-tight">Prérequis</h3>
+              </div>
+              <div className="p-5">
+                <div className="flex flex-wrap gap-2">
+                  {(path.prerequisites as string[]).map((p: string, i: number) => (
+                    <Badge key={i} variant="secondary" className="text-xs gap-1">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" /> {p}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Section F — Débouchés */}
+          {Array.isArray(path.professional_outcomes) && path.professional_outcomes.length > 0 && (
+            <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+              <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+                <Briefcase className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold text-sm text-foreground tracking-tight">Débouchés professionnels</h3>
+              </div>
+              <div className="p-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {(path.professional_outcomes as string[]).map((o: string, i: number) => (
+                    <div key={i} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-muted/20">
+                      <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span>{o}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Section G — Options */}
           <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
             <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
               <Award className="h-4 w-4 text-primary" />
