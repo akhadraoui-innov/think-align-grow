@@ -68,7 +68,7 @@ export function AppSidebar({ onCommandPalette }: AppSidebarProps) {
           </div>
           {!collapsed && (
             <div>
-              <p className="font-display font-bold text-sm uppercase tracking-wide">Hack & Show</p>
+              <p className="font-display font-bold text-sm uppercase tracking-wide">GROWTHINNOV</p>
               <p className="text-[10px] text-muted-foreground">Toolkit Stratégique</p>
             </div>
           )}
