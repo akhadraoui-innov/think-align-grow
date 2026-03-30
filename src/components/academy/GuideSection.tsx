@@ -18,7 +18,7 @@ interface GuideSectionProps {
 export function GuideSection({ pathId, guideDocument, isCompleted, user }: GuideSectionProps) {
   const [guide, setGuide] = useState<any>(guideDocument || null);
   const [loading, setLoading] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(!!guideDocument);
   const [sendingEmail, setSendingEmail] = useState(false);
 
   const generateGuide = async () => {
