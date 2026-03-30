@@ -220,6 +220,6 @@ export function useAcademyModule(moduleId: string | undefined, pathId: string | 
     enrollment, currentProgress, allProgress, progressMap,
     currentIndex, nextModule, prevModule,
     completedCount, progressPct, isCompleted, totalTimeSpent,
-    saveProgress, getModuleStatus,
+    saveProgress, getModuleStatus, certificateJustIssued,
   };
 }
