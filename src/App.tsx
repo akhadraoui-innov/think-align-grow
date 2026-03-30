@@ -74,6 +74,17 @@ import PortalToolkits from "./pages/portal/PortalToolkits";
 import PortalMarketplace from "./pages/portal/PortalMarketplace";
 import PortalLibrary from "./pages/portal/PortalLibrary";
 import PortalAnalytics from "./pages/portal/PortalAnalytics";
+import PortalAcademie from "./pages/portal/PortalAcademie";
+import PortalAcademieMap from "./pages/portal/PortalAcademieMap";
+import PortalAcademieFunctions from "./pages/portal/PortalAcademieFunctions";
+import PortalAcademieFunctionDetail from "./pages/portal/PortalAcademieFunctionDetail";
+import PortalAcademiePersonae from "./pages/portal/PortalAcademiePersonae";
+import PortalAcademiePaths from "./pages/portal/PortalAcademiePaths";
+import PortalAcademiePathDetail from "./pages/portal/PortalAcademiePathDetail";
+import PortalAcademieCampaigns from "./pages/portal/PortalAcademieCampaigns";
+import PortalAcademieTracking from "./pages/portal/PortalAcademieTracking";
+import PortalAcademieAssets from "./pages/portal/PortalAcademieAssets";
+import PortalAcademieModuleDetail from "./pages/portal/PortalAcademieModuleDetail";
 
 const queryClient = new QueryClient();
 
@@ -150,6 +161,17 @@ function AnimatedRoutes() {
           <Route path="/portal/marketplace" element={<PortalMarketplace />} />
           <Route path="/portal/library" element={<PortalLibrary />} />
           <Route path="/portal/analytics" element={<PortalAnalytics />} />
+          <Route path="/portal/academie" element={<PortalAcademie />} />
+          <Route path="/portal/academie/map" element={<PortalAcademieMap />} />
+          <Route path="/portal/academie/functions" element={<PortalAcademieFunctions />} />
+          <Route path="/portal/academie/functions/:id" element={<PortalAcademieFunctionDetail />} />
+          <Route path="/portal/academie/personae" element={<PortalAcademiePersonae />} />
+          <Route path="/portal/academie/paths" element={<PortalAcademiePaths />} />
+          <Route path="/portal/academie/paths/:id" element={<PortalAcademiePathDetail />} />
+          <Route path="/portal/academie/campaigns" element={<PortalAcademieCampaigns />} />
+          <Route path="/portal/academie/tracking" element={<PortalAcademieTracking />} />
+          <Route path="/portal/academie/assets" element={<PortalAcademieAssets />} />
+          <Route path="/portal/academie/modules/:id" element={<PortalAcademieModuleDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

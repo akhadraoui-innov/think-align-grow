@@ -2,7 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import {
   BookOpen, Award, Sparkles, History,
   Users, LayoutGrid, PanelLeftClose, PanelLeftOpen,
-  Route, Building2, Layers
+  Route, Building2, Layers, GraduationCap, Map, Briefcase,
+  Brain, Megaphone, BarChart3, Library
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveOrg } from "@/contexts/OrgContext";
@@ -42,6 +43,19 @@ const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label
     title: "CHALLENGES",
     items: [
       { icon: LayoutGrid, label: "Mes challenges", path: "/portal/challenges" },
+    ],
+  },
+  "/portal/academie": {
+    title: "ACADEMIE",
+    items: [
+      { icon: GraduationCap, label: "Vue d'ensemble", path: "/portal/academie" },
+      { icon: Map, label: "Cartographie", path: "/portal/academie/map" },
+      { icon: Briefcase, label: "Fonctions", path: "/portal/academie/functions" },
+      { icon: Brain, label: "Personae", path: "/portal/academie/personae" },
+      { icon: Route, label: "Parcours", path: "/portal/academie/paths" },
+      { icon: Megaphone, label: "Campagnes", path: "/portal/academie/campaigns" },
+      { icon: BarChart3, label: "Suivi", path: "/portal/academie/tracking" },
+      { icon: Library, label: "Actifs pédagogiques", path: "/portal/academie/assets" },
     ],
   },
 };
