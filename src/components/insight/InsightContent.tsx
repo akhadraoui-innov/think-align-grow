@@ -359,7 +359,10 @@ const SECTIONS: Record<string, () => JSX.Element> = {
 export function InsightContent({ activeSection }: InsightContentProps) {
   const Section = SECTIONS[activeSection] || OverviewSection;
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className={cn(
+      "mx-auto px-6 py-8",
+      activeSection === "discovery" ? "max-w-7xl" : "max-w-4xl"
+    )}>
       <Section />
     </div>
   );
