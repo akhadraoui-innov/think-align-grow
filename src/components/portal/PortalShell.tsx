@@ -59,8 +59,8 @@ export function PortalShell({ children }: PortalShellProps) {
         <div className="flex items-center h-14 px-4 gap-4">
           {/* Logo — text only, no H icon */}
           <Link to="/portal" className="flex items-center mr-3 shrink-0">
-            <span className="text-lg font-black tracking-tight text-foreground uppercase">
-              HEEP
+            <span className="text-xl font-black tracking-tighter text-black uppercase">
+              GROWTHINNOV
             </span>
           </Link>
 
