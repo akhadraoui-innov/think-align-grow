@@ -133,7 +133,18 @@ function AnimatedRoutes() {
           <Route path="/admin/simulator/templates" element={<AdminSimulatorTemplates />} />
           {/* Portal routes */}
           <Route path="/portal" element={<PortalFormations />} />
-          <Route path="/portal/experiences" element={<PortalExperiences />} />
+          <Route path="/portal/dashboard" element={<PortalFormationsDashboard />} />
+          <Route path="/portal/path/:id" element={<PortalFormationsPath />} />
+          <Route path="/portal/module/:id" element={<PortalFormationsModule />} />
+          <Route path="/portal/certificates" element={<PortalFormationsCertificates />} />
+          <Route path="/portal/pratique" element={<PortalPratique />} />
+          <Route path="/portal/pratique/session" element={<PortalPratiqueSession />} />
+          <Route path="/portal/pratique/history" element={<PortalPratiqueHistory />} />
+          <Route path="/portal/pratique/session/:sessionId/report" element={<PortalPratiqueReport />} />
+          <Route path="/portal/workshops" element={<PortalWorkshops />} />
+          <Route path="/portal/workshops/:id" element={<PortalWorkshopRoom />} />
+          <Route path="/portal/challenges" element={<PortalChallenges />} />
+          <Route path="/portal/challenges/:id" element={<PortalChallengeRoom />} />
           <Route path="/portal/marketplace" element={<PortalMarketplace />} />
           <Route path="/portal/library" element={<PortalLibrary />} />
           <Route path="/portal/analytics" element={<PortalAnalytics />} />
