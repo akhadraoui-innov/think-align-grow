@@ -47,6 +47,7 @@ const DIFFICULTY_MAP: Record<string, { label: string; class: string }> = {
 export default function PortalToolkits() {
   const [selectedToolkitId, setSelectedToolkitId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [cardFormat, setCardFormat] = useState<CardFormat>("preview");
 
   // All published toolkits
   const { data: toolkits = [], isLoading } = useQuery({
