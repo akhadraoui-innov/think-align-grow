@@ -16,6 +16,7 @@ import { fr } from "date-fns/locale";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CertPathDetail } from "@/components/admin/CertPathDetail";
 
 const VERIFY_BASE = "https://think-align-grow.lovable.app/verify";
 const API_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-certificate`;
