@@ -36,10 +36,7 @@ function GuestLanding() {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <nav className="flex items-center justify-between px-5 pt-6 pb-2">
         <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-foreground flex items-center justify-center">
-            <span className="font-display text-xs font-black text-background">H</span>
-          </div>
-          <span className="font-display text-sm font-bold uppercase tracking-widest text-foreground">Hack & Show</span>
+          <span className="font-display text-sm font-bold uppercase tracking-widest text-foreground">GROWTHINNOV</span>
         </div>
         <button onClick={() => navigate("/auth")} className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
           Connexion
