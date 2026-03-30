@@ -525,6 +525,69 @@ export type Database = {
         }
         Relationships: []
       }
+      academy_path_feedback: {
+        Row: {
+          ai_generated_insights: Json | null
+          created_at: string | null
+          difficulty_rating: number | null
+          enrollment_id: string
+          id: string
+          improvements: string[] | null
+          overall_rating: number | null
+          path_id: string
+          relevance_rating: number | null
+          strengths: string[] | null
+          testimonial: string | null
+          user_id: string
+          would_recommend: boolean | null
+        }
+        Insert: {
+          ai_generated_insights?: Json | null
+          created_at?: string | null
+          difficulty_rating?: number | null
+          enrollment_id: string
+          id?: string
+          improvements?: string[] | null
+          overall_rating?: number | null
+          path_id: string
+          relevance_rating?: number | null
+          strengths?: string[] | null
+          testimonial?: string | null
+          user_id: string
+          would_recommend?: boolean | null
+        }
+        Update: {
+          ai_generated_insights?: Json | null
+          created_at?: string | null
+          difficulty_rating?: number | null
+          enrollment_id?: string
+          id?: string
+          improvements?: string[] | null
+          overall_rating?: number | null
+          path_id?: string
+          relevance_rating?: number | null
+          strengths?: string[] | null
+          testimonial?: string | null
+          user_id?: string
+          would_recommend?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_path_feedback_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: true
+            referencedRelation: "academy_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_path_feedback_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "academy_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_path_modules: {
         Row: {
           id: string
@@ -983,6 +1046,47 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_skill_assessments: {
+        Row: {
+          assessed_at: string | null
+          enrollment_id: string
+          evidence: Json | null
+          final_level: number | null
+          id: string
+          initial_level: number | null
+          skill_name: string
+          user_id: string
+        }
+        Insert: {
+          assessed_at?: string | null
+          enrollment_id: string
+          evidence?: Json | null
+          final_level?: number | null
+          id?: string
+          initial_level?: number | null
+          skill_name: string
+          user_id: string
+        }
+        Update: {
+          assessed_at?: string | null
+          enrollment_id?: string
+          evidence?: Json | null
+          final_level?: number | null
+          id?: string
+          initial_level?: number | null
+          skill_name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_skill_assessments_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academy_enrollments"
             referencedColumns: ["id"]
           },
         ]
