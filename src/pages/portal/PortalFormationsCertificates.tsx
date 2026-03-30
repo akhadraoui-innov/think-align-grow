@@ -134,7 +134,7 @@ export default function PortalFormationsCertificates() {
             const certData = cert.certificate_data || {};
             return (
               <motion.div key={cert.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
-                <Card className="overflow-hidden hover:shadow-lg transition-all cursor-pointer group" onClick={() => setSelectedCert(cert)}>
+                <Card className="overflow-hidden hover:shadow-lg transition-all cursor-pointer group" onClick={() => navigate(`/portal/certificates/${cert.id}`)}>
                   <div className={cn("h-1.5 bg-gradient-to-r", gradient)} />
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
