@@ -90,6 +90,8 @@ import PortalAcademieModuleDetail from "./pages/portal/PortalAcademieModuleDetai
 import PortalAcademieCertificates from "./pages/portal/PortalAcademieCertificates";
 import PortalCertificateDetail from "./pages/portal/PortalCertificateDetail";
 import PortalGuideReader from "./pages/portal/PortalGuideReader";
+import PortalInsight from "./pages/portal/PortalInsight";
+import AdminInsight from "./pages/admin/AdminInsight";
 
 const queryClient = new QueryClient();
 
