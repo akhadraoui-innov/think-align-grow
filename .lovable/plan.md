@@ -1,129 +1,42 @@
 
 
-# Plan — Portail HEEP : Refonte complète par expérience
+# Amélioration Catalogue Formations + Sidebar (Mes parcours + Organisation)
 
-## Architecture
+## Changements
 
-Le portail HEEP utilise un thème bleu dédié (~`#4F6BED` → HSL `233 82% 62%`) appliqué via une classe CSS `.portal` sur le PortalShell, overriding `--primary` sans toucher au cabinet.
+### 1. Sidebar — Ajouter "Mes parcours" + Organisation
 
-```text
-┌────────────────────────────────────────────────────────┐
-│ HEADER: HEEP [logo bleu] | Formations | Pratique |     │
-│         Workshops | Challenges  [🔍 🔔 ⚙️ Cabinet→]   │
-├────────┬───────────────────────────────────────────────┤
-│ SIDEBAR│  Contenu contextuel selon l'onglet actif      │
-│ (varie │  - Formations: Dashboard, Parcours, Certifs   │
-│  par   │  - Pratique: Catalogue, Historique             │
-│  exp.) │  - Workshops: Mes sessions, Rejoindre         │
-│        │  - Challenges: Templates, Sessions actives     │
-├────────┴───────────────────────────────────────────────┤
-│  HeepAIWidget flottant                                 │
-└────────────────────────────────────────────────────────┘
+**`src/components/portal/PortalSidebar.tsx`**
+
+- Ajouter un item "Mes parcours" dans la config Formations (entre Catalogue et Dashboard), avec icône `Route`, pointant vers `/portal/dashboard` ou une ancre dédiée
+- En bas de la sidebar : afficher le nom (et logo si dispo) de l'organisation active via `useActiveOrg()`. En mode collapsed, afficher uniquement l'icône/logo. Réutilise le pattern de `OrgSwitcher.tsx`
+- Si l'org a un `logo_url` (champ `organizations`), afficher l'image ; sinon fallback sur l'icône `Building2`
+
+Config sidebar Formations mise à jour :
+```
+Catalogue → /portal
+Mes parcours → /portal/dashboard (section parcours en cours/terminés)
+Certificats → /portal/certificates
 ```
 
-## Thème bleu portail
+### 2. Catalogue — Amélioration visuelle
 
-Dans `index.css`, ajouter un scope `.portal` :
-```css
-.portal {
-  --primary: 233 82% 62%;
-  --primary-foreground: 0 0% 100%;
-  --ring: 233 82% 62%;
-}
-```
-Le `PortalShell` wrapper aura `className="portal"`.
+**`src/pages/portal/PortalFormations.tsx`**
 
-## Restructuration du header
+- Séparer le contenu en 2 sections claires via la sidebar : le **Catalogue** (`/portal`) ne montre que la grille de parcours disponibles avec filtres améliorés ; les KPIs, heatmap, parcours en cours et activité récente sont dans **Mes parcours** (`/portal/dashboard`)
+- Améliorer les cards catalogue : ajouter une bande de couleur en haut basée sur la difficulté, icône de fonction métier, nombre d'inscrits (si dispo), tags visibles, et un CTA "Voir le parcours" plus visible
+- Ajouter un compteur de résultats ("12 parcours disponibles")
+- Améliorer le layout des filtres : pills plus larges, search plus proéminent
 
-Les 4 onglets deviennent : **Formations**, **Pratique**, **Workshops**, **Challenges**.
-Marketplace et HEEP IA restent accessibles (sidebar ou widget flottant).
+### 3. Page "Mes parcours" existante
 
-## Pages par expérience
-
-### 1. Formations (= Academy/Parcours)
-Duplication complète de 5 pages existantes :
-
-| Route portail | Page source | Contenu |
-|---|---|---|
-| `/portal` | Academy.tsx | Catalogue parcours + inscriptions |
-| `/portal/dashboard` | AcademyDashboard.tsx | KPIs, progression, streaks |
-| `/portal/path/:id` | AcademyPath.tsx | Détail parcours, modules, inscription |
-| `/portal/module/:id` | AcademyModule.tsx | Module immersif (layout plein écran dans PortalShell) |
-| `/portal/certificates` | AcademyCertificates.tsx | Certificats obtenus |
-
-Sidebar Formations : Dashboard, Mes Parcours, Certificats.
-
-### 2. Pratique (= Simulateur)
-Duplication complète de 4 pages :
-
-| Route portail | Page source | Contenu |
-|---|---|---|
-| `/portal/pratique` | Simulator.tsx | Catalogue modes, univers, practices org |
-| `/portal/pratique/session` | SimulatorSession.tsx | Session immersive |
-| `/portal/pratique/history` | SimulatorHistory.tsx | Historique sessions + scores |
-| `/portal/pratique/session/:id/report` | SimulatorReport.tsx | Rapport détaillé |
-
-Sidebar Pratique : Catalogue, Historique, Mes rapports.
-
-### 3. Workshops
-Duplication de 2 pages :
-
-| Route portail | Page source | Contenu |
-|---|---|---|
-| `/portal/workshops` | Workshop.tsx | Liste sessions, créer, rejoindre |
-| `/portal/workshops/:id` | WorkshopRoom.tsx | Canvas collaboratif immersif |
-
-Sidebar Workshops : Mes sessions, Rejoindre, Créer.
-
-### 4. Challenges
-Duplication de 2 pages :
-
-| Route portail | Page source | Contenu |
-|---|---|---|
-| `/portal/challenges` | Challenge.tsx | Templates org, sessions actives |
-| `/portal/challenges/:id` | ChallengeRoom.tsx | Board challenge immersif |
-
-Sidebar Challenges : Templates, Sessions actives.
-
-## Approche technique
-
-Chaque page portail **importe et réutilise les mêmes hooks et queries** que la page cabinet (pas de copier-coller de logique). La différence est :
-- Le layout (PortalShell vs AppSidebar)
-- La navigation interne (liens `/portal/*` au lieu de `/*`)
-- Le thème bleu via le scope CSS `.portal`
-
-Pour les pages immersives (module, session simulator, workshop room, challenge room), le PortalShell masque la sidebar et affiche le contenu en plein écran avec une bottom bar contextuelle.
+**`src/pages/portal/PortalFormationsDashboard.tsx`** — Vérifier qu'elle existe déjà et contient les KPIs + heatmap + parcours en cours/terminés. Si c'est un doublon de PortalFormations, nettoyer pour que chaque page ait son rôle propre.
 
 ## Fichiers impactés
 
 | Fichier | Action |
 |---|---|
-| `src/index.css` | Ajouter scope `.portal` avec variables bleu |
-| `src/components/portal/PortalShell.tsx` | Refacto header (4 onglets), classe `.portal` |
-| `src/components/portal/PortalSidebar.tsx` | Sidebar contextuelle par expérience |
-| `src/pages/portal/PortalFormations.tsx` | Refacto → catalogue réel Academy |
-| `src/pages/portal/PortalFormationsDashboard.tsx` | Créer — clone AcademyDashboard |
-| `src/pages/portal/PortalFormationsPath.tsx` | Créer — clone AcademyPath |
-| `src/pages/portal/PortalFormationsModule.tsx` | Créer — clone AcademyModule |
-| `src/pages/portal/PortalFormationsCertificates.tsx` | Créer — clone AcademyCertificates |
-| `src/pages/portal/PortalPratique.tsx` | Créer — clone Simulator |
-| `src/pages/portal/PortalPratiqueSession.tsx` | Créer — clone SimulatorSession |
-| `src/pages/portal/PortalPratiqueHistory.tsx` | Créer — clone SimulatorHistory |
-| `src/pages/portal/PortalPratiqueReport.tsx` | Créer — clone SimulatorReport |
-| `src/pages/portal/PortalWorkspace.tsx` | Refacto → clone Workshop |
-| `src/pages/portal/PortalWorkshopRoom.tsx` | Créer — clone WorkshopRoom |
-| `src/pages/portal/PortalChallenges.tsx` | Créer — clone Challenge |
-| `src/pages/portal/PortalChallengeRoom.tsx` | Créer — clone ChallengeRoom |
-| `src/App.tsx` | Ajouter ~14 nouvelles routes `/portal/*` |
-
-## Ordre d'exécution
-
-1. **Thème bleu** — CSS `.portal` scope + PortalShell refacto header
-2. **Formations** — 5 pages (la plus volumineuse)
-3. **Pratique** — 4 pages
-4. **Workshops** — 2 pages
-5. **Challenges** — 2 pages
-6. **Sidebar contextuelle** — adapte les liens selon l'expérience active
-
-On commence par quelle expérience ?
+| `src/components/portal/PortalSidebar.tsx` | Ajouter "Mes parcours" + bloc organisation en bas |
+| `src/pages/portal/PortalFormations.tsx` | Nettoyer = catalogue seul, améliorer les cards |
+| `src/pages/portal/PortalFormationsDashboard.tsx` | S'assurer qu'il contient KPIs + parcours utilisateur |
 
