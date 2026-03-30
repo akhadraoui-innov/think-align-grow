@@ -563,6 +563,7 @@ export type Database = {
       }
       academy_paths: {
         Row: {
+          aptitudes: Json
           certificate_enabled: boolean
           created_at: string
           created_by: string
@@ -575,11 +576,15 @@ export type Database = {
           name: string
           organization_id: string | null
           persona_id: string | null
+          prerequisites: Json
+          professional_outcomes: Json
+          skills: Json
           status: string
           tags: Json
           updated_at: string
         }
         Insert: {
+          aptitudes?: Json
           certificate_enabled?: boolean
           created_at?: string
           created_by: string
@@ -592,11 +597,15 @@ export type Database = {
           name: string
           organization_id?: string | null
           persona_id?: string | null
+          prerequisites?: Json
+          professional_outcomes?: Json
+          skills?: Json
           status?: string
           tags?: Json
           updated_at?: string
         }
         Update: {
+          aptitudes?: Json
           certificate_enabled?: boolean
           created_at?: string
           created_by?: string
@@ -609,6 +618,9 @@ export type Database = {
           name?: string
           organization_id?: string | null
           persona_id?: string | null
+          prerequisites?: Json
+          professional_outcomes?: Json
+          skills?: Json
           status?: string
           tags?: Json
           updated_at?: string
