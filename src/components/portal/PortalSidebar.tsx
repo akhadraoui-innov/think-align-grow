@@ -12,12 +12,11 @@ interface PortalSidebarProps {
 }
 
 const SIDEBAR_ITEMS = [
-  { icon: LayoutGrid, label: "Workspace", path: "/portal/workspace" },
-  { icon: Bot, label: "AI Toolkits", path: "/portal/toolkits" },
-  { icon: GitBranch, label: "Learning Paths", path: "/portal/paths" },
-  { icon: Users, label: "Live Sessions", path: "/portal/sessions" },
-  { icon: BarChart3, label: "Reports", path: "/portal/analytics" },
-  { icon: BookOpen, label: "Resource Library", path: "/portal/library" },
+  { icon: LayoutGrid, label: "Tableau de bord", path: "/portal" },
+  { icon: Bot, label: "Expériences", path: "/portal/experiences" },
+  { icon: GitBranch, label: "Marketplace", path: "/portal/marketplace" },
+  { icon: BarChart3, label: "Analytique", path: "/portal/analytics" },
+  { icon: BookOpen, label: "Bibliothèque", path: "/portal/library" },
 ] as const;
 
 export function PortalSidebar({ open, onToggle }: PortalSidebarProps) {
