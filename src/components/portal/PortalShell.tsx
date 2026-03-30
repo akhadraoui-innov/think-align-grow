@@ -19,8 +19,8 @@ interface PortalShellProps {
 
 const NAV_TABS = [
   { label: "Formations", path: "/portal" },
-  { label: "Expériences", path: "/portal/workspace" },
-  { label: "Mes Agents", path: "/portal/agents" },
+  { label: "Expériences", path: "/portal/experiences" },
+  { label: "Marketplace", path: "/portal/marketplace" },
   { label: "HEEP IA", path: "/portal/ai" },
 ] as const;
 
