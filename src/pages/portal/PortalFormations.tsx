@@ -288,7 +288,7 @@ export default function PortalFormations() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {completedEnrollments.map((e: any) => (
-              <Card key={e.id} className="cursor-pointer hover:shadow-md transition-all" onClick={() => navigate(`/academy/path/${e.path_id}`)}>
+              <Card key={e.id} className="cursor-pointer hover:shadow-md transition-all" <Card key={e.id} className="cursor-pointer hover:shadow-md transition-all" onClick={() => navigate(`/portal/path/${e.path_id}`)}>>
                 <CardContent className="p-3 flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--pillar-business))]/10 shrink-0">
                     <Trophy className="h-4 w-4 text-[hsl(var(--pillar-business))]" />
