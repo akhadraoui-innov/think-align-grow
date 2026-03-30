@@ -71,7 +71,7 @@ export default function PortalFormationsModule() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
-  const { module, isLoading, contents, pathData, pathModules, enrollment, currentProgress, progressMap, currentIndex, nextModule, prevModule, completedCount, progressPct, isCompleted, totalTimeSpent, saveProgress, getModuleStatus } = useAcademyModule(id, pathId);
+  const { module, isLoading, contents, pathData, pathModules, enrollment, currentProgress, progressMap, currentIndex, nextModule, prevModule, completedCount, progressPct, isCompleted, totalTimeSpent, saveProgress, getModuleStatus, certificateJustIssued } = useAcademyModule(id, pathId);
   const isPractice = module?.module_type === "practice";
 
   const handleMarkComplete = async () => {
