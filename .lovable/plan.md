@@ -1,35 +1,41 @@
 
 
-# Plan — Cycle complet par défaut + Cycle global "Offre complète"
+# Plan — Fix KPIs vides sur la page "Mes Certificats"
 
-## Changements
+## Problème
 
-### 1. Onglet "Cycle complet" par défaut
-Dans `SectionTabs`, changer `defaultValue="essentiel"` → `defaultValue="cycle"` quand un cycle est fourni.
+La base de données stocke `average_score`, `total_hours`, `user_name` dans `certificate_data`, mais `AcademyCertificates.tsx` lit `score`, `total_time_hours`, `holder_name`, `modules_completed`. Ces clés n'existent pas → tout affiche 0.
 
-### 2. Nouveau cycle global dans Overview
-Créer un `overviewCycle` dans `cycleData.ts` qui synthétise toute l'offre en 2 grandes phases :
+## Solution
 
-**Phase 01 — Knowledge** (Formations + Pratiques)
-- Steps reprenant les moments clés : création parcours (ai-gen), modules adaptatifs (ai-tutor), quiz/exercices (ai-eval), simulateur 7 modes (ai-skill), scoring & rapports (ai-eval), knowledge brief (ai-know)
+Ajouter des fallbacks dans `AcademyCertificates.tsx` (même correction déjà faite sur `PortalCertificateDetail.tsx`) :
 
-**Phase 02 — Collective Intelligence** (Workshops + Challenges)  
-- Steps : sélection toolkit & cartes (system), canevas collaboratif live (system), scoring gamifié (ai-eval), diagnostic stratégique (ai-gen), board & placement (system), analyse IA & maturité (ai-eval)
+### Ligne 68-70 — KPIs globaux
+```
+score:            c.certificate_data?.score || c.certificate_data?.average_score || 0
+total_time_hours: c.certificate_data?.total_time_hours ?? c.certificate_data?.total_hours ?? 0
+modules_completed: c.certificate_data?.modules_completed || c.certificate_data?.modules_detail?.length || 0
+```
 
-Metrics footer : KPIs globaux couvrant les 4 modules.
+### Ligne 136 — ScoreGauge dans la card
+```
+certData.score || certData.average_score || 0
+```
 
-### 3. Intégrer dans OverviewSection
-Passer le cycle à `SectionTabs` pour que l'Overview ait aussi les 3 onglets avec le cycle global par défaut.
+### Ligne 143-145 — Détails dans la card
+```
+modules: certData.modules_completed || certData.modules_detail?.length || 0
+heures:  certData.total_time_hours ?? certData.total_hours ?? 0
+```
 
-## Fichiers impactés
+### Ligne ~173 — Dialog certificat (holder_name)
+```
+certData.holder_name || certData.user_name || profile?.display_name
+```
+
+## Fichier impacté
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/insight/InsightContent.tsx` | `SectionTabs` : defaultValue conditionnel ; `OverviewSection` : ajouter cycle |
-| `src/components/insight/cycleData.ts` | Ajouter `overviewCycle` (2 phases Knowledge + Collective Intelligence) |
-
-## Ordre d'exécution
-1. Ajouter `overviewCycle` dans `cycleData.ts`
-2. Modifier `SectionTabs` defaultValue
-3. Modifier `OverviewSection` pour passer le cycle
+| `src/pages/AcademyCertificates.tsx` | Ajouter fallbacks sur 6 endroits où les champs sont lus |
 
