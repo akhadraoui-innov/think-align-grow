@@ -212,12 +212,12 @@ export default function AcademyCertificates() {
 
                 <div className="flex items-center gap-2 flex-wrap">
                   <CertificateDownload
-                    holderName={certData.holder_name || profile?.display_name || "Apprenant"}
-                    pathName={path?.name || "Parcours"}
-                    issuedAt={selectedCert.issued_at}
-                    score={certData.score || 0}
-                    modulesCompleted={certData.modules_completed || 0}
-                    totalTimeHours={certData.total_time_hours || 0}
+                     holderName={certData.holder_name || certData.user_name || profile?.display_name || "Apprenant"}
+                     pathName={path?.name || "Parcours"}
+                     issuedAt={selectedCert.issued_at}
+                     score={certData.score || certData.average_score || 0}
+                     modulesCompleted={certData.modules_completed || certData.modules_detail?.length || 0}
+                     totalTimeHours={certData.total_time_hours ?? certData.total_hours ?? 0}
                     certificateId={selectedCert.id}
                     difficulty={path?.difficulty}
                     modulesDetail={modulesDetail}
