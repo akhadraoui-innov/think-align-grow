@@ -195,11 +195,11 @@ export default function AcademyCertificates() {
                   <p className="text-xs text-muted-foreground mb-1">Pour avoir complété avec succès le parcours</p>
                   <p className="font-bold text-base text-amber-700 dark:text-amber-400 mb-4">« {path?.name} »</p>
                   <div className="flex items-center justify-center gap-6 py-3 px-4 rounded-xl bg-amber-100/40 dark:bg-amber-900/20 border border-amber-300/30">
-                    <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.score || 0}%</p><p className="text-[9px] text-muted-foreground">Score</p></div>
-                    <div className="w-px h-8 bg-amber-300/40" />
-                    <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.modules_completed || 0}</p><p className="text-[9px] text-muted-foreground">Modules</p></div>
-                    <div className="w-px h-8 bg-amber-300/40" />
-                    <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.total_time_hours || 0}h</p><p className="text-[9px] text-muted-foreground">Formation</p></div>
+                     <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.score || certData.average_score || 0}%</p><p className="text-[9px] text-muted-foreground">Score</p></div>
+                     <div className="w-px h-8 bg-amber-300/40" />
+                     <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.modules_completed || certData.modules_detail?.length || 0}</p><p className="text-[9px] text-muted-foreground">Modules</p></div>
+                     <div className="w-px h-8 bg-amber-300/40" />
+                     <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.total_time_hours ?? certData.total_hours ?? 0}h</p><p className="text-[9px] text-muted-foreground">Formation</p></div>
                   </div>
                   <div className="mt-4 pt-3 border-t border-amber-300/30 flex items-end justify-between">
                     <div className="text-left text-[10px] text-muted-foreground space-y-0.5">
