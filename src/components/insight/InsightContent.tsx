@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PlatformFlow } from "./PlatformFlow";
+import { CycleTimeline } from "./CycleTimeline";
+import { formationsCycle, pratiqueCycle, workshopsCycle, challengesCycle, plateformeCycle } from "./cycleData";
 
 interface InsightContentProps {
   activeSection: string;
