@@ -231,11 +231,11 @@ export default function PortalCertificateDetail() {
               <h3 className="font-semibold text-sm mb-3 flex items-center gap-2"><GraduationCap className="h-4 w-4 text-primary" /> Description du parcours</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{path?.description}</p>
             </CardContent></Card>
-            {pathSkills.length > 0 && (
+            {effectiveSkills.length > 0 && (
               <Card><CardContent className="p-6">
                 <h3 className="font-semibold text-sm mb-3 flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Compétences clés acquises</h3>
                 <div className="flex flex-wrap gap-2">
-                  {pathSkills.map((s: any, i: number) => (
+                  {effectiveSkills.map((s: any, i: number) => (
                     <Badge key={i} variant="outline" className="text-xs px-3 py-1.5 gap-1.5"><Sparkles className="h-3 w-3 text-primary" /> {s.name}</Badge>
                   ))}
                 </div>
