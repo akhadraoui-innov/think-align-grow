@@ -163,9 +163,11 @@ export default function PortalCertificateDetail() {
   const path = (cert as any).academy_paths;
   const certData = (cert as any).certificate_data || {};
   const modulesDetail: any[] = certData.modules_detail || [];
-  const score = certData.score || 0;
+  const score = certData.score || certData.average_score || 0;
   const grade = getGrade(score);
-  const holderName = certData.holder_name || profile?.display_name || "Apprenant";
+  const holderName = certData.holder_name || certData.user_name || profile?.display_name || "Apprenant";
+  const totalHours = certData.total_time_hours ?? certData.total_hours ?? 0;
+  const modulesCompleted = certData.modules_completed || certData.modules_total || modulesDetail.length || 0;
   const pathSkills: any[] = Array.isArray(path?.skills) ? path.skills : [];
   const pathAptitudes: string[] = Array.isArray(path?.aptitudes) ? path.aptitudes : [];
   const pathOutcomes: string[] = Array.isArray(path?.professional_outcomes) ? path.professional_outcomes : [];
