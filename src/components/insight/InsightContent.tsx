@@ -636,7 +636,7 @@ function WorkshopsDetailed() {
 }
 
 function WorkshopsSection() {
-  return <SectionTabs essential={<WorkshopsEssential />} detailed={<WorkshopsDetailed />} />;
+  return <SectionTabs essential={<WorkshopsEssential />} detailed={<WorkshopsDetailed />} cycle={<CycleTimeline data={workshopsCycle} />} />;
 }
 
 /* ─── 5. CHALLENGES ─── */
