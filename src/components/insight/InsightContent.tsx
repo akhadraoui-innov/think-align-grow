@@ -800,7 +800,7 @@ function PlateformeDetailed() {
 }
 
 function PlateformeSection() {
-  return <SectionTabs essential={<PlateformeEssential />} detailed={<PlateformeDetailed />} />;
+  return <SectionTabs essential={<PlateformeEssential />} detailed={<PlateformeDetailed />} cycle={<CycleTimeline data={plateformeCycle} />} />;
 }
 
 /* ─── 7. DISCOVERY ─── */
