@@ -65,9 +65,9 @@ export default function AcademyCertificates() {
   const difficultyLabels: Record<string, string> = { beginner: "Débutant", intermediate: "Intermédiaire", advanced: "Avancé" };
 
   const totalCerts = certificates.length;
-  const avgScore = totalCerts > 0 ? Math.round(certificates.reduce((s: number, c: any) => s + (c.certificate_data?.score || 0), 0) / totalCerts) : 0;
-  const totalHours = certificates.reduce((s: number, c: any) => s + (c.certificate_data?.total_time_hours || 0), 0);
-  const totalModules = certificates.reduce((s: number, c: any) => s + (c.certificate_data?.modules_completed || 0), 0);
+  const avgScore = totalCerts > 0 ? Math.round(certificates.reduce((s: number, c: any) => s + (c.certificate_data?.score || c.certificate_data?.average_score || 0), 0) / totalCerts) : 0;
+  const totalHours = certificates.reduce((s: number, c: any) => s + (c.certificate_data?.total_time_hours ?? c.certificate_data?.total_hours ?? 0), 0);
+  const totalModules = certificates.reduce((s: number, c: any) => s + (c.certificate_data?.modules_completed || c.certificate_data?.modules_detail?.length || 0), 0);
 
   const copyVerifyLink = (id: string) => {
     navigator.clipboard.writeText(`${VERIFY_BASE}/${id}`);
@@ -133,7 +133,7 @@ export default function AcademyCertificates() {
                   <div className={cn("h-1.5 bg-gradient-to-r", gradient)} />
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
-                      <ScoreGauge score={certData.score || 0} />
+                      <ScoreGauge score={certData.score || certData.average_score || 0} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-bold text-base truncate">{path?.name || "Parcours"}</h3>
@@ -142,18 +142,18 @@ export default function AcademyCertificates() {
                         <p className="text-xs text-muted-foreground line-clamp-1 mb-2">{path?.description || ""}</p>
                         <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
                           <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(new Date(cert.issued_at), "d MMM yyyy", { locale: fr })}</span>
-                          <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" />{certData.modules_completed || 0} modules</span>
-                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{certData.total_time_hours || 0}h</span>
+                          <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" />{certData.modules_completed || certData.modules_detail?.length || 0} modules</span>
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{certData.total_time_hours ?? certData.total_hours ?? 0}h</span>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                         <CertificateDownload
-                          holderName={certData.holder_name || profile?.display_name || "Apprenant"}
+                          holderName={certData.holder_name || certData.user_name || profile?.display_name || "Apprenant"}
                           pathName={path?.name || "Parcours"}
                           issuedAt={cert.issued_at}
-                          score={certData.score || 0}
-                          modulesCompleted={certData.modules_completed || 0}
-                          totalTimeHours={certData.total_time_hours || 0}
+                          score={certData.score || certData.average_score || 0}
+                          modulesCompleted={certData.modules_completed || certData.modules_detail?.length || 0}
+                          totalTimeHours={certData.total_time_hours ?? certData.total_hours ?? 0}
                           certificateId={cert.id}
                           difficulty={path?.difficulty}
                           modulesDetail={certData.modules_detail}
@@ -191,15 +191,15 @@ export default function AcademyCertificates() {
                   <p className="text-[8px] uppercase tracking-[0.2em] text-amber-600/60 font-medium mb-4">AI ACCELERATION</p>
                   <h2 className="text-lg font-bold tracking-wide text-amber-800 dark:text-amber-400 mb-4">CERTIFICAT DE RÉUSSITE</h2>
                   <p className="text-xs text-muted-foreground mb-1">Décerné à</p>
-                  <p className="font-display font-bold text-2xl text-foreground mb-3">{certData.holder_name || profile?.display_name || "Apprenant"}</p>
+                  <p className="font-display font-bold text-2xl text-foreground mb-3">{certData.holder_name || certData.user_name || profile?.display_name || "Apprenant"}</p>
                   <p className="text-xs text-muted-foreground mb-1">Pour avoir complété avec succès le parcours</p>
                   <p className="font-bold text-base text-amber-700 dark:text-amber-400 mb-4">« {path?.name} »</p>
                   <div className="flex items-center justify-center gap-6 py-3 px-4 rounded-xl bg-amber-100/40 dark:bg-amber-900/20 border border-amber-300/30">
-                    <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.score || 0}%</p><p className="text-[9px] text-muted-foreground">Score</p></div>
-                    <div className="w-px h-8 bg-amber-300/40" />
-                    <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.modules_completed || 0}</p><p className="text-[9px] text-muted-foreground">Modules</p></div>
-                    <div className="w-px h-8 bg-amber-300/40" />
-                    <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.total_time_hours || 0}h</p><p className="text-[9px] text-muted-foreground">Formation</p></div>
+                     <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.score || certData.average_score || 0}%</p><p className="text-[9px] text-muted-foreground">Score</p></div>
+                     <div className="w-px h-8 bg-amber-300/40" />
+                     <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.modules_completed || certData.modules_detail?.length || 0}</p><p className="text-[9px] text-muted-foreground">Modules</p></div>
+                     <div className="w-px h-8 bg-amber-300/40" />
+                     <div className="text-center"><p className="text-lg font-bold text-foreground">{certData.total_time_hours ?? certData.total_hours ?? 0}h</p><p className="text-[9px] text-muted-foreground">Formation</p></div>
                   </div>
                   <div className="mt-4 pt-3 border-t border-amber-300/30 flex items-end justify-between">
                     <div className="text-left text-[10px] text-muted-foreground space-y-0.5">
@@ -212,12 +212,12 @@ export default function AcademyCertificates() {
 
                 <div className="flex items-center gap-2 flex-wrap">
                   <CertificateDownload
-                    holderName={certData.holder_name || profile?.display_name || "Apprenant"}
-                    pathName={path?.name || "Parcours"}
-                    issuedAt={selectedCert.issued_at}
-                    score={certData.score || 0}
-                    modulesCompleted={certData.modules_completed || 0}
-                    totalTimeHours={certData.total_time_hours || 0}
+                     holderName={certData.holder_name || certData.user_name || profile?.display_name || "Apprenant"}
+                     pathName={path?.name || "Parcours"}
+                     issuedAt={selectedCert.issued_at}
+                     score={certData.score || certData.average_score || 0}
+                     modulesCompleted={certData.modules_completed || certData.modules_detail?.length || 0}
+                     totalTimeHours={certData.total_time_hours ?? certData.total_hours ?? 0}
                     certificateId={selectedCert.id}
                     difficulty={path?.difficulty}
                     modulesDetail={modulesDetail}
