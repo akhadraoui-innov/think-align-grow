@@ -84,7 +84,7 @@ export default function PortalAcademieCertificates() {
 
   const totalCerts = certs.length;
   const activeCerts = certs.filter((c: any) => c.status === "active").length;
-  const avgScore = totalCerts > 0 ? Math.round(certs.reduce((s: number, c: any) => s + ((c.certificate_data as any)?.score || 0), 0) / totalCerts) : 0;
+  const avgScore = totalCerts > 0 ? Math.round(certs.reduce((s: number, c: any) => s + (((c.certificate_data as any)?.score ?? (c.certificate_data as any)?.average_score ?? 0)), 0) / totalCerts) : 0;
   const thisMonth = certs.filter((c: any) => new Date(c.issued_at).getMonth() === new Date().getMonth() && new Date(c.issued_at).getFullYear() === new Date().getFullYear()).length;
 
   return (
@@ -186,7 +186,7 @@ export default function PortalAcademieCertificates() {
                       <TableRow key={c.id}>
                         <TableCell className="font-medium">{p?.display_name || "Inconnu"}</TableCell>
                         <TableCell>{c.academy_paths?.name || "—"}</TableCell>
-                        <TableCell><span className="font-bold">{certData.score || 0}%</span></TableCell>
+                        <TableCell><span className="font-bold">{certData.score ?? certData.average_score ?? 0}%</span></TableCell>
                         <TableCell className="text-sm">{format(new Date(c.issued_at), "d MMM yyyy", { locale: fr })}</TableCell>
                         <TableCell>
                           <Badge variant={c.status === "active" ? "default" : "destructive"} className="text-xs">
