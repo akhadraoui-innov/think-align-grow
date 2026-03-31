@@ -552,7 +552,7 @@ function PratiqueDetailed() {
 }
 
 function PratiqueSection() {
-  return <SectionTabs essential={<PratiqueEssential />} detailed={<PratiqueDetailed />} />;
+  return <SectionTabs essential={<PratiqueEssential />} detailed={<PratiqueDetailed />} cycle={<CycleTimeline data={pratiqueCycle} />} />;
 }
 
 /* ─── 4. WORKSHOPS ─── */
