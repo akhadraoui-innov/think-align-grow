@@ -27,10 +27,12 @@ interface InsightContentProps {
 /* ═══════════════ REUSABLE SUB-COMPONENTS ═══════════════ */
 
 /* ─── Section Tabs Wrapper ─── */
-function SectionTabs({ essential, detailed }: { essential: React.ReactNode; detailed: React.ReactNode }) {
+function SectionTabs({ essential, detailed, cycle }: { essential: React.ReactNode; detailed: React.ReactNode; cycle?: React.ReactNode }) {
+  const cols = cycle ? "grid-cols-3" : "grid-cols-2";
+  const maxW = cycle ? "max-w-[600px]" : "max-w-[420px]";
   return (
     <Tabs defaultValue="essentiel" className="w-full">
-      <TabsList className="grid w-full max-w-[420px] grid-cols-2 mb-8">
+      <TabsList className={cn("grid w-full mb-8", maxW, cols)}>
         <TabsTrigger value="essentiel" className="gap-2 text-xs sm:text-sm">
           <Eye className="h-4 w-4" />
           Vue Essentielle
@@ -39,9 +41,16 @@ function SectionTabs({ essential, detailed }: { essential: React.ReactNode; deta
           <Layers className="h-4 w-4" />
           Vue Détaillée
         </TabsTrigger>
+        {cycle && (
+          <TabsTrigger value="cycle" className="gap-2 text-xs sm:text-sm">
+            <Workflow className="h-4 w-4" />
+            Cycle complet
+          </TabsTrigger>
+        )}
       </TabsList>
       <TabsContent value="essentiel">{essential}</TabsContent>
       <TabsContent value="detaille">{detailed}</TabsContent>
+      {cycle && <TabsContent value="cycle">{cycle}</TabsContent>}
     </Tabs>
   );
 }
