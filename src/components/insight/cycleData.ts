@@ -631,3 +631,146 @@ export const plateformeCycle: CycleData = {
     "credit_transactions", "ai_configurations", "Postgres", "Edge Functions",
   ],
 };
+
+/* ═══════════════ OVERVIEW — OFFRE COMPLÈTE ═══════════════ */
+
+export const overviewCycle: CycleData = {
+  title: "Cycle complet de l'offre GROWTHINNOV",
+  subtitle: "De l'apprentissage individuel à l'intelligence collective — tous les modules unifiés en 2 piliers",
+  legend: defaultLegend,
+  phases: [
+    {
+      number: "01",
+      title: "Knowledge — Formations & Pratiques",
+      subtitle: "Montée en compétence individuelle pilotée par 5 IA spécialisées",
+      color: "bg-violet-600",
+      steps: [
+        {
+          label: "Ingénierie pédagogique IA",
+          actorType: "ai-gen",
+          badges: [{ text: "Parcours", variant: "default" }, { text: "Auto-généré", variant: "secondary" }],
+          description: "L'admin décrit un besoin → l'IA génère fonctions métier, personae comportementaux et parcours complets avec modules typés.",
+          detail: "Pipeline : Fonction métier → Persona (10 traits) → Parcours (N modules)\nModèle : Gemini 2.5 Pro/Flash (function calling structuré)\nAdaptation : par secteur, séniorité, culture d'entreprise",
+          subCards: [
+            { title: "Fonctions métier", content: "Responsabilités, outils, KPIs et cas d'usage IA générés automatiquement" },
+            { title: "Personae adaptatifs", content: "10 traits numériques, styles d'apprentissage, dérivation par organisation" },
+          ],
+        },
+        {
+          label: "Contenu pédagogique enrichi",
+          actorType: "ai-tutor",
+          badges: [{ text: "Markdown Pro", variant: "default" }, { text: "Multimédia", variant: "outline" }],
+          description: "Chaque module est généré avec du contenu riche : leçons structurées, visuels, exemples métier, callouts pédagogiques.",
+          detail: "Format : Markdown enrichi avec callouts, tableaux, exemples contextualisés\nPersonnalisation : adapté au persona et à la fonction métier\nTuteur IA : accompagnement en temps réel pendant la lecture",
+        },
+        {
+          label: "Quiz & exercices évalués par IA",
+          actorType: "ai-eval",
+          badges: [{ text: "QCM", variant: "secondary" }, { text: "Exercices", variant: "secondary" }, { text: "Scoring", variant: "default" }],
+          description: "Évaluation continue : quiz auto-corrigés, exercices à réponse ouverte évalués par IA avec critères et feedback détaillé.",
+          subCards: [
+            { title: "Quiz adaptatifs", content: "Questions générées par l'IA, scoring instantané, explications détaillées" },
+            { title: "Exercices ouverts", content: "Évaluation multicritère par IA, feedback personnalisé, notation sur 100" },
+          ],
+        },
+        {
+          label: "Simulateur de mise en pratique",
+          actorType: "ai-skill",
+          badges: [{ text: "7 modes", variant: "default" }, { text: "Immersif", variant: "secondary" }],
+          description: "7 modes de simulation (chat, analyse, code, design, document, assessment, decision) avec tension gauge et scoring en temps réel.",
+          detail: "Modes : Chat roleplay, Analyse de données, Code review, Design thinking, Rédaction, Évaluation, Prise de décision\nMécaniques : timer, objectifs, jauge de tension, suggestions contextuelles\nScoring : radar multi-dimensionnel, replay de session, rapport PDF",
+          subCards: [
+            { title: "Scénarios métier", content: "Situations réalistes adaptées à la fonction et au secteur de l'apprenant" },
+            { title: "Feedback IA temps réel", content: "Qualité d'input, suggestions, indicateur de tension, score progressif" },
+          ],
+        },
+        {
+          label: "Knowledge brief & cartographie compétences",
+          actorType: "ai-know",
+          badges: [{ text: "Synthèse", variant: "default" }, { text: "Skills mapping", variant: "outline" }],
+          description: "L'IA Knowledge synthétise les acquis en brief exécutif. L'IA Compétences cartographie la progression sur chaque skill.",
+          detail: "Knowledge brief : synthèse exécutive des modules complétés, recommandations\nSkills mapping : évaluation initiale vs finale sur chaque compétence\nEvidence-based : rattaché aux scores quiz, exercices et pratiques",
+        },
+        {
+          label: "Certification & livret de restitution",
+          actorType: "system",
+          badges: [{ text: "Certificat", variant: "default" }, { text: "QR Code", variant: "outline" }, { text: "Livret PDF", variant: "secondary" }],
+          description: "Certificat vérifiable avec QR code, livret de cours complet documenté, et évaluation finale rédigée par IA.",
+          detail: "Certificat : template personnalisable, score minimum configurable, vérification publique par QR code\nLivret : tout le contenu pédagogique en format lecture premium\nÉvaluation finale : synthèse IA des performances globales du parcours",
+        },
+      ],
+    },
+    {
+      number: "02",
+      title: "Collective Intelligence — Workshops & Challenges",
+      subtitle: "Intelligence collective augmentée par l'IA pour transformer les organisations",
+      color: "bg-emerald-600",
+      steps: [
+        {
+          label: "Sélection toolkit & cartes stratégiques",
+          actorType: "system",
+          badges: [{ text: "Toolkits", variant: "default" }, { text: "Cartes", variant: "secondary" }],
+          description: "L'organisation choisit parmi des toolkits thématiques. Chaque toolkit contient des piliers et des cartes action avec valorisation.",
+          detail: "Structure : Toolkit → Piliers → Cartes (titre, action, KPI, difficulté, durée, valorisation)\nPhases : Explore, Focus, Build, Integrate\nGame Plans : séquences guidées avec étapes et cartes associées",
+          subCards: [
+            { title: "Cartes gamifiées", content: "Chaque carte a une valorisation en points, une difficulté, une durée et un KPI mesurable" },
+            { title: "Game Plans", content: "Parcours guidés avec étapes ordonnées pour structurer l'atelier" },
+          ],
+        },
+        {
+          label: "Canevas collaboratif live",
+          actorType: "system",
+          badges: [{ text: "Temps réel", variant: "default" }, { text: "Multi-joueurs", variant: "secondary" }],
+          description: "Canevas infini avec cartes, sticky notes, textes, icônes, flèches et groupes. Collaboration temps réel entre participants.",
+          detail: "Éléments : cartes toolkit, sticky notes, textes libres, icônes, flèches de connexion, groupes\nInteractions : drag & drop, resize, rotation, ancrage, zoom\nCollaboration : présence temps réel, discussion panel, commentaires par élément",
+          subCards: [
+            { title: "Éléments visuels", content: "Cartes, post-its, textes, icônes, flèches — tout est positionnable et connectable" },
+            { title: "Discussion intégrée", content: "Panel de discussion par workshop avec commentaires contextuels" },
+          ],
+        },
+        {
+          label: "Scoring gamifié & statistiques",
+          actorType: "ai-eval",
+          badges: [{ text: "Score live", variant: "default" }, { text: "Stats", variant: "outline" }],
+          description: "Score calculé en temps réel basé sur les cartes placées. Statistiques de couverture par pilier et phase.",
+          detail: "Score : somme des valorisations des cartes placées sur le canevas\nStats : nombre de cartes par pilier, répartition par phase, couverture du toolkit\nBenchmark : comparaison entre équipes et workshops",
+        },
+        {
+          label: "Diagnostic stratégique Challenge",
+          actorType: "ai-gen",
+          badges: [{ text: "Sujets", variant: "default" }, { text: "Formats", variant: "secondary" }, { text: "Maturité", variant: "outline" }],
+          description: "L'admin configure un challenge avec sujets thématiques, formats de réponse et niveaux de maturité. Les participants construisent leur diagnostic.",
+          detail: "Sujets : questions stratégiques regroupées par thème\nFormats : board classique, sélection rapide\nMaturité : échelle 1-5 pour qualifier chaque réponse\nSlots : emplacements typés (obligatoire/optionnel) avec hints",
+          subCards: [
+            { title: "Board interactif", content: "Zone de staging, placement sur slots, validation progressive" },
+            { title: "Multi-toolkit", content: "Un challenge peut puiser dans plusieurs toolkits simultanément" },
+          ],
+        },
+        {
+          label: "Analyse IA du diagnostic",
+          actorType: "ai-eval",
+          badges: [{ text: "Matrice", variant: "default" }, { text: "Recommandations", variant: "secondary" }],
+          description: "L'IA analyse les réponses du challenge : cohérence, maturité, forces/faiblesses et recommandations stratégiques.",
+          detail: "Analyse : score global, répartition par sujet, matrice de maturité\nRecommandations : actions prioritaires, quick wins, investissements long terme\nComparaison : benchmark entre participants et sessions",
+        },
+        {
+          label: "Restitution & export",
+          actorType: "system",
+          badges: [{ text: "Synthèse", variant: "default" }, { text: "Export", variant: "outline" }],
+          description: "Synthèse visuelle des résultats, export des canevas et analyses pour intégration dans les plans d'action de l'organisation.",
+          detail: "Formats : PDF, données structurées, captures visuelles\nIntégration : résultats injectables dans les parcours de formation\nTraçabilité : historique complet des sessions et évolutions",
+        },
+      ],
+    },
+  ],
+  metrics: [
+    { value: "5", label: "IA spécialisées", accent: "text-violet-600" },
+    { value: "7", label: "Modes simulateur", accent: "text-blue-600" },
+    { value: "∞", label: "Canevas collaboratifs", accent: "text-emerald-600" },
+    { value: "360°", label: "Évaluation complète", accent: "text-amber-600" },
+  ],
+  footerTags: [
+    "Knowledge", "Collective Intelligence", "Formations", "Pratiques", "Workshops", "Challenges",
+    "Gemini 2.5 Pro", "Gemini 2.5 Flash", "Edge Functions", "Realtime", "RLS", "Certificats", "Gamification",
+  ],
+};
