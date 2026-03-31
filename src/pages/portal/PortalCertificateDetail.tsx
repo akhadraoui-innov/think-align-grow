@@ -197,8 +197,8 @@ export default function PortalCertificateDetail() {
                 <div className="grid grid-cols-4 gap-4">
                   {[
                     { icon: BarChart3, label: "Score", value: `${score}%`, color: grade.color },
-                    { icon: BookOpen, label: "Modules", value: certData.modules_completed || 0, color: "text-primary" },
-                    { icon: Timer, label: "Durée", value: `${certData.total_time_hours || 0}h`, color: "text-blue-500" },
+                    { icon: BookOpen, label: "Modules", value: modulesCompleted, color: "text-primary" },
+                    { icon: Timer, label: "Durée", value: `${totalHours}h`, color: "text-blue-500" },
                     { icon: Award, label: "Grade", value: grade.letter, color: grade.color },
                   ].map((kpi, i) => (
                     <div key={i} className="text-center p-3 rounded-xl bg-background/80">
