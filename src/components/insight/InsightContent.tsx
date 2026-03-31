@@ -31,7 +31,7 @@ function SectionTabs({ essential, detailed, cycle }: { essential: React.ReactNod
   const cols = cycle ? "grid-cols-3" : "grid-cols-2";
   const maxW = cycle ? "max-w-[600px]" : "max-w-[420px]";
   return (
-    <Tabs defaultValue="essentiel" className="w-full">
+    <Tabs defaultValue={cycle ? "cycle" : "essentiel"} className="w-full">
       <TabsList className={cn("grid w-full mb-8", maxW, cols)}>
         <TabsTrigger value="essentiel" className="gap-2 text-xs sm:text-sm">
           <Eye className="h-4 w-4" />
