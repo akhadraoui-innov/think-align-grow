@@ -1,108 +1,123 @@
 
 
-# Audit Product Owner — Module INSIGHT
+# Plan — Intégrer le format "Cycle de formation" dans chaque section INSIGHT
 
-## Verdict brutal : un prospect DRH décroche en 30 secondes
+## Analyse du fichier uploadé
 
-### Ce qui ne marche PAS pour un acheteur
+Le HTML présente un format **timeline phasée** extrêmement efficace :
 
-1. **Trop de jargon technique** — "Markdown enrichi", "IA Tutor", "batch generation", "RBAC", "multi-tenant" — un DRH ne comprend pas et ne veut pas comprendre
-2. **9 sections identiques** — Même pattern répété (Hero → Pain → Features → ValueProp). Le prospect fatigue après la 2ème section
-3. **Pas de storytelling** — Aucun scénario concret du type "Lundi, Marie votre DRH ouvre la plateforme et en 10 minutes..."
-4. **Discovery = pour développeurs** — Le flow n8n est impressionnant techniquement mais un DRH n'en a rien à faire
-5. **Décideurs enterré en 8ème position** — C'est LA section la plus importante pour un acheteur, elle devrait être en haut
-6. **Pas de parcours de lecture guidé** — Le prospect ne sait pas par où commencer ni dans quel ordre lire
-7. **Aucun visuel différenciant** — Que des cards identiques, pas de before/after, pas de timeline, pas de chiffre qui claque en grand
+```text
+Légende (dots colorés par type d'IA)
+│
+Phase 01 — Titre (numéro rond coloré + sous-titre)
+│  ├── Step cliquable (dot coloré, label, badge, description)
+│  │   └── Détail expandable (tech, modèle, données, stockage)
+│  ├── Step avec sub-grid (2 colonnes de sub-cards)
+│  └── Step avec cascade tags
+│
+▼ (flèche transition)
+│
+Phase 02 — Titre
+│  └── ...
+│
+▼
+│
+Phase 03 — Titre
+│  └── ...
+│
+Footer Metrics (4 KPIs en grille)
+Footer Cascade (edge functions, modèles)
+```
 
-### Ce qui MARCHE
+**Points forts du format** : rail vertical avec dots colorés par acteur (IA Génération, IA Tuteur, IA Évaluation, Système), steps expandables, sub-grids intégrés, badges typés, métriques d'impact, cascade tags.
 
-- Le comparatif GROWTHINNOV vs LMS classique (Décideurs) — excellent
-- Les KPIs par domaine métier (Discovery > Cas Métier) — concret
-- Les workflows business cliquables — bonne mécanique interactive
-- Le PlatformFlow — impressionnant pour un profil technique
+## Solution
 
-## Solution : un onglet "Vue Essentielle" par section
+### 1. Créer un composant réutilisable `CycleTimeline`
 
-Ajouter dans chaque section un système de 2 onglets :
-- **Essentiel** (défaut) — Version prospect/DRH : storytelling, chiffres clés, avant/après, scénarios concrets, langage métier
-- **Détaillé** — Le contenu actuel (technique, exhaustif)
+Un composant générique qui prend en entrée des données structurées et rend le format timeline/rail. Réutilisable pour chaque module (Formations, Pratique, Workshops, Challenges, Plateforme).
 
-### Contenu de chaque onglet "Essentiel"
+### 2. Structure de données (TypeScript, pas de DB)
 
-**Overview Essentiel** :
-- Accroche en une phrase choc ("Vos formations ne changent rien. Nous, si.")
-- 4 chiffres d'impact en très grand (×3 vitesse, -70% coûts, 92% complétion, 100% traçable)
-- Scénario "Avant/Après" en 2 colonnes : journée type sans GROWTHINNOV vs avec
-- 3 témoignages fictifs courts (DRH, Manager, Consultant)
-- CTA unique
+```text
+CycleData {
+  title: string
+  subtitle: string
+  legend: LegendItem[]          // dots colorés
+  phases: Phase[]               // 2-4 phases
+  metrics: Metric[]             // footer KPIs
+  footerNotes: FooterNote[]     // cascade tags + texte
+}
 
-**Formations Essentiel** :
-- "En 5 min, votre apprenant a un parcours adapté à son métier"
-- Timeline visuelle : Inscription → 1er module → Quiz → Certificat (avec durées)
-- Avant/Après : "Formation classique" vs "GROWTHINNOV"
-- Ce que reçoit l'apprenant : liste visuelle (brief IA, feedback, livret, certificat)
+Phase {
+  number: string ("01", "02")
+  title: string
+  subtitle: string
+  color: string                 // bg du numéro
+  steps: Step[]
+}
 
-**Pratique Essentiel** :
-- "Un terrain d'entraînement IA pour vos équipes"
-- 7 modes en icônes visuelles avec une phrase chacun
-- Scénario concret : "Thomas, chef de projet, s'entraîne à analyser un cas stratégique..."
-- Résultat : score, radar, rapport
+Step {
+  label: string
+  badges: Badge[]               // { text, variant }
+  description: string
+  actorType: "ai-gen" | "ai-tutor" | "ai-eval" | "ai-know" | "ai-skill" | "system"
+  detail?: string | ReactNode   // contenu expandable
+  subCards?: SubCard[]           // grille 2 colonnes optionnelle
+}
+```
 
-**Workshops Essentiel** :
-- "Transformez vos réunions en ateliers productifs"
-- Avant/Après : "Réunion classique" vs "Workshop GROWTHINNOV"
-- 3 livrables concrets que produit un workshop
+### 3. Intégration dans InsightContent
 
-**Challenges Essentiel** :
-- "Un diagnostic stratégique en 30 minutes, sans consultant"
-- Workflow ultra-simplifié en 3 étapes visuelles
-- Exemple concret : "Évaluez votre maturité IA en 4 étapes"
+Ajouter un **3ème onglet "Cycle complet"** dans chaque `SectionTabs` (en plus de "Essentiel" et "Détaillé"). Cet onglet affiche le `CycleTimeline` avec les données spécifiques au module.
 
-**Plateforme Essentiel** :
-- "Tout est paramétrable, tout est mesurable"
-- 3 blocs : Créer (IA génère), Déployer (portail immersif), Mesurer (observabilité)
+```text
+Tabs
+├── "Vue Essentielle" (storytelling DRH)
+├── "Vue Détaillée" (features techniques)
+└── "Cycle complet" (timeline phasée — format uploadé)
+```
 
-**Discovery Essentiel** :
-- Vue simplifiée du flow avec seulement les 4 grandes briques connectées (pas 25 nœuds)
-- Version "executive summary" du flow
+### 4. Contenu par module
 
-**Décideurs Essentiel** :
-- Comparatif amplifié avec colonnes visuelles
-- ROI calculator simplifié (nombre d'apprenants × coût actuel = économie)
+**Formations** — Le fichier uploadé tel quel (3 phases : Ingénierie → Parcours → Closing)
 
-**Partenaires Essentiel** :
-- 3 modèles en cards visuelles avec pictos clairs
-- "Lancez votre offre en 2 semaines"
+**Pratique** — 3 phases : Configuration (scénario, prompt, rubrique) → Session (7 modes, interaction IA, tension gauge) → Closing (score, radar, rapport, replay)
+
+**Workshops** — 3 phases : Préparation (toolkit, cartes, config) → Session live (canevas, drag&drop, scoring) → Restitution (synthèse, stats, export)
+
+**Challenges** — 3 phases : Setup (sujet, format, maturité) → Board (staging, placement, validation) → Analyse (IA, matrice, recommandations)
+
+**Plateforme** — 3 phases : Admin (orgs, rôles, permissions) → Portail (UX immersive, navigation) → Observabilité (catalogue, matrice, logs)
+
+### 5. Pas de base de données
+
+Tout le contenu est statique en TypeScript (constantes). Pas de migration DB. C'est du contenu de présentation, pas des données utilisateur.
+
+## Sous-composants à créer
+
+| Composant | Rôle |
+|-----------|------|
+| `CycleTimeline` | Orchestrateur : légende + phases + footer |
+| `PhaseBlock` | Numéro rond + titre + rail vertical |
+| `StepCard` | Card expandable avec dot coloré, badges, détail |
+| `SubCardGrid` | Grille 2 colonnes dans un step |
+| `MetricsFooter` | 4 KPIs en grille |
+| `CascadeTags` | Tags inline avec highlight |
+| `PhaseArrow` | Flèche ▼ entre phases |
 
 ## Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/insight/InsightContent.tsx` | Chaque section wrappée dans Tabs("essentiel" / "détaillé"), nouveau contenu "Essentiel" par section |
-
-## Détail technique
-
-Chaque `XxxSection()` devient :
-```text
-Tabs (defaultValue="essentiel")
-├── TabsList ["Essentiel", "Détaillé"]
-├── TabsContent "essentiel"
-│   └── Nouveau contenu simplifié, visuel, storytelling
-└── TabsContent "detaille"
-    └── Contenu actuel inchangé
-```
-
-Nouveaux sous-composants internes :
-- `BeforeAfter` — 2 colonnes avec icônes rouge/vert
-- `BigStat` — Chiffre en très grand avec label
-- `ScenarioCard` — Carte avec persona + narration
-- `SimpleFlow` — 3-4 étapes horizontales ultra-clean
-- `TestimonialCard` — Citation courte avec avatar et rôle
+| `src/components/insight/CycleTimeline.tsx` | **Créer** — Composant réutilisable + sous-composants |
+| `src/components/insight/cycleData.ts` | **Créer** — Données des 5 cycles (Formations, Pratique, Workshops, Challenges, Plateforme) |
+| `src/components/insight/InsightContent.tsx` | **Modifier** — `SectionTabs` passe de 2 à 3 onglets, chaque section reçoit son cycle |
 
 ## Ordre d'exécution
 
-1. Créer les sous-composants réutilisables (BeforeAfter, BigStat, ScenarioCard, SimpleFlow, TestimonialCard)
-2. Wrapper chaque section existante dans Tabs
-3. Rédiger le contenu "Essentiel" de chaque section (9 sections)
-4. Le contenu "Détaillé" = le code actuel sans modification
+1. Créer `CycleTimeline.tsx` avec tous les sous-composants (PhaseBlock, StepCard, SubCardGrid, MetricsFooter, CascadeTags)
+2. Créer `cycleData.ts` avec les 5 jeux de données
+3. Modifier `SectionTabs` pour supporter 3 onglets
+4. Intégrer le cycle dans chaque section
 
