@@ -385,7 +385,7 @@ function OverviewDetailed() {
 }
 
 function OverviewSection() {
-  return <SectionTabs essential={<OverviewEssential />} detailed={<OverviewDetailed />} />;
+  return <SectionTabs essential={<OverviewEssential />} detailed={<OverviewDetailed />} cycle={<CycleTimeline data={overviewCycle} />} />;
 }
 
 /* ─── 2. FORMATIONS ─── */
