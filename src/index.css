@@ -97,6 +97,28 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-ring: 233 82% 62%;
   }
+
+  /* Knowledge zone — navy profond */
+  .portal.portal-knowledge {
+    --primary: 220 60% 25%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 220 60% 25%;
+    --shadow-primary: 0 8px 24px -4px hsl(220 60% 25% / 0.35);
+    --sidebar-primary: 220 60% 25%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-ring: 220 60% 25%;
+  }
+
+  /* Collective Intelligence zone — bordeaux */
+  .portal.portal-collective {
+    --primary: 345 65% 35%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 345 65% 35%;
+    --shadow-primary: 0 8px 24px -4px hsl(345 65% 35% / 0.35);
+    --sidebar-primary: 345 65% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-ring: 345 65% 35%;
+  }
 }
 
 @layer base {

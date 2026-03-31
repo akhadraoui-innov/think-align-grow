@@ -17,14 +17,34 @@ interface PortalShellProps {
   children: React.ReactNode;
 }
 
-const NAV_TABS = [
-  { label: "FORMATIONS", path: "/portal", matchPrefix: "/portal/dashboard,/portal/path,/portal/module,/portal/certificates" },
-  { label: "PRATIQUE", path: "/portal/pratique", matchPrefix: "/portal/pratique" },
-  { label: "WORKSHOPS", path: "/portal/workshops", matchPrefix: "/portal/workshops" },
-  { label: "CHALLENGES", path: "/portal/challenges", matchPrefix: "/portal/challenges" },
-  { label: "ACADEMIE", path: "/portal/academie", matchPrefix: "/portal/academie" },
-  { label: "INSIGHT", path: "/portal/insight", matchPrefix: "/portal/insight" },
-] as const;
+const NAV_GROUPS = [
+  {
+    label: "Knowledge",
+    zone: "portal-knowledge",
+    tabs: [
+      { label: "FORMATIONS", path: "/portal", matchPrefix: "/portal/dashboard,/portal/path,/portal/module,/portal/certificates" },
+      { label: "PRATIQUE", path: "/portal/pratique", matchPrefix: "/portal/pratique" },
+    ],
+  },
+  {
+    label: "Collective",
+    zone: "portal-collective",
+    tabs: [
+      { label: "WORKSHOPS", path: "/portal/workshops", matchPrefix: "/portal/workshops" },
+      { label: "CHALLENGES", path: "/portal/challenges", matchPrefix: "/portal/challenges" },
+    ],
+  },
+  {
+    label: "Platform",
+    zone: "",
+    tabs: [
+      { label: "ACADEMIE", path: "/portal/academie", matchPrefix: "/portal/academie" },
+      { label: "INSIGHT", path: "/portal/insight", matchPrefix: "/portal/insight" },
+    ],
+  },
+];
+
+const ALL_TABS = NAV_GROUPS.flatMap(g => g.tabs);
 
 export function PortalShell({ children }: PortalShellProps) {
   const location = useLocation();
@@ -42,7 +62,7 @@ export function PortalShell({ children }: PortalShellProps) {
     (/^\/portal\/challenges\/[^/]+$/.test(location.pathname) && location.pathname !== "/portal/challenges");
 
   const getActiveTab = () => {
-    for (const tab of NAV_TABS) {
+    for (const tab of ALL_TABS) {
       if (tab.path === "/portal") {
         const prefixes = tab.matchPrefix.split(",");
         if (location.pathname === "/portal" || prefixes.some(p => location.pathname.startsWith(p))) return tab.path;
@@ -55,37 +75,51 @@ export function PortalShell({ children }: PortalShellProps) {
 
   const activeTab = getActiveTab();
 
+  const zoneClass = NAV_GROUPS.find(g => g.tabs.some(t => t.path === activeTab))?.zone ?? "";
+
   return (
-    <div className="portal min-h-screen flex flex-col bg-background font-sans">
+    <div className={cn("portal min-h-screen flex flex-col bg-background font-sans", zoneClass)}>
       {/* ── Top Nav ── */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-xl">
         <div className="flex items-center h-14 px-4 gap-4">
-          {/* Logo — text only, no H icon */}
+          {/* Logo */}
           <Link to="/portal" className="flex items-center mr-3 shrink-0">
             <span className="text-xl font-black tracking-tighter text-black uppercase">
               GROWTHINNOV
             </span>
           </Link>
 
-          {/* Desktop tabs */}
+          {/* Desktop tabs grouped */}
           <nav className="hidden md:flex items-center gap-1 ml-auto mr-auto">
-            {NAV_TABS.map((tab) => {
-              const active = activeTab === tab.path;
-              return (
-                <Link
-                  key={tab.path}
-                  to={tab.path}
-                  className={cn(
-                    "px-4 py-1.5 rounded-md text-sm font-bold uppercase tracking-wide transition-colors",
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-foreground/60 hover:text-foreground hover:bg-muted/50"
-                  )}
-                >
-                  {tab.label}
-                </Link>
-              );
-            })}
+            {NAV_GROUPS.map((group, gi) => (
+              <div key={group.label} className="flex items-center gap-1">
+                {gi > 0 && <div className="h-5 w-px bg-border mx-2" />}
+                <div className="flex flex-col items-center gap-0">
+                  <div className="flex items-center gap-0.5">
+                    {group.tabs.map((tab) => {
+                      const active = activeTab === tab.path;
+                      return (
+                        <Link
+                          key={tab.path}
+                          to={tab.path}
+                          className={cn(
+                            "px-4 py-1.5 rounded-md text-sm font-bold uppercase tracking-wide transition-colors",
+                            active
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground/60 hover:text-foreground hover:bg-muted/50"
+                          )}
+                        >
+                          {tab.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mt-0.5">
+                    {group.label}
+                  </span>
+                </div>
+              </div>
+            ))}
           </nav>
 
           {/* Spacer */}
@@ -129,7 +163,7 @@ export function PortalShell({ children }: PortalShellProps) {
         {/* Mobile nav dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border/30 px-4 py-2 flex flex-col gap-1 bg-background">
-            {NAV_TABS.map((tab) => {
+            {ALL_TABS.map((tab) => {
               const active = activeTab === tab.path;
               return (
                 <Link
