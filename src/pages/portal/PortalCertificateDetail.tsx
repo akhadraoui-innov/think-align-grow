@@ -163,12 +163,16 @@ export default function PortalCertificateDetail() {
   const path = (cert as any).academy_paths;
   const certData = (cert as any).certificate_data || {};
   const modulesDetail: any[] = certData.modules_detail || [];
-  const score = certData.score || 0;
+  const score = certData.score || certData.average_score || 0;
   const grade = getGrade(score);
-  const holderName = certData.holder_name || profile?.display_name || "Apprenant";
+  const holderName = certData.holder_name || certData.user_name || profile?.display_name || "Apprenant";
+  const totalHours = certData.total_time_hours ?? certData.total_hours ?? 0;
+  const modulesCompleted = certData.modules_completed || certData.modules_total || modulesDetail.length || 0;
+  const certSkills: any[] = Array.isArray(certData.skills_acquired) ? certData.skills_acquired : [];
   const pathSkills: any[] = Array.isArray(path?.skills) ? path.skills : [];
-  const pathAptitudes: string[] = Array.isArray(path?.aptitudes) ? path.aptitudes : [];
-  const pathOutcomes: string[] = Array.isArray(path?.professional_outcomes) ? path.professional_outcomes : [];
+  const effectiveSkills = certSkills.length > 0 ? certSkills : pathSkills;
+  const pathAptitudes: string[] = Array.isArray(certData.aptitudes) && certData.aptitudes.length > 0 ? certData.aptitudes : (Array.isArray(path?.aptitudes) ? path.aptitudes : []);
+  const pathOutcomes: string[] = Array.isArray(certData.professional_outcomes) && certData.professional_outcomes.length > 0 ? certData.professional_outcomes : (Array.isArray(path?.professional_outcomes) ? path.professional_outcomes : []);
   const strengths = modulesDetail.filter((m: any) => m.score >= 85);
   const improvements = modulesDetail.filter((m: any) => m.score < 70);
   const avgByType: Record<string, { sum: number; count: number }> = {};
@@ -195,8 +199,8 @@ export default function PortalCertificateDetail() {
                 <div className="grid grid-cols-4 gap-4">
                   {[
                     { icon: BarChart3, label: "Score", value: `${score}%`, color: grade.color },
-                    { icon: BookOpen, label: "Modules", value: certData.modules_completed || 0, color: "text-primary" },
-                    { icon: Timer, label: "Durée", value: `${certData.total_time_hours || 0}h`, color: "text-blue-500" },
+                    { icon: BookOpen, label: "Modules", value: modulesCompleted, color: "text-primary" },
+                    { icon: Timer, label: "Durée", value: `${totalHours}h`, color: "text-blue-500" },
                     { icon: Award, label: "Grade", value: grade.letter, color: grade.color },
                   ].map((kpi, i) => (
                     <div key={i} className="text-center p-3 rounded-xl bg-background/80">
@@ -227,11 +231,11 @@ export default function PortalCertificateDetail() {
               <h3 className="font-semibold text-sm mb-3 flex items-center gap-2"><GraduationCap className="h-4 w-4 text-primary" /> Description du parcours</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{path?.description}</p>
             </CardContent></Card>
-            {pathSkills.length > 0 && (
+            {effectiveSkills.length > 0 && (
               <Card><CardContent className="p-6">
                 <h3 className="font-semibold text-sm mb-3 flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Compétences clés acquises</h3>
                 <div className="flex flex-wrap gap-2">
-                  {pathSkills.map((s: any, i: number) => (
+                  {effectiveSkills.map((s: any, i: number) => (
                     <Badge key={i} variant="outline" className="text-xs px-3 py-1.5 gap-1.5"><Sparkles className="h-3 w-3 text-primary" /> {s.name}</Badge>
                   ))}
                 </div>
@@ -292,7 +296,7 @@ export default function PortalCertificateDetail() {
               </div>
               <div className="p-4 border-t bg-muted/20 flex items-center justify-between">
                 <span className="text-sm font-bold">Score moyen : {score}%</span>
-                <span className="text-sm text-muted-foreground">{certData.modules_completed || 0} modules · {certData.total_time_hours || 0}h</span>
+                <span className="text-sm text-muted-foreground">{modulesCompleted} modules · {totalHours}h</span>
               </div>
             </CardContent></Card>
           </TabsContent>
@@ -300,11 +304,11 @@ export default function PortalCertificateDetail() {
           {/* ═══ COMPÉTENCES ═══ */}
           <TabsContent value="skills" className="space-y-6">
             {/* Skill assessments with progression */}
-            {(skillAssessments.length > 0 || pathSkills.length > 0) && (
+            {(skillAssessments.length > 0 || effectiveSkills.length > 0) && (
               <Card><CardContent className="p-6">
                 <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Matrice de compétences</h3>
                 <div className="space-y-3">
-                  {(skillAssessments.length > 0 ? skillAssessments : pathSkills).map((item: any, i: number) => {
+                  {(skillAssessments.length > 0 ? skillAssessments : effectiveSkills).map((item: any, i: number) => {
                     const isAssessment = !!item.skill_name;
                     const name = isAssessment ? item.skill_name : item.name;
                     const initial = isAssessment ? item.initial_level : 0;
