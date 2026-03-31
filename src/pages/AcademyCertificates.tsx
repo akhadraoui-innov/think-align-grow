@@ -133,7 +133,7 @@ export default function AcademyCertificates() {
                   <div className={cn("h-1.5 bg-gradient-to-r", gradient)} />
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
-                      <ScoreGauge score={certData.score || 0} />
+                      <ScoreGauge score={certData.score || certData.average_score || 0} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-bold text-base truncate">{path?.name || "Parcours"}</h3>
