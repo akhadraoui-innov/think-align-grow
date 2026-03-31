@@ -476,7 +476,7 @@ function FormationsDetailed() {
 }
 
 function FormationsSection() {
-  return <SectionTabs essential={<FormationsEssential />} detailed={<FormationsDetailed />} />;
+  return <SectionTabs essential={<FormationsEssential />} detailed={<FormationsDetailed />} cycle={<CycleTimeline data={formationsCycle} />} />;
 }
 
 /* ─── 3. PRATIQUE ─── */
