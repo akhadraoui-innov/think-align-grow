@@ -65,9 +65,9 @@ export default function AcademyCertificates() {
   const difficultyLabels: Record<string, string> = { beginner: "Débutant", intermediate: "Intermédiaire", advanced: "Avancé" };
 
   const totalCerts = certificates.length;
-  const avgScore = totalCerts > 0 ? Math.round(certificates.reduce((s: number, c: any) => s + (c.certificate_data?.score || 0), 0) / totalCerts) : 0;
-  const totalHours = certificates.reduce((s: number, c: any) => s + (c.certificate_data?.total_time_hours || 0), 0);
-  const totalModules = certificates.reduce((s: number, c: any) => s + (c.certificate_data?.modules_completed || 0), 0);
+  const avgScore = totalCerts > 0 ? Math.round(certificates.reduce((s: number, c: any) => s + (c.certificate_data?.score || c.certificate_data?.average_score || 0), 0) / totalCerts) : 0;
+  const totalHours = certificates.reduce((s: number, c: any) => s + (c.certificate_data?.total_time_hours ?? c.certificate_data?.total_hours ?? 0), 0);
+  const totalModules = certificates.reduce((s: number, c: any) => s + (c.certificate_data?.modules_completed || c.certificate_data?.modules_detail?.length || 0), 0);
 
   const copyVerifyLink = (id: string) => {
     navigator.clipboard.writeText(`${VERIFY_BASE}/${id}`);
