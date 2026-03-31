@@ -42,7 +42,7 @@ const NAV_GROUPS = [
       { label: "INSIGHT", path: "/portal/insight", matchPrefix: "/portal/insight" },
     ],
   },
-] as const;
+];
 
 const ALL_TABS = NAV_GROUPS.flatMap(g => g.tabs);
 
