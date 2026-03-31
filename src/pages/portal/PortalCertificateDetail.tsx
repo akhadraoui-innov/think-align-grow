@@ -304,11 +304,11 @@ export default function PortalCertificateDetail() {
           {/* ═══ COMPÉTENCES ═══ */}
           <TabsContent value="skills" className="space-y-6">
             {/* Skill assessments with progression */}
-            {(skillAssessments.length > 0 || pathSkills.length > 0) && (
+            {(skillAssessments.length > 0 || effectiveSkills.length > 0) && (
               <Card><CardContent className="p-6">
                 <h3 className="font-semibold text-sm mb-4 flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Matrice de compétences</h3>
                 <div className="space-y-3">
-                  {(skillAssessments.length > 0 ? skillAssessments : pathSkills).map((item: any, i: number) => {
+                  {(skillAssessments.length > 0 ? skillAssessments : effectiveSkills).map((item: any, i: number) => {
                     const isAssessment = !!item.skill_name;
                     const name = isAssessment ? item.skill_name : item.name;
                     const initial = isAssessment ? item.initial_level : 0;
