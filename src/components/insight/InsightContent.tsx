@@ -719,7 +719,7 @@ function ChallengesDetailed() {
 }
 
 function ChallengesSection() {
-  return <SectionTabs essential={<ChallengesEssential />} detailed={<ChallengesDetailed />} />;
+  return <SectionTabs essential={<ChallengesEssential />} detailed={<ChallengesDetailed />} cycle={<CycleTimeline data={challengesCycle} />} />;
 }
 
 /* ─── 6. PLATEFORME ─── */
