@@ -142,8 +142,8 @@ export default function AcademyCertificates() {
                         <p className="text-xs text-muted-foreground line-clamp-1 mb-2">{path?.description || ""}</p>
                         <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
                           <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(new Date(cert.issued_at), "d MMM yyyy", { locale: fr })}</span>
-                          <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" />{certData.modules_completed || 0} modules</span>
-                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{certData.total_time_hours || 0}h</span>
+                          <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" />{certData.modules_completed || certData.modules_detail?.length || 0} modules</span>
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{certData.total_time_hours ?? certData.total_hours ?? 0}h</span>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
