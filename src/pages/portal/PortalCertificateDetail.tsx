@@ -168,9 +168,11 @@ export default function PortalCertificateDetail() {
   const holderName = certData.holder_name || certData.user_name || profile?.display_name || "Apprenant";
   const totalHours = certData.total_time_hours ?? certData.total_hours ?? 0;
   const modulesCompleted = certData.modules_completed || certData.modules_total || modulesDetail.length || 0;
+  const certSkills: any[] = Array.isArray(certData.skills_acquired) ? certData.skills_acquired : [];
   const pathSkills: any[] = Array.isArray(path?.skills) ? path.skills : [];
-  const pathAptitudes: string[] = Array.isArray(path?.aptitudes) ? path.aptitudes : [];
-  const pathOutcomes: string[] = Array.isArray(path?.professional_outcomes) ? path.professional_outcomes : [];
+  const effectiveSkills = certSkills.length > 0 ? certSkills : pathSkills;
+  const pathAptitudes: string[] = Array.isArray(certData.aptitudes) && certData.aptitudes.length > 0 ? certData.aptitudes : (Array.isArray(path?.aptitudes) ? path.aptitudes : []);
+  const pathOutcomes: string[] = Array.isArray(certData.professional_outcomes) && certData.professional_outcomes.length > 0 ? certData.professional_outcomes : (Array.isArray(path?.professional_outcomes) ? path.professional_outcomes : []);
   const strengths = modulesDetail.filter((m: any) => m.score >= 85);
   const improvements = modulesDetail.filter((m: any) => m.score < 70);
   const avgByType: Record<string, { sum: number; count: number }> = {};
