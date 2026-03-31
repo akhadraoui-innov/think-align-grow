@@ -294,7 +294,7 @@ export default function PortalCertificateDetail() {
               </div>
               <div className="p-4 border-t bg-muted/20 flex items-center justify-between">
                 <span className="text-sm font-bold">Score moyen : {score}%</span>
-                <span className="text-sm text-muted-foreground">{certData.modules_completed || 0} modules · {certData.total_time_hours || 0}h</span>
+                <span className="text-sm text-muted-foreground">{modulesCompleted} modules · {totalHours}h</span>
               </div>
             </CardContent></Card>
           </TabsContent>
