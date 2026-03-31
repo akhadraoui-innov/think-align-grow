@@ -191,7 +191,7 @@ export default function AcademyCertificates() {
                   <p className="text-[8px] uppercase tracking-[0.2em] text-amber-600/60 font-medium mb-4">AI ACCELERATION</p>
                   <h2 className="text-lg font-bold tracking-wide text-amber-800 dark:text-amber-400 mb-4">CERTIFICAT DE RÉUSSITE</h2>
                   <p className="text-xs text-muted-foreground mb-1">Décerné à</p>
-                  <p className="font-display font-bold text-2xl text-foreground mb-3">{certData.holder_name || profile?.display_name || "Apprenant"}</p>
+                  <p className="font-display font-bold text-2xl text-foreground mb-3">{certData.holder_name || certData.user_name || profile?.display_name || "Apprenant"}</p>
                   <p className="text-xs text-muted-foreground mb-1">Pour avoir complété avec succès le parcours</p>
                   <p className="font-bold text-base text-amber-700 dark:text-amber-400 mb-4">« {path?.name} »</p>
                   <div className="flex items-center justify-center gap-6 py-3 px-4 rounded-xl bg-amber-100/40 dark:bg-amber-900/20 border border-amber-300/30">
