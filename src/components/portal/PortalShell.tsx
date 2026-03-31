@@ -163,7 +163,7 @@ export function PortalShell({ children }: PortalShellProps) {
         {/* Mobile nav dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border/30 px-4 py-2 flex flex-col gap-1 bg-background">
-            {NAV_TABS.map((tab) => {
+            {ALL_TABS.map((tab) => {
               const active = activeTab === tab.path;
               return (
                 <Link
