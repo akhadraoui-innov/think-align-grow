@@ -190,7 +190,7 @@ export default function PortalUCMProject() {
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-auto p-6 max-w-5xl mx-auto w-full space-y-6">
+          <div className="flex-1 overflow-auto p-4 sm:p-6 max-w-5xl mx-auto w-full space-y-6">
             <Tabs value={activeStep} onValueChange={setActiveStep}>
               {/* Step 1: Context */}
               <TabsContent value="context" className="space-y-4 mt-0">

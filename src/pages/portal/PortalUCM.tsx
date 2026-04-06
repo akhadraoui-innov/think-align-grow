@@ -88,7 +88,7 @@ export default function PortalUCM() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid gap-4 grid-cols-3">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
