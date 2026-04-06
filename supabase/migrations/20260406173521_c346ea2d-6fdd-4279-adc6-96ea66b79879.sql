@@ -1,0 +1,1 @@
+UPDATE organizations SET ucm_plan = 'enterprise' WHERE id = 'c20a26a5-9e57-4abb-a5c4-77652c1d3e00';
