@@ -55,12 +55,12 @@ export function UCMContextForm({ open, onOpenChange, useCaseId, useCaseName, org
 
   const upsert = useMutation({
     mutationFn: async () => {
-      const payload = { use_case_id: useCaseId, ...form };
+      const payload = { use_case_id: useCaseId, organization_id: organizationId, ...form };
       if (existing) {
         const { error } = await supabase.from("ucm_uc_contexts").update(payload).eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("ucm_uc_contexts").insert(payload);
+        const { error } = await supabase.from("ucm_uc_contexts").insert([payload]);
         if (error) throw error;
       }
     },
