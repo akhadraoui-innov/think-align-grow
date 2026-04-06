@@ -13,6 +13,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   useCaseId: string;
   useCaseName: string;
+  organizationId: string;
 }
 
 const FIELDS = [
