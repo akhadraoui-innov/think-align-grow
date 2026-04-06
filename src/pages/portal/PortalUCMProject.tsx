@@ -352,6 +352,6 @@ export default function PortalUCMProject() {
           organizationId={activeOrgId}
         />
       )}
-    </PortalShell>
+    </PageTransition>
   );
 }

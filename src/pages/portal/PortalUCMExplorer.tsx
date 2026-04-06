@@ -66,6 +66,5 @@ export default function PortalUCMExplorer() {
           )}
         </div>
       </PageTransition>
-    </PortalShell>
   );
 }
