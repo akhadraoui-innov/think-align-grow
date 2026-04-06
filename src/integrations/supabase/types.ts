@@ -1954,6 +1954,9 @@ export type Database = {
           siret: string | null
           slug: string
           tva_number: string | null
+          ucm_ai_config: Json | null
+          ucm_branding: Json | null
+          ucm_plan: string | null
           ucm_quotas: Json | null
           updated_at: string
           website: string | null
@@ -1976,6 +1979,9 @@ export type Database = {
           siret?: string | null
           slug: string
           tva_number?: string | null
+          ucm_ai_config?: Json | null
+          ucm_branding?: Json | null
+          ucm_plan?: string | null
           ucm_quotas?: Json | null
           updated_at?: string
           website?: string | null
@@ -1998,6 +2004,9 @@ export type Database = {
           siret?: string | null
           slug?: string
           tva_number?: string | null
+          ucm_ai_config?: Json | null
+          ucm_branding?: Json | null
+          ucm_plan?: string | null
           ucm_quotas?: Json | null
           updated_at?: string
           website?: string | null
@@ -3706,6 +3715,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_ucm_quota: {
+        Args: { p_action: string; p_org_id: string }
+        Returns: boolean
+      }
+      get_ucm_global_prompt: {
+        Args: { p_org_id: string; p_section_code: string }
+        Returns: string
+      }
+      get_ucm_section_prompt: {
+        Args: { p_mode: string; p_org_id: string; p_section_code: string }
+        Returns: string
+      }
       has_any_role: {
         Args: {
           _roles: Database["public"]["Enums"]["app_role"][]
