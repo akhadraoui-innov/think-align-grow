@@ -97,6 +97,7 @@ import PortalUCMProject from "./pages/portal/PortalUCMProject";
 import PortalUCMExplorer from "./pages/portal/PortalUCMExplorer";
 import AdminUCM from "./pages/admin/AdminUCM";
 import AdminUCMSectors from "./pages/admin/AdminUCMSectors";
+import AdminUCMPrompts from "./pages/admin/AdminUCMPrompts";
 
 const queryClient = new QueryClient();
 
