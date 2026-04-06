@@ -1,17 +1,26 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Building2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   project: any;
   projectId: string;
 }
 
+function charFeedback(len: number) {
+  if (len >= 500) return { label: "Excellent contexte", color: "text-emerald-600" };
+  if (len >= 200) return { label: "Bon début — enrichissez pour de meilleurs résultats", color: "text-amber-600" };
+  if (len > 0) return { label: "Trop court — ajoutez plus de détails", color: "text-red-500" };
+  return { label: "", color: "text-muted-foreground" };
+}
+
 export function UCMContextStep({ project, projectId }: Props) {
   const qc = useQueryClient();
+  const [immersionLen, setImmersionLen] = useState((project.immersion || "").length);
 
   const updateProject = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
@@ -20,6 +29,8 @@ export function UCMContextStep({ project, projectId }: Props) {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ucm-project", projectId] }),
   });
+
+  const feedback = charFeedback(immersionLen);
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -52,11 +63,16 @@ export function UCMContextStep({ project, projectId }: Props) {
             <label className="text-sm font-semibold mb-1.5 block text-foreground">Immersion détaillée</label>
             <Textarea
               defaultValue={project.immersion || ""}
+              onChange={(e) => setImmersionLen(e.target.value.length)}
               onBlur={(e) => updateProject.mutate({ immersion: e.target.value })}
-              rows={5}
-              placeholder="Organisation, enjeux stratégiques, maturité digitale…"
-              className="bg-background"
+              rows={8}
+              placeholder="Organisation, enjeux stratégiques, maturité digitale, SI existant, défis clés, culture d'entreprise…"
+              className="bg-background border-primary/30"
             />
+            <div className="flex justify-between items-center mt-1.5">
+              <span className={cn("text-xs", feedback.color)}>{feedback.label}</span>
+              <span className="text-xs text-muted-foreground">{immersionLen} caractères</span>
+            </div>
           </div>
         </CardContent>
       </Card>
