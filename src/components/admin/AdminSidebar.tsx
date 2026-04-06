@@ -41,8 +41,14 @@ export function AdminSidebar() {
     { path: "/admin/workshops", icon: Presentation, label: "Workshops", show: perms.has("admin.workshops.view") },
     { path: "/admin/design-innovation", icon: Lightbulb, label: "Design Innovation", show: perms.has("admin.challenges.view") },
     { path: "/admin/insight", icon: Rocket, label: "Insight", show: true },
-    { path: "/admin/ucm", icon: Brain, label: "AI Value Builder", show: true },
   ];
+
+  const ucmSubItems = [
+    { path: "/admin/ucm", icon: LayoutDashboard, label: "Dashboard", exact: true },
+    { path: "/admin/ucm/sectors", icon: Layers, label: "Secteurs" },
+  ];
+
+  const isUCMRoute = location.pathname.startsWith("/admin/ucm");
 
   const observabilitySubItems = [
     { path: "/admin/observability", icon: LayoutDashboard, label: "Vue d'ensemble", exact: true },
