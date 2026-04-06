@@ -1,135 +1,71 @@
 
-# Audit complet UCM — AI Value Builder — v2
 
-## ✅ Ce qui est FAIT et fonctionnel
+# Plan — Upgrade UI Premium des 3 pages Admin UCM
 
-### Infrastructure DB (11/11 tables)
-| Table | Colonnes clés | RLS | Statut |
-|-------|--------------|-----|--------|
-| `ucm_projects` | company, context, immersion, sector_id, selected_functions, status | 4 policies | ✅ |
-| `ucm_use_cases` | name, description, priority, complexity, impact_level, horizon, data_readiness, ai_techniques, value_drivers, functions, is_selected | 4 policies | ✅ |
-| `ucm_uc_contexts` | situation, tools, team, volumes, pain_points, objectives, constraints | 4 policies | ✅ |
-| `ucm_analyses` | use_case_id, section_id, mode, content, version, is_current, tokens_used | 4 policies | ✅ |
-| `ucm_global_sections` | section_id, content, version, is_current | 4 policies | ✅ |
-| `ucm_chat_messages` | project_id, role, content, tokens_used | 2 policies | ✅ |
-| `ucm_exports` | project_id, format, file_url, metadata | 4 policies | ✅ |
-| `ucm_sectors` | code, label, icon, group_name, functions, knowledge | 4 policies | ✅ |
-| `ucm_analysis_sections` | code, title, icon, brief_instruction, detailed_instruction | 4 policies | ✅ |
-| `ucm_global_analysis_sections` | code, title, instruction | 4 policies | ✅ |
-| `ucm_quota_usage` | uc_generations, analysis_generations, global_generations, chat_messages, exports, total_tokens | 3 policies | ✅ |
+## Diagnostic
 
-### Seed data
-- 35 secteurs avec knowledge et functions
-- 6 sections d'analyse (process, data, tech, impact, roadmap, risks)
-- 7 sections globales (exec, synergies, roadmap, archi, business, change, next)
+Les 3 pages (`AdminUCM`, `AdminUCMSectors`, `AdminUCMPrompts`) utilisent un rendu basique : cards plates, pas de gradient, pas de Recharts, pas de `GradientIcon`, pas de `StatsCard` pattern existant. Le `AdminDashboard` principal montre le standard premium attendu : KPI cards avec icônes colorées, graphiques Recharts, sections titrées avec icône + label, border-border/50, uppercase tracking labels.
 
-### Permissions (10/10)
-`ucm.projects.create`, `ucm.projects.read_all`, `ucm.uc.generate`, `ucm.uc.analyze`, `ucm.uc.analyze_detailed`, `ucm.global.generate`, `ucm.chat.use`, `ucm.export.docx`, `ucm.config.manage`, `ucm.sectors.manage`
+## Changements par page
 
-### DB Functions
-- `ucm_increment_quota(_org_id, _field, _tokens)` — SECURITY DEFINER ✅
+### 1. AdminUCM.tsx — Command Center
 
-### Edge Functions (5/5)
-| Fonction | Auth | Quota | IA | Statut |
-|----------|------|-------|----|--------|
-| `ucm-generate` | ✅ JWT | ✅ increment | Gemini 2.5 Flash | ✅ Fonctionnel |
-| `ucm-analyze` | ✅ JWT | ✅ increment | Flash/Pro selon mode | ✅ Fonctionnel |
-| `ucm-synthesize` | ✅ JWT | ✅ increment | Gemini 2.5 Pro | ✅ Fonctionnel |
-| `ucm-chat` | ✅ JWT | ✅ increment | Gemini 2.5 Flash | ✅ Fonctionnel |
-| `ucm-export` | - | - | - | ❌ Placeholder 501 |
+**Header** : Titre `font-display` + sous-titre muted, aligné sur AdminDashboard.
 
-### Frontend — Pages Portal (3/3)
-| Page | Route | Statut |
-|------|-------|--------|
-| Dashboard projets | `/portal/ucm` | ✅ |
-| Wizard 6 tabs | `/portal/ucm/:id` | ✅ |
-| UC Explorer | `/portal/ucm/explorer` | ✅ |
+**KPIs** : 4 cards (au lieu de 3) utilisant le pattern `StatsCard` existant avec icônes colorées distinctes :
+- Projets UCM (Briefcase, primary)
+- Use Cases générés (Lightbulb, accent)  
+- Analyses ce mois (BarChart3, violet)
+- Tokens consommés (Zap, emerald)
 
-### Frontend — Pages Admin (2/2)
-| Page | Route | Statut |
-|------|-------|--------|
-| Dashboard admin | `/admin/ucm` | ✅ |
-| CRUD Secteurs | `/admin/ucm/sectors` | ✅ |
+**Graphiques Recharts** : Ajouter une rangée de 2 charts :
+- BarChart : UC générés par organisation (top 5)
+- LineChart : Évolution mensuelle tokens/analyses (6 derniers mois, données issues de `ucm_quota_usage`)
 
-### Frontend — Composants UCM (3/3)
-| Composant | Statut |
-|-----------|--------|
-| `UCMChat.tsx` | ✅ Chat avec historique, markdown |
-| `UCMContextForm.tsx` | ✅ Dialog 7 champs |
-| `UCMAnalysisView.tsx` | ✅ Brief/Detailed, versions, régénération |
+**Table projets** : Remplacer la liste plate par une vraie `Table` (thead/tbody) avec colonnes : Entreprise, Organisation, Secteur, UC count, Status, Date — style `rounded-xl border-border/50 bg-card`.
 
-### Frontend — Hooks (3/3)
-| Hook | Statut |
-|------|--------|
-| `useUCMProject.ts` | ✅ 8 hooks (projects, usecases, analyses, sectors, mutations) |
-| `useUCMChat.ts` | ✅ Messages + send |
-| `useUCMQuotas.ts` | ✅ Usage + limits |
+**Statut badges** : Couleurs sémantiques (draft=secondary, active=primary, completed=emerald).
 
-### Navigation
-- PortalSidebar : entrée "AI Value Builder" ✅
-- AdminSidebar : section collapsible UCM (Dashboard + Secteurs) ✅
-- Routes App.tsx : 5 routes (3 portal + 2 admin) ✅
+### 2. AdminUCMSectors.tsx — Catalogue Premium
 
-### Guards
-- Permission `ucm.chat.use` → onglet Chat disabled ✅
-- Permission `ucm.global.generate` → bouton Synthèse disabled ✅
-- Permission `ucm.uc.analyze_detailed` → bouton Détaillé disabled ✅
-- Quota `canGenerate` → bouton Générer 10 UC disabled ✅
-- Quota `canAnalyze` → bouton Batch disabled ✅
-- Affichage quotas dans header projet ✅
+**Header** : Titre `font-display` + badge compteur total + sous-titre.
 
----
+**KPIs** : 3 mini stats en haut :
+- Total secteurs (Globe, primary)
+- Secteurs actifs (CheckCircle, emerald)
+- Groupes (FolderTree, violet)
 
-## ❌ Ce qui MANQUE encore
+**Groupes** : Chaque groupe devient une card `rounded-xl border-border/50` avec header contenant icône du premier secteur du groupe + compteur items. Les items dans le groupe utilisent un layout grid 2 colonnes au lieu d'une liste verticale.
 
-### 1. Export DOCX (Phase 5 du CDC)
-- Edge function `ucm-export` retourne 501
-- Pas de bucket storage `ucm-exports`
-- Pas de bouton "Exporter Word" dans l'UI
+**Sector items** : Chaque item affiche icône + label + badge actif/inactif + compteur fonctions (extrait du JSON `functions`) + bouton edit, dans un mini-card hover:bg-muted/50.
 
-### 2. Améliorations UX mineures
-- **Batch analysis** : pas de bouton Annuler pendant le batch
-- **UC Explorer** : pas de filtres avancés (par secteur, priorité, complexité)
-- **Admin UCM** : pas de drill-down vers les projets individuels
-- **Admin Secteurs** : pas de bouton toggle actif/inactif inline
-- **Version history** : pas de comparaison côte à côte entre versions
+**Dialog** : Ajouter des `Label` shadcn au lieu de `<label>`, séparer les champs avec `Separator`, et ajouter un header avec l'emoji du secteur en grand.
 
-### 3. Pages Admin manquantes
-- `/admin/ucm/prompts` — Gestion des templates de prompts (sections d'analyse + sections globales)
+### 3. AdminUCMPrompts.tsx — Prompt Studio
 
-### 4. Workspace portal
-- Pas d'entrée "AI Value Builder" dans le workspace/dashboard portal principal
+**Header** : Titre `font-display` + sous-titre + badge compteur total (analyse + global).
 
----
+**Tabs** : Style premium — `TabsList` plus large avec icônes dans les triggers (Search pour analyse, Globe pour synthèse).
 
-## Plan d'exécution — Prochaines étapes
+**Section cards** : Chaque `SectionEditor` reçoit un traitement visuel :
+- Bande de couleur gauche (border-l-4 avec couleur thématique par code)
+- Icône en grand (text-2xl) dans un cercle coloré
+- Badge code en `font-mono` avec background subtil
+- Compteur de caractères dans les textareas (brief/detailed)
+- Indicateur visuel "non modifié" vs "modifié" pendant l'édition
 
-### Étape 1 : Export DOCX (priorité haute)
-1. Créer le bucket storage `ucm-exports`
-2. Implémenter `ucm-export` edge function (charger projet + UC + analyses + global, générer DOCX structuré)
-3. Ajouter bouton "Exporter Word" dans l'onglet Synthèse
-4. Sauvegarder dans `ucm_exports` + increment quota
-
-### Étape 2 : Admin Prompts
-1. Créer `/admin/ucm/prompts` — CRUD pour `ucm_analysis_sections` et `ucm_global_analysis_sections`
-2. Ajouter route et entrée sidebar
-
-### Étape 3 : UX Polish
-1. Toggle actif/inactif inline dans Admin Secteurs
-2. Filtres avancés dans UC Explorer
-3. Lien drill-down admin → projet
-4. Bouton Annuler batch analysis
-
----
+**Description tabs** : Remplacer le texte plat par une card info `bg-muted/30` avec icône Info.
 
 ## Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `supabase/functions/ucm-export/index.ts` | Implémenter DOCX |
-| `src/pages/portal/PortalUCMProject.tsx` | Ajouter bouton Export |
-| `src/pages/admin/AdminUCMPrompts.tsx` | Créer |
-| `src/components/admin/AdminSidebar.tsx` | Ajouter entrée Prompts |
-| `src/App.tsx` | Ajouter route prompts |
-| `src/pages/portal/PortalUCMExplorer.tsx` | Filtres avancés |
-| `src/pages/admin/AdminUCMSectors.tsx` | Toggle inline |
+| `src/pages/admin/AdminUCM.tsx` | Réécrire — StatsCard pattern, Recharts, Table |
+| `src/pages/admin/AdminUCMSectors.tsx` | Réécrire — KPIs, grid layout, dialog premium |
+| `src/pages/admin/AdminUCMPrompts.tsx` | Réécrire — border-l-4, tabs avec icônes, compteurs |
+
+## Ordre d'exécution
+1. AdminUCM (dashboard = vitrine)
+2. AdminUCMSectors (catalogue)
+3. AdminUCMPrompts (studio prompts)
+
