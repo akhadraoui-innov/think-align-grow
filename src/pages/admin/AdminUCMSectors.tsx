@@ -38,6 +38,7 @@ export default function AdminUCMSectors() {
       group_name: s.group_name || "",
       knowledge: s.knowledge || "",
       functions: JSON.stringify(s.functions || {}, null, 2),
+      code: s.code || "",
     });
   };
 
