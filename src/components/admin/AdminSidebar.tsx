@@ -46,6 +46,7 @@ export function AdminSidebar() {
   const ucmSubItems = [
     { path: "/admin/ucm", icon: LayoutDashboard, label: "Dashboard", exact: true },
     { path: "/admin/ucm/sectors", icon: Layers, label: "Secteurs" },
+    { path: "/admin/ucm/prompts", icon: Sparkles, label: "Prompts IA" },
   ];
 
   const isUCMRoute = location.pathname.startsWith("/admin/ucm");
