@@ -52,9 +52,9 @@ export default function PortalUCM() {
     <PageTransition>
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
               <Lightbulb className="h-6 w-6 text-primary" />
               AI Value Builder
             </h1>
@@ -88,7 +88,7 @@ export default function PortalUCM() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid gap-4 grid-cols-3">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
           <Card>
             <CardContent className="p-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">

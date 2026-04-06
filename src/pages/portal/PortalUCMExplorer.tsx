@@ -46,12 +46,12 @@ export default function PortalUCMExplorer() {
   return (
     <PageTransition>
       <div className="p-6 max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Lightbulb className="h-6 w-6 text-primary" /> UC Explorer
             <Badge variant="secondary" className="ml-2">{filtered.length}</Badge>
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="relative w-60">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher…" className="pl-9" />

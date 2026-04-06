@@ -128,7 +128,7 @@ export default function PortalUCMProject() {
           {/* Sticky breadcrumb + stepper */}
           <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 px-6 py-3 text-sm">
+            <div className="flex items-center gap-2 px-4 sm:px-6 py-3 text-sm flex-wrap">
               <Link to="/portal/ucm" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
                 AI Value Builder
               </Link>
@@ -150,7 +150,7 @@ export default function PortalUCMProject() {
             </div>
 
             {/* Workflow stepper */}
-            <div className="px-6 pb-3 flex items-center gap-1">
+            <div className="px-4 sm:px-6 pb-3 flex items-center gap-1 overflow-x-auto">
               {STEPS.map((step, i) => {
                 const complete = stepComplete[step.key];
                 const active = activeStep === step.key;
@@ -190,7 +190,7 @@ export default function PortalUCMProject() {
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-auto p-6 max-w-5xl mx-auto w-full space-y-6">
+          <div className="flex-1 overflow-auto p-4 sm:p-6 max-w-5xl mx-auto w-full space-y-6">
             <Tabs value={activeStep} onValueChange={setActiveStep}>
               {/* Step 1: Context */}
               <TabsContent value="context" className="space-y-4 mt-0">
