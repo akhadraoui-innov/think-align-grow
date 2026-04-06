@@ -40,6 +40,10 @@ const academyItems = [
   { path: "/simulator/history", icon: History, label: "Mon historique", exact: true },
 ];
 
+const ucmItems = [
+  { path: "/portal/ucm", icon: Lightbulb, label: "AI Value Builder", exact: true },
+];
+
 interface AppSidebarProps {
   onCommandPalette?: () => void;
 }

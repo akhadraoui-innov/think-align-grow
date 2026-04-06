@@ -24,6 +24,7 @@ const NAV_TABS = [
   { label: "CHALLENGES", path: "/portal/challenges", matchPrefix: "/portal/challenges" },
   { label: "ACADEMIE", path: "/portal/academie", matchPrefix: "/portal/academie" },
   { label: "INSIGHT", path: "/portal/insight", matchPrefix: "/portal/insight" },
+  { label: "AI VALUE BUILDER", path: "/portal/ucm", matchPrefix: "/portal/ucm" },
 ] as const;
 
 export function PortalShell({ children }: PortalShellProps) {
