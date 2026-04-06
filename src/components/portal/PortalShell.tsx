@@ -169,5 +169,6 @@ export function PortalShell({ children }: PortalShellProps) {
       {isImmersive && <PortalBottomBar />}
       <HeepAIWidget />
     </div>
+    </AuthGuard>
   );
 }
