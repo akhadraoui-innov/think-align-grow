@@ -1,11 +1,19 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, MessageCircle } from "lucide-react";
 import { useUCMChatMessages, useSendUCMChat } from "@/hooks/useUCMChat";
 import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { UCMPageHeader } from "./UCMPageHeader";
 import { cn } from "@/lib/utils";
+
+const SUGGESTION_CHIPS = [
+  "Résume les forces du portfolio UC",
+  "Compare les risques entre UC",
+  "Propose un plan d'action à 90 jours",
+  "Quelles synergies entre les use cases ?",
+];
 
 interface Props {
   projectId: string;
@@ -21,29 +29,49 @@ export function UCMChat({ projectId }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = () => {
-    const msg = input.trim();
-    if (!msg) return;
+  const handleSend = (msg?: string) => {
+    const text = (msg || input).trim();
+    if (!text) return;
     setInput("");
-    sendChat.mutate({ project_id: projectId, message: msg });
+    sendChat.mutate({ project_id: projectId, message: text });
   };
 
   return (
     <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="px-6 py-4 border-b shrink-0">
+        <UCMPageHeader
+          icon={<MessageCircle className="h-5 w-5 text-primary" />}
+          title="Consultant IA"
+          subtitle="Posez des questions sur le projet — l'IA a accès à tout le contexte"
+        />
+      </div>
+
       <ScrollArea className="flex-1 px-6">
         <div className="max-w-3xl mx-auto space-y-4 py-6">
           {isLoading && (
             <p className="text-center text-muted-foreground text-sm">Chargement…</p>
           )}
           {!isLoading && (!messages || messages.length === 0) && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-4">
                 <span className="text-2xl">🤖</span>
               </div>
-              <h3 className="font-semibold text-foreground">Consultant IA</h3>
+              <h3 className="font-semibold text-foreground">Posez votre première question</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-md">
-                Posez une question sur le projet — l'IA consultant a accès à tout le contexte (UC, analyses, synthèse).
+                Le consultant IA a accès au contexte complet : UC, analyses et synthèse.
               </p>
+              <div className="flex flex-wrap justify-center gap-2 mt-6 max-w-lg">
+                {SUGGESTION_CHIPS.map((chip) => (
+                  <button
+                    key={chip}
+                    onClick={() => handleSend(chip)}
+                    className="px-3 py-1.5 rounded-full border bg-background text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 transition-all"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {(messages || []).map((m: any) => (
@@ -89,7 +117,7 @@ export function UCMChat({ projectId }: Props) {
             }}
           />
           <Button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={sendChat.isPending || !input.trim()}
             size="icon"
             className="shrink-0 h-12 w-12"

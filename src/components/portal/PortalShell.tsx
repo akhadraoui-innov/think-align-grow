@@ -40,6 +40,7 @@ export function PortalShell({ children }: PortalShellProps) {
     /^\/portal\/module\//.test(location.pathname) ||
     /^\/portal\/pratique\/session/.test(location.pathname) ||
     /^\/portal\/academie\/modules\//.test(location.pathname) ||
+    (/^\/portal\/ucm\/[0-9a-f]{8}-/.test(location.pathname)) ||
     (/^\/portal\/workshops\/[^/]+$/.test(location.pathname) && location.pathname !== "/portal/workshops" && location.pathname !== "/portal/workshops/toolkits") ||
     (/^\/portal\/challenges\/[^/]+$/.test(location.pathname) && location.pathname !== "/portal/challenges");
 
