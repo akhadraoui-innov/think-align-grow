@@ -35,3 +35,18 @@ verify_jwt = false
 
 [functions.academy-path-document]
 verify_jwt = false
+
+[functions.ucm-generate]
+verify_jwt = false
+
+[functions.ucm-analyze]
+verify_jwt = false
+
+[functions.ucm-synthesize]
+verify_jwt = false
+
+[functions.ucm-chat]
+verify_jwt = false
+
+[functions.ucm-export]
+verify_jwt = false
