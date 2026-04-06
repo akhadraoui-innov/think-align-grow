@@ -3,6 +3,7 @@ import { useLocation, Link } from "react-router-dom";
 import { PortalSidebar } from "./PortalSidebar";
 import { PortalBottomBar } from "./PortalBottomBar";
 import { HeepAIWidget } from "./HeepAIWidget";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { useIsMobile } from "@/hooks/use-mobile";
