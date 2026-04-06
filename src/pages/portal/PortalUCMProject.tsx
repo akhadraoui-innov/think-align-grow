@@ -83,7 +83,7 @@ export default function PortalUCMProject() {
     toast.success(`Batch terminé : ${total} analyses`);
   };
 
-  if (isLoading) return <PortalShell><div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div></PortalShell>;
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   if (!project) return null;
 
   const sectorGroups = (sectors || []).reduce((acc: Record<string, any[]>, s: any) => {
@@ -100,7 +100,7 @@ export default function PortalUCMProject() {
   const canSynthesize = perms.has("ucm.global.generate");
 
   return (
-    <PortalShell>
+    <>
       <PageTransition>
         <div className="p-6 max-w-5xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
@@ -353,6 +353,6 @@ export default function PortalUCMProject() {
           organizationId={activeOrgId}
         />
       )}
-    </PortalShell>
+    </>
   );
 }
