@@ -1,72 +1,32 @@
 
-# Plan — Modernisation UI "AI Value Builder" (UCM)
+
+# Plan — Fix : Projet UCM introuvable (session auth expirée)
 
 ## Diagnostic
 
-L'expérience UCM souffre de 5 problèmes majeurs :
+L'analyse des requêtes réseau révèle que le token `authorization` envoyé est la **clé anon** (pas un JWT utilisateur). Cela signifie que `auth.uid()` est `null` côté RLS, donc la requête retourne 0 lignes et la page affiche "Aucun projet".
 
-1. **Scroll non contraint** : header et sidebar scrollent avec le contenu — le conteneur racine de PortalShell utilise `min-h-screen` au lieu de `h-screen overflow-hidden`, et le body flex manque `min-h-0`
-2. **Navigation plate** : 6 tabs basiques sans progression, sans breadcrumb projet/UC
-3. **Markdown basique** : `UCMAnalysisView`, `UCMChat` et la synthèse utilisent `ReactMarkdown` brut au lieu de `EnrichedMarkdown`
-4. **Pages liste élémentaires** : pas de KPIs, pas de filtres
-5. **Dialogs bruts** : `UCMContextForm` sans sections visuelles
+**Cause racine** : les routes `/portal/*` n'ont **aucun AuthGuard**. Quand la session expire ou que l'utilisateur ouvre un nouvel onglet, il accède à la page sans être authentifié et rien ne s'affiche.
 
-## Changements
+Votre projet "Renault" existe bien en base (vérifié : `c69180f8`, org `c20a26a5`, status `in_progress`).
 
-### 1. Fix scroll — PortalShell.tsx
+## Solution
 
-- Ligne 60 : `min-h-screen` → `h-screen overflow-hidden`
-- Ligne 154 : ajouter `min-h-0 overflow-hidden` au flex body
-- `<main>` garde `overflow-auto` — seul élément scrollable
+### 1. Ajouter AuthGuard sur PortalShell
 
-### 2. PortalUCMProject.tsx — Stepper workflow + breadcrumb sticky
+Protéger toutes les routes `/portal/*` en intégrant `AuthGuard` dans `PortalShell.tsx`. Si l'utilisateur n'est pas connecté, il sera redirigé vers `/auth`.
 
-Réécrire la navigation :
-- **Breadcrumb sticky** : `Projet > {company}` + badge status + quotas, `sticky top-0 z-30 bg-background/95 backdrop-blur border-b`
-- **Stepper horizontal** : 6 cercles numérotés avec connecteurs, couleurs par complétion (complété=primary, actif=ring, futur=muted)
-- Complétion automatique : étape 1 OK si company+context, étape 2 si sector_id, étape 3 si useCases.length>0, etc.
-- Remplacer les 3 `<ReactMarkdown>` (synthèse, analyses) par `<EnrichedMarkdown>`
+**Fichier** : `src/components/portal/PortalShell.tsx`
+- Importer `AuthGuard` depuis `@/components/auth/AuthGuard`
+- Envelopper le contenu du return dans `<AuthGuard>...</AuthGuard>`
 
-### 3. UCMAnalysisView.tsx — Premium
+### 2. Vérification immédiate
 
-- Bordure gauche colorée par section (process=blue, data=emerald, tech=violet, impact=amber, roadmap=primary, risks=red)
-- Icône en cercle coloré
-- Collapsible par défaut (Collapsible shadcn)
-- Progress bar : X/6 sections analysées par UC
-- `ReactMarkdown` → `EnrichedMarkdown`
+Après le fix, l'utilisateur sera redirigé vers `/auth` s'il n'est pas connecté. Après connexion, il retrouvera son projet "Renault" sur `/portal/ucm`.
 
-### 4. UCMChat.tsx — Markdown premium
+## Fichier impacté
 
-- Réponses IA : `ReactMarkdown` → `EnrichedMarkdown`
+| Fichier | Changement |
+|---------|-----------|
+| `src/components/portal/PortalShell.tsx` | Wrapper `AuthGuard` autour du contenu |
 
-### 5. PortalUCM.tsx — Page projets premium
-
-- 3 KPI cards en haut (projets, UC total, analyses)
-- Cards projet enrichies : progress bar étapes, emoji secteur, compteurs
-- Dialog création premium avec `Label`, `Separator`, chips secteur
-
-### 6. PortalUCMExplorer.tsx — Filtres + cards premium
-
-- Select filtres : projet, priorité, complexité
-- Cards avec bordure gauche colorée par priorité
-- Compteur analyses par UC
-
-### 7. UCMContextForm.tsx — Sections groupées
-
-- 3 sections visuelles : "Situation actuelle", "Volumétrie", "Objectifs"
-- Chaque section : icône + fond subtil `bg-muted/20 rounded-lg p-4`
-- Indicateur `X/7 champs renseignés`
-
-## Fichiers impactés
-
-| Fichier | Action |
-|---------|--------|
-| `src/components/portal/PortalShell.tsx` | Fix scroll |
-| `src/pages/portal/PortalUCMProject.tsx` | Réécrire — stepper + breadcrumb + EnrichedMarkdown |
-| `src/components/ucm/UCMAnalysisView.tsx` | Upgrade — couleurs, collapse, EnrichedMarkdown |
-| `src/components/ucm/UCMChat.tsx` | EnrichedMarkdown |
-| `src/pages/portal/PortalUCM.tsx` | KPIs + cards enrichies |
-| `src/pages/portal/PortalUCMExplorer.tsx` | Filtres + cards colorées |
-| `src/components/ucm/UCMContextForm.tsx` | Sections groupées |
-
-## Ordre : 1→2→3→4→5→6→7
