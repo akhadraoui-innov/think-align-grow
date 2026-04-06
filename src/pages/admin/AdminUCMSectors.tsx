@@ -51,7 +51,7 @@ export default function AdminUCMSectors() {
         const { error } = await supabase.from("ucm_sectors").update(payload).eq("id", editSector.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("ucm_sectors").insert([{ ...payload, is_active: true, sort_order: (sectors?.length || 0) + 1 }]);
+        const { error } = await supabase.from("ucm_sectors").insert([{ ...payload, code: form.code || form.label.toLowerCase().replace(/\s+/g, "_"), is_active: true, sort_order: (sectors?.length || 0) + 1 }]);
         if (error) throw error;
       }
     },
