@@ -115,6 +115,7 @@ function AnimatedRoutes() {
           <Route path="/ai" element={<AI />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/workshop" element={<Workshop />} />
           <Route path="/workshop/:id" element={<WorkshopRoom />} />
           <Route path="/challenge" element={<Challenge />} />
