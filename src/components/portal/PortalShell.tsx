@@ -3,6 +3,7 @@ import { useLocation, Link } from "react-router-dom";
 import { PortalSidebar } from "./PortalSidebar";
 import { PortalBottomBar } from "./PortalBottomBar";
 import { HeepAIWidget } from "./HeepAIWidget";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -57,6 +58,7 @@ export function PortalShell({ children }: PortalShellProps) {
   const activeTab = getActiveTab();
 
   return (
+    <AuthGuard redirectTo="/auth">
     <div className="portal h-screen flex flex-col bg-background font-sans overflow-hidden">
       {/* ── Top Nav ── */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-xl">
@@ -167,5 +169,6 @@ export function PortalShell({ children }: PortalShellProps) {
       {isImmersive && <PortalBottomBar />}
       <HeepAIWidget />
     </div>
+    </AuthGuard>
   );
 }
