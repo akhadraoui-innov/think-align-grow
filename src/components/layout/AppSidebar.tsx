@@ -213,7 +213,36 @@ export function AppSidebar({ onCommandPalette }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Admin link */}
+        {/* UCM / AI Value Builder */}
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-3">AI Value Builder</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {ucmItems.map((item) => {
+                const active = item.exact ? location.pathname === item.path : isActive(item.path);
+                const Icon = item.icon;
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
+                      <button
+                        onClick={() => navigate(item.path)}
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                          active
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!collapsed && <span>{item.label}</span>}
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {isAdmin && (
           <SidebarGroup>
             {!collapsed && (
