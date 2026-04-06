@@ -12,7 +12,7 @@ import { useUCMProjects, useCreateUCMProject } from "@/hooks/useUCMProject";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import PageTransition from "@/components/ui/PageTransition";
+import { PageTransition } from "@/components/ui/PageTransition";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -43,7 +43,7 @@ export default function PortalUCM() {
   };
 
   return (
-    <PortalShell activeTab="/portal/ucm">
+    <PortalShell >
       <PageTransition>
         <div className="p-6 max-w-6xl mx-auto space-y-6">
           <div className="flex items-center justify-between">

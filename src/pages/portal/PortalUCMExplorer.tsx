@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveOrg } from "@/contexts/OrgContext";
 import { useState } from "react";
-import PageTransition from "@/components/ui/PageTransition";
+import { PageTransition } from "@/components/ui/PageTransition";
 
 export default function PortalUCMExplorer() {
   const { activeOrgId } = useActiveOrg();
@@ -32,7 +32,7 @@ export default function PortalUCMExplorer() {
   );
 
   return (
-    <PortalShell activeTab="/portal/ucm">
+    <PortalShell >
       <PageTransition>
         <div className="p-6 max-w-6xl mx-auto space-y-6">
           <div className="flex items-center justify-between">

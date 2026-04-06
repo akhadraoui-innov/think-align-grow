@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import PageTransition from "@/components/ui/PageTransition";
+import { PageTransition } from "@/components/ui/PageTransition";
 
 export default function PortalUCMProject() {
   const { id } = useParams<{ id: string }>();
@@ -47,7 +47,7 @@ export default function PortalUCMProject() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ucm-use-cases", id] }),
   });
 
-  if (isLoading) return <PortalShell activeTab="/portal/ucm"><div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div></PortalShell>;
+  if (isLoading) return <PortalShell ><div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div></PortalShell>;
   if (!project) return null;
 
   const sectorGroups = (sectors || []).reduce((acc: Record<string, any[]>, s: any) => {
@@ -61,7 +61,7 @@ export default function PortalUCMProject() {
   const sectorFunctions = currentSector?.functions as Record<string, string[]> | undefined;
 
   return (
-    <PortalShell activeTab="/portal/ucm">
+    <PortalShell >
       <PageTransition>
         <div className="p-6 max-w-5xl mx-auto space-y-6">
           <div>
