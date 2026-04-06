@@ -189,6 +189,9 @@ function AnimatedRoutes() {
           <Route path="/portal/academie/certificates" element={<PortalAcademieCertificates />} />
           <Route path="/portal/insight" element={<PortalInsight />} />
           <Route path="/portal/insight/:section" element={<PortalInsight />} />
+          <Route path="/portal/ucm" element={<PortalUCM />} />
+          <Route path="/portal/ucm/explorer" element={<PortalUCMExplorer />} />
+          <Route path="/portal/ucm/:id" element={<PortalUCMProject />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

@@ -59,6 +59,13 @@ const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label
       { icon: Award, label: "Certificats", path: "/portal/academie/certificates" },
     ],
   },
+  "/portal/ucm": {
+    title: "AI VALUE BUILDER",
+    items: [
+      { icon: Lightbulb, label: "Projets", path: "/portal/ucm" },
+      { icon: Layers, label: "UC Explorer", path: "/portal/ucm/explorer" },
+    ],
+  },
   "/portal/insight": {
     title: "INSIGHT",
     items: [
