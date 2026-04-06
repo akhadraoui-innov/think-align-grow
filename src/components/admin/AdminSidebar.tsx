@@ -41,6 +41,7 @@ export function AdminSidebar() {
     { path: "/admin/workshops", icon: Presentation, label: "Workshops", show: perms.has("admin.workshops.view") },
     { path: "/admin/design-innovation", icon: Lightbulb, label: "Design Innovation", show: perms.has("admin.challenges.view") },
     { path: "/admin/insight", icon: Rocket, label: "Insight", show: true },
+    { path: "/admin/ucm", icon: Brain, label: "AI Value Builder", show: true },
   ];
 
   const observabilitySubItems = [
