@@ -1954,6 +1954,7 @@ export type Database = {
           siret: string | null
           slug: string
           tva_number: string | null
+          ucm_quotas: Json | null
           updated_at: string
           website: string | null
         }
@@ -1975,6 +1976,7 @@ export type Database = {
           siret?: string | null
           slug: string
           tva_number?: string | null
+          ucm_quotas?: Json | null
           updated_at?: string
           website?: string | null
         }
@@ -1996,6 +1998,7 @@ export type Database = {
           siret?: string | null
           slug?: string
           tva_number?: string | null
+          ucm_quotas?: Json | null
           updated_at?: string
           website?: string | null
         }
@@ -2464,6 +2467,660 @@ export type Database = {
           version?: string
         }
         Relationships: []
+      }
+      ucm_analyses: {
+        Row: {
+          ai_model: string | null
+          ai_provider: string | null
+          content: string | null
+          created_at: string | null
+          generated_by: string | null
+          generation_time_ms: number | null
+          id: string
+          is_current: boolean | null
+          mode: string
+          organization_id: string
+          project_id: string
+          prompt_hash: string | null
+          section_id: string
+          tokens_used: number | null
+          updated_at: string | null
+          use_case_id: string
+          version: number | null
+        }
+        Insert: {
+          ai_model?: string | null
+          ai_provider?: string | null
+          content?: string | null
+          created_at?: string | null
+          generated_by?: string | null
+          generation_time_ms?: number | null
+          id?: string
+          is_current?: boolean | null
+          mode: string
+          organization_id: string
+          project_id: string
+          prompt_hash?: string | null
+          section_id: string
+          tokens_used?: number | null
+          updated_at?: string | null
+          use_case_id: string
+          version?: number | null
+        }
+        Update: {
+          ai_model?: string | null
+          ai_provider?: string | null
+          content?: string | null
+          created_at?: string | null
+          generated_by?: string | null
+          generation_time_ms?: number | null
+          id?: string
+          is_current?: boolean | null
+          mode?: string
+          organization_id?: string
+          project_id?: string
+          prompt_hash?: string | null
+          section_id?: string
+          tokens_used?: number | null
+          updated_at?: string | null
+          use_case_id?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ucm_analyses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ucm_analyses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ucm_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ucm_analyses_use_case_id_fkey"
+            columns: ["use_case_id"]
+            isOneToOne: false
+            referencedRelation: "ucm_use_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ucm_analysis_sections: {
+        Row: {
+          brief_instruction: string
+          code: string
+          created_at: string | null
+          detailed_instruction: string
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          organization_id: string | null
+          sort_order: number | null
+          title: string
+        }
+        Insert: {
+          brief_instruction: string
+          code: string
+          created_at?: string | null
+          detailed_instruction: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          organization_id?: string | null
+          sort_order?: number | null
+          title: string
+        }
+        Update: {
+          brief_instruction?: string
+          code?: string
+          created_at?: string | null
+          detailed_instruction?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          organization_id?: string | null
+          sort_order?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ucm_analysis_sections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ucm_chat_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          organization_id: string
+          project_id: string
+          role: string
+          tokens_used: number | null
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          organization_id: string
+          project_id: string
+          role: string
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          organization_id?: string
+          project_id?: string
+          role?: string
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ucm_chat_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ucm_chat_messages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ucm_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ucm_exports: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          expires_at: string | null
+          file_size_bytes: number | null
+          file_url: string | null
+          format: string
+          id: string
+          options: Json | null
+          organization_id: string
+          project_id: string
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          expires_at?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          format?: string
+          id?: string
+          options?: Json | null
+          organization_id: string
+          project_id: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          expires_at?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          format?: string
+          id?: string
+          options?: Json | null
+          organization_id?: string
+          project_id?: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ucm_exports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ucm_exports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ucm_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ucm_global_analysis_sections: {
+        Row: {
+          code: string
+          created_at: string | null
+          icon: string | null
+          id: string
+          instruction: string
+          is_active: boolean | null
+          organization_id: string | null
+          sort_order: number | null
+          title: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          instruction: string
+          is_active?: boolean | null
+          organization_id?: string | null
+          sort_order?: number | null
+          title: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          instruction?: string
+          is_active?: boolean | null
+          organization_id?: string | null
+          sort_order?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ucm_global_analysis_sections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ucm_global_sections: {
+        Row: {
+          ai_model: string | null
+          ai_provider: string | null
+          content: string | null
+          created_at: string | null
+          generated_by: string | null
+          id: string
+          is_current: boolean | null
+          organization_id: string
+          project_id: string
+          section_id: string
+          tokens_used: number | null
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          ai_model?: string | null
+          ai_provider?: string | null
+          content?: string | null
+          created_at?: string | null
+          generated_by?: string | null
+          id?: string
+          is_current?: boolean | null
+          organization_id: string
+          project_id: string
+          section_id: string
+          tokens_used?: number | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          ai_model?: string | null
+          ai_provider?: string | null
+          content?: string | null
+          created_at?: string | null
+          generated_by?: string | null
+          id?: string
+          is_current?: boolean | null
+          organization_id?: string
+          project_id?: string
+          section_id?: string
+          tokens_used?: number | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ucm_global_sections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ucm_global_sections_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ucm_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ucm_projects: {
+        Row: {
+          company: string
+          context: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          immersion: string | null
+          notes: string | null
+          organization_id: string
+          sector_id: string | null
+          sector_label: string | null
+          selected_functions: string[] | null
+          status: string | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          company?: string
+          context?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          immersion?: string | null
+          notes?: string | null
+          organization_id: string
+          sector_id?: string | null
+          sector_label?: string | null
+          selected_functions?: string[] | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          company?: string
+          context?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          immersion?: string | null
+          notes?: string | null
+          organization_id?: string
+          sector_id?: string | null
+          sector_label?: string | null
+          selected_functions?: string[] | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ucm_projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ucm_projects_sector_id_fkey"
+            columns: ["sector_id"]
+            isOneToOne: false
+            referencedRelation: "ucm_sectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ucm_quota_usage: {
+        Row: {
+          analysis_generations: number | null
+          chat_messages: number | null
+          exports: number | null
+          global_generations: number | null
+          id: string
+          organization_id: string
+          period: string
+          total_cost_cents: number | null
+          total_tokens: number | null
+          uc_generations: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          analysis_generations?: number | null
+          chat_messages?: number | null
+          exports?: number | null
+          global_generations?: number | null
+          id?: string
+          organization_id: string
+          period: string
+          total_cost_cents?: number | null
+          total_tokens?: number | null
+          uc_generations?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          analysis_generations?: number | null
+          chat_messages?: number | null
+          exports?: number | null
+          global_generations?: number | null
+          id?: string
+          organization_id?: string
+          period?: string
+          total_cost_cents?: number | null
+          total_tokens?: number | null
+          uc_generations?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ucm_quota_usage_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ucm_sectors: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string | null
+          functions: Json
+          group_name: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          is_custom: boolean | null
+          knowledge: string | null
+          label: string
+          organization_id: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          functions?: Json
+          group_name?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          knowledge?: string | null
+          label: string
+          organization_id?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          functions?: Json
+          group_name?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          knowledge?: string | null
+          label?: string
+          organization_id?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ucm_sectors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ucm_uc_contexts: {
+        Row: {
+          constraints: string | null
+          custom_fields: Json | null
+          id: string
+          objectives: string | null
+          organization_id: string
+          pain_points: string | null
+          situation: string | null
+          team: string | null
+          tools: string | null
+          updated_at: string | null
+          use_case_id: string
+          volumes: string | null
+        }
+        Insert: {
+          constraints?: string | null
+          custom_fields?: Json | null
+          id?: string
+          objectives?: string | null
+          organization_id: string
+          pain_points?: string | null
+          situation?: string | null
+          team?: string | null
+          tools?: string | null
+          updated_at?: string | null
+          use_case_id: string
+          volumes?: string | null
+        }
+        Update: {
+          constraints?: string | null
+          custom_fields?: Json | null
+          id?: string
+          objectives?: string | null
+          organization_id?: string
+          pain_points?: string | null
+          situation?: string | null
+          team?: string | null
+          tools?: string | null
+          updated_at?: string | null
+          use_case_id?: string
+          volumes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ucm_uc_contexts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ucm_uc_contexts_use_case_id_fkey"
+            columns: ["use_case_id"]
+            isOneToOne: false
+            referencedRelation: "ucm_use_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ucm_use_cases: {
+        Row: {
+          ai_techniques: string[] | null
+          complexity: string | null
+          created_at: string | null
+          data_readiness: string | null
+          description: string | null
+          functions: string[] | null
+          horizon: string | null
+          id: string
+          impact_level: string | null
+          is_generated: boolean | null
+          is_selected: boolean | null
+          name: string
+          organization_id: string
+          priority: string | null
+          project_id: string
+          sort_order: number | null
+          updated_at: string | null
+          value_drivers: string[] | null
+        }
+        Insert: {
+          ai_techniques?: string[] | null
+          complexity?: string | null
+          created_at?: string | null
+          data_readiness?: string | null
+          description?: string | null
+          functions?: string[] | null
+          horizon?: string | null
+          id?: string
+          impact_level?: string | null
+          is_generated?: boolean | null
+          is_selected?: boolean | null
+          name: string
+          organization_id: string
+          priority?: string | null
+          project_id: string
+          sort_order?: number | null
+          updated_at?: string | null
+          value_drivers?: string[] | null
+        }
+        Update: {
+          ai_techniques?: string[] | null
+          complexity?: string | null
+          created_at?: string | null
+          data_readiness?: string | null
+          description?: string | null
+          functions?: string[] | null
+          horizon?: string | null
+          id?: string
+          impact_level?: string | null
+          is_generated?: boolean | null
+          is_selected?: boolean | null
+          name?: string
+          organization_id?: string
+          priority?: string | null
+          project_id?: string
+          sort_order?: number | null
+          updated_at?: string | null
+          value_drivers?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ucm_use_cases_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ucm_use_cases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ucm_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_card_progress: {
         Row: {
@@ -3083,6 +3740,10 @@ export type Database = {
       spend_credits: {
         Args: { _amount: number; _description: string; _user_id: string }
         Returns: Json
+      }
+      ucm_increment_quota: {
+        Args: { _field: string; _org_id: string; _tokens?: number }
+        Returns: undefined
       }
     }
     Enums: {
