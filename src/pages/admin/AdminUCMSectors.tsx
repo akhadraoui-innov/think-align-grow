@@ -28,7 +28,7 @@ export default function AdminUCMSectors() {
   });
 
   const [editSector, setEditSector] = useState<any>(null);
-  const [form, setForm] = useState({ label: "", icon: "", group_name: "", knowledge: "", functions: "{}" });
+  const [form, setForm] = useState({ label: "", icon: "", group_name: "", knowledge: "", functions: "{}", code: "" });
 
   const openEdit = (s: any) => {
     setEditSector(s);
