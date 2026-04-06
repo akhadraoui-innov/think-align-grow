@@ -46,7 +46,7 @@ export default function PortalUCMExplorer() {
   return (
     <PageTransition>
       <div className="p-6 max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Lightbulb className="h-6 w-6 text-primary" /> UC Explorer
             <Badge variant="secondary" className="ml-2">{filtered.length}</Badge>
