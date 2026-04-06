@@ -128,7 +128,7 @@ export default function PortalUCMProject() {
           {/* Sticky breadcrumb + stepper */}
           <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 px-6 py-3 text-sm">
+            <div className="flex items-center gap-2 px-4 sm:px-6 py-3 text-sm flex-wrap">
               <Link to="/portal/ucm" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
                 AI Value Builder
               </Link>
