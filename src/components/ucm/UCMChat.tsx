@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send } from "lucide-react";
 import { useUCMChatMessages, useSendUCMChat } from "@/hooks/useUCMChat";
-import ReactMarkdown from "react-markdown";
+import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Props {
@@ -47,9 +47,7 @@ export function UCMChat({ projectId }: Props) {
                 {m.role === "user" ? (
                   <p className="whitespace-pre-wrap">{m.content}</p>
                 ) : (
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <ReactMarkdown>{m.content || ""}</ReactMarkdown>
-                  </div>
+                  <EnrichedMarkdown content={m.content || ""} />
                 )}
               </div>
             </div>

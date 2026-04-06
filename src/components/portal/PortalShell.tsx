@@ -57,7 +57,7 @@ export function PortalShell({ children }: PortalShellProps) {
   const activeTab = getActiveTab();
 
   return (
-    <div className="portal min-h-screen flex flex-col bg-background font-sans">
+    <div className="portal h-screen flex flex-col bg-background font-sans overflow-hidden">
       {/* ── Top Nav ── */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-xl">
         <div className="flex items-center h-14 px-4 gap-4">
