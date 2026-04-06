@@ -1,106 +1,124 @@
 
+# Audit complet UCM — AI Value Builder — v2
 
-# Audit complet UCM — État actuel et plan pour la suite
+## ✅ Ce qui est FAIT et fonctionnel
 
-## Ce qui est FAIT et fonctionnel
+### Infrastructure DB (11/11 tables)
+| Table | Colonnes clés | RLS | Statut |
+|-------|--------------|-----|--------|
+| `ucm_projects` | company, context, immersion, sector_id, selected_functions, status | 4 policies | ✅ |
+| `ucm_use_cases` | name, description, priority, complexity, impact_level, horizon, data_readiness, ai_techniques, value_drivers, functions, is_selected | 4 policies | ✅ |
+| `ucm_uc_contexts` | situation, tools, team, volumes, pain_points, objectives, constraints | 4 policies | ✅ |
+| `ucm_analyses` | use_case_id, section_id, mode, content, version, is_current, tokens_used | 4 policies | ✅ |
+| `ucm_global_sections` | section_id, content, version, is_current | 4 policies | ✅ |
+| `ucm_chat_messages` | project_id, role, content, tokens_used | 2 policies | ✅ |
+| `ucm_exports` | project_id, format, file_url, metadata | 4 policies | ✅ |
+| `ucm_sectors` | code, label, icon, group_name, functions, knowledge | 4 policies | ✅ |
+| `ucm_analysis_sections` | code, title, icon, brief_instruction, detailed_instruction | 4 policies | ✅ |
+| `ucm_global_analysis_sections` | code, title, instruction | 4 policies | ✅ |
+| `ucm_quota_usage` | uc_generations, analysis_generations, global_generations, chat_messages, exports, total_tokens | 3 policies | ✅ |
 
-| Composant | État | Commentaire |
-|-----------|------|-------------|
-| **11 tables DB** | Complet | `ucm_projects`, `ucm_use_cases`, `ucm_uc_contexts`, `ucm_analyses`, `ucm_global_sections`, `ucm_chat_messages`, `ucm_exports`, `ucm_sectors`, `ucm_analysis_sections`, `ucm_global_analysis_sections`, `ucm_quota_usage` |
-| **RLS policies** | Complet | 41 policies couvrant toutes les tables UCM (CRUD) |
-| **Seed data** | Complet | 35 secteurs, 6 sections d'analyse, 7 sections globales |
-| **Permissions** | Complet | 10 clés UCM dans `permission_definitions` |
-| **Quotas** | Complet (DB) | `ucm_quotas` JSONB sur `organizations`, `ucm_quota_usage` table, `ucm_increment_quota` function |
-| **Edge: ucm-generate** | Complet | Auth + quota check + Lovable AI + insert UC + increment quota |
-| **Edge: ucm-analyze** | Complet | Brief/detailed, versioning, section config from DB, quota tracking |
-| **Edge: ucm-synthesize** | Complet | 7 sections globales, versioning, context enrichi |
-| **Edge: ucm-chat** | Complet | Chat contextuel avec historique, quota tracking |
-| **Edge: ucm-export** | Placeholder | Retourne 501 "coming soon" |
-| **Portal: /portal/ucm** | Complet | Dashboard projets + création |
-| **Portal: /portal/ucm/:id** | Fonctionnel | Wizard 5 tabs (Context, Scope, UC, Analysis, Synthesis) |
-| **Portal: /portal/ucm/explorer** | Complet | Bibliothèque UC cross-projets avec recherche |
-| **Routes App.tsx** | Complet | 3 routes UCM Portal |
-| **Sidebar** | Complet | Entrée "AI Value Builder" dans PortalSidebar |
+### Seed data
+- 35 secteurs avec knowledge et functions
+- 6 sections d'analyse (process, data, tech, impact, roadmap, risks)
+- 7 sections globales (exec, synergies, roadmap, archi, business, change, next)
 
-## Ce qui MANQUE (CDC non couvert)
+### Permissions (10/10)
+`ucm.projects.create`, `ucm.projects.read_all`, `ucm.uc.generate`, `ucm.uc.analyze`, `ucm.uc.analyze_detailed`, `ucm.global.generate`, `ucm.chat.use`, `ucm.export.docx`, `ucm.config.manage`, `ucm.sectors.manage`
 
-### 1. UI — Composants non créés (0/8 prévus)
-- **UCMChat.tsx** — Aucun composant chat dans le projet. Le 6e onglet "Chat consultant" du wizard n'existe pas.
-- **UCMContextForm.tsx** — Le formulaire 7 champs (situation, tools, team, volumes, pain_points, objectives, constraints) pour enrichir chaque UC n'existe pas.
-- **UCMAgentProgress.tsx** — Pas de barre de progression pour les agents IA (batch analysis).
-- **UCMSectorPicker.tsx** — Intégré inline dans PortalUCMProject, pas un composant réutilisable.
-- **UCMFunctionGrid.tsx** — Idem, inline.
-- **UCMUseCaseCard.tsx** — Idem, inline.
-- **UCMAnalysisView.tsx** — Les analyses s'affichent mais sans toggle brief/detailed dédié, sans versioning navigable.
-- **UCMGlobalSynthesis.tsx** — Inline, pas de composant dédié.
+### DB Functions
+- `ucm_increment_quota(_org_id, _field, _tokens)` — SECURITY DEFINER ✅
 
-### 2. Admin — Zéro pages admin
-- `/admin/ucm` — Vue globale projets UCM cross-orgs : non créée
-- `/admin/ucm/sectors` — CRUD secteurs globaux : non créé
-- `/admin/ucm/prompts` — Gestion des templates prompts : non créé
-- Pas d'entrée dans AdminSidebar
+### Edge Functions (5/5)
+| Fonction | Auth | Quota | IA | Statut |
+|----------|------|-------|----|--------|
+| `ucm-generate` | ✅ JWT | ✅ increment | Gemini 2.5 Flash | ✅ Fonctionnel |
+| `ucm-analyze` | ✅ JWT | ✅ increment | Flash/Pro selon mode | ✅ Fonctionnel |
+| `ucm-synthesize` | ✅ JWT | ✅ increment | Gemini 2.5 Pro | ✅ Fonctionnel |
+| `ucm-chat` | ✅ JWT | ✅ increment | Gemini 2.5 Flash | ✅ Fonctionnel |
+| `ucm-export` | - | - | - | ❌ Placeholder 501 |
 
-### 3. Fonctionnalités manquantes dans le wizard
-- **Onglet Chat (6e tab)** — Manquant
-- **Batch analysis** — Le bouton "Analyser tout" (toutes sections × tous UC sélectionnés) n'existe pas. Chaque analyse est manuelle une par une.
-- **Formulaire UC Context** — Pas de moyen de renseigner les 7 champs contextuels par UC
-- **Export DOCX** — Edge function placeholder, pas de bouton dans l'UI
-- **Version history** — Les analyses sont versionnées en DB mais l'UI n'affiche que `is_current`, pas de navigation entre versions
+### Frontend — Pages Portal (3/3)
+| Page | Route | Statut |
+|------|-------|--------|
+| Dashboard projets | `/portal/ucm` | ✅ |
+| Wizard 6 tabs | `/portal/ucm/:id` | ✅ |
+| UC Explorer | `/portal/ucm/explorer` | ✅ |
 
-### 4. Vérifications de permissions côté frontend
-- Le wizard ne vérifie pas `ucm.uc.analyze_detailed` avant d'afficher le bouton "Détaillé"
-- Pas de vérification `ucm.global.generate` avant la synthèse
-- Pas de vérification `ucm.chat.use` (onglet chat inexistant)
+### Frontend — Pages Admin (2/2)
+| Page | Route | Statut |
+|------|-------|--------|
+| Dashboard admin | `/admin/ucm` | ✅ |
+| CRUD Secteurs | `/admin/ucm/sectors` | ✅ |
 
-### 5. Quota enforcement côté frontend
-- Pas d'affichage des quotas restants
-- Pas d'alertes quand on approche des limites
+### Frontend — Composants UCM (3/3)
+| Composant | Statut |
+|-----------|--------|
+| `UCMChat.tsx` | ✅ Chat avec historique, markdown |
+| `UCMContextForm.tsx` | ✅ Dialog 7 champs |
+| `UCMAnalysisView.tsx` | ✅ Brief/Detailed, versions, régénération |
+
+### Frontend — Hooks (3/3)
+| Hook | Statut |
+|------|--------|
+| `useUCMProject.ts` | ✅ 8 hooks (projects, usecases, analyses, sectors, mutations) |
+| `useUCMChat.ts` | ✅ Messages + send |
+| `useUCMQuotas.ts` | ✅ Usage + limits |
+
+### Navigation
+- PortalSidebar : entrée "AI Value Builder" ✅
+- AdminSidebar : section collapsible UCM (Dashboard + Secteurs) ✅
+- Routes App.tsx : 5 routes (3 portal + 2 admin) ✅
+
+### Guards
+- Permission `ucm.chat.use` → onglet Chat disabled ✅
+- Permission `ucm.global.generate` → bouton Synthèse disabled ✅
+- Permission `ucm.uc.analyze_detailed` → bouton Détaillé disabled ✅
+- Quota `canGenerate` → bouton Générer 10 UC disabled ✅
+- Quota `canAnalyze` → bouton Batch disabled ✅
+- Affichage quotas dans header projet ✅
 
 ---
 
-## Plan d'exécution — 6 étapes
+## ❌ Ce qui MANQUE encore
 
-### Étape 1 : Chat consultant (6e onglet du wizard)
-- Créer `src/components/ucm/UCMChat.tsx` — Interface chat avec historique, input, markdown rendering
-- Ajouter un hook `useUCMChat` pour envoyer/recevoir via `ucm-chat` edge function
-- Ajouter le 6e tab "Chat" dans `PortalUCMProject.tsx`
-- Vérifier permission `ucm.chat.use`
+### 1. Export DOCX (Phase 5 du CDC)
+- Edge function `ucm-export` retourne 501
+- Pas de bucket storage `ucm-exports`
+- Pas de bouton "Exporter Word" dans l'UI
 
-### Étape 2 : Formulaire contexte UC + Batch analysis
-- Créer `src/components/ucm/UCMContextForm.tsx` — Dialog/sheet avec les 7 champs
-- Ajouter un hook `useUCMContext` (upsert dans `ucm_uc_contexts`)
-- Ajouter bouton "Enrichir contexte" sur chaque UC card dans l'onglet 3
-- Ajouter bouton "Analyser tout (brief)" qui lance les 6 sections × tous UC sélectionnés en séquence
-- Afficher progression (compteur simple X/N)
+### 2. Améliorations UX mineures
+- **Batch analysis** : pas de bouton Annuler pendant le batch
+- **UC Explorer** : pas de filtres avancés (par secteur, priorité, complexité)
+- **Admin UCM** : pas de drill-down vers les projets individuels
+- **Admin Secteurs** : pas de bouton toggle actif/inactif inline
+- **Version history** : pas de comparaison côte à côte entre versions
 
-### Étape 3 : Améliorer l'onglet Analyses
-- Créer `src/components/ucm/UCMAnalysisView.tsx` — Viewer avec :
-  - Toggle brief/detailed côté à côté
-  - Navigation entre versions (dropdown)
-  - Bouton régénérer
-  - Markdown enrichi
-- Vérifier `ucm.uc.analyze_detailed` pour conditionner le bouton "Détaillé"
+### 3. Pages Admin manquantes
+- `/admin/ucm/prompts` — Gestion des templates de prompts (sections d'analyse + sections globales)
 
-### Étape 4 : Pages Admin UCM
-- `src/pages/admin/AdminUCM.tsx` — Liste tous les projets UCM cross-orgs avec stats (nb UC, nb analyses, tokens consommés)
-- `src/pages/admin/AdminUCMSectors.tsx` — CRUD secteurs : edit label, icon, group, functions (JSON editor), knowledge
-- Ajouter entrée "UCM" dans `AdminSidebar.tsx`
-- Ajouter routes dans `App.tsx`
+### 4. Workspace portal
+- Pas d'entrée "AI Value Builder" dans le workspace/dashboard portal principal
 
-### Étape 5 : Export DOCX
-- Implémenter la logique dans `supabase/functions/ucm-export/index.ts` :
-  - Charger projet + UC + analyses + global sections
-  - Générer DOCX structuré (utiliser `docx` npm via CDN ESM)
-  - Upload dans Supabase Storage (bucket `ucm-exports`)
-  - Sauvegarder dans `ucm_exports`
-- Ajouter bouton "Exporter Word" dans le wizard (onglet synthèse)
-- Créer le bucket storage `ucm-exports`
+---
 
-### Étape 6 : Quotas UI + Permission guards
-- Créer `src/hooks/useUCMQuotas.ts` — charge `ucm_quota_usage` + limites org
-- Afficher un bandeau quota dans le dashboard UCM (X/Y analyses ce mois)
-- Désactiver les boutons quand quota atteint
-- Ajouter guards de permission sur tous les boutons d'action (generate, analyze detailed, synthesize, chat, export)
+## Plan d'exécution — Prochaines étapes
+
+### Étape 1 : Export DOCX (priorité haute)
+1. Créer le bucket storage `ucm-exports`
+2. Implémenter `ucm-export` edge function (charger projet + UC + analyses + global, générer DOCX structuré)
+3. Ajouter bouton "Exporter Word" dans l'onglet Synthèse
+4. Sauvegarder dans `ucm_exports` + increment quota
+
+### Étape 2 : Admin Prompts
+1. Créer `/admin/ucm/prompts` — CRUD pour `ucm_analysis_sections` et `ucm_global_analysis_sections`
+2. Ajouter route et entrée sidebar
+
+### Étape 3 : UX Polish
+1. Toggle actif/inactif inline dans Admin Secteurs
+2. Filtres avancés dans UC Explorer
+3. Lien drill-down admin → projet
+4. Bouton Annuler batch analysis
 
 ---
 
@@ -108,23 +126,10 @@
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/ucm/UCMChat.tsx` | Créer |
-| `src/components/ucm/UCMContextForm.tsx` | Créer |
-| `src/components/ucm/UCMAnalysisView.tsx` | Créer |
-| `src/hooks/useUCMChat.ts` | Créer |
-| `src/hooks/useUCMQuotas.ts` | Créer |
-| `src/pages/admin/AdminUCM.tsx` | Créer |
-| `src/pages/admin/AdminUCMSectors.tsx` | Créer |
-| `src/pages/portal/PortalUCMProject.tsx` | Modifier — ajouter 6e tab Chat, bouton batch, contexte UC, guards permissions |
-| `src/components/admin/AdminSidebar.tsx` | Modifier — ajouter entrée UCM |
-| `src/App.tsx` | Modifier — ajouter routes admin UCM |
-| `supabase/functions/ucm-export/index.ts` | Modifier — implémenter DOCX |
-
-## Ordre recommandé
-1. Chat consultant (valeur utilisateur immédiate)
-2. Contexte UC + Batch analysis (qualité des analyses)
-3. Amélioration onglet Analyses (UX)
-4. Pages Admin (gouvernance)
-5. Export DOCX (livrable client)
-6. Quotas UI + Guards (contrôle SaaS)
-
+| `supabase/functions/ucm-export/index.ts` | Implémenter DOCX |
+| `src/pages/portal/PortalUCMProject.tsx` | Ajouter bouton Export |
+| `src/pages/admin/AdminUCMPrompts.tsx` | Créer |
+| `src/components/admin/AdminSidebar.tsx` | Ajouter entrée Prompts |
+| `src/App.tsx` | Ajouter route prompts |
+| `src/pages/portal/PortalUCMExplorer.tsx` | Filtres avancés |
+| `src/pages/admin/AdminUCMSectors.tsx` | Toggle inline |
