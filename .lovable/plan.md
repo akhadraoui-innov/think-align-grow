@@ -1,143 +1,135 @@
 
 
-# Plan — 7 Étapes post-audit AI Value Builder
+# Plan — Audit UI + Harmonisation AI Value Builder
 
-## Résumé
+## Diagnostic par écran
 
-Implémentation séquentielle des 7 étapes demandées : migration DB, seed data enrichi (v13.jsx), seed CREATIVE, config IA dynamique, hardening edge functions, export DOCX, UX fixes.
+### 1. Dashboard (`PortalUCM.tsx`) — Score: 7/10
+- KPIs avec `AnimatedCounter` : bien
+- Hero gradient : bien
+- Cards projet : manquent d'un hover plus prononcé, pas de gradient sur la progress bar
+- **Problème** : aucun empty state attractif pour le premier usage (juste "Aucun projet" basique)
+- **Problème** : les cards sont petites et plates, pas de shadow-elevated ni glass
 
-## Problème de mapping des codes secteurs
+### 2. Contexte (`UCMContextStep.tsx`) — Score: 6/10
+- Formulaire fonctionnel avec compteur caractères
+- **Problème** : pas de header de page avec icône gradient (les autres pages du portail en ont)
+- **Problème** : la card est trop simple — pas de titre de section visible avec icône
+- **Problème** : le `max-w-3xl` sans padding à gauche crée un décalage par rapport au header de page
+- **Problème** : pas de bordure violette sur l'immersion textarea comme demandé dans le CDC
 
-Les codes secteurs en DB ne correspondent **pas** aux codes du v13.jsx :
+### 3. Périmètre (`UCMScopeStep.tsx`) — Score: 5/10
+- **Problème majeur** : pas de `p-6` wrapper — le contenu colle au bord gauche
+- **Problème** : les boutons secteur sont des `Button` outline/default basiques, pas de chips visuels avec icônes distinctes
+- **Problème** : quand un secteur est sélectionné, les fonctions métier ne montrent pas de header avec compteur (ex: "12 sélectionnées / 28")
+- **Problème** : pas de bouton "Tout sélectionner" / "Tout désélectionner" par catégorie
 
-| v13.jsx | DB actuelle |
-|---------|-------------|
-| `banque` | `banque_detail` |
-| `asset_mgmt` | `gestion_actifs` |
-| `retail` | `commerce_detail` ou `grande_distribution` |
-| `conseil` | `conseil_strategie` + `conseil_management` + `esn_ssii` |
-| `tech` | `saas_tech` |
-| etc. | etc. |
+### 4. Use Cases (`UCMUseCasesList.tsx`) — Score: 7/10
+- Bonne structure avec checkbox, badges, description
+- **Problème** : le dot de priorité (`bg-red-500 h-2 w-2`) est trop petit et pas aligné visuellement avec les badges
+- **Problème** : pas de header avec icône gradient comme les autres écrans premium
+- **Problème** : le bouton "Générer 10 UC" est isolé en haut à droite sans contexte visuel
 
-La DB a 35 secteurs avec des codes plus granulaires (3 secteurs conseil vs 1 dans v13). Le mapping sera fait au mieux, en enrichissant chaque secteur DB avec le knowledge v13 le plus pertinent.
+### 5. Analyse UC (`UCMAnalysisPage.tsx`) — Score: 8/10
+- Bon design : tabs colorés, header avec badge priorité, navigation prev/next
+- **Problème** : l'action bar (Fiche décision / Analyse complète) est visuellement plate (`bg-muted/20`)
+- **Problème mineur** : le badge "mode · version" n'utilise pas les couleurs de section
 
----
+### 6. Synthèse (`UCMSynthesisPage.tsx`) — Score: 6/10
+- **Problème** : les 7 cards sont toutes identiques — pas de différenciation visuelle par section
+- **Problème** : pas de header avec icône gradient
+- **Problème** : quand une section n'est pas générée, la card est vide et plate
+- **Problème** : le bouton de génération est un petit `Sparkles` sans label, pas intuitif
 
-## Étape 1 — Migration DB
+### 7. Chat (`UCMChat.tsx`) — Score: 7/10
+- Bon layout avec header, empty state, typing indicator
+- **Problème** : le header "Consultant IA" est défini dans `PortalUCMProject.tsx` et non dans le composant — duplication de logique
+- **Problème** : les suggestion chips manquent (ex: "Résume les synergies", "Compare les UC")
 
-**Migration SQL** :
-- `ALTER TABLE organizations ADD COLUMN IF NOT EXISTS ucm_plan TEXT DEFAULT 'starter'`
-- `ALTER TABLE organizations ADD COLUMN IF NOT EXISTS ucm_ai_config JSONB DEFAULT '{...}'` (config complète avec uc_generation, analysis, chat)
-- `ALTER TABLE organizations ADD COLUMN IF NOT EXISTS ucm_branding JSONB DEFAULT '{...}'`
-- `CREATE FUNCTION get_ucm_section_prompt(p_org_id, p_section_code, p_mode)` — tenant override → global fallback
-- `CREATE FUNCTION get_ucm_global_prompt(p_org_id, p_section_code)` — idem pour globales
-- `CREATE FUNCTION check_ucm_quota(p_org_id, p_action)` — retourne boolean
-- Créer le bucket storage `ucm-exports` (public: false)
+### 8. UC Explorer (`PortalUCMExplorer.tsx`) — Score: 6/10
+- **Problème** : pas de header gradient hero comme le dashboard
+- **Problème** : les cards UC sont basiques sans hover lift
+- **Problème** : manque un filtre par secteur (identifié dans étape 7 du plan précédent)
+- **Problème** : pas de lien de navigation vers le projet parent d'un UC
 
-## Étape 2 — Seed data enrichi
+### 9. Sidebar projet (`UCMProjectSidebar.tsx`) — Score: 7/10
+- Arbre contextuel fonctionnel avec indicateurs ●/○/★
+- **Problème** : la section "ANALYSE PAR UC" n'apparaît pas car aucun UC n'est sélectionné par défaut
+- **Problème** : pas de séparateur visuel entre sections (juste `pt-4`)
+- **Problème** : le lien "← Projets" est trop discret
 
-Via l'outil insert, UPDATE en masse :
-
-**A. Knowledge sectoriel** — 35 UPDATEs, un par secteur. Copie mot pour mot depuis `SECTOR_KNOWLEDGE` du v13.jsx. Mapping codes DB → codes v13 :
-- `banque_detail` ← v13 `banque`
-- `assurance` ← v13 `assurance`
-- `gestion_actifs` ← v13 `asset_mgmt`
-- `fintech` ← v13 `fintech`
-- `esn_ssii` ← v13 `conseil` (le plus pertinent car CREATIVE = ESN)
-- `conseil_strategie` ← v13 `conseil` (adapté)
-- etc.
-
-**B. Instructions brief** — 6 UPDATEs pour `ucm_analysis_sections WHERE organization_id IS NULL`. Copie intégrale de `UCS[].instrBrief` du v13.
-
-**C. Instructions detailed** — 6 UPDATEs. Copie intégrale de `UCS[].instrFull`.
-
-**D. Instructions globales** — 7 UPDATEs pour `ucm_global_analysis_sections`. Copie intégrale de `GS[].instr`.
-
-**E. Fonctions JSONB** — Vérifier et restructurer en `{core_business, dedicated, core_support, global_support, other}` depuis `SF` du v13 pour chaque secteur.
-
-## Étape 3 — Seed CREATIVE
-
-INSERT dans `ucm_projects` avec :
-- `company = 'CREATIVE'`
-- `context` = le texte court (lignes 480)
-- `immersion` = le texte complet 3000+ car. (lignes 481)
-- `sector_id` = UUID du secteur `esn_ssii`
-- `sector_label` = 'ESN / Société de services IT'
-- `selected_functions` = les 12 fonctions listées
-- `organization_id` = org de l'admin (`c20a26a5-...`)
-- `created_by` = UUID super admin
-- `status` = 'in_progress'
-
-## Étape 4 — Config IA dynamique (Option B : Lovable Gateway, modèle configurable)
-
-Le projet utilise le Lovable AI Gateway (`ai.gateway.lovable.dev`) qui ne supporte pas l'API Anthropic directe. Implémenter **Option B** : garder le gateway Lovable mais rendre modèle/temperature/max_tokens configurables via `ucm_ai_config`.
-
-Chaque edge function :
-1. Charge `organizations.ucm_ai_config` pour l'org du projet
-2. Extrait la config du type de tâche (`uc_generation`, `analysis`, `chat`)
-3. Utilise le modèle/temperature/max_tokens de la config au lieu de hardcoder
-4. Fallback sur les defaults actuels si config absente
-
-**Fichiers** : `ucm-generate`, `ucm-analyze`, `ucm-synthesize`, `ucm-chat` (4 edge functions)
-
-## Étape 5 — Hardening edge functions
-
-Pour les 4 fonctions (generate, analyze, synthesize, chat), ajouter dans l'ordre :
-
-1. **Permission check** — Après auth, appeler `has_any_role` + vérifier la permission spécifique via une query sur `role_permissions` + `permission_definitions`. Retour 403 si absent.
-2. **Quota pre-check** — Appeler `check_ucm_quota(org_id, action)` via RPC. Retour 429 avec message structuré si dépassé.
-3. **Tenant prompt override** — `ucm-analyze` : appeler `get_ucm_section_prompt(org_id, code, mode)` via RPC au lieu de `WHERE organization_id IS NULL`. `ucm-synthesize` : appeler `get_ucm_global_prompt(org_id, code)`.
-4. **Detailed guard** — `ucm-analyze` : si mode = 'detailed', vérifier permission `ucm.uc.analyze_detailed`. Retour 403 sinon.
-
-**Fichiers** : 4 edge functions modifiées
-
-## Étape 6 — Export DOCX
-
-Réécrire `ucm-export/index.ts` :
-
-1. Auth + Permission `ucm.export.docx` + Quota check
-2. Charger : projet + UC sélectionnés + analyses `is_current` + contextes UC + sections globales + org branding
-3. Installer `docx` via import ESM (`https://esm.sh/docx@9`)
-4. Construire le document :
-   - Page de couverture (company, secteur, date, branding)
-   - Sommaire
-   - Contexte + Immersion + Périmètre
-   - Portfolio UC (tableau)
-   - Pour chaque UC : contexte spécifique + 6 sections (brief/detailed)
-   - Synthèse globale (7 sections)
-   - Footer confidentiel
-5. Upload vers Storage bucket `ucm-exports`
-6. Générer URL signée 24h
-7. INSERT dans `ucm_exports`
-8. Incrémenter quota exports
-
-**Fichier** : `supabase/functions/ucm-export/index.ts`
-
-## Étape 7 — UX corrections
-
-| Fichier | Changement |
-|---------|-----------|
-| `UCMContextStep.tsx` | Textarea immersion → `rows={8}`, compteur caractères avec feedback couleur (rouge < 200, orange < 500, vert ≥ 500) |
-| `PortalUCMExplorer.tsx` | Ajouter filtre par secteur (dropdown construit depuis les secteurs des UC existants) |
-| `UCMAnalysisPage.tsx` | Badge "V2" visible à côté du titre quand `version > 1` |
+### 10. Problèmes globaux d'harmonisation
+- **Incohérence de padding** : Contexte et Scope utilisent `max-w-3xl` sans wrapper, Use Cases a `p-6`, Synthèse a `p-6 max-w-3xl`
+- **Incohérence de headers** : Certains écrans ont un h2 nu, d'autres un gradient, d'autres rien
+- **Double sidebar** : La sidebar portal (Projets/UC Explorer) reste affichée à côté de la sidebar projet — crée une surcharge visuelle avec 3 colonnes (portal sidebar + project sidebar + contenu)
+- **Pas de breadcrumb** : Quand on est dans un projet, on perd le contexte de navigation
 
 ---
 
-## Fichiers impactés (total)
+## Plan de corrections
+
+### Correction 1 — Layout cohérent : cacher la sidebar portal dans les projets
+
+Quand l'utilisateur est dans un projet UCM (`/portal/ucm/:id/*`), la sidebar portal (Projets/UC Explorer) est redondante avec la sidebar projet. Le pattern "immersive" existe déjà pour les workshops.
+
+**Action** : Dans `PortalShell.tsx`, ajouter les routes `/portal/ucm/:id` au pattern `isImmersive` pour masquer la sidebar portal. La sidebar projet interne (`UCMProjectSidebar`) suffira.
+
+### Correction 2 — Harmoniser les headers de page
+
+Créer un composant réutilisable `UCMPageHeader` utilisé dans tous les écrans : icône dans cercle gradient + titre H2 font-display + sous-titre muted + badge compteur optionnel.
+
+Appliquer à : Contexte, Périmètre, Use Cases, Synthèse, Explorer.
+
+### Correction 3 — Fixer le padding/layout de chaque page
+
+- `UCMContextStep.tsx` : ajouter wrapper `p-6 overflow-auto flex-1` (comme Use Cases)
+- `UCMScopeStep.tsx` : le contenu scrolle déjà mais manque un padding cohérent
+- Tous les écrans : `max-w-4xl mx-auto` au lieu de `max-w-3xl` pour plus d'espace
+
+### Correction 4 — Enrichir la Synthèse Globale
+
+Chaque card de section synthèse doit avoir :
+- Icône colorée dans un cercle gradient (pas juste l'emoji)
+- Titre avec font-display
+- Description courte quand non généré ("Générez l'executive summary pour une vue d'ensemble")
+- Bouton avec label "Générer" au lieu d'un icône seul
+
+### Correction 5 — Enrichir l'Explorer
+
+- Ajouter un header gradient hero comme le dashboard
+- Ajouter filtre par secteur
+- Rendre chaque card cliquable vers le projet parent (`/portal/ucm/:projectId/uc/:ucId`)
+
+### Correction 6 — Chat : suggestion chips + layout intégré
+
+Ajouter des suggestion chips dans l'empty state du chat : "Résume les forces du portfolio UC", "Compare les risques entre UC", "Propose un plan d'action à 90 jours".
+
+### Correction 7 — Sidebar projet : séparateurs et lien retour
+
+- Ajouter un `Separator` entre sections (Projet / Analyse / Synthèse)
+- Rendre le lien "← Projets" plus visible (bg-muted/30, bold)
+
+---
+
+## Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| Migration SQL | 3 colonnes + 3 fonctions + 1 bucket |
-| Seed data | ~55 UPDATEs (35 knowledge + 6 brief + 6 detailed + 7 global + fonctions) |
-| Seed CREATIVE | 1 INSERT projet |
-| `supabase/functions/ucm-generate/index.ts` | Modifier — permission + quota + AI config dynamique |
-| `supabase/functions/ucm-analyze/index.ts` | Modifier — permission + quota + tenant override + detailed guard + AI config |
-| `supabase/functions/ucm-synthesize/index.ts` | Modifier — permission + quota + tenant override + AI config |
-| `supabase/functions/ucm-chat/index.ts` | Modifier — permission + quota + AI config |
-| `supabase/functions/ucm-export/index.ts` | Réécrire — DOCX complet |
-| `src/components/ucm/UCMContextStep.tsx` | Modifier — rows + compteur |
-| `src/pages/portal/PortalUCMExplorer.tsx` | Modifier — filtre secteur |
-| `src/components/ucm/UCMAnalysisPage.tsx` | Modifier — badge version |
+| `src/components/portal/PortalShell.tsx` | Modifier — ajouter pattern immersif pour `/portal/ucm/:id` |
+| `src/components/ucm/UCMPageHeader.tsx` | Creer — composant header réutilisable |
+| `src/components/ucm/UCMContextStep.tsx` | Modifier — header + padding + bordure violette immersion |
+| `src/components/ucm/UCMScopeStep.tsx` | Modifier — header + compteur fonctions + bouton "Tout sélectionner" |
+| `src/components/ucm/UCMUseCasesList.tsx` | Modifier — header harmonisé |
+| `src/components/ucm/UCMSynthesisPage.tsx` | Modifier — cards enrichies avec descriptions et boutons labels |
+| `src/components/ucm/UCMChat.tsx` | Modifier — suggestion chips + retirer header dupliqué du parent |
+| `src/components/ucm/UCMProjectSidebar.tsx` | Modifier — séparateurs + lien retour visible |
+| `src/pages/portal/PortalUCMProject.tsx` | Modifier — retirer header chat dupliqué |
+| `src/pages/portal/PortalUCMExplorer.tsx` | Modifier — header gradient + filtre secteur + liens cliquables |
 
-## Ordre : 1 → 2 → 3 → 4 → 5 → 6 → 7
+## Ordre d'exécution
+1. PortalShell (layout immersif)
+2. UCMPageHeader (composant partagé)
+3. Toutes les pages (header + padding)
+4. Synthèse + Explorer (enrichissements)
+5. Chat (chips) + Sidebar (séparateurs)
 
