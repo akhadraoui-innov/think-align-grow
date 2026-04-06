@@ -198,6 +198,11 @@ function AnimatedRoutes() {
           <Route path="/portal/ucm" element={<PortalUCM />} />
           <Route path="/portal/ucm/explorer" element={<PortalUCMExplorer />} />
           <Route path="/portal/ucm/:id" element={<PortalUCMProject />} />
+          <Route path="/portal/ucm/:id/scope" element={<PortalUCMProject />} />
+          <Route path="/portal/ucm/:id/usecases" element={<PortalUCMProject />} />
+          <Route path="/portal/ucm/:id/uc/:ucId" element={<PortalUCMProject />} />
+          <Route path="/portal/ucm/:id/synthesis" element={<PortalUCMProject />} />
+          <Route path="/portal/ucm/:id/chat" element={<PortalUCMProject />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
