@@ -3,7 +3,7 @@ import {
   BookOpen, Award, Sparkles, History,
   Users, LayoutGrid, PanelLeftClose, PanelLeftOpen,
   Route, Building2, Layers, GraduationCap, Map, Briefcase,
-  Brain, Megaphone, BarChart3, Library, Rocket, Shield, Compass, Handshake
+  Brain, Megaphone, BarChart3, Library, Rocket, Shield, Compass, Handshake, Lightbulb
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveOrg } from "@/contexts/OrgContext";
