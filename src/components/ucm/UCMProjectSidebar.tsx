@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, FileText, Target, Layers, BarChart3, MessageCircle, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 interface UCItem {
   id: string;
@@ -47,9 +48,8 @@ export function UCMProjectSidebar({ projectId, company, useCases, analyses, anal
 
   const selectedUCs = useCases.filter((uc) => uc.is_selected);
 
-  const getUCAnalyzedSections = (ucId: string) => {
-    return analyses.filter((a) => a.use_case_id === ucId).map((a) => a.section_id);
-  };
+  const getUCAnalyzedSections = (ucId: string) =>
+    analyses.filter((a) => a.use_case_id === ucId).map((a) => a.section_id);
 
   const isUCFullyAnalyzed = (ucId: string) => {
     const done = getUCAnalyzedSections(ucId);
@@ -62,12 +62,12 @@ export function UCMProjectSidebar({ projectId, company, useCases, analyses, anal
       <div className="p-4 border-b">
         <Link
           to="/portal/ucm"
-          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-md hover:bg-muted/50 -ml-2"
         >
-          <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           Projets
         </Link>
-        <h3 className="font-semibold text-sm mt-3 truncate" title={company}>
+        <h3 className="font-bold text-sm mt-3 truncate" title={company}>
           {company}
         </h3>
       </div>
@@ -102,7 +102,7 @@ export function UCMProjectSidebar({ projectId, company, useCases, analyses, anal
           {/* Analysis per UC */}
           {selectedUCs.length > 0 && (
             <>
-              <div className="pt-4" />
+              <Separator className="my-3" />
               <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-2 pb-1">
                 Analyse par UC
               </p>
@@ -125,7 +125,7 @@ export function UCMProjectSidebar({ projectId, company, useCases, analyses, anal
                       <span className="text-xs font-bold text-muted-foreground w-4">{i + 1}</span>
                       <span className="truncate flex-1 text-xs">{uc.name}</span>
                       <span className={cn("text-xs", fullyDone ? "text-primary" : "text-muted-foreground/50")}>
-                        {fullyDone ? "●" : "○"}
+                        {fullyDone ? "●" : `${analyzedSections.length}/${analysisSections.length}`}
                       </span>
                     </Link>
                     {ucActive && (
@@ -157,7 +157,7 @@ export function UCMProjectSidebar({ projectId, company, useCases, analyses, anal
           )}
 
           {/* Synthesis section */}
-          <div className="pt-4" />
+          <Separator className="my-3" />
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-2 pb-1">
             Synthèse
           </p>
@@ -176,7 +176,7 @@ export function UCMProjectSidebar({ projectId, company, useCases, analyses, anal
               <span className="truncate">{item.label}</span>
               {item.key === "synthesis" && globalSections.length > 0 && (
                 <span className="ml-auto text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                  {globalSections.length}
+                  {globalSections.length}/7
                 </span>
               )}
             </Link>
