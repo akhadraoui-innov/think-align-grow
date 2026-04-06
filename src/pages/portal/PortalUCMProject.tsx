@@ -100,7 +100,6 @@ export default function PortalUCMProject() {
   const canSynthesize = perms.has("ucm.global.generate");
 
   return (
-    <PortalShell>
       <PageTransition>
         <div className="p-6 max-w-5xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
