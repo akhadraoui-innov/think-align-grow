@@ -26,7 +26,7 @@ const FIELDS = [
   { key: "constraints", label: "Contraintes", placeholder: "Budget, réglementation, intégration legacy…" },
 ] as const;
 
-export function UCMContextForm({ open, onOpenChange, useCaseId, useCaseName }: Props) {
+export function UCMContextForm({ open, onOpenChange, useCaseId, useCaseName, organizationId }: Props) {
   const qc = useQueryClient();
   const [form, setForm] = useState<Record<string, string>>({});
 
