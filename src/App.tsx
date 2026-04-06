@@ -97,6 +97,7 @@ import PortalUCMProject from "./pages/portal/PortalUCMProject";
 import PortalUCMExplorer from "./pages/portal/PortalUCMExplorer";
 import AdminUCM from "./pages/admin/AdminUCM";
 import AdminUCMSectors from "./pages/admin/AdminUCMSectors";
+import AdminUCMPrompts from "./pages/admin/AdminUCMPrompts";
 
 const queryClient = new QueryClient();
 
@@ -159,6 +160,7 @@ function AnimatedRoutes() {
           <Route path="/admin/insight" element={<AdminInsight />} />
           <Route path="/admin/ucm" element={<AdminUCM />} />
           <Route path="/admin/ucm/sectors" element={<AdminUCMSectors />} />
+          <Route path="/admin/ucm/prompts" element={<AdminUCMPrompts />} />
           {/* Portal routes */}
           <Route path="/portal" element={<PortalFormations />} />
           <Route path="/portal/dashboard" element={<PortalFormationsDashboard />} />
