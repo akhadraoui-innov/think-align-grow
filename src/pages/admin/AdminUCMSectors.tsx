@@ -76,7 +76,7 @@ export default function AdminUCMSectors() {
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Secteurs UCM</h1>
-            <Button onClick={() => { setEditSector({}); setForm({ label: "", icon: "", group_name: "", knowledge: "", functions: "{}" }); }}>
+            <Button onClick={() => { setEditSector({}); setForm({ label: "", icon: "", group_name: "", knowledge: "", functions: "{}", code: "" }); }}>
               <Plus className="h-4 w-4 mr-2" /> Ajouter
             </Button>
           </div>
