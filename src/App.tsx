@@ -95,6 +95,8 @@ import AdminInsight from "./pages/admin/AdminInsight";
 import PortalUCM from "./pages/portal/PortalUCM";
 import PortalUCMProject from "./pages/portal/PortalUCMProject";
 import PortalUCMExplorer from "./pages/portal/PortalUCMExplorer";
+import AdminUCM from "./pages/admin/AdminUCM";
+import AdminUCMSectors from "./pages/admin/AdminUCMSectors";
 
 const queryClient = new QueryClient();
 
