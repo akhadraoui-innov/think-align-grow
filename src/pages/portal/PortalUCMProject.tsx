@@ -150,7 +150,7 @@ export default function PortalUCMProject() {
             </div>
 
             {/* Workflow stepper */}
-            <div className="px-6 pb-3 flex items-center gap-1">
+            <div className="px-4 sm:px-6 pb-3 flex items-center gap-1 overflow-x-auto">
               {STEPS.map((step, i) => {
                 const complete = stepComplete[step.key];
                 const active = activeStep === step.key;
