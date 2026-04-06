@@ -58,6 +58,7 @@ export function PortalShell({ children }: PortalShellProps) {
   const activeTab = getActiveTab();
 
   return (
+    <AuthGuard redirectTo="/auth">
     <div className="portal h-screen flex flex-col bg-background font-sans overflow-hidden">
       {/* ── Top Nav ── */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-xl">
