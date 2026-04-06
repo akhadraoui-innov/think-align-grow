@@ -1,156 +1,143 @@
 
 
-# Plan — AI Value Builder v2 : Refonte complète UI/UX
+# Plan — 7 Étapes post-audit AI Value Builder
 
-## Constat brutal
+## Résumé
 
-L'interface actuelle est un **stepper linéaire de 452 lignes dans un seul fichier** qui empile 6 écrans les uns après les autres dans des `TabsContent`. C'est un formulaire wizard, pas une application SaaS. La capture de référence montre un paradigme totalement différent :
+Implémentation séquentielle des 7 étapes demandées : migration DB, seed data enrichi (v13.jsx), seed CREATIVE, config IA dynamique, hardening edge functions, export DOCX, UX fixes.
 
-```text
-┌────────────────────────────────────────────────────────────┐
-│  Header : Projets | Use Cases | + Nouveau projet          │
-├──────────┬─────────────────────────────────────────────────┤
-│ SIDEBAR  │  MAIN CONTENT                                  │
-│          │                                                 │
-│ Contexte │  [Badge: Stratégique] UC 1/3                   │
-│ Périmètre│  Titre UC + description longue                 │
-│ Use Cases│                                                 │
-│          │  Tabs: Contexte | Process ✓ | Data ✓ | Archi   │
-│ ─────── │       | Impact | Roadmap | Risques ✓            │
-│ ANALYSE  │                                                 │
-│ PAR UC   │  [Fiche décision ✓] [Analyse complète ✓]       │
-│          │                                                 │
-│ 1. UC A ●│  ── Contenu analyse markdown premium ──        │
-│  ○ Ctxt  │  Tableaux, verdicts, mitigations...            │
-│  ★ Proc  │                                                 │
-│  ★ Data  │                                                 │
-│  ★ Archi │                                                 │
-│  ★ Impact│                                                 │
-│  ○ Road  │                                                 │
-│  ★ Risq  │                                                 │
-│          │                                                 │
-│ 2. UC B ●│                                                 │
-│ 3. UC C ●│                                                 │
-│          │                                                 │
-│ ─────── │                                                 │
-│ Synthèse │                                                 │
-│ Consult. │                                                 │
-└──────────┴─────────────────────────────────────────────────┘
-```
+## Problème de mapping des codes secteurs
 
-## Changements architecturaux
+Les codes secteurs en DB ne correspondent **pas** aux codes du v13.jsx :
 
-### 1. Éclater `PortalUCMProject.tsx` (452 lignes → 5 fichiers)
+| v13.jsx | DB actuelle |
+|---------|-------------|
+| `banque` | `banque_detail` |
+| `asset_mgmt` | `gestion_actifs` |
+| `retail` | `commerce_detail` ou `grande_distribution` |
+| `conseil` | `conseil_strategie` + `conseil_management` + `esn_ssii` |
+| `tech` | `saas_tech` |
+| etc. | etc. |
 
-**Nouveau layout** : `UCMProjectLayout.tsx` — sidebar gauche + contenu droite
+La DB a 35 secteurs avec des codes plus granulaires (3 secteurs conseil vs 1 dans v13). Le mapping sera fait au mieux, en enrichissant chaque secteur DB avec le knowledge v13 le plus pertinent.
 
-- **Sidebar interne** (pas la sidebar portal) : arbre de navigation contextuel
-  - Section "Projet" : liens Contexte, Périmètre, Use Cases
-  - Section "Analyse par UC" : liste UC avec sous-items (sections d'analyse), indicateurs ● complété / ○ vide
-  - Section "Synthèse" : Synthèse Globale, Consultant IA
-  - Item actif = highlight bleu, sous-items avec étoiles (★ = analysé)
+---
 
-- **Contenu principal** : zone droite qui change selon la sélection sidebar
+## Étape 1 — Migration DB
 
-**5 composants de contenu** :
-- `UCMContextStep.tsx` — Formulaire contexte + immersion (extrait du step 1 actuel)
-- `UCMScopeStep.tsx` — Sélection secteur + fonctions métier (extrait du step 2)
-- `UCMUseCasesList.tsx` — Grille UC avec sélection, génération, badges (extrait du step 3)
-- `UCMAnalysisPage.tsx` — **Page dédiée par UC** : header UC (titre, description, badges), tabs horizontaux par section d'analyse (Process, Data, Archi, Impact, Roadmap, Risques), toggle Fiche décision / Analyse complète
-- `UCMSynthesisPage.tsx` — 7 sections globales (extrait du step 5)
+**Migration SQL** :
+- `ALTER TABLE organizations ADD COLUMN IF NOT EXISTS ucm_plan TEXT DEFAULT 'starter'`
+- `ALTER TABLE organizations ADD COLUMN IF NOT EXISTS ucm_ai_config JSONB DEFAULT '{...}'` (config complète avec uc_generation, analysis, chat)
+- `ALTER TABLE organizations ADD COLUMN IF NOT EXISTS ucm_branding JSONB DEFAULT '{...}'`
+- `CREATE FUNCTION get_ucm_section_prompt(p_org_id, p_section_code, p_mode)` — tenant override → global fallback
+- `CREATE FUNCTION get_ucm_global_prompt(p_org_id, p_section_code)` — idem pour globales
+- `CREATE FUNCTION check_ucm_quota(p_org_id, p_action)` — retourne boolean
+- Créer le bucket storage `ucm-exports` (public: false)
 
-### 2. `UCMAnalysisPage.tsx` — Le cœur de l'expérience (nouveau)
+## Étape 2 — Seed data enrichi
 
-Inspiré directement de la capture :
+Via l'outil insert, UPDATE en masse :
 
-- **Header UC** : badge priorité coloré + "UC 1/3" + titre H1 + description complète (pas tronquée)
-- **Tabs horizontaux** par section d'analyse : icône + nom + checkmark si analysé. Tab actif = underline bleu
-- **Toggle mode** : deux boutons pills "⚡ Fiche décision ✓" / "💻 Analyse complète ✓" — visible si le mode existe
-- **Contenu** : `EnrichedMarkdown` plein écran avec tableaux structurés, verdicts, callouts
+**A. Knowledge sectoriel** — 35 UPDATEs, un par secteur. Copie mot pour mot depuis `SECTOR_KNOWLEDGE` du v13.jsx. Mapping codes DB → codes v13 :
+- `banque_detail` ← v13 `banque`
+- `assurance` ← v13 `assurance`
+- `gestion_actifs` ← v13 `asset_mgmt`
+- `fintech` ← v13 `fintech`
+- `esn_ssii` ← v13 `conseil` (le plus pertinent car CREATIVE = ESN)
+- `conseil_strategie` ← v13 `conseil` (adapté)
+- etc.
 
-C'est **1 page par UC** (pas un collapsible empilé). La sidebar permet de naviguer entre UC sans perdre le contexte.
+**B. Instructions brief** — 6 UPDATEs pour `ucm_analysis_sections WHERE organization_id IS NULL`. Copie intégrale de `UCS[].instrBrief` du v13.
 
-### 3. Sidebar arbre navigable — `UCMProjectSidebar.tsx` (nouveau)
+**C. Instructions detailed** — 6 UPDATEs. Copie intégrale de `UCS[].instrFull`.
 
-```text
-← Projets
+**D. Instructions globales** — 7 UPDATEs pour `ucm_global_analysis_sections`. Copie intégrale de `GS[].instr`.
 
-PROJET
-  📋 Contexte          ← lien
-  🎯 Périmètre         ← lien
-  💡 Use Cases (3)     ← lien + compteur
+**E. Fonctions JSONB** — Vérifier et restructurer en `{core_business, dedicated, core_support, global_support, other}` depuis `SF` du v13 pour chaque secteur.
 
-ANALYSE PAR UC
-  1  Cartographie dy… ● ← cliquable, ● = toutes sections faites
-     ○ Contexte UC      ← sous-item cliquable
-     ★ Processus        ← ★ = section analysée
-     ★ Données
-     ★ Architecture
-     ○ Impact
-     ○ Roadmap
-     ★ Risques
-  2  Forecast CA…     ●
-  3  Optimisation…    ●
+## Étape 3 — Seed CREATIVE
 
-SYNTHÈSE
-  📊 Synthèse Globale
-  🤖 Consultant IA
-```
+INSERT dans `ucm_projects` avec :
+- `company = 'CREATIVE'`
+- `context` = le texte court (lignes 480)
+- `immersion` = le texte complet 3000+ car. (lignes 481)
+- `sector_id` = UUID du secteur `esn_ssii`
+- `sector_label` = 'ESN / Société de services IT'
+- `selected_functions` = les 12 fonctions listées
+- `organization_id` = org de l'admin (`c20a26a5-...`)
+- `created_by` = UUID super admin
+- `status` = 'in_progress'
 
-- Largeur fixe `w-56`, scrollable indépendamment
-- Items avec `hover:bg-muted/50`, actif = `bg-primary/10 text-primary font-semibold`
-- Sous-items indentés de 24px avec ★/○ indicateurs
+## Étape 4 — Config IA dynamique (Option B : Lovable Gateway, modèle configurable)
 
-### 4. Page UC Analysis — Design premium
+Le projet utilise le Lovable AI Gateway (`ai.gateway.lovable.dev`) qui ne supporte pas l'API Anthropic directe. Implémenter **Option B** : garder le gateway Lovable mais rendre modèle/temperature/max_tokens configurables via `ucm_ai_config`.
 
-- **Header** : `bg-gradient-to-r from-primary/5 to-transparent`, badge catégorie (Stratégique/Opérationnel/Tactique) en couleur, compteur "UC 1/3"
-- **Tabs sections** : `border-b` avec underline active, icônes emoji, checkmarks ✓ intégrés au label
-- **Mode toggle** : deux boutons pill avec icône ⚡/💻, état complété avec ✓
-- **Zone contenu** : `max-w-4xl` centré, `EnrichedMarkdown` avec prose styling
-- **Bouton générer** : en haut à droite, `Sparkles` icon, disabled si déjà généré pour ce mode
+Chaque edge function :
+1. Charge `organizations.ucm_ai_config` pour l'org du projet
+2. Extrait la config du type de tâche (`uc_generation`, `analysis`, `chat`)
+3. Utilise le modèle/temperature/max_tokens de la config au lieu de hardcoder
+4. Fallback sur les defaults actuels si config absente
 
-### 5. Dashboard `PortalUCM.tsx` — Modernisation
+**Fichiers** : `ucm-generate`, `ucm-analyze`, `ucm-synthesize`, `ucm-chat` (4 edge functions)
 
-- KPI cards avec `AnimatedCounter` et icônes dans cercles gradient
-- Cards projet : hover lift, progress bar gradient, badge status avec dot animé
-- Empty state : illustration + CTA centré
+## Étape 5 — Hardening edge functions
 
-### 6. Routing
+Pour les 4 fonctions (generate, analyze, synthesize, chat), ajouter dans l'ordre :
 
-Nouvelles sous-routes pour navigation profonde :
-- `/portal/ucm/:id` → layout avec sidebar, défaut = contexte
-- `/portal/ucm/:id/scope` → périmètre
-- `/portal/ucm/:id/usecases` → liste UC
-- `/portal/ucm/:id/uc/:ucId` → page analyse UC dédiée (avec section tabs)
-- `/portal/ucm/:id/uc/:ucId/:section` → section spécifique (optionnel, via state)
-- `/portal/ucm/:id/synthesis` → synthèse globale
-- `/portal/ucm/:id/chat` → consultant IA
+1. **Permission check** — Après auth, appeler `has_any_role` + vérifier la permission spécifique via une query sur `role_permissions` + `permission_definitions`. Retour 403 si absent.
+2. **Quota pre-check** — Appeler `check_ucm_quota(org_id, action)` via RPC. Retour 429 avec message structuré si dépassé.
+3. **Tenant prompt override** — `ucm-analyze` : appeler `get_ucm_section_prompt(org_id, code, mode)` via RPC au lieu de `WHERE organization_id IS NULL`. `ucm-synthesize` : appeler `get_ucm_global_prompt(org_id, code)`.
+4. **Detailed guard** — `ucm-analyze` : si mode = 'detailed', vérifier permission `ucm.uc.analyze_detailed`. Retour 403 sinon.
 
-Cela permet le deep linking, le back/forward navigateur, et le partage d'URLs.
+**Fichiers** : 4 edge functions modifiées
 
-## Fichiers impactés
+## Étape 6 — Export DOCX
+
+Réécrire `ucm-export/index.ts` :
+
+1. Auth + Permission `ucm.export.docx` + Quota check
+2. Charger : projet + UC sélectionnés + analyses `is_current` + contextes UC + sections globales + org branding
+3. Installer `docx` via import ESM (`https://esm.sh/docx@9`)
+4. Construire le document :
+   - Page de couverture (company, secteur, date, branding)
+   - Sommaire
+   - Contexte + Immersion + Périmètre
+   - Portfolio UC (tableau)
+   - Pour chaque UC : contexte spécifique + 6 sections (brief/detailed)
+   - Synthèse globale (7 sections)
+   - Footer confidentiel
+5. Upload vers Storage bucket `ucm-exports`
+6. Générer URL signée 24h
+7. INSERT dans `ucm_exports`
+8. Incrémenter quota exports
+
+**Fichier** : `supabase/functions/ucm-export/index.ts`
+
+## Étape 7 — UX corrections
+
+| Fichier | Changement |
+|---------|-----------|
+| `UCMContextStep.tsx` | Textarea immersion → `rows={8}`, compteur caractères avec feedback couleur (rouge < 200, orange < 500, vert ≥ 500) |
+| `PortalUCMExplorer.tsx` | Ajouter filtre par secteur (dropdown construit depuis les secteurs des UC existants) |
+| `UCMAnalysisPage.tsx` | Badge "V2" visible à côté du titre quand `version > 1` |
+
+---
+
+## Fichiers impactés (total)
 
 | Fichier | Action |
 |---------|--------|
-| `src/pages/portal/PortalUCMProject.tsx` | **Réécrire** — devient layout avec sidebar + outlet |
-| `src/components/ucm/UCMProjectSidebar.tsx` | **Créer** — arbre de navigation contextuel |
-| `src/components/ucm/UCMContextStep.tsx` | **Créer** — extrait step 1 |
-| `src/components/ucm/UCMScopeStep.tsx` | **Créer** — extrait step 2 |
-| `src/components/ucm/UCMUseCasesList.tsx` | **Créer** — extrait step 3 |
-| `src/components/ucm/UCMAnalysisPage.tsx` | **Créer** — page analyse UC avec tabs sections |
-| `src/components/ucm/UCMSynthesisPage.tsx` | **Créer** — extrait step 5 |
-| `src/components/ucm/UCMAnalysisView.tsx` | **Supprimer** — remplacé par UCMAnalysisPage |
-| `src/pages/portal/PortalUCM.tsx` | **Modifier** — KPIs + cards premium |
-| `src/App.tsx` | **Modifier** — nouvelles sous-routes UCM |
-| `src/components/ucm/UCMChat.tsx` | **Modifier** — layout pleine page |
+| Migration SQL | 3 colonnes + 3 fonctions + 1 bucket |
+| Seed data | ~55 UPDATEs (35 knowledge + 6 brief + 6 detailed + 7 global + fonctions) |
+| Seed CREATIVE | 1 INSERT projet |
+| `supabase/functions/ucm-generate/index.ts` | Modifier — permission + quota + AI config dynamique |
+| `supabase/functions/ucm-analyze/index.ts` | Modifier — permission + quota + tenant override + detailed guard + AI config |
+| `supabase/functions/ucm-synthesize/index.ts` | Modifier — permission + quota + tenant override + AI config |
+| `supabase/functions/ucm-chat/index.ts` | Modifier — permission + quota + AI config |
+| `supabase/functions/ucm-export/index.ts` | Réécrire — DOCX complet |
+| `src/components/ucm/UCMContextStep.tsx` | Modifier — rows + compteur |
+| `src/pages/portal/PortalUCMExplorer.tsx` | Modifier — filtre secteur |
+| `src/components/ucm/UCMAnalysisPage.tsx` | Modifier — badge version |
 
-## Ordre d'exécution
-
-1. Routes + Layout (`App.tsx` + `PortalUCMProject.tsx` restructuré)
-2. `UCMProjectSidebar.tsx` (navigation arbre)
-3. `UCMContextStep.tsx` + `UCMScopeStep.tsx` (extraction)
-4. `UCMUseCasesList.tsx` (extraction)
-5. `UCMAnalysisPage.tsx` (nouveau cœur)
-6. `UCMSynthesisPage.tsx` + `UCMChat.tsx` (adaptation)
-7. `PortalUCM.tsx` (dashboard premium)
+## Ordre : 1 → 2 → 3 → 4 → 5 → 6 → 7
 
