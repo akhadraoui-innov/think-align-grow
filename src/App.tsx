@@ -92,6 +92,9 @@ import PortalCertificateDetail from "./pages/portal/PortalCertificateDetail";
 import PortalGuideReader from "./pages/portal/PortalGuideReader";
 import PortalInsight from "./pages/portal/PortalInsight";
 import AdminInsight from "./pages/admin/AdminInsight";
+import PortalUCM from "./pages/portal/PortalUCM";
+import PortalUCMProject from "./pages/portal/PortalUCMProject";
+import PortalUCMExplorer from "./pages/portal/PortalUCMExplorer";
 
 const queryClient = new QueryClient();
 
@@ -186,6 +189,9 @@ function AnimatedRoutes() {
           <Route path="/portal/academie/certificates" element={<PortalAcademieCertificates />} />
           <Route path="/portal/insight" element={<PortalInsight />} />
           <Route path="/portal/insight/:section" element={<PortalInsight />} />
+          <Route path="/portal/ucm" element={<PortalUCM />} />
+          <Route path="/portal/ucm/explorer" element={<PortalUCMExplorer />} />
+          <Route path="/portal/ucm/:id" element={<PortalUCMProject />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

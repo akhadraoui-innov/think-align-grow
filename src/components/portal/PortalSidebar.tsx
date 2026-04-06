@@ -3,7 +3,7 @@ import {
   BookOpen, Award, Sparkles, History,
   Users, LayoutGrid, PanelLeftClose, PanelLeftOpen,
   Route, Building2, Layers, GraduationCap, Map, Briefcase,
-  Brain, Megaphone, BarChart3, Library, Rocket, Shield, Compass, Handshake
+  Brain, Megaphone, BarChart3, Library, Rocket, Shield, Compass, Handshake, Lightbulb
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveOrg } from "@/contexts/OrgContext";
@@ -57,6 +57,13 @@ const SIDEBAR_CONFIGS: Record<string, { title: string; items: { icon: any; label
       { icon: BarChart3, label: "Suivi", path: "/portal/academie/tracking" },
       { icon: Library, label: "Actifs pédagogiques", path: "/portal/academie/assets" },
       { icon: Award, label: "Certificats", path: "/portal/academie/certificates" },
+    ],
+  },
+  "/portal/ucm": {
+    title: "AI VALUE BUILDER",
+    items: [
+      { icon: Lightbulb, label: "Projets", path: "/portal/ucm" },
+      { icon: Layers, label: "UC Explorer", path: "/portal/ucm/explorer" },
     ],
   },
   "/portal/insight": {
