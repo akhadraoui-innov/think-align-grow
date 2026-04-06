@@ -92,6 +92,9 @@ import PortalCertificateDetail from "./pages/portal/PortalCertificateDetail";
 import PortalGuideReader from "./pages/portal/PortalGuideReader";
 import PortalInsight from "./pages/portal/PortalInsight";
 import AdminInsight from "./pages/admin/AdminInsight";
+import PortalUCM from "./pages/portal/PortalUCM";
+import PortalUCMProject from "./pages/portal/PortalUCMProject";
+import PortalUCMExplorer from "./pages/portal/PortalUCMExplorer";
 
 const queryClient = new QueryClient();
 
