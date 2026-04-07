@@ -48,6 +48,8 @@ export default function ResetPassword() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      // Sign out to force re-login with new password
+      await supabase.auth.signOut();
       setSuccess(true);
       toast({ title: "Mot de passe mis à jour !", description: "Vous pouvez maintenant vous connecter." });
       setTimeout(() => navigate("/auth"), 2000);
