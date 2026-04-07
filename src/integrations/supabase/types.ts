@@ -663,6 +663,7 @@ export type Database = {
         Row: {
           aptitudes: Json
           certificate_enabled: boolean
+          cover_image_url: string | null
           created_at: string
           created_by: string
           description: string
@@ -685,6 +686,7 @@ export type Database = {
         Insert: {
           aptitudes?: Json
           certificate_enabled?: boolean
+          cover_image_url?: string | null
           created_at?: string
           created_by: string
           description?: string
@@ -707,6 +709,7 @@ export type Database = {
         Update: {
           aptitudes?: Json
           certificate_enabled?: boolean
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string
           description?: string
