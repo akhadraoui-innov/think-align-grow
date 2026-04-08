@@ -49,6 +49,10 @@ serve(async (req) => {
       return await generateIllustrations(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-campaign") {
       return await generateCampaign(supabase, user.id, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-cover") {
+      return await generateCover(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-all-covers") {
+      return await generateAllCovers(supabase, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
