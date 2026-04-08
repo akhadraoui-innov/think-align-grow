@@ -1,0 +1,1 @@
+UPDATE academy_paths SET cover_image_url = NULL;

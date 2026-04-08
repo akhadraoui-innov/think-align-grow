@@ -1294,10 +1294,11 @@ async function generateCover(supabase: any, params: any, apiKey: string, cors: a
   if (pathErr || !path) throw new Error("Path not found");
 
   // Step 1: Generate a cover image prompt
+  const newStyle = `Clean flat illustration style. Bright pastel background (soft white, light blue, or light peach). Colorful isometric or flat icons clearly representing the topic (e.g. gears for process, brain for AI, charts for strategy, lightbulb for innovation). Vibrant saturated colors (orange, teal, purple, coral). Professional corporate training aesthetic. NO text, NO letters, NO words in the image. Simple, modern, airy composition with plenty of white space. Suitable for e-learning platform aimed at business professionals. 16:9 aspect ratio.`;
   const promptResult = await callAI(
     apiKey,
-    "You write concise image generation prompts for professional course cover images. Output ONLY the prompt, nothing else.",
-    `Write a concise image prompt for a professional training course cover about: "${path.name}". Description: ${(path.description || "").slice(0, 300)}. Difficulty: ${path.difficulty || "intermediate"}. Style: modern gradient background (deep blues, purples, teals), abstract geometric shapes and icons representing the topic, corporate SaaS aesthetic, cinematic lighting, no text in the image, 16:9 aspect ratio, high quality.`,
+    "You write concise image generation prompts for professional course cover images. Output ONLY the prompt, nothing else. The style must be: clean flat illustration, bright pastel background, colorful icons, NO text in image.",
+    `Write a concise image prompt for a professional training course cover about: "${path.name}". Description: ${(path.description || "").slice(0, 300)}. Difficulty: ${path.difficulty || "intermediate"}. Style: ${newStyle}`,
     undefined,
     undefined,
     "google/gemini-2.5-flash-lite"
@@ -1360,10 +1361,11 @@ async function generateAllCovers(supabase: any, apiKey: string, cors: any) {
   for (const path of (paths || [])) {
     try {
       // Generate prompt
+      const batchStyle = `Clean flat illustration style. Bright pastel background (soft white, light blue, or light peach). Colorful isometric or flat icons clearly representing the topic. Vibrant saturated colors (orange, teal, purple, coral). Professional corporate training aesthetic. NO text, NO letters, NO words in the image. Simple, modern, airy composition with plenty of white space. 16:9 aspect ratio.`;
       const promptResult = await callAI(
         apiKey,
-        "You write concise image generation prompts for professional course cover images. Output ONLY the prompt, nothing else.",
-        `Write a concise image prompt for a professional training course cover about: "${path.name}". Description: ${(path.description || "").slice(0, 300)}. Style: modern gradient background (deep blues, purples, teals), abstract geometric shapes and icons representing the topic, corporate SaaS aesthetic, cinematic lighting, no text in the image, 16:9 aspect ratio.`,
+        "You write concise image generation prompts for professional course cover images. Output ONLY the prompt, nothing else. The style must be: clean flat illustration, bright pastel background, colorful icons, NO text in image.",
+        `Write a concise image prompt for a professional training course cover about: "${path.name}". Description: ${(path.description || "").slice(0, 300)}. Style: ${batchStyle}`,
         undefined,
         undefined,
         "google/gemini-2.5-flash-lite"
