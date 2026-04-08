@@ -348,54 +348,67 @@ export default function AdminAcademyPaths() {
               return (
                 <Card
                   key={p.id}
-                  className={`group cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 border-l-4 ${diff.border}`}
+                  className="group cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 rounded-2xl overflow-hidden border border-border/50 flex flex-col h-[380px]"
                   onClick={() => navigate(`/admin/academy/paths/${p.id}`)}
                 >
-                  <CardContent className="p-5 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">{p.name}</h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{p.description}</p>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0 ml-2">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive" onClick={(e) => { e.stopPropagation(); remove.mutate(p.id); }}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Meta */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant={p.status === "published" ? "default" : "secondary"} className="text-[10px]">{p.status}</Badge>
-                      <Badge variant="outline" className={`text-[10px] ${diff.color}`}>{diff.label}</Badge>
-                      {p.certificate_enabled && <Award className="h-3 w-3 text-amber-500" />}
-                    </div>
-
-                    {/* Targets */}
-                    {(funcName || personaName) && (
-                      <div className="flex items-center gap-2 flex-wrap text-[10px]">
-                        {funcName && (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted">
-                            <Target className="h-2.5 w-2.5" /> {funcName}
-                          </span>
-                        )}
-                        {personaName && (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted">
-                            <Users className="h-2.5 w-2.5" /> {personaName}
-                          </span>
-                        )}
+                  {/* Cover Image */}
+                  <div className="relative h-36 overflow-hidden flex-shrink-0">
+                    {p.cover_image_url ? (
+                      <img src={p.cover_image_url} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                    ) : (
+                      <div className={`w-full h-full bg-gradient-to-br ${diff.coverGradient} flex items-center justify-center`}>
+                        <GraduationCap className="h-10 w-10 text-white/60" />
                       </div>
                     )}
+                    <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                      <Badge variant={p.status === "published" ? "default" : "secondary"} className="text-[10px] backdrop-blur-sm">{p.status}</Badge>
+                      <Badge variant="outline" className={`text-[10px] backdrop-blur-sm bg-background/60 ${diff.color}`}>{diff.label}</Badge>
+                    </div>
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {!p.cover_image_url && (
+                        <Button variant="secondary" size="icon" className="h-7 w-7 backdrop-blur-sm" onClick={(e) => generateSingleCover(p.id, e)}>
+                          <ImageIcon className="h-3 w-3" />
+                        </Button>
+                      )}
+                      <Button variant="secondary" size="icon" className="h-7 w-7 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button variant="secondary" size="icon" className="h-7 w-7 backdrop-blur-sm text-destructive" onClick={(e) => { e.stopPropagation(); remove.mutate(p.id); }}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    {p.certificate_enabled && (
+                      <div className="absolute bottom-2 right-2">
+                        <Award className="h-4 w-4 text-amber-400 drop-shadow-sm" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Body */}
+                  <div className="flex flex-col flex-1 p-4 min-h-0">
+                    <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors mb-1">{p.name}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-shrink-0">{p.description}</p>
+
+                    {/* Targets */}
+                    <div className="flex flex-wrap gap-1.5 mb-auto">
+                      {funcName && (
+                        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-[10px]">
+                          <Target className="h-2.5 w-2.5" /> {funcName}
+                        </span>
+                      )}
+                      {personaName && (
+                        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-[10px]">
+                          <Users className="h-2.5 w-2.5" /> {personaName}
+                        </span>
+                      )}
+                    </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-2 border-t border-border/40 mt-2">
                       <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" /> {mc} modules</span>
                       {p.estimated_hours > 0 && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {p.estimated_hours}h</span>}
                     </div>
-                  </CardContent>
+                  </div>
                 </Card>
               );
             })}
