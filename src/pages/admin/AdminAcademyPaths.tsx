@@ -221,6 +221,7 @@ export default function AdminAcademyPaths() {
     } catch (err: any) { toast.error(err.message); }
   };
 
+  function openEdit(p: any) {
     setEditId(p.id);
     setForm({
       name: p.name,
