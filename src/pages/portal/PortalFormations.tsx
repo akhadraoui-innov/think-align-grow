@@ -15,15 +15,27 @@ import {
   GraduationCap, BookOpen, Clock, Search, ArrowRight, Sparkles
 } from "lucide-react";
 
-import coverProcessMining from "@/assets/covers/cover-process-mining.jpg";
-import coverPremiersPasIA from "@/assets/covers/cover-premiers-pas-ia.jpg";
-import coverStrategieComex from "@/assets/covers/cover-strategie-ia-comex.jpg";
+import coverProcessMining from "@/assets/covers/gen-process-mining.jpg";
+import coverPremiersPasIA from "@/assets/covers/gen-premiers-pas-ia.jpg";
+import coverStrategieComex from "@/assets/covers/gen-strategie-comex.jpg";
+import coverManagerTerrain from "@/assets/covers/gen-manager-terrain.jpg";
+import coverRhIA from "@/assets/covers/gen-rh-ia.jpg";
+import coverMaitriserIA from "@/assets/covers/gen-maitriser-ia.jpg";
+import coverOngCom from "@/assets/covers/gen-ong-com.jpg";
+import coverDafFinance from "@/assets/covers/gen-daf-finance.jpg";
+import coverPhosphate from "@/assets/covers/gen-phosphate.jpg";
 
 /* ── Static cover map (fallback when cover_image_url is null) ── */
 const STATIC_COVERS: Record<string, string> = {
   "036db7ea-359a-4359-9be2-2697a0a0d6f7": coverProcessMining,
   "25584f02-f384-4274-8a85-8997648a23a4": coverPremiersPasIA,
   "79100126-1913-43c7-b7fd-e1f096dd069b": coverStrategieComex,
+  "430ee134-af45-4dbc-9b4a-8c7485db5712": coverManagerTerrain,
+  "bc3d7926-7302-4ff7-be3a-7fa555d46ad3": coverRhIA,
+  "a0000000-0000-0000-0000-000000000001": coverMaitriserIA,
+  "19530fc0-5a78-4511-a8ad-bb9bf90a39fb": coverOngCom,
+  "6b914294-4015-46ab-af8f-b4c1eaf8c522": coverDafFinance,
+  "4acfc42c-b747-4695-8cd8-25d62ba453a2": coverPhosphate,
 };
 
 const difficultyConfig: Record<string, { label: string; gradient: string; badge: string }> = {
