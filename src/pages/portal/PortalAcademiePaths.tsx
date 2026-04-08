@@ -44,10 +44,10 @@ const emptyForm: PathForm = {
   function_id: "",
 };
 
-const difficultyConfig: Record<string, { gradient: string; label: string; color: string; border: string }> = {
-  beginner: { gradient: "from-emerald-500/10 to-teal-500/5", label: "Débutant", color: "text-emerald-600", border: "border-l-emerald-500" },
-  intermediate: { gradient: "from-blue-500/10 to-indigo-500/5", label: "Intermédiaire", color: "text-blue-600", border: "border-l-blue-500" },
-  advanced: { gradient: "from-purple-500/10 to-pink-500/5", label: "Avancé", color: "text-purple-600", border: "border-l-purple-500" },
+const difficultyConfig: Record<string, { gradient: string; label: string; color: string; border: string; coverGradient: string }> = {
+  beginner: { gradient: "from-emerald-500/10 to-teal-500/5", label: "Débutant", color: "text-emerald-600", border: "border-l-emerald-500", coverGradient: "from-emerald-500/80 to-teal-600/80" },
+  intermediate: { gradient: "from-blue-500/10 to-indigo-500/5", label: "Intermédiaire", color: "text-blue-600", border: "border-l-blue-500", coverGradient: "from-blue-500/80 to-indigo-600/80" },
+  advanced: { gradient: "from-purple-500/10 to-pink-500/5", label: "Avancé", color: "text-purple-600", border: "border-l-purple-500", coverGradient: "from-purple-500/80 to-pink-600/80" },
 };
 
 export default function AdminAcademyPaths() {
