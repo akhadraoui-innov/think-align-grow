@@ -99,6 +99,7 @@ import PortalUCMExplorer from "./pages/portal/PortalUCMExplorer";
 import AdminUCM from "./pages/admin/AdminUCM";
 import AdminUCMSectors from "./pages/admin/AdminUCMSectors";
 import AdminUCMPrompts from "./pages/admin/AdminUCMPrompts";
+import AdminBusiness from "./pages/admin/AdminBusiness";
 
 const queryClient = new QueryClient();
 
