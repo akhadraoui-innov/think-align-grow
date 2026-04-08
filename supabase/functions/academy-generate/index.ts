@@ -1361,10 +1361,10 @@ async function generateAllCovers(supabase: any, apiKey: string, cors: any) {
   for (const path of (paths || [])) {
     try {
       // Generate prompt
-      const batchStyle = `Clean flat illustration style. Bright pastel background (soft white, light blue, or light peach). Colorful isometric or flat icons clearly representing the topic. Vibrant saturated colors (orange, teal, purple, coral). Professional corporate training aesthetic. NO text, NO letters, NO words in the image. Simple, modern, airy composition with plenty of white space. 16:9 aspect ratio.`;
+      const batchStyle = `Professional e-learning course cover. Clean illustration with a single dominant color palette matching the topic. Soft gradient background transitioning between 2-3 harmonious colors. A few simple, recognizable flat icons or shapes related to the subject, well-spaced. Very clean composition, no clutter. Absolutely NO text, NO letters, NO words. Bright, optimistic, corporate feel. 16:9.`;
       const promptResult = await callAI(
         apiKey,
-        "You write concise image generation prompts for professional course cover images. Output ONLY the prompt, nothing else. The style must be: clean flat illustration, bright pastel background, colorful icons, NO text in image.",
+        "You create short image prompts for course covers. Style: clean gradient background with 2-3 colors, few simple flat icons, lots of space, no text. Output ONLY the prompt.",
         `Write a concise image prompt for a professional training course cover about: "${path.name}". Description: ${(path.description || "").slice(0, 300)}. Style: ${batchStyle}`,
         undefined,
         undefined,
