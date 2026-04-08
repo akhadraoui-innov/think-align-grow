@@ -252,6 +252,10 @@ export default function AdminAcademyPaths() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={generateAllCovers} disabled={genCoversLoading}>
+                {genCoversLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ImageIcon className="h-4 w-4 mr-1" />}
+                Générer les couvertures
+              </Button>
               <Button size="sm" variant="outline" onClick={() => { setAiOpen(true); setAiMode("guided"); }}>
                 <Sparkles className="h-4 w-4 mr-1" /> Générer par IA
               </Button>
