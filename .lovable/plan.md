@@ -1,118 +1,130 @@
 
-# Plan — Module Administration "Business & Revenue"
 
-## Vision
+# Plan révisé — Business & Revenue : Module 100% dynamique et interactif
 
-Un module stratégique interne dans `/admin/business` qui centralise l'étude go-to-market, le business model, le pricing, les channels, et le positionnement de GROWTHINNOV. Chaque section = un onglet avec contenu riche, interactif, et évolutif.
+## Critique du plan précédent
 
-## Architecture : 8 onglets
+Le plan actuel est **statique** : textes en dur, tableaux figés, pas de configuration possible. Pour un outil de pilotage stratégique, c'est insuffisant. Voici les faiblesses identifiées :
+
+- Pricing hardcodé → doit être éditable avec ajout/suppression de plans
+- BMC figé → les 9 blocs doivent être éditables inline
+- SWOT figé → quadrants éditables, drag & drop d'éléments
+- Simulateur basique → multi-scénarios comparables, sauvegardables, exportables
+- Aucun toggle de scénarios → besoin de presets sélectionnables + customisation
+- Pas de comparaison → les scénarios doivent se superposer sur les graphiques
+
+## Nouvelle architecture : tout est état, rien n'est texte
 
 ```text
-┌──────────────────────────────────────────────────────────┐
-│  Business & Revenue                                       │
-├──────────────────────────────────────────────────────────┤
-│ Vue d'ensemble │ Offre │ Pricing │ Channels │ Marché │   │
-│ Partenaires │ Grands Comptes │ Simulateur              │
-└──────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  BUSINESS & REVENUE — Command Center                            │
+├─────────────────────────────────────────────────────────────────┤
+│ [Overview] [Offre] [Pricing] [Channels] [Marché]                │
+│ [Partenaires] [Enterprise] [Simulateur]                         │
+└─────────────────────────────────────────────────────────────────┘
+         ↕ Chaque onglet = données éditables + visualisation live
 ```
 
-### Onglet 1 — Vue d'ensemble (Executive Summary)
-- Hero gradient avec KPIs plateforme (modules actifs, parcours, toolkits, simulateurs)
-- Carte de positionnement : "SaaS B2B — IA appliquée au conseil stratégique & formation"
-- Canvas BMC interactif (Business Model Canvas) avec les 9 blocs remplis
-- Proposition de valeur unique
-- Synthèse SWOT en 4 quadrants visuels
+### Principes clés
 
-### Onglet 2 — Catalogue & Offre produit
-- Inventaire de tous les modules vendables (Academy, Simulator, Workshop, Challenge, UCM/AI Value Builder, Toolkits)
-- Pour chaque module : description, valeur client, mode de livraison (SaaS/CaaS/Formation)
-- Matrice Produit × Segment (PME, ETI, Grand Compte, Cabinet conseil)
-- Différenciation vs concurrents (LMS classiques, McKinsey, BCG)
+1. **Toutes les données dans des objets `useState`** — pas de texte JSX en dur
+2. **Édition inline** partout — double-clic sur un champ = mode édition
+3. **Scénarios sélectionnables** — presets (Conservateur/Réaliste/Ambitieux) + Custom
+4. **Comparaison visuelle** — overlay de scénarios sur les mêmes graphiques
+5. **Fichier de config centralisé** — `businessConfig.ts` avec toutes les valeurs par défaut
 
-### Onglet 3 — Pricing & Revenue Model
-- Grille tarifaire détaillée par plan (Starter / Pro / Enterprise / Custom)
-- Modes de facturation : abonnement, crédits, licence, pay-per-use
-- Simulateur de revenus intégré (sliders : nb clients × plan × ARPU)
-- Unit economics : CAC, LTV, LTV/CAC, churn estimé
-- Comparaison pricing concurrentiel
+## Détail par onglet — ce qui change
 
-### Onglet 4 — Channels & Go-to-Market
-- Cartographie des canaux : Vente directe, Partenaires, Marketplace, Inbound
-- Funnel de conversion par canal (Awareness → Trial → Conversion → Expansion)
-- Stratégie content marketing / thought leadership
-- Timeline de lancement par phase (M1-M3, M4-M6, M7-M12)
-- Budget marketing estimé par canal
+### Onglet 1 — Vue d'ensemble
+- **BMC interactif** : 9 blocs en grille, chaque bloc = liste éditable (ajouter/supprimer/réordonner des items)
+- **SWOT dynamique** : 4 quadrants avec items ajoutables, badge de priorité (haute/moyenne/basse), compteur par quadrant
+- **KPIs** : tirés de `useAdminStats` (données réelles DB) + indicateurs tendance
 
-### Onglet 5 — Marché & Segments
-- TAM/SAM/SOM avec visualisation concentrique
-- Segmentation par secteur (35 secteurs UCM réutilisés)
-- Segmentation par taille (TPE, PME, ETI, GE)
-- Segmentation géographique (France, Afrique francophone, Europe)
-- Personas décideurs (DG, DRH, DSI, CDO, Directeur Innovation)
-- Tendances marché IA/Formation/Conseil
+### Onglet 2 — Offre
+- **Modules configurables** : toggle actif/inactif par module, prix éditable, segments cochables
+- **Matrice interactive** : cliquer sur une cellule pour changer l'attractivité (●/●●/●●●), filtres par segment
 
-### Onglet 6 — Partenaires & Écosystème
-- Modèles de partenariat : Revendeur, Intégrateur, Co-créateur, White-label
-- Programme partenaire détaillé (tiers, commissions, enablement)
-- Pipeline partenaire (tableau interactif)
-- Revenue share par modèle
-- Kit d'onboarding partenaire (checklist)
+### Onglet 3 — Pricing (le plus critique)
+- **Plans dynamiques** : ajouter/supprimer des plans, éditer nom/prix/features inline
+- **Table crédits** : coûts par action éditables avec recalcul live du revenu moyen
+- **Unit Economics** : sliders pour CAC, LTV, churn — recalcul automatique LTV/CAC, payback period
+- **Comparateur** : toggle pour afficher un benchmark concurrent à côté de chaque plan
 
-### Onglet 7 — Grands Comptes & Enterprise
-- Approche ABM (Account-Based Marketing)
-- Cycle de vente enterprise (6-12 mois)
-- Critères de qualification (BANT/MEDDIC)
-- Architecture multi-tenant pour grands comptes
-- Use cases sectoriels (Banque, Industrie, Conseil, Public)
-- ROI calculé par profil client
+### Onglet 4 — Channels
+- **Canaux éditables** : ajouter/retirer des canaux, ajuster le % de répartition avec sliders (total = 100%)
+- **Funnel interactif** : taux de conversion par étape modifiable, recalcul du coût d'acquisition par canal
+- **Timeline drag** : phases déplaçables, milestones éditables
 
-### Onglet 8 — Simulateur Business
-- Simulateur interactif avec sliders et graphiques temps réel
-- Variables : nb clients par plan, taux de conversion, churn, ARPU
-- Projections MRR/ARR sur 12-36 mois (LineChart)
-- Scénarios : Conservateur / Réaliste / Ambitieux
-- Break-even point calculé dynamiquement
+### Onglet 5 — Marché
+- **TAM/SAM/SOM** : 3 sliders liés avec visualisation concentrique animée (cercles proportionnels)
+- **Segments** : tableau avec pondération éditable, graphique treemap qui se met à jour live
+- **Géographie** : carte interactive (toggle par région), impact sur le SAM recalculé
 
-## Composants réutilisés
-- `AdminShell` pour le layout
-- Recharts pour tous les graphiques (BarChart, LineChart, PieChart, AreaChart)
-- `Tabs` / `TabsList` / `TabsTrigger` / `TabsContent` existants
-- Cards, Badges, Collapsible du design system
-- Pattern `SectionTabs` (Vue Essentielle / Vue Détaillée) repris d'InsightContent
+### Onglet 6 — Partenaires
+- **Modèles configurables** : commission %, paliers éditables, simulation de revenu par modèle
+- **Pipeline** : tableau Kanban mini (Prospect → Négociation → Actif) avec drag & drop
+- **Revenue share calculator** : sliders commission × volume = projection
 
-## Style
-- Même charte premium que le module Insight (gradients, BigStat, BeforeAfter, cards avec bordures subtiles)
-- Chaque onglet commence par un mini-hero avec icône + titre + description
-- Contenu riche avec introductions et synthèses
-- Interactivité via sliders, collapsibles, tooltips sur les graphiques
+### Onglet 7 — Enterprise
+- **Cycle de vente** : étapes éditables avec durée et taux de conversion par étape
+- **ROI Calculator** : inputs client (nb employés, coût formation actuel) → ROI calculé live
+- **Use cases** : cards avec scoring d'opportunité éditable
+
+### Onglet 8 — Simulateur Business (le plus riche)
+- **3 scénarios pré-remplis** + scénario custom libre
+- **Toggle de comparaison** : superposer 2 ou 3 scénarios sur le même LineChart
+- **Variables complètes** :
+  - Clients par plan (3 sliders séparés)
+  - Taux de conversion trial → paid
+  - Churn mensuel
+  - ARPU par plan
+  - Coûts fixes et variables
+  - Taux de croissance organique
+- **Outputs** : MRR, ARR, break-even, runway, marge nette, P&L simplifié
+- **Graphiques** : LineChart multi-séries (MRR par plan), AreaChart (revenus cumulés), BarChart (P&L mensuel)
+- **Export** : bouton pour copier les données du scénario en JSON/CSV
+
+## Fichier de config centralisé
+
+```text
+src/components/admin/business/businessConfig.ts
+```
+
+Contient TOUS les defaults : plans, modules, canaux, segments, scénarios presets. Chaque onglet lit ses defaults depuis ce fichier et les met dans du `useState`. L'utilisateur modifie → la vue se met à jour en temps réel.
+
+## UX Premium
+
+- **Glassmorphism** sur les cards KPI (backdrop-blur, bordures translucides)
+- **Animations Framer Motion** sur les transitions de scénarios et les graphiques
+- **Tooltips contextuels** sur chaque métrique avec explication business
+- **Mode sombre** cohérent avec le reste de l'admin
+- **Responsive** : layout 2 colonnes desktop, stack mobile
+- **Color coding** : vert = positif, rouge = risque, bleu = neutre, orange = attention
 
 ## Fichiers à créer
 
 | Fichier | Description |
 |---------|-------------|
-| `src/pages/admin/AdminBusiness.tsx` | Page principale avec 8 onglets |
-| `src/components/admin/business/BusinessOverviewTab.tsx` | Executive Summary + BMC + SWOT |
-| `src/components/admin/business/BusinessOfferTab.tsx` | Catalogue produit + matrice |
-| `src/components/admin/business/BusinessPricingTab.tsx` | Grille + simulateur revenus |
-| `src/components/admin/business/BusinessChannelsTab.tsx` | GTM + funnel + timeline |
-| `src/components/admin/business/BusinessMarketTab.tsx` | TAM/SAM/SOM + segments |
-| `src/components/admin/business/BusinessPartnersTab.tsx` | Programme partenaire |
-| `src/components/admin/business/BusinessEnterpriseTab.tsx` | Grands comptes + ABM |
-| `src/components/admin/business/BusinessSimulatorTab.tsx` | Simulateur MRR/ARR interactif |
+| `src/components/admin/business/businessConfig.ts` | Config centralisée (defaults, presets scénarios, plans, modules) |
+| `src/pages/admin/AdminBusiness.tsx` | Page principale 8 onglets |
+| `src/components/admin/business/BusinessOverviewTab.tsx` | BMC éditable + SWOT dynamique + KPIs live |
+| `src/components/admin/business/BusinessOfferTab.tsx` | Modules configurables + matrice interactive |
+| `src/components/admin/business/BusinessPricingTab.tsx` | Plans éditables + unit economics sliders + comparateur |
+| `src/components/admin/business/BusinessChannelsTab.tsx` | Canaux % sliders + funnel interactif + timeline |
+| `src/components/admin/business/BusinessMarketTab.tsx` | TAM/SAM/SOM sliders + segments pondérés + géo toggle |
+| `src/components/admin/business/BusinessPartnersTab.tsx` | Commission sliders + pipeline kanban + revenue calc |
+| `src/components/admin/business/BusinessEnterpriseTab.tsx` | Cycle vente éditable + ROI calculator + use cases |
+| `src/components/admin/business/BusinessSimulatorTab.tsx` | Multi-scénarios comparables + P&L + export |
 
 ## Fichiers à modifier
 
 | Fichier | Action |
 |---------|--------|
-| `src/App.tsx` | Ajouter route `/admin/business` |
-| `src/components/admin/AdminSidebar.tsx` | Ajouter entrée "Business & Revenue" avec icône `DollarSign` |
-| `src/components/admin/AdminShell.tsx` | Ajouter breadcrumb `/admin/business` |
+| `src/App.tsx` | Route `/admin/business` |
+| `src/components/admin/AdminSidebar.tsx` | Lien "Business & Revenue" icône `DollarSign` |
 
-## Pas de DB nécessaire
-Tout le contenu est statique/calculé côté client. Les données plateforme sont lues via les hooks existants (`useAdminStats`). Le simulateur utilise des `useState` + sliders. Évolutif par la suite vers du stockage DB si besoin de persister des scénarios.
+## Pas de DB pour V1
+Tout en `useState` côté client. Évolutif vers DB pour persister les scénarios sauvegardés.
 
-## Ordre d'exécution
-1. Route + Sidebar + Breadcrumb
-2. Page principale (`AdminBusiness.tsx`) avec structure 8 onglets
-3. Onglets 1-4 (Vue d'ensemble, Offre, Pricing, Channels)
-4. Onglets 5-8 (Marché, Partenaires, Grands Comptes, Simulateur)
+## Ordre : Config → Page → Onglets 1-4 → Onglets 5-8
+
