@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   Route, Plus, Pencil, Trash2, Save, Clock, BookOpen, Sparkles,
   Loader2, Search, LayoutGrid, List, GraduationCap, Target,
-  Users, FileText, HelpCircle, CheckCircle2, AlertTriangle, Award
+  Users, FileText, HelpCircle, CheckCircle2, AlertTriangle, Award, ImageIcon
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,10 +44,10 @@ const emptyForm: PathForm = {
   function_id: "",
 };
 
-const difficultyConfig: Record<string, { gradient: string; label: string; color: string; border: string }> = {
-  beginner: { gradient: "from-emerald-500/10 to-teal-500/5", label: "Débutant", color: "text-emerald-600", border: "border-l-emerald-500" },
-  intermediate: { gradient: "from-blue-500/10 to-indigo-500/5", label: "Intermédiaire", color: "text-blue-600", border: "border-l-blue-500" },
-  advanced: { gradient: "from-purple-500/10 to-pink-500/5", label: "Avancé", color: "text-purple-600", border: "border-l-purple-500" },
+const difficultyConfig: Record<string, { gradient: string; label: string; color: string; border: string; coverGradient: string }> = {
+  beginner: { gradient: "from-emerald-500/10 to-teal-500/5", label: "Débutant", color: "text-emerald-600", border: "border-l-emerald-500", coverGradient: "from-emerald-500/80 to-teal-600/80" },
+  intermediate: { gradient: "from-blue-500/10 to-indigo-500/5", label: "Intermédiaire", color: "text-blue-600", border: "border-l-blue-500", coverGradient: "from-blue-500/80 to-indigo-600/80" },
+  advanced: { gradient: "from-purple-500/10 to-pink-500/5", label: "Avancé", color: "text-purple-600", border: "border-l-purple-500", coverGradient: "from-purple-500/80 to-pink-600/80" },
 };
 
 export default function AdminAcademyPaths() {
@@ -195,6 +195,32 @@ export default function AdminAcademyPaths() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const [genCoversLoading, setGenCoversLoading] = useState(false);
+  const generateAllCovers = async () => {
+    setGenCoversLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-all-covers" } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const successCount = (data.results || []).filter((r: any) => r.success).length;
+      toast.success(`${successCount}/${data.total} couvertures générées`);
+      qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
+    } catch (e: any) { toast.error(e.message); }
+    setGenCoversLoading(false);
+  };
+
+  const generateSingleCover = async (pathId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      toast.info("Génération de la couverture...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-cover", path_id: pathId } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Couverture générée !");
+      qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
+    } catch (err: any) { toast.error(err.message); }
+  };
+
   function openEdit(p: any) {
     setEditId(p.id);
     setForm({
@@ -226,6 +252,10 @@ export default function AdminAcademyPaths() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={generateAllCovers} disabled={genCoversLoading}>
+                {genCoversLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ImageIcon className="h-4 w-4 mr-1" />}
+                Générer les couvertures
+              </Button>
               <Button size="sm" variant="outline" onClick={() => { setAiOpen(true); setAiMode("guided"); }}>
                 <Sparkles className="h-4 w-4 mr-1" /> Générer par IA
               </Button>
@@ -318,54 +348,67 @@ export default function AdminAcademyPaths() {
               return (
                 <Card
                   key={p.id}
-                  className={`group cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 border-l-4 ${diff.border}`}
+                  className="group cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 rounded-2xl overflow-hidden border border-border/50 flex flex-col h-[380px]"
                   onClick={() => navigate(`/portal/academie/paths/${p.id}`)}
                 >
-                  <CardContent className="p-5 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">{p.name}</h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{p.description}</p>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0 ml-2">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive" onClick={(e) => { e.stopPropagation(); remove.mutate(p.id); }}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Meta */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant={p.status === "published" ? "default" : "secondary"} className="text-[10px]">{p.status}</Badge>
-                      <Badge variant="outline" className={`text-[10px] ${diff.color}`}>{diff.label}</Badge>
-                      {p.certificate_enabled && <Award className="h-3 w-3 text-amber-500" />}
-                    </div>
-
-                    {/* Targets */}
-                    {(funcName || personaName) && (
-                      <div className="flex items-center gap-2 flex-wrap text-[10px]">
-                        {funcName && (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted">
-                            <Target className="h-2.5 w-2.5" /> {funcName}
-                          </span>
-                        )}
-                        {personaName && (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted">
-                            <Users className="h-2.5 w-2.5" /> {personaName}
-                          </span>
-                        )}
+                  {/* Cover Image */}
+                  <div className="relative h-36 overflow-hidden flex-shrink-0">
+                    {p.cover_image_url ? (
+                      <img src={p.cover_image_url} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                    ) : (
+                      <div className={`w-full h-full bg-gradient-to-br ${diff.coverGradient} flex items-center justify-center`}>
+                        <GraduationCap className="h-10 w-10 text-white/60" />
                       </div>
                     )}
+                    <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                      <Badge variant={p.status === "published" ? "default" : "secondary"} className="text-[10px] backdrop-blur-sm">{p.status}</Badge>
+                      <Badge variant="outline" className={`text-[10px] backdrop-blur-sm bg-background/60 ${diff.color}`}>{diff.label}</Badge>
+                    </div>
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {!p.cover_image_url && (
+                        <Button variant="secondary" size="icon" className="h-7 w-7 backdrop-blur-sm" onClick={(e) => generateSingleCover(p.id, e)}>
+                          <ImageIcon className="h-3 w-3" />
+                        </Button>
+                      )}
+                      <Button variant="secondary" size="icon" className="h-7 w-7 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button variant="secondary" size="icon" className="h-7 w-7 backdrop-blur-sm text-destructive" onClick={(e) => { e.stopPropagation(); remove.mutate(p.id); }}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    {p.certificate_enabled && (
+                      <div className="absolute bottom-2 right-2">
+                        <Award className="h-4 w-4 text-amber-400 drop-shadow-sm" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Body */}
+                  <div className="flex flex-col flex-1 p-4 min-h-0">
+                    <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors mb-1">{p.name}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex-shrink-0">{p.description}</p>
+
+                    {/* Targets */}
+                    <div className="flex flex-wrap gap-1.5 mb-auto">
+                      {funcName && (
+                        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-[10px]">
+                          <Target className="h-2.5 w-2.5" /> {funcName}
+                        </span>
+                      )}
+                      {personaName && (
+                        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-[10px]">
+                          <Users className="h-2.5 w-2.5" /> {personaName}
+                        </span>
+                      )}
+                    </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-2 border-t border-border/40 mt-2">
                       <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" /> {mc} modules</span>
                       {p.estimated_hours > 0 && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {p.estimated_hours}h</span>}
                     </div>
-                  </CardContent>
+                  </div>
                 </Card>
               );
             })}
