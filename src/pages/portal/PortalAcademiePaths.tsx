@@ -195,7 +195,32 @@ export default function AdminAcademyPaths() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  function openEdit(p: any) {
+  const [genCoversLoading, setGenCoversLoading] = useState(false);
+  const generateAllCovers = async () => {
+    setGenCoversLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-all-covers" } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const successCount = (data.results || []).filter((r: any) => r.success).length;
+      toast.success(`${successCount}/${data.total} couvertures générées`);
+      qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
+    } catch (e: any) { toast.error(e.message); }
+    setGenCoversLoading(false);
+  };
+
+  const generateSingleCover = async (pathId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      toast.info("Génération de la couverture...");
+      const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-cover", path_id: pathId } });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Couverture générée !");
+      qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
+    } catch (err: any) { toast.error(err.message); }
+  };
+
     setEditId(p.id);
     setForm({
       name: p.name,
