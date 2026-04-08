@@ -164,6 +164,7 @@ function AnimatedRoutes() {
           <Route path="/admin/ucm" element={<AdminUCM />} />
           <Route path="/admin/ucm/sectors" element={<AdminUCMSectors />} />
           <Route path="/admin/ucm/prompts" element={<AdminUCMPrompts />} />
+          <Route path="/admin/business" element={<AdminBusiness />} />
           {/* Portal routes */}
           <Route path="/portal" element={<PortalFormations />} />
           <Route path="/portal/dashboard" element={<PortalFormationsDashboard />} />

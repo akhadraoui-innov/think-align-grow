@@ -23,6 +23,7 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/academy/paths": "Academy — Parcours",
   "/admin/academy/campaigns": "Academy — Campagnes",
   "/admin/academy/assets": "Academy — Actifs pédagogiques",
+  "/admin/business": "Business & Revenue",
 };
 
 export function AdminShell({ children }: AdminShellProps) {
