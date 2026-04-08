@@ -1279,3 +1279,134 @@ Propose des dates réalistes, une description engageante, et une stratégie de d
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
+
+// ─── Generate Cover Image for a Path ────────────────────────────────
+
+async function generateCover(supabase: any, params: any, apiKey: string, cors: any) {
+  const { path_id } = params;
+  if (!path_id) throw new Error("Missing path_id");
+
+  const { data: path, error: pathErr } = await supabase
+    .from("academy_paths")
+    .select("id, name, description, difficulty")
+    .eq("id", path_id)
+    .single();
+  if (pathErr || !path) throw new Error("Path not found");
+
+  // Step 1: Generate a cover image prompt
+  const promptResult = await callAI(
+    apiKey,
+    "You write concise image generation prompts for professional course cover images. Output ONLY the prompt, nothing else.",
+    `Write a concise image prompt for a professional training course cover about: "${path.name}". Description: ${(path.description || "").slice(0, 300)}. Difficulty: ${path.difficulty || "intermediate"}. Style: modern gradient background (deep blues, purples, teals), abstract geometric shapes and icons representing the topic, corporate SaaS aesthetic, cinematic lighting, no text in the image, 16:9 aspect ratio, high quality.`,
+    undefined,
+    undefined,
+    "google/gemini-2.5-flash-lite"
+  );
+
+  const imagePrompt = typeof promptResult === "string" ? promptResult.trim() : `Professional training course cover about ${path.name}`;
+
+  // Step 2: Generate the image
+  const imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-3.1-flash-image-preview",
+      messages: [{ role: "user", content: imagePrompt }],
+      modalities: ["image", "text"],
+    }),
+  });
+
+  if (!imgResp.ok) throw new Error(`Image generation failed: ${imgResp.status}`);
+
+  const imgData = await imgResp.json();
+  const base64Url = imgData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+  if (!base64Url) throw new Error("No image in AI response");
+
+  // Step 3: Upload to storage
+  const base64Data = base64Url.replace(/^data:image\/\w+;base64,/, "");
+  const imageBytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+  const fileName = `covers/${path_id}.png`;
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+
+  const { error: uploadErr } = await supabase.storage
+    .from("academy-assets")
+    .upload(fileName, imageBytes, { contentType: "image/png", upsert: true });
+  if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`);
+
+  const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}`;
+
+  // Step 4: Update path
+  await supabase
+    .from("academy_paths")
+    .update({ cover_image_url: publicUrl })
+    .eq("id", path_id);
+
+  return new Response(JSON.stringify({ success: true, cover_url: publicUrl }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+// ─── Generate All Missing Covers ────────────────────────────────────
+
+async function generateAllCovers(supabase: any, apiKey: string, cors: any) {
+  const { data: paths, error } = await supabase
+    .from("academy_paths")
+    .select("id, name, description, difficulty")
+    .is("cover_image_url", null);
+  if (error) throw error;
+
+  const results: { path_id: string; name: string; success: boolean; error?: string }[] = [];
+
+  for (const path of (paths || [])) {
+    try {
+      // Generate prompt
+      const promptResult = await callAI(
+        apiKey,
+        "You write concise image generation prompts for professional course cover images. Output ONLY the prompt, nothing else.",
+        `Write a concise image prompt for a professional training course cover about: "${path.name}". Description: ${(path.description || "").slice(0, 300)}. Style: modern gradient background (deep blues, purples, teals), abstract geometric shapes and icons representing the topic, corporate SaaS aesthetic, cinematic lighting, no text in the image, 16:9 aspect ratio.`,
+        undefined,
+        undefined,
+        "google/gemini-2.5-flash-lite"
+      );
+
+      const imagePrompt = typeof promptResult === "string" ? promptResult.trim() : `Professional training cover about ${path.name}`;
+
+      const imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3.1-flash-image-preview",
+          messages: [{ role: "user", content: imagePrompt }],
+          modalities: ["image", "text"],
+        }),
+      });
+
+      if (!imgResp.ok) { results.push({ path_id: path.id, name: path.name, success: false, error: `HTTP ${imgResp.status}` }); continue; }
+
+      const imgData = await imgResp.json();
+      const base64Url = imgData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      if (!base64Url) { results.push({ path_id: path.id, name: path.name, success: false, error: "No image" }); continue; }
+
+      const base64Data = base64Url.replace(/^data:image\/\w+;base64,/, "");
+      const imageBytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+      const fileName = `covers/${path.id}.png`;
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("academy-assets")
+        .upload(fileName, imageBytes, { contentType: "image/png", upsert: true });
+      if (uploadErr) { results.push({ path_id: path.id, name: path.name, success: false, error: uploadErr.message }); continue; }
+
+      const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}`;
+      await supabase.from("academy_paths").update({ cover_image_url: publicUrl }).eq("id", path.id);
+
+      results.push({ path_id: path.id, name: path.name, success: true });
+    } catch (e) {
+      results.push({ path_id: path.id, name: path.name, success: false, error: e instanceof Error ? e.message : "Unknown" });
+    }
+  }
+
+  return new Response(JSON.stringify({ success: true, total: paths?.length || 0, results }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
