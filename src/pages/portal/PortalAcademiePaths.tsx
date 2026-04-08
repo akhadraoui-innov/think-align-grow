@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   Route, Plus, Pencil, Trash2, Save, Clock, BookOpen, Sparkles,
   Loader2, Search, LayoutGrid, List, GraduationCap, Target,
-  Users, FileText, HelpCircle, CheckCircle2, AlertTriangle, Award
+  Users, FileText, HelpCircle, CheckCircle2, AlertTriangle, Award, ImageIcon
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
