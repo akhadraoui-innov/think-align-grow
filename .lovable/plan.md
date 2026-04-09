@@ -1,145 +1,189 @@
 
-# Audit critique — Module Business & Revenue vs Plan
 
-## Grille de notation
+# Plan — Refonte stratégique du module Business & Revenue
 
-| Critère | Score | Verdict |
-|---------|-------|---------|
-| **Architecture / Config** | 8/10 | OK — `businessConfig.ts` centralisé, types bien définis |
-| **Routing / Intégration** | 9/10 | OK — Route, sidebar, breadcrumb en place |
-| **Onglet 1 — Overview** | 6/10 | Défauts majeurs |
-| **Onglet 2 — Offre** | 7/10 | Correct mais incomplet |
-| **Onglet 3 — Pricing** | 7/10 | Bon mais manques |
-| **Onglet 4 — Channels** | 6/10 | Roadmap statique, funnel basique |
-| **Onglet 5 — Marché** | 7/10 | Personas/trends statiques |
-| **Onglet 6 — Partenaires** | 5/10 | Pipeline non interactif |
-| **Onglet 7 — Enterprise** | 7/10 | Use cases statiques |
-| **Onglet 8 — Simulateur** | 8/10 | Le meilleur, quelques manques |
-| **UX Premium** | 4/10 | Aucune animation Framer Motion |
-| **TOTAL** | **58/100** | Passable — loin du plan |
+## Diagnostic expert (Revenue Management / CFO / Product Owner)
 
----
+### Problèmes critiques de contenu et de méthode
 
-## Défauts critiques par onglet
+**1. Pricing naïf et dangereux en marché IA incertain**
+- Prix Pro fixe à 149€/mois sans justification par la valeur (value-based pricing absent)
+- Aucune modélisation du coût réel des tokens IA (GPT-4, Gemini) qui représentent 30-60% du COGS variable
+- Pas de scénario "token price shock" (+300% comme GPT-4 → GPT-4o pricing shifts)
+- Enterprise "sur devis" sans grille indicative — impossible de piloter un forecast
+- Pas de pricing par siège vs par usage vs hybrid — le marché SaaS évolue vers usage-based
+- Crédits IA à coût fixe (1, 2, 5) sans lien avec le coût réel des appels LLM
 
-### Overview (6/10)
-- **KPIs hardcodés** : `value: "6"`, `value: "11"` — le plan exigeait `useAdminStats` (données réelles DB)
-- **Pas de glassmorphism** sur les KPI cards (juste `bg-background/60 backdrop-blur` sans bordures translucides premium)
-- **BMC** : pas de réordonnancement des items (plan demandait drag & drop / réordonner)
-- **Bug UX** : un seul `newItem` state partagé entre BMC et SWOT — si on édite un bloc BMC puis un quadrant SWOT, le texte se transfere
-- **Pas d'introduction ni de synthèse** (plan demandait intro + synthèse par section)
+**2. Simulateur incomplet pour un CFO**
+- Pas de modélisation des coûts IA (tokens consommés × prix par token)
+- Pas de runway (cash disponible ÷ burn rate mensuel)
+- Pas de cohort analysis (rétention par cohorte mensuelle)
+- Pas de scenario "worst case" avec effondrement marché ou hausse des coûts IA
+- Pas de sensibilité : quel paramètre a le plus d'impact sur le break-even ?
+- P&L trop simplifié : pas de distinction COGS / OPEX / marge brute / marge nette
 
-### Offre (7/10)
-- **Prix non éditable inline** : le `priceRange` est affiché en texte brut, pas de champ éditable
-- **Pas de segments cochables** : le plan demandait des checkboxes par segment, on a juste la matrice
-- **Pas de différenciation vs concurrence** (mentionné dans le plan)
+**3. Marché : analyse superficielle pour un marché en rupture**
+- TAM/SAM/SOM statiques sans justification méthodologique
+- Aucune analyse concurrentielle (qui sont les vrais concurrents ? 360Learning, Docebo+IA, Coursera for Business, McKinsey Solve)
+- Pas de matrice de positionnement (prix × richesse fonctionnelle)
+- Trends figées en `const` — non éditables et non sourcées
+- Pas de section "Disruptions IA" : agents autonomes, AI-native learning, commoditisation des LLM
+- Pas d'analyse build vs buy pour les prospects
 
-### Pricing (7/10)
-- **Ajout/suppression de plans** : ABSENT — le plan demandait `ajouter/supprimer des plans`
-- **Features éditables inline** : ABSENT — les features sont en lecture seule
-- **Comparateur benchmark** : ABSENT — plan demandait "toggle pour afficher un benchmark concurrent"
-- **avgUsagePerUser non éditable** dans la table crédits
+**4. Partners : modèle économique incomplet**
+- Revenue share calculé sur 149€/mois uniquement — ignore Enterprise et crédits
+- `tiers` non éditables (`const [tiers] = useState` sans `setTiers`)
+- Pipeline Kanban statique — pas d'ajout/suppression de partenaires
+- Pas de modèle d'incentive (MDF, co-marketing budget, deal registration)
 
-### Channels (6/10)
-- **Roadmap 100% statique** : le plan demandait "phases déplaçables, milestones éditables" — c'est du JSX en dur
-- **Funnel** : les stages sont éditables OK mais pas les noms de stages
-- **Pas d'ajout/retrait de canaux** (plan le demandait)
-- **Total share** : pas de mécanisme de rééquilibrage automatique à 100%
+**5. Risques non modélisés**
+- AUCUNE section risques avec probabilité × impact
+- Pas de contingency plan si un fournisseur IA change ses prix ou API
+- Pas de dépendance technologique cartographiée (OpenAI, Supabase, Lovable)
+- Pas de risque réglementaire (AI Act, RGPD, certifications QUALIOPI)
 
-### Marché (7/10)
-- **Personas figés** : const en dur, pas dans `useState`, non éditables (plan : "personas décideurs")
-- **Trends figées** : même problème
-- **Visualisation concentrique** : fonctionne mais les labels se chevauchent avec `position: absolute` + `marginTop` hack — fragile
-
-### Partenaires (5/10) — Le plus faible
-- **`tiers` non éditable** : `const [tiers] = useState` — pas de `setTiers`, les commissions et paliers des tiers ne sont pas modifiables
-- **Pipeline Kanban non interactif** : pas de drag & drop, pas d'ajout de partenaire, données statiques hardcodées
-- **Revenue share calculator** : calcul basé uniquement sur 149€/mois (Pro) — ne prend pas en compte Enterprise ni les tiers variables
-
-### Enterprise (7/10)
-- **Use cases statiques** : const en dur, scoring non éditable (plan demandait "scoring d'opportunité éditable")
-- **Qualification MEDDIC** : ABSENTE du plan mais mentionnée comme attendue
-
-### Simulateur (8/10) — Le meilleur
-- **Multi-scénarios comparables** : OK, bien implémenté
-- **Export CSV** : OK
-- **P&L** : OK
-- **Manque** : pas de scénario "Custom" libre (4ème slot)
-- **Manque** : pas de calcul du runway
-- **Manque** : pas de AreaChart "revenus cumulés" (seulement LineChart MRR et BarChart P&L)
+**6. Bugs et lacunes techniques persistants**
+- `newItem` toujours partagé entre BMC et SWOT (bug #1 du plan précédent — non corrigé)
+- `MetricTooltip.tsx` référencé dans le plan mais n'existe pas
+- KPIs Overview toujours hardcodés (pas `useAdminStats`)
+- Roadmap Channels toujours en `const` statique
+- Use cases Enterprise toujours en `const` statique
 
 ---
 
-## Défauts transversaux
+## Plan de refonte — 42 actions
 
-### UX Premium — 4/10
-1. **Framer Motion** : ZÉRO animation — le plan demandait "Animations Framer Motion sur les transitions de scénarios et les graphiques"
-2. **Glassmorphism** : Quasi absent — juste `backdrop-blur` basique, pas de `backdrop-blur-xl`, pas de `bg-white/5 border-white/10`
-3. **Tooltips contextuels** : AUCUN tooltip explicatif sur les métriques business (plan demandait "Tooltips contextuels sur chaque métrique avec explication business")
-4. **Color coding** : Partiellement fait (vert pour positif, rouge pour risque) mais pas systématique
-5. **Responsive** : Correct mais non testé en profondeur
+### Phase 1 — Modèle économique réaliste (Pricing + Coûts IA)
 
-### Bug fonctionnel
-- **`newItem` partagé** : un seul `useState("")` pour `newItem` dans Overview, utilisé à la fois par BMC et SWOT. Si on tape dans un bloc BMC et switch vers un quadrant SWOT, le texte est conservé de façon non intentionnelle.
+**1. Pricing : passer au value-based pricing**
+- Ajouter dans `businessConfig.ts` : `tokenCostPerAction` (coût réel IA en €), `marginTarget` (marge cible %), `pricingModel` (seat/usage/hybrid)
+- Pricing tab : section "Cost of AI" avec sliders par action (coût token input/output, nb tokens moyen par action)
+- Calcul automatique : COGS IA par user/mois, marge brute par plan, seuil de rentabilité par plan
+- Toggle pricing model : "Par siège" vs "Usage-based" vs "Hybrid" avec simulation comparative
+
+**2. Pricing : grille Enterprise structurée**
+- Remplacer "Sur devis" par une grille paramétrable : prix par siège (tranches 100/500/1000+), minimum annuel, remises volume
+
+**3. Pricing : ajout/suppression de plans + features éditables**
+- Boutons "Ajouter un plan" / "Supprimer" sur chaque plan
+- Features en liste éditable (ajouter/retirer/réordonner)
+- `avgUsagePerUser` éditable dans la table crédits
+
+### Phase 2 — Simulateur CFO-grade
+
+**4. Coûts IA dynamiques dans le simulateur**
+- Nouveau slider : "Coût moyen token ($/1M tokens)" avec presets (GPT-4o: $5, Gemini Flash: $0.15, etc.)
+- Calcul : tokens/user/mois × coût token = COGS IA variable
+- Scenario "token price shock" : +100%, +200%, +500%
+
+**5. P&L structuré**
+- Séparer : Revenus (MRR SaaS + Crédits + Enterprise) / COGS (infra + IA tokens) / Marge brute / OPEX (salaires, marketing, support) / EBITDA / Marge nette
+- Table P&L mensuelle sur 36 mois, pas juste un BarChart
+
+**6. Runway et trésorerie**
+- Input : trésorerie initiale (slider)
+- Output : runway en mois = trésorerie ÷ burn rate
+- Alerte visuelle si runway < 6 mois
+
+**7. Analyse de sensibilité**
+- Tornado chart : quel paramètre (churn, ARPU, growth, token cost) impacte le plus le break-even ?
+- Variation ±20% de chaque paramètre
+
+**8. Cohort retention**
+- Heatmap : rétention par cohorte mensuelle (M0-M12)
+- Input : courbe de rétention paramétrable (mois 1: X%, mois 3: Y%, mois 12: Z%)
+
+### Phase 3 — Marché et concurrence
+
+**9. Matrice concurrentielle interactive**
+- Axes : Prix (Y) × Fonctionnalités (X)
+- Positionnement de 6-8 concurrents (éditables) + GROWTHINNOV
+- ScatterChart Recharts interactif
+
+**10. Section "Disruptions & Risques IA"**
+- Cards éditables : Agent autonomes, commoditisation LLM, shift usage-based, AI Act
+- Pour chaque : probabilité (slider), impact (slider), mitigation (texte éditable)
+- Score de risque global calculé
+
+**11. Analyse Build vs Buy**
+- Comparateur pour prospects : coût de développer en interne vs acheter la plateforme
+- Inputs : nb développeurs, salaire moyen, durée projet, maintenance annuelle
+- Output : TCO 3 ans build vs buy
+
+**12. Trends éditables**
+- Déplacer `trends` et `personas` dans `useState` avec édition inline
+
+### Phase 4 — Partners et Enterprise
+
+**13. Partners : `setTiers` + édition commissions**
+- Rendre les tiers éditables (sliders commission, benefits ajoutables)
+
+**14. Partners : Pipeline interactif**
+- Ajout/suppression de partenaires dans le Kanban
+- Input texte + bouton par colonne
+
+**15. Partners : Revenue share multi-produit**
+- Calcul basé sur mix Pro + Enterprise + Crédits (pas juste 149€)
+
+**16. Enterprise : Use cases éditables + scoring**
+- Déplacer `useCases` dans `useState`, scoring éditable via slider
+
+**17. Enterprise : MEDDIC qualification framework**
+- 6 critères MEDDIC avec scoring par prospect (Metrics, Economic Buyer, Decision Criteria, Decision Process, Identify Pain, Champion)
+
+### Phase 5 — Overview et transversal
+
+**18. Fix bug `newItem` partagé**
+- Séparer en `newBmcItem` + `newSwotItem`
+
+**19. KPIs depuis `useAdminStats`**
+- Remplacer les valeurs hardcodées par des requêtes DB
+
+**20. Créer `MetricTooltip.tsx`**
+- Tooltip avec explication business sur chaque métrique clé
+
+**21. Channels : roadmap dans `useState`**
+- Phases éditables (titre, items ajoutables/supprimables)
+
+**22. Channels : ajout/retrait de canaux**
+- Bouton "Ajouter un canal" avec rééquilibrage auto à 100%
+
+### Phase 6 — Nouvelles sections stratégiques
+
+**23. Onglet "Risques" (nouveau)**
+- Matrice probabilité × impact
+- Catégories : Technologique, Marché, Réglementaire, Financier, RH
+- Plan de mitigation éditable par risque
+- Score de risque global avec jauge visuelle
+
+**24. Section "Unit Economics avancés" dans Pricing**
+- Net Revenue Retention (NRR)
+- Gross Margin par plan
+- Magic Number (sales efficiency)
+- Rule of 40 (growth + margin)
 
 ---
-
-## Plan de correction — 28 actions prioritaires
-
-### Phase 1 — Bugs + Architecture (5 actions)
-1. Séparer `newItem` en `newBmcItem` / `newSwotItem` dans Overview
-2. Rendre `tiers` éditable dans Partners (`setTiers` + sliders commission)
-3. Ajouter `framer-motion` au projet (déjà dans les deps ?)
-4. Créer un composant `<MetricTooltip>` réutilisable
-5. Corriger la visualisation concentrique TAM/SAM/SOM (labels positionnés proprement)
-
-### Phase 2 — Dynamisation des données statiques (8 actions)
-6. Overview : KPIs depuis `useAdminStats` au lieu de valeurs hardcodées
-7. Overview : intro + synthèse en texte éditable
-8. Channels : roadmap dans `useState` avec édition inline
-9. Channels : ajout/retrait de canaux
-10. Market : personas dans `useState` + édition inline
-11. Market : trends dans `useState`
-12. Enterprise : use cases dans `useState` + scoring éditable
-13. Partners : pipeline Kanban avec ajout de partenaires
-
-### Phase 3 — Features manquantes du plan (8 actions)
-14. Pricing : bouton ajout/suppression de plans
-15. Pricing : features éditables inline par plan
-16. Pricing : `avgUsagePerUser` éditable
-17. Pricing : comparateur benchmark toggle
-18. Offer : `priceRange` éditable inline
-19. Simulator : ajouter scénario "Custom" libre
-20. Simulator : calcul runway + AreaChart revenus cumulés
-21. Enterprise : section MEDDIC
-
-### Phase 4 — UX Premium (7 actions)
-22. Wraper chaque section avec `motion.div` (fade + slide)
-23. Glassmorphism premium sur KPI cards (blur-xl, border-white/10)
-24. `<MetricTooltip>` sur toutes les métriques clés (LTV/CAC, MRR, ROI, break-even)
-25. Transitions animées sur changement de scénario (Simulateur)
-26. Hover effects premium sur les cards (scale, shadow, glow)
-27. Empty states attractifs si une section est vide
-28. Introduction et synthèse en haut/bas de chaque onglet
-
-### Phase 5 — Polish
-- Responsive audit mobile
-- Dark mode vérification
-- Accessibilité (aria-labels sur les sliders)
 
 ## Fichiers impactés
 
-| Fichier | Actions |
-|---------|---------|
-| `BusinessOverviewTab.tsx` | #1, #6, #7, #22, #23, #24 |
-| `BusinessOfferTab.tsx` | #18, #22 |
-| `BusinessPricingTab.tsx` | #14, #15, #16, #17, #22, #24 |
-| `BusinessChannelsTab.tsx` | #8, #9, #22 |
-| `BusinessMarketTab.tsx` | #5, #10, #11, #22 |
-| `BusinessPartnersTab.tsx` | #2, #13, #22 |
-| `BusinessEnterpriseTab.tsx` | #12, #21, #22 |
-| `BusinessSimulatorTab.tsx` | #19, #20, #22, #24, #25 |
-| Nouveau : `MetricTooltip.tsx` | #4 |
+| Fichier | Actions clés |
+|---------|-------------|
+| `businessConfig.ts` | Ajouter types : `TokenCost`, `Competitor`, `Risk`, `MEDDICScore`, `CohortData`. Ajouter defaults concurrents, risques, coûts tokens |
+| `BusinessOverviewTab.tsx` | Fix `newItem` (#18), KPIs depuis `useAdminStats` (#19), MetricTooltip (#20) |
+| `BusinessPricingTab.tsx` | Cost of AI section (#1), Enterprise grille (#2), CRUD plans (#3), Unit Economics avancés (#24) |
+| `BusinessSimulatorTab.tsx` | Token costs (#4), P&L structuré (#5), Runway (#6), Sensibilité tornado (#7), Cohorts (#8) |
+| `BusinessMarketTab.tsx` | Matrice concurrentielle (#9), Disruptions (#10), Build vs Buy (#11), Trends éditables (#12) |
+| `BusinessPartnersTab.tsx` | `setTiers` (#13), Pipeline interactif (#14), Revenue multi-produit (#15) |
+| `BusinessEnterpriseTab.tsx` | Use cases éditables (#16), MEDDIC (#17) |
+| `BusinessChannelsTab.tsx` | Roadmap `useState` (#21), Ajout canaux (#22) |
+| Nouveau : `MetricTooltip.tsx` | Composant tooltip contextuel (#20) |
 
-## Priorité
-Phase 1 (bugs) → Phase 2 (dynamisation) → Phase 3 (features) → Phase 4 (UX) → Phase 5 (polish)
+## Ordre d'exécution
+1. `businessConfig.ts` (types + defaults étendus)
+2. Pricing (cost of AI + plans CRUD + unit economics)
+3. Simulator (P&L structuré + runway + sensibilité + cohorts)
+4. Market (concurrence + risques + build vs buy)
+5. Partners + Enterprise (édition + MEDDIC)
+6. Overview + Channels (bugs + dynamisation)
+7. MetricTooltip (transversal)
+
