@@ -101,6 +101,63 @@ export interface SWOTData {
 
 // ──── NEW TYPES ────
 
+export interface SetupFee {
+  id: string;
+  name: string;
+  minPrice: number;
+  maxPrice: number;
+  description: string;
+}
+
+export interface ServiceConfig {
+  id: string;
+  name: string;
+  type: "consulting" | "training" | "marketplace";
+  priceModel: string;
+  priceRange: string;
+  margin: number;
+  description: string;
+}
+
+export interface RevenueMix {
+  saas: number;
+  credits: number;
+  services: number;
+  partnership: number;
+}
+
+export interface PricingModelComparison {
+  model: "seat" | "usage" | "hybrid" | "caas";
+  label: string;
+  description: string;
+  pros: string[];
+  cons: string[];
+  bestFor: string[];
+}
+
+export interface EnterpriseTier {
+  id: string;
+  tier: string;
+  pricePerSeat: number;
+  minAnnual: number;
+  discount: number;
+}
+
+export interface EnterpriseOption {
+  id: string;
+  name: string;
+  price: number;
+  unit: string;
+  description: string;
+}
+
+export interface AcademyGroupTier {
+  id: string;
+  learners: string;
+  pricePerLearner: number;
+  engagement: string;
+}
+
 export interface TokenCost {
   id: string;
   action: string;
