@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { DEFAULT_PLANS, DEFAULT_CREDITS, DEFAULT_TOKEN_COSTS, type PlanConfig, type CreditAction, type TokenCost } from "./businessConfig";
 import { MetricTooltip } from "./MetricTooltip";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Check, Plus, Trash2, Cpu, DollarSign } from "lucide-react";
+import { Check, Plus, Trash2, X, Cpu, DollarSign } from "lucide-react";
 import { motion } from "framer-motion";
 
 type PricingModel = "seat" | "usage" | "hybrid";
