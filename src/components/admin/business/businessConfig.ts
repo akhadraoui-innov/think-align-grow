@@ -24,7 +24,7 @@ export interface ModuleConfig {
   delivery: string;
   priceRange: string;
   active: boolean;
-  segments: Record<string, number>; // segment → attractivity 1-3
+  segments: Record<string, number>;
 }
 
 export interface ChannelConfig {
@@ -97,6 +97,87 @@ export interface SWOTData {
   weaknesses: SWOTItem[];
   opportunities: SWOTItem[];
   threats: SWOTItem[];
+}
+
+// ──── NEW TYPES ────
+
+export interface TokenCost {
+  id: string;
+  action: string;
+  avgInputTokens: number;
+  avgOutputTokens: number;
+  costPer1MInput: number;   // $/1M tokens
+  costPer1MOutput: number;
+}
+
+export interface Competitor {
+  id: string;
+  name: string;
+  price: number;         // €/mois
+  features: number;      // score 1-10
+  category: string;
+  isUs?: boolean;
+}
+
+export interface BusinessRisk {
+  id: string;
+  name: string;
+  category: "tech" | "market" | "regulatory" | "financial" | "hr";
+  probability: number;  // 0-100
+  impact: number;        // 0-100
+  mitigation: string;
+}
+
+export interface MEDDICScore {
+  id: string;
+  prospectName: string;
+  metrics: number;
+  economicBuyer: number;
+  decisionCriteria: number;
+  decisionProcess: number;
+  identifyPain: number;
+  champion: number;
+}
+
+export interface CohortRow {
+  cohort: string;
+  m0: number;
+  m1: number;
+  m2: number;
+  m3: number;
+  m6: number;
+  m12: number;
+}
+
+export interface PersonaConfig {
+  id: string;
+  role: string;
+  painPoint: string;
+  budget: string;
+  decisionTime: string;
+}
+
+export interface TrendConfig {
+  id: string;
+  name: string;
+  cagr: string;
+  impact: "Très fort" | "Fort" | "Moyen" | "Faible";
+}
+
+export interface RoadmapPhase {
+  id: string;
+  phase: string;
+  title: string;
+  items: string[];
+  color: string;
+}
+
+export interface EntUseCaseConfig {
+  id: string;
+  sector: string;
+  opportunity: number;
+  modules: string[];
+  deal: string;
 }
 
 // ──── DEFAULTS ────
@@ -188,6 +269,7 @@ export const DEFAULT_SCENARIOS: ScenarioPreset[] = [
   { id: "conservative", name: "Conservateur", color: "hsl(142 76% 36%)", starterClients: 200, proClients: 30, enterpriseClients: 2, conversionRate: 5, churnRate: 8, growthRate: 5, fixedCosts: 15000, variableCostPerClient: 5 },
   { id: "realistic", name: "Réaliste", color: "hsl(var(--primary))", starterClients: 500, proClients: 80, enterpriseClients: 5, conversionRate: 10, churnRate: 5, growthRate: 10, fixedCosts: 25000, variableCostPerClient: 5 },
   { id: "ambitious", name: "Ambitieux", color: "hsl(262 83% 58%)", starterClients: 1000, proClients: 200, enterpriseClients: 15, conversionRate: 15, churnRate: 3, growthRate: 20, fixedCosts: 40000, variableCostPerClient: 4 },
+  { id: "custom", name: "Custom", color: "hsl(25 95% 53%)", starterClients: 300, proClients: 50, enterpriseClients: 3, conversionRate: 8, churnRate: 6, growthRate: 8, fixedCosts: 20000, variableCostPerClient: 5 },
 ];
 
 export const DEFAULT_BMC: BMCBlock[] = [
@@ -238,6 +320,95 @@ export const SEGMENT_LABELS: Record<string, string> = {
   pme: "PME",
 };
 
-export const DEFAULT_TAM = 50000; // M€
+export const DEFAULT_TAM = 50000;
 export const DEFAULT_SAM = 5000;
 export const DEFAULT_SOM = 50;
+
+// ──── NEW DEFAULTS ────
+
+export const DEFAULT_TOKEN_COSTS: TokenCost[] = [
+  { id: "coach", action: "Coach IA (chat)", avgInputTokens: 2000, avgOutputTokens: 800, costPer1MInput: 2.5, costPer1MOutput: 10 },
+  { id: "reflection", action: "Réflexion IA", avgInputTokens: 3000, avgOutputTokens: 1500, costPer1MInput: 2.5, costPer1MOutput: 10 },
+  { id: "deliverable", action: "Livrable (SWOT, BMC…)", avgInputTokens: 5000, avgOutputTokens: 3000, costPer1MInput: 2.5, costPer1MOutput: 10 },
+  { id: "simulator", action: "Session Simulateur (×5 turns)", avgInputTokens: 15000, avgOutputTokens: 5000, costPer1MInput: 2.5, costPer1MOutput: 10 },
+  { id: "cover", action: "Image couverture", avgInputTokens: 500, avgOutputTokens: 0, costPer1MInput: 40, costPer1MOutput: 0 },
+  { id: "analysis", action: "Analyse Challenge", avgInputTokens: 8000, avgOutputTokens: 4000, costPer1MInput: 2.5, costPer1MOutput: 10 },
+];
+
+export const DEFAULT_COMPETITORS: Competitor[] = [
+  { id: "c1", name: "360Learning", price: 8, features: 6, category: "LMS collaboratif" },
+  { id: "c2", name: "Docebo", price: 15, features: 7, category: "LMS Enterprise" },
+  { id: "c3", name: "Coursera for Business", price: 30, features: 5, category: "Content marketplace" },
+  { id: "c4", name: "McKinsey Solve", price: 0, features: 4, category: "Assessment" },
+  { id: "c5", name: "Klaxoon", price: 10, features: 5, category: "Workshop" },
+  { id: "c6", name: "GROWTHINNOV", price: 149, features: 9, category: "IA + Formation + Conseil", isUs: true },
+];
+
+export const DEFAULT_RISKS: BusinessRisk[] = [
+  { id: "r1", name: "Hausse brutale coût tokens LLM (+200%)", category: "tech", probability: 30, impact: 80, mitigation: "Multi-provider (OpenAI + Gemini + open-source), cache sémantique, négociation volume" },
+  { id: "r2", name: "LMS établis intègrent IA générative", category: "market", probability: 70, impact: 60, mitigation: "Différenciation par les 6 modules intégrés, vélocité produit, niche conseil+formation" },
+  { id: "r3", name: "AI Act impose certification des outils IA formation", category: "regulatory", probability: 50, impact: 50, mitigation: "Veille réglementaire, documentation conformité, partenariat juridique" },
+  { id: "r4", name: "Cash runway < 6 mois sans levée", category: "financial", probability: 40, impact: 90, mitigation: "Revenue-based growth, bridge financing, accélération pipeline Enterprise" },
+  { id: "r5", name: "Commoditisation des agents IA (build vs buy)", category: "market", probability: 60, impact: 70, mitigation: "Valeur dans le contenu propriétaire (400+ cartes, 35 secteurs UCM), pas juste la techno" },
+  { id: "r6", name: "Départ d'un membre clé de l'équipe tech", category: "hr", probability: 25, impact: 70, mitigation: "Documentation exhaustive, pair programming, equity vesting" },
+];
+
+export const DEFAULT_MEDDIC: MEDDICScore[] = [
+  { id: "m1", prospectName: "BNP Paribas — DRH", metrics: 8, economicBuyer: 7, decisionCriteria: 6, decisionProcess: 5, identifyPain: 9, champion: 7 },
+  { id: "m2", prospectName: "Capgemini — Innovation", metrics: 7, economicBuyer: 6, decisionCriteria: 8, decisionProcess: 7, identifyPain: 8, champion: 8 },
+  { id: "m3", prospectName: "EDF — Académie interne", metrics: 6, economicBuyer: 5, decisionCriteria: 7, decisionProcess: 4, identifyPain: 7, champion: 5 },
+];
+
+export const DEFAULT_COHORTS: CohortRow[] = [
+  { cohort: "Jan", m0: 100, m1: 85, m2: 78, m3: 72, m6: 60, m12: 48 },
+  { cohort: "Fév", m0: 100, m1: 88, m2: 80, m3: 75, m6: 63, m12: 50 },
+  { cohort: "Mar", m0: 100, m1: 82, m2: 75, m3: 70, m6: 58, m12: 45 },
+  { cohort: "Avr", m0: 100, m1: 90, m2: 84, m3: 78, m6: 65, m12: 52 },
+];
+
+export const DEFAULT_PERSONAS: PersonaConfig[] = [
+  { id: "p1", role: "DG / CEO", painPoint: "ROI de la transformation IA", budget: "Élevé", decisionTime: "3-6 mois" },
+  { id: "p2", role: "DRH", painPoint: "Montée en compétences IA des équipes", budget: "Moyen", decisionTime: "2-4 mois" },
+  { id: "p3", role: "DSI / CTO", painPoint: "Intégration IA dans les process", budget: "Élevé", decisionTime: "4-6 mois" },
+  { id: "p4", role: "CDO", painPoint: "Stratégie data & IA", budget: "Moyen-Élevé", decisionTime: "2-3 mois" },
+  { id: "p5", role: "Dir. Innovation", painPoint: "Identifier les cas d'usage IA à valeur", budget: "Moyen", decisionTime: "1-3 mois" },
+  { id: "p6", role: "Dir. Formation", painPoint: "Moderniser l'offre formation avec l'IA", budget: "Faible-Moyen", decisionTime: "1-2 mois" },
+];
+
+export const DEFAULT_TRENDS: TrendConfig[] = [
+  { id: "t1", name: "IA générative en entreprise", cagr: "35%", impact: "Très fort" },
+  { id: "t2", name: "Formation professionnelle digitale", cagr: "18%", impact: "Fort" },
+  { id: "t3", name: "Consulting-as-a-Service", cagr: "22%", impact: "Fort" },
+  { id: "t4", name: "Low-code / No-code", cagr: "25%", impact: "Moyen" },
+  { id: "t5", name: "Sustainability & ESG", cagr: "15%", impact: "Moyen" },
+];
+
+export const DEFAULT_ROADMAP: RoadmapPhase[] = [
+  { id: "rm1", phase: "M1-M3", title: "Fondations", items: ["Site web & SEO", "Contenu thought leadership", "Premiers partenaires", "Early adopters"], color: "bg-primary/10 border-primary/30" },
+  { id: "rm2", phase: "M4-M6", title: "Accélération", items: ["Campagnes inbound", "Programme partenaires", "Événements sectoriels", "Case studies"], color: "bg-emerald-500/10 border-emerald-500/30" },
+  { id: "rm3", phase: "M7-M12", title: "Scale", items: ["Expansion géographique", "Enterprise ABM", "Marketplace", "Affiliation"], color: "bg-purple-500/10 border-purple-500/30" },
+];
+
+export const DEFAULT_ENT_USE_CASES: EntUseCaseConfig[] = [
+  { id: "uc1", sector: "Banque & Assurance", opportunity: 95, modules: ["UCM", "Simulator", "Academy"], deal: "80-200K€" },
+  { id: "uc2", sector: "Industrie 4.0", opportunity: 80, modules: ["Workshop", "Challenge", "Academy"], deal: "50-150K€" },
+  { id: "uc3", sector: "Conseil & Audit", opportunity: 90, modules: ["Toolkits", "Workshop", "UCM"], deal: "30-100K€" },
+  { id: "uc4", sector: "Secteur public", opportunity: 60, modules: ["Academy", "Simulator"], deal: "40-120K€" },
+  { id: "uc5", sector: "Retail & Distribution", opportunity: 70, modules: ["UCM", "Academy", "Challenge"], deal: "40-100K€" },
+];
+
+export const RISK_CATEGORY_LABELS: Record<string, string> = {
+  tech: "Technologique",
+  market: "Marché",
+  regulatory: "Réglementaire",
+  financial: "Financier",
+  hr: "RH",
+};
+
+export const RISK_CATEGORY_COLORS: Record<string, string> = {
+  tech: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+  market: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+  regulatory: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+  financial: "bg-destructive/10 text-destructive border-destructive/20",
+  hr: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+};
