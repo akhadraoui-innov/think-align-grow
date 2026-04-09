@@ -493,3 +493,97 @@ export const RISK_CATEGORY_COLORS: Record<string, string> = {
   financial: "bg-destructive/10 text-destructive border-destructive/20",
   hr: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
 };
+
+// ──── PRICING STRATEGY DEFAULTS ────
+
+export const DEFAULT_PRICING_MODELS: PricingModelComparison[] = [
+  {
+    model: "seat",
+    label: "Par siège",
+    description: "Facturation mensuelle fixe par utilisateur actif",
+    pros: ["Revenus prévisibles", "Simple à comprendre", "Facile à budgéter pour le client"],
+    cons: ["Risque de shelfware", "Pas aligné sur la valeur", "Frein à l'adoption large"],
+    bestFor: ["PME", "Équipes fixes", "Budgets prévisibles"],
+  },
+  {
+    model: "usage",
+    label: "Usage-based",
+    description: "Pay-per-use basé sur les crédits IA consommés",
+    pros: ["Aligné sur la valeur", "Barrière d'entrée basse", "Scalable naturellement"],
+    cons: ["Revenus imprévisibles", "Difficile à budgéter", "Risque de sticker shock"],
+    bestFor: ["Startups", "POC / Pilotes", "Usage variable"],
+  },
+  {
+    model: "hybrid",
+    label: "Hybride (siège + crédits)",
+    description: "Abonnement de base + crédits IA à l'usage au-delà du quota",
+    pros: ["MRR prévisible + upside usage", "Meilleur compromis", "Encourage l'adoption"],
+    cons: ["Plus complexe à expliquer", "Nécessite un bon quota de base"],
+    bestFor: ["ETI", "Grands comptes", "Scale-up"],
+  },
+  {
+    model: "caas",
+    label: "CaaS (Consulting-as-a-Service)",
+    description: "Plateforme + services d'accompagnement intégrés",
+    pros: ["Ticket moyen élevé", "Relation client forte", "Différenciation"],
+    cons: ["Moins scalable", "Dépendant des consultants", "Marge variable"],
+    bestFor: ["Cabinets de conseil", "Transformation", "Grands projets"],
+  },
+];
+
+export const DEFAULT_SETUP_FEES: SetupFee[] = [
+  { id: "sf1", name: "Onboarding standard", minPrice: 0, maxPrice: 0, description: "Self-service avec tutoriels et documentation" },
+  { id: "sf2", name: "Onboarding accompagné", minPrice: 2000, maxPrice: 5000, description: "3 sessions de formation + configuration assistée" },
+  { id: "sf3", name: "Intégration SSO/SAML", minPrice: 3000, maxPrice: 8000, description: "Configuration SSO, provisioning utilisateurs, tests" },
+  { id: "sf4", name: "Custom branding", minPrice: 2000, maxPrice: 5000, description: "Logo, couleurs, domaine personnalisé, emails" },
+  { id: "sf5", name: "Formation admins", minPrice: 3000, maxPrice: 6000, description: "Formation des administrateurs et super-users (2 jours)" },
+  { id: "sf6", name: "Intégration LMS / SIRH", minPrice: 5000, maxPrice: 15000, description: "Connecteurs API, synchronisation données, tests E2E" },
+  { id: "sf7", name: "Migration de données", minPrice: 3000, maxPrice: 10000, description: "Import parcours, utilisateurs, historique depuis l'ancien système" },
+];
+
+export const DEFAULT_ENTERPRISE_TIERS: EnterpriseTier[] = [
+  { id: "et1", tier: "100-250 sièges", pricePerSeat: 39, minAnnual: 46800, discount: 74 },
+  { id: "et2", tier: "250-500 sièges", pricePerSeat: 29, minAnnual: 87000, discount: 81 },
+  { id: "et3", tier: "500-1000 sièges", pricePerSeat: 19, minAnnual: 114000, discount: 87 },
+  { id: "et4", tier: "1000+ sièges", pricePerSeat: 14, minAnnual: 168000, discount: 91 },
+];
+
+export const DEFAULT_ENTERPRISE_OPTIONS: EnterpriseOption[] = [
+  { id: "eo1", name: "API Premium", price: 500, unit: "€/mois", description: "Rate limits étendus, webhooks avancés, sandbox" },
+  { id: "eo2", name: "SLA renforcé (99.9%)", price: 300, unit: "€/mois", description: "Garantie de disponibilité, temps de réponse < 4h" },
+  { id: "eo3", name: "Support dédié", price: 800, unit: "€/mois", description: "Account manager, Slack privé, reviews trimestrielles" },
+  { id: "eo4", name: "Analytics avancés", price: 200, unit: "€/mois", description: "Dashboards custom, exports BI, API analytics" },
+  { id: "eo5", name: "Data residency EU", price: 150, unit: "€/mois", description: "Données hébergées exclusivement en Europe" },
+];
+
+export const DEFAULT_ACADEMY_GROUP_TIERS: AcademyGroupTier[] = [
+  { id: "ag1", learners: "50-200", pricePerLearner: 45, engagement: "Annuel" },
+  { id: "ag2", learners: "200-500", pricePerLearner: 35, engagement: "Annuel" },
+  { id: "ag3", learners: "500-1000", pricePerLearner: 25, engagement: "Annuel" },
+  { id: "ag4", learners: "1000+", pricePerLearner: 18, engagement: "Pluriannuel" },
+];
+
+export const DEFAULT_SERVICES: ServiceConfig[] = [
+  { id: "sv1", name: "Workshop animé", type: "consulting", priceModel: "Jour", priceRange: "1 500 - 5 000€", margin: 70, description: "Animation de workshops stratégiques avec la plateforme (1/2 à 2 jours)" },
+  { id: "sv2", name: "Audit stratégique IA", type: "consulting", priceModel: "Forfait", priceRange: "5 000 - 15 000€", margin: 65, description: "Diagnostic de maturité IA, cartographie des cas d'usage, roadmap" },
+  { id: "sv3", name: "Accompagnement transformation", type: "consulting", priceModel: "Mensuel", priceRange: "3 000 - 8 000€/mois", margin: 60, description: "Suivi mensuel, coaching direction, pilotage KPIs" },
+  { id: "sv4", name: "Programme certifiant sur mesure", type: "training", priceModel: "Par participant", priceRange: "500 - 2 000€", margin: 55, description: "Parcours co-construits, certification personnalisée, évaluation" },
+  { id: "sv5", name: "Bootcamp IA (3-5 jours)", type: "training", priceModel: "Par participant", priceRange: "1 500 - 3 000€", margin: 50, description: "Formation intensive avec simulateur et challenges pratiques" },
+  { id: "sv6", name: "Marketplace contenus", type: "marketplace", priceModel: "Commission", priceRange: "15-30%", margin: 80, description: "Contenus de formateurs tiers vendus sur la plateforme" },
+];
+
+export const DEFAULT_REVENUE_MIX: RevenueMix = {
+  saas: 45,
+  credits: 25,
+  services: 20,
+  partnership: 10,
+};
+
+export const VALUE_PRICE_MATRIX = [
+  { module: "Academy", valueScore: 9, priceContribution: 35 },
+  { module: "Simulateur", valueScore: 8, priceContribution: 20 },
+  { module: "Workshop", valueScore: 7, priceContribution: 15 },
+  { module: "Challenge", valueScore: 6, priceContribution: 10 },
+  { module: "UCM (AI Value Builder)", valueScore: 9, priceContribution: 15 },
+  { module: "Toolkits", valueScore: 5, priceContribution: 5 },
+];
