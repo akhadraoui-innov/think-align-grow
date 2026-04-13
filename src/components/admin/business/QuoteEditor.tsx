@@ -230,25 +230,6 @@ export function QuoteEditor({ value, onChange, prospectName, docRef, createdAt, 
       {/* ── Editor ── */}
       <EditorContent editor={editor} />
 
-      {/* ── Bubble menu for table context ── */}
-      {editor && (
-        <BubbleMenu editor={editor} tippyOptions={{ duration: 150, placement: "top" }}
-          shouldShow={({ editor: e }) => e.isActive("table")}
-        >
-          <div className="flex items-center gap-1 rounded-lg bg-background border border-border shadow-lg px-2 py-1.5">
-            <Button type="button" size="sm" variant="ghost" className="h-7 text-[11px] gap-1" onClick={() => editor.chain().focus().addRowAfter().run()}>
-              <RowsIcon className="h-3 w-3" />Ligne
-            </Button>
-            <Button type="button" size="sm" variant="ghost" className="h-7 text-[11px] gap-1" onClick={() => editor.chain().focus().addColumnAfter().run()}>
-              <Columns3 className="h-3 w-3" />Colonne
-            </Button>
-            <Separator orientation="vertical" className="h-4" />
-            <Button type="button" size="sm" variant="ghost" className="h-7 text-[11px] gap-1 text-destructive hover:text-destructive" onClick={() => editor.chain().focus().deleteTable().run()}>
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </BubbleMenu>
-      )}
     </div>
   );
 }
