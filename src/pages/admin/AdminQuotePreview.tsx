@@ -342,6 +342,12 @@ export default function AdminQuotePreview() {
                 {/* SaaS */}
                 <div className="space-y-2">
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Abonnement SaaS</p>
+                  {totals.discountPercent > 0 && (
+                    <>
+                      <div className="flex justify-between"><span className="text-muted-foreground">MRR brut</span><span className="text-muted-foreground line-through">{totals.mrrBeforeDiscount.toLocaleString()}€</span></div>
+                      <div className="flex justify-between text-emerald-600"><span>Remise -{totals.discountPercent}%</span><span className="font-semibold">-{totals.discountAmount.toLocaleString()}€/an</span></div>
+                    </>
+                  )}
                   <div className="flex justify-between"><span className="text-muted-foreground">MRR</span><span className="font-bold text-foreground">{totals.mrr.toLocaleString()}€</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">ARR</span><span className="font-bold text-foreground">{totals.arr.toLocaleString()}€</span></div>
                 </div>
@@ -388,6 +394,11 @@ export default function AdminQuotePreview() {
                   <p className="text-[10px] text-muted-foreground text-center mt-1">
                     Engagement {quote.engagement_months} mois
                   </p>
+                  {totals.discountPercent > 0 && (
+                    <p className="text-[10px] text-emerald-600 text-center font-medium mt-0.5">
+                      Économie engagement : {totals.discountAmount.toLocaleString()}€/an
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
