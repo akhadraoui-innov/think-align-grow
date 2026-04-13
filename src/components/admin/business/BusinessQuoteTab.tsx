@@ -334,21 +334,19 @@ export function BusinessQuoteTab({
   };
 
   /* ---------- open preview ---------- */
-  const openPreview = () => {
-    navigate("/admin/business/quote-preview", {
-      state: {
-        id: activeId,
-        prospectName,
-        segment,
-        version,
-        status,
-        quoteMarkdown,
-        totals,
-        engagementMonths,
-        createdAt: quotes.find(q => q.id === activeId)?.created_at,
-        generatePayload: buildGeneratePayload(),
-      },
-    });
+  const openPreview = async () => {
+    // Save current state to DB first so preview reads fresh data
+    if (activeId && !locked) {
+      const payload = {
+        prospect_name: prospectName, segment, user_count: userCount, challenges,
+        sale_model_id: saleModelId, role_configs: roleConfigs as unknown as Record<string, unknown>[],
+        selected_setup_ids: selectedSetupIds, selected_service_ids: selectedServiceIds,
+        engagement_months: engagementMonths, totals, quote_markdown: quoteMarkdown,
+        status, version, parent_quote_id: parentQuoteId,
+      };
+      await supabase.from("business_quotes").update(payload as any).eq("id", activeId);
+    }
+    navigate("/admin/business/quote-preview", { state: { id: activeId } });
   };
 
   const updateRoleConfig = (roleId: string, field: keyof QuoteRoleConfig, value: string | number) => {
