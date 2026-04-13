@@ -1,81 +1,66 @@
 
 
-# Plan — Éditeur WYSIWYG premium avec widgets et mise en page corporate intégrée
+# Plan — Réorganisation du module Business & Revenue en 4 sections + Guide
 
-## Constat
+## Nouvelle architecture
 
-L'éditeur actuel est un champ texte riche basique : on peut mettre en gras ou ajouter un titre, mais le résultat reste "du texte". Il n'y a pas de mise en page corporate pendant l'édition, pas de blocs prêts à l'emploi, et aucune interactivité avancée.
-
-## Solution : un éditeur de document à blocs
-
-Transformer `QuoteEditor` en un éditeur "block-based" inspiré de Notion, où chaque section du document est un bloc visuel interactif. L'utilisateur compose son devis en insérant et réarrangeant des widgets préétablis, sans jamais toucher de code ni de balises.
-
-### Widgets préétablis (menu "+" flottant)
-
-Un bouton "+" apparaît entre chaque bloc (ou via un slash-command `/`). Il ouvre un menu de blocs :
-
-| Widget | Rendu |
-|--------|-------|
-| **Tableau investissement** | Table 4 colonnes préformatée (Poste, Détail, Fréquence, Montant HT) avec cellules éditables |
-| **Encadré KPI** | Carte colorée avec icône, chiffre clé et label (ex: MRR, ARR, économie) |
-| **Bloc remise** | Bandeau vert avec pourcentage et montant économisé |
-| **Section signature** | 2 colonnes : Client / Prestataire avec champs Date, Nom, Signature |
-| **Conditions générales** | Bloc accordéon pré-rempli, texte juridique éditable |
-| **Séparateur décoratif** | HR avec filet primaire et motif corporate |
-| **Citation / mise en avant** | Blockquote stylé avec bordure latérale colorée |
-
-### Mise en page corporate EN MODE ÉDITION
-
-L'éditeur est encadré par le même header et footer corporate que le mode aperçu :
-- **En-tête** : Logo GROWTHINNOV, référence document, date (lecture seule, au-dessus de la zone éditable)
-- **Pied** : Mention de confidentialité (lecture seule, en dessous)
-- Transition édition ↔ aperçu invisible : seule la toolbar et les handles de blocs apparaissent/disparaissent
-
-### Interactions avancées
-
-- **Drag & drop** : Chaque bloc a un handle à gauche pour réordonner les sections par glisser-déposer
-- **Menu contextuel** : Clic droit ou bouton "⋯" sur chaque bloc → Dupliquer, Supprimer, Déplacer haut/bas
-- **Slash commands** : Taper `/` dans un paragraphe vide affiche le menu de blocs (comme Notion)
-- **Gestion des tableaux** : Boutons inline pour ajouter/supprimer ligne ou colonne quand le curseur est dans un tableau
-
-### Toolbar restructurée
+Le module passe de 10 onglets plats à **5 sections principales** avec navigation verticale (sidebar interne ou onglets principaux), chacune contenant ses sous-onglets :
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│  H2  H3  │  B  I  │  • ─  1. │  ≡Table │  [+ Bloc ▾] │
-│           │        │          │ +row +col│              │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│  Business & Revenue                             │
+├──────────┬──────────────────────────────────────┤
+│ 1. Vue   │  [Vue d'ensemble]  [Offre]          │
+│ d'ensemble│                                     │
+├──────────┤──────────────────────────────────────┤
+│ 2. Business│  [Pricing]  [Channels]  [Marché]  │
+│    Model  │                                     │
+├──────────┤──────────────────────────────────────┤
+│ 3. Simula-│  [Partenaires]  [Enterprise]        │
+│    tions  │  [Simulateur]                       │
+├──────────┤──────────────────────────────────────┤
+│ 4. Devis  │  [Liste devis]  [Nouveau]           │
+│           │  [Synthèse]                         │
+├──────────┤──────────────────────────────────────┤
+│ 5. Guide  │  (contenu direct, pas de sous-tabs) │
+└──────────┴──────────────────────────────────────┘
 ```
 
-Le bouton **[+ Bloc]** ouvre un dropdown avec les widgets illustrés par des icônes et descriptions courtes.
+## Navigation UX
+
+- **Niveau 1** : 5 onglets principaux horizontaux (icône + label), style "pill" large
+- **Niveau 2** : sous-onglets secondaires, plus discrets, en dessous
+- Transition fluide : le contenu change sans rechargement de page
+
+## Chantier Devis — Sous-onglet "Liste devis"
+
+Nouveau composant dédié remplaçant la liste actuelle inline dans `BusinessQuoteTab` :
+- **Groupement par prospect** : chaque prospect est un `Collapsible` avec son nom en header
+- **Contenu collapsed** : tableau avec colonnes Date, Version, Statut (badge), Montant total
+- **Actions par ligne** : Ouvrir, Dupliquer, Supprimer
+- **Clic** : charge le devis dans le sous-onglet "Nouveau devis" (formulaire d'édition existant)
+
+## Chantier Devis — Sous-onglet "Synthèse" amélioré
+
+- **Filtres** : par prospect, par statut (draft/sent), par période (date picker), par fourchette de montant
+- KPIs agrégés filtrés : Total MRR pipeline, Nombre de devis, Valeur moyenne
 
 ## Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/admin/business/QuoteEditor.tsx` | **Réécrire** — Toolbar enrichie, menu d'insertion de blocs, slash commands, drag handles, gestion tableau inline |
-| `src/components/admin/business/quoteWidgets.ts` | **Créer** — Templates HTML des widgets (tableau investissement, KPI, signature, etc.) |
-| `src/pages/admin/AdminQuotePreview.tsx` | **Modifier** — Afficher header/footer corporate autour de l'éditeur en mode édition, passer les props métier |
-| `package.json` | **Modifier** — Ajouter `@tiptap/extension-placeholder` pour les slash commands |
-
-## Détail technique
-
-1. **`quoteWidgets.ts`** : Exporte un tableau `QUOTE_WIDGETS` avec pour chaque widget : `id`, `label`, `icon`, `description`, `html` (template HTML TipTap). Les templates utilisent les mêmes classes prose que le document.
-
-2. **`QuoteEditor.tsx`** :
-   - Ajouter `Placeholder` extension TipTap (affiche "Tapez / pour insérer un bloc...")
-   - Bouton dropdown "Insérer un bloc" dans la toolbar qui appelle `editor.commands.insertContent(widget.html)`
-   - Slash command listener : quand l'utilisateur tape `/`, filtrer et afficher les widgets dans un popover positionné au curseur
-   - Boutons contextuels tableau : quand `editor.isActive("table")`, afficher +ligne, +colonne, supprimer tableau
-   - Drag handles via TipTap DragHandle ou implémentation custom CSS
-
-3. **`AdminQuotePreview.tsx`** :
-   - En mode édition, wrapper l'éditeur dans le même letterhead + footer que le mode aperçu
-   - Passer `prospectName`, `docRef`, `date` au composant pour affichage
+| `src/pages/admin/AdminBusiness.tsx` | **Réécrire** — Navigation 2 niveaux (sections + sous-onglets) |
+| `src/components/admin/business/BusinessQuoteListTab.tsx` | **Créer** — Liste devis groupée par prospect avec collapsibles |
+| `src/components/admin/business/BusinessQuoteSynthesisTab.tsx` | **Créer** — Synthèse avec filtres (prospect, statut, période, montant) |
+| `src/components/admin/business/BusinessQuoteTab.tsx` | **Modifier** — Extraire la liste et la synthèse, ne garder que le formulaire de création/édition |
+| `src/components/admin/business/BusinessGuideTab.tsx` | **Modifier** — Rafraîchir le contenu pour refléter la nouvelle organisation |
+| `src/components/admin/AdminShell.tsx` | **Modifier** — Breadcrumb pour sous-routes business |
 
 ## Ordre d'exécution
-1. Créer `quoteWidgets.ts` avec les templates HTML
-2. Installer `@tiptap/extension-placeholder`
-3. Réécrire `QuoteEditor.tsx` avec widgets, slash commands, toolbar enrichie
-4. Modifier `AdminQuotePreview.tsx` pour afficher le cadre corporate en mode édition
+
+1. Restructurer `AdminBusiness.tsx` avec la navigation 2 niveaux
+2. Créer `BusinessQuoteListTab.tsx` (liste groupée par prospect)
+3. Créer `BusinessQuoteSynthesisTab.tsx` (synthèse + filtres)
+4. Refactorer `BusinessQuoteTab.tsx` en mode formulaire seul
+5. Mettre à jour le Guide et les breadcrumbs
 
