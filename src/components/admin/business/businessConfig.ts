@@ -579,6 +579,196 @@ export const DEFAULT_REVENUE_MIX: RevenueMix = {
   partnership: 10,
 };
 
+// ──── ROLE-BASED PRICING ────
+
+export interface RolePlanAccess {
+  moduleId: string;
+  enabled: boolean;
+  quotaType: "unlimited" | "monthly" | "yearly" | "per_use";
+  quotaLimit: number | null;
+}
+
+export interface RolePlanLimits {
+  parcours: number | null;
+  challenges: number | null;
+  workshops: number | null;
+  practices: number | null;
+  projects: number | null;
+  aiCalls: number | null;
+}
+
+export interface RolePlan {
+  id: string;
+  name: string;
+  billing: "monthly" | "annual" | "usage";
+  pricePerUser: number;
+  creditsIncluded: number;
+  creditExtraPrice: number;
+  moduleAccess: RolePlanAccess[];
+  limits: RolePlanLimits;
+}
+
+export interface PricingRole {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  plans: RolePlan[];
+  defaultPlanId: string;
+  valueLevel: "strategic" | "operational" | "consumption";
+}
+
+export interface SaleModel {
+  id: string;
+  label: string;
+  description: string;
+  includesSetup: boolean;
+  includesServices: boolean;
+}
+
+export interface QuoteRoleConfig {
+  roleId: string;
+  planId: string;
+  count: number;
+}
+
+const allModulesAccess = (enabled: boolean): RolePlanAccess[] =>
+  DEFAULT_MODULES.map(m => ({ moduleId: m.id, enabled, quotaType: "unlimited" as const, quotaLimit: null }));
+
+const selectModulesAccess = (ids: string[]): RolePlanAccess[] =>
+  DEFAULT_MODULES.map(m => ({ moduleId: m.id, enabled: ids.includes(m.id), quotaType: "unlimited" as const, quotaLimit: null }));
+
+export const DEFAULT_PRICING_ROLES: PricingRole[] = [
+  {
+    id: "decider",
+    name: "Décideur / Admin",
+    description: "Accès complet à tous les modules, analytics, configuration. Valeur stratégique maximale.",
+    icon: "Shield",
+    valueLevel: "strategic",
+    defaultPlanId: "decider-premium",
+    plans: [
+      {
+        id: "decider-essential",
+        name: "Admin Essential",
+        billing: "monthly",
+        pricePerUser: 99,
+        creditsIncluded: 50,
+        creditExtraPrice: 0.40,
+        moduleAccess: allModulesAccess(true),
+        limits: { parcours: null, challenges: null, workshops: null, practices: null, projects: null, aiCalls: null },
+      },
+      {
+        id: "decider-premium",
+        name: "Admin Premium",
+        billing: "monthly",
+        pricePerUser: 199,
+        creditsIncluded: 200,
+        creditExtraPrice: 0.30,
+        moduleAccess: allModulesAccess(true),
+        limits: { parcours: null, challenges: null, workshops: null, practices: null, projects: null, aiCalls: null },
+      },
+    ],
+  },
+  {
+    id: "manager",
+    name: "Manager / Lead",
+    description: "Pilotage d'équipe, facilitation workshops, analytics équipe. Valeur opérationnelle forte.",
+    icon: "Users",
+    valueLevel: "operational",
+    defaultPlanId: "manager-standard",
+    plans: [
+      {
+        id: "manager-standard",
+        name: "Manager",
+        billing: "monthly",
+        pricePerUser: 79,
+        creditsIncluded: 30,
+        creditExtraPrice: 0.45,
+        moduleAccess: selectModulesAccess(["academy", "simulator", "workshop", "challenge"]),
+        limits: { parcours: 20, challenges: 10, workshops: 10, practices: 30, projects: null, aiCalls: 200 },
+      },
+      {
+        id: "manager-plus",
+        name: "Manager+",
+        billing: "monthly",
+        pricePerUser: 129,
+        creditsIncluded: 80,
+        creditExtraPrice: 0.35,
+        moduleAccess: allModulesAccess(true),
+        limits: { parcours: null, challenges: null, workshops: 30, practices: null, projects: 10, aiCalls: 500 },
+      },
+    ],
+  },
+  {
+    id: "user",
+    name: "Utilisateur",
+    description: "Consommation de contenus, formation, simulations. Modèle annuel bas ou pay-as-you-use.",
+    icon: "User",
+    valueLevel: "consumption",
+    defaultPlanId: "user-annual",
+    plans: [
+      {
+        id: "user-annual",
+        name: "User Annuel",
+        billing: "annual",
+        pricePerUser: 19,
+        creditsIncluded: 10,
+        creditExtraPrice: 0.50,
+        moduleAccess: selectModulesAccess(["academy", "simulator", "challenge", "toolkits"]),
+        limits: { parcours: 5, challenges: 5, workshops: 0, practices: 15, projects: null, aiCalls: 50 },
+      },
+      {
+        id: "user-payg",
+        name: "User As-You-Use",
+        billing: "usage",
+        pricePerUser: 0,
+        creditsIncluded: 0,
+        creditExtraPrice: 0.50,
+        moduleAccess: selectModulesAccess(["academy", "simulator", "challenge", "toolkits"]),
+        limits: { parcours: 5, challenges: 5, workshops: 0, practices: 15, projects: null, aiCalls: 50 },
+      },
+    ],
+  },
+  {
+    id: "learner",
+    name: "Apprenant externe",
+    description: "Accès Academy uniquement. Licence groupe, formations certifiantes, parcours dédiés.",
+    icon: "GraduationCap",
+    valueLevel: "consumption",
+    defaultPlanId: "learner-standard",
+    plans: [
+      {
+        id: "learner-standard",
+        name: "Apprenant",
+        billing: "annual",
+        pricePerUser: 9,
+        creditsIncluded: 5,
+        creditExtraPrice: 0.60,
+        moduleAccess: selectModulesAccess(["academy"]),
+        limits: { parcours: 3, challenges: 0, workshops: 0, practices: 5, projects: null, aiCalls: 20 },
+      },
+      {
+        id: "learner-premium",
+        name: "Apprenant Premium",
+        billing: "annual",
+        pricePerUser: 19,
+        creditsIncluded: 15,
+        creditExtraPrice: 0.50,
+        moduleAccess: selectModulesAccess(["academy", "simulator", "challenge"]),
+        limits: { parcours: null, challenges: 3, workshops: 0, practices: 15, projects: null, aiCalls: 50 },
+      },
+    ],
+  },
+];
+
+export const DEFAULT_SALE_MODELS: SaleModel[] = [
+  { id: "saas-pure", label: "SaaS pur", description: "Abonnement plateforme seul, self-service", includesSetup: false, includesServices: false },
+  { id: "saas-conseil", label: "SaaS + Conseil", description: "Plateforme + missions d'accompagnement stratégique", includesSetup: true, includesServices: true },
+  { id: "academy-groupe", label: "Academy Groupe", description: "Licence bulk apprenants, parcours dédiés, certification", includesSetup: true, includesServices: false },
+  { id: "caas", label: "CaaS (Consulting-as-a-Service)", description: "Plateforme intégrée aux missions de conseil — la techno au service du conseil", includesSetup: true, includesServices: true },
+  { id: "partnership", label: "Partnership / White-label", description: "Revente, co-branding ou intégration white-label avec commission", includesSetup: true, includesServices: false },
+];
+
 export const VALUE_PRICE_MATRIX = [
   { module: "Academy", valueScore: 9, priceContribution: 35 },
   { module: "Simulateur", valueScore: 8, priceContribution: 20 },

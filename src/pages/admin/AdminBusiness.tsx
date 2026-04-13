@@ -1,6 +1,6 @@
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Package, DollarSign, Megaphone, Globe, Handshake, Building2, Calculator } from "lucide-react";
+import { BarChart3, Package, DollarSign, Megaphone, Globe, Handshake, Building2, Calculator, BookOpen, FileText } from "lucide-react";
 import { BusinessOverviewTab } from "@/components/admin/business/BusinessOverviewTab";
 import { BusinessOfferTab } from "@/components/admin/business/BusinessOfferTab";
 import { BusinessPricingTab } from "@/components/admin/business/BusinessPricingTab";
@@ -9,6 +9,8 @@ import { BusinessMarketTab } from "@/components/admin/business/BusinessMarketTab
 import { BusinessPartnersTab } from "@/components/admin/business/BusinessPartnersTab";
 import { BusinessEnterpriseTab } from "@/components/admin/business/BusinessEnterpriseTab";
 import { BusinessSimulatorTab } from "@/components/admin/business/BusinessSimulatorTab";
+import { BusinessGuideTab } from "@/components/admin/business/BusinessGuideTab";
+import { BusinessQuoteTab } from "@/components/admin/business/BusinessQuoteTab";
 
 const tabs = [
   { value: "overview", label: "Vue d'ensemble", icon: BarChart3 },
@@ -19,13 +21,14 @@ const tabs = [
   { value: "partners", label: "Partenaires", icon: Handshake },
   { value: "enterprise", label: "Enterprise", icon: Building2 },
   { value: "simulator", label: "Simulateur", icon: Calculator },
+  { value: "guide", label: "Guide", icon: BookOpen },
+  { value: "quote", label: "Devis IA", icon: FileText },
 ];
 
 export default function AdminBusiness() {
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
-        {/* Hero */}
         <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-border/50 p-8">
           <h1 className="text-3xl font-bold text-foreground tracking-tight">Business & Revenue</h1>
           <p className="text-muted-foreground mt-2 max-w-2xl">
@@ -51,6 +54,8 @@ export default function AdminBusiness() {
           <TabsContent value="partners"><BusinessPartnersTab /></TabsContent>
           <TabsContent value="enterprise"><BusinessEnterpriseTab /></TabsContent>
           <TabsContent value="simulator"><BusinessSimulatorTab /></TabsContent>
+          <TabsContent value="guide"><BusinessGuideTab /></TabsContent>
+          <TabsContent value="quote"><BusinessQuoteTab /></TabsContent>
         </Tabs>
       </div>
     </AdminShell>

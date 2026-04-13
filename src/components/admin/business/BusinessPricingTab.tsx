@@ -11,14 +11,16 @@ import {
   DEFAULT_PLANS, DEFAULT_CREDITS, DEFAULT_TOKEN_COSTS, DEFAULT_PRICING_MODELS,
   DEFAULT_SETUP_FEES, DEFAULT_ENTERPRISE_TIERS, DEFAULT_ENTERPRISE_OPTIONS,
   DEFAULT_ACADEMY_GROUP_TIERS, DEFAULT_SERVICES, DEFAULT_REVENUE_MIX,
+  DEFAULT_PRICING_ROLES, DEFAULT_MODULES,
   VALUE_PRICE_MATRIX,
   type PlanConfig, type CreditAction, type TokenCost, type SetupFee,
   type ServiceConfig, type RevenueMix, type EnterpriseTier, type EnterpriseOption,
-  type AcademyGroupTier, type PricingModelComparison,
+  type AcademyGroupTier, type PricingModelComparison, type PricingRole, type RolePlan,
 } from "./businessConfig";
 import { MetricTooltip } from "./MetricTooltip";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, Cell } from "recharts";
-import { Check, Plus, Trash2, X, Cpu, DollarSign, Target, Building2, Zap, Briefcase, TrendingUp, ArrowRight, AlertTriangle, Users } from "lucide-react";
+import { Check, Plus, Trash2, X, Cpu, DollarSign, Target, Building2, Zap, Briefcase, TrendingUp, ArrowRight, AlertTriangle, Users, Shield, GraduationCap, User } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type PricingModel = "seat" | "usage" | "hybrid" | "caas";
 
@@ -120,9 +122,10 @@ export function BusinessPricingTab() {
 
       {/* Sub-tabs */}
       <Tabs defaultValue="strategy" className="w-full">
-        <TabsList className="w-full justify-start bg-muted/30 border border-border h-9 px-1">
+        <TabsList className="w-full justify-start bg-muted/30 border border-border h-9 px-1 flex-wrap">
           <TabsTrigger value="strategy" className="text-xs gap-1.5 data-[state=active]:bg-card"><Target className="h-3.5 w-3.5" />Stratégie</TabsTrigger>
           <TabsTrigger value="plans" className="text-xs gap-1.5 data-[state=active]:bg-card"><DollarSign className="h-3.5 w-3.5" />Plans</TabsTrigger>
+          <TabsTrigger value="roles" className="text-xs gap-1.5 data-[state=active]:bg-card"><Users className="h-3.5 w-3.5" />Rôles & Plans</TabsTrigger>
           <TabsTrigger value="enterprise" className="text-xs gap-1.5 data-[state=active]:bg-card"><Building2 className="h-3.5 w-3.5" />Enterprise</TabsTrigger>
           <TabsTrigger value="credits" className="text-xs gap-1.5 data-[state=active]:bg-card"><Cpu className="h-3.5 w-3.5" />Crédits & IA</TabsTrigger>
           <TabsTrigger value="services" className="text-xs gap-1.5 data-[state=active]:bg-card"><Briefcase className="h-3.5 w-3.5" />Services</TabsTrigger>
@@ -789,7 +792,242 @@ export function BusinessPricingTab() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ═══════ TAB 7 — RÔLES & PLANS ═══════ */}
+        <TabsContent value="roles" className="space-y-6 mt-4">
+          <RolesPlansSubTab />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// ──── Rôles & Plans Sub-Tab ────
+function RolesPlansSubTab() {
+  const [roles, setRoles] = useState<PricingRole[]>(DEFAULT_PRICING_ROLES);
+  const [selectedRoleId, setSelectedRoleId] = useState(roles[0]?.id || "");
+  const [dealCounts, setDealCounts] = useState<Record<string, { planId: string; count: number }>>(
+    Object.fromEntries(roles.map(r => [r.id, { planId: r.defaultPlanId, count: r.valueLevel === "strategic" ? 2 : r.valueLevel === "operational" ? 5 : 20 }]))
+  );
+
+  const selectedRole = roles.find(r => r.id === selectedRoleId);
+
+  const iconMap: Record<string, React.ReactNode> = {
+    Shield: <Shield className="h-4 w-4" />,
+    Users: <Users className="h-4 w-4" />,
+    User: <User className="h-4 w-4" />,
+    GraduationCap: <GraduationCap className="h-4 w-4" />,
+  };
+
+  const updateRole = (roleId: string, field: keyof PricingRole, value: any) => {
+    setRoles(prev => prev.map(r => r.id === roleId ? { ...r, [field]: value } : r));
+  };
+
+  const updatePlan = (roleId: string, planId: string, field: keyof RolePlan, value: any) => {
+    setRoles(prev => prev.map(r => r.id === roleId ? {
+      ...r, plans: r.plans.map(p => p.id === planId ? { ...p, [field]: value } : p)
+    } : r));
+  };
+
+  const addRole = () => {
+    const newId = `role-${Date.now()}`;
+    const newPlanId = `plan-${Date.now()}`;
+    const newRole: PricingRole = {
+      id: newId, name: "Nouveau rôle", description: "Description du rôle", icon: "User",
+      valueLevel: "consumption", defaultPlanId: newPlanId,
+      plans: [{ id: newPlanId, name: "Plan Standard", billing: "monthly", pricePerUser: 49, creditsIncluded: 10, creditExtraPrice: 0.50,
+        moduleAccess: DEFAULT_MODULES.map(m => ({ moduleId: m.id, enabled: true, quotaType: "unlimited" as const, quotaLimit: null })),
+        limits: { parcours: null, challenges: null, workshops: null, practices: null, projects: null, aiCalls: null } }],
+    };
+    setRoles(prev => [...prev, newRole]);
+    setDealCounts(prev => ({ ...prev, [newId]: { planId: newPlanId, count: 5 } }));
+    setSelectedRoleId(newId);
+  };
+
+  const addPlanToRole = (roleId: string) => {
+    const newPlanId = `plan-${Date.now()}`;
+    setRoles(prev => prev.map(r => r.id === roleId ? {
+      ...r, plans: [...r.plans, { id: newPlanId, name: "Nouveau plan", billing: "monthly", pricePerUser: 49, creditsIncluded: 10, creditExtraPrice: 0.50,
+        moduleAccess: DEFAULT_MODULES.map(m => ({ moduleId: m.id, enabled: true, quotaType: "unlimited" as const, quotaLimit: null })),
+        limits: { parcours: null, challenges: null, workshops: null, practices: null, projects: null, aiCalls: null } }]
+    } : r));
+  };
+
+  // Deal simulator totals
+  const dealTotals = useMemo(() => {
+    let mrr = 0;
+    Object.entries(dealCounts).forEach(([roleId, { planId, count }]) => {
+      const role = roles.find(r => r.id === roleId);
+      const plan = role?.plans.find(p => p.id === planId);
+      if (!plan || count <= 0 || plan.billing === "usage") return;
+      mrr += plan.pricePerUser * count;
+    });
+    return { mrr, arr: mrr * 12 };
+  }, [dealCounts, roles]);
+
+  return (
+    <div className="space-y-6">
+      {/* Section A — Roles list */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-foreground">Rôles configurés</h3>
+        <Button size="sm" variant="outline" onClick={addRole} className="text-xs gap-1"><Plus className="h-3.5 w-3.5" />Ajouter un rôle</Button>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {roles.map(role => (
+          <button key={role.id} onClick={() => setSelectedRoleId(role.id)}
+            className={`p-4 rounded-lg border text-left transition-all ${selectedRoleId === role.id ? "bg-primary/5 border-primary ring-1 ring-primary/20" : "bg-card border-border hover:border-primary/30"}`}>
+            <div className="flex items-center gap-2">
+              <span className="text-primary">{iconMap[role.icon] || <User className="h-4 w-4" />}</span>
+              <span className="font-semibold text-sm text-foreground">{role.name}</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{role.description}</p>
+            <div className="flex gap-1.5 mt-2">
+              <Badge variant="outline" className="text-[9px]">{role.valueLevel}</Badge>
+              <Badge variant="secondary" className="text-[9px]">{role.plans.length} plan{role.plans.length > 1 ? "s" : ""}</Badge>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Section B — Selected role detail */}
+      {selectedRole && (
+        <Card className="border-border">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Input value={selectedRole.name} onChange={e => updateRole(selectedRole.id, "name", e.target.value)} className="font-bold text-foreground border-dashed h-8 w-48 text-sm" />
+                <select value={selectedRole.valueLevel} onChange={e => updateRole(selectedRole.id, "valueLevel", e.target.value)} className="text-xs border border-border rounded px-2 py-1 bg-background">
+                  <option value="strategic">strategic</option>
+                  <option value="operational">operational</option>
+                  <option value="consumption">consumption</option>
+                </select>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => addPlanToRole(selectedRole.id)} className="text-xs gap-1"><Plus className="h-3.5 w-3.5" />Ajouter un plan</Button>
+            </div>
+            <Input value={selectedRole.description} onChange={e => updateRole(selectedRole.id, "description", e.target.value)} className="text-xs text-muted-foreground border-dashed h-7 mt-1" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Plans table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="text-left p-2 font-medium text-muted-foreground">Plan</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Billing</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Prix/user</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Crédits inclus</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">€/crédit extra</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Parcours</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Challenges</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Workshops</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">IA calls</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedRole.plans.map(plan => (
+                    <tr key={plan.id} className="border-b border-border/30">
+                      <td className="p-2"><Input value={plan.name} onChange={e => updatePlan(selectedRole.id, plan.id, "name", e.target.value)} className="h-7 text-xs border-dashed w-32" /></td>
+                      <td className="p-2 text-center">
+                        <select value={plan.billing} onChange={e => updatePlan(selectedRole.id, plan.id, "billing", e.target.value)} className="text-xs border border-border rounded px-1.5 py-1 bg-background">
+                          <option value="monthly">Mensuel</option>
+                          <option value="annual">Annuel</option>
+                          <option value="usage">Usage</option>
+                        </select>
+                      </td>
+                      <td className="p-2 text-center"><Input type="number" value={plan.pricePerUser} onChange={e => updatePlan(selectedRole.id, plan.id, "pricePerUser", Number(e.target.value))} className="h-7 text-xs w-16 text-center mx-auto" /></td>
+                      <td className="p-2 text-center"><Input type="number" value={plan.creditsIncluded} onChange={e => updatePlan(selectedRole.id, plan.id, "creditsIncluded", Number(e.target.value))} className="h-7 text-xs w-14 text-center mx-auto" /></td>
+                      <td className="p-2 text-center"><Input type="number" step="0.01" value={plan.creditExtraPrice} onChange={e => updatePlan(selectedRole.id, plan.id, "creditExtraPrice", Number(e.target.value))} className="h-7 text-xs w-16 text-center mx-auto" /></td>
+                      <td className="p-2 text-center"><Input type="number" value={plan.limits.parcours ?? ""} onChange={e => updatePlan(selectedRole.id, plan.id, "limits", { ...plan.limits, parcours: e.target.value === "" ? null : Number(e.target.value) })} placeholder="∞" className="h-7 text-xs w-12 text-center mx-auto" /></td>
+                      <td className="p-2 text-center"><Input type="number" value={plan.limits.challenges ?? ""} onChange={e => updatePlan(selectedRole.id, plan.id, "limits", { ...plan.limits, challenges: e.target.value === "" ? null : Number(e.target.value) })} placeholder="∞" className="h-7 text-xs w-12 text-center mx-auto" /></td>
+                      <td className="p-2 text-center"><Input type="number" value={plan.limits.workshops ?? ""} onChange={e => updatePlan(selectedRole.id, plan.id, "limits", { ...plan.limits, workshops: e.target.value === "" ? null : Number(e.target.value) })} placeholder="∞" className="h-7 text-xs w-12 text-center mx-auto" /></td>
+                      <td className="p-2 text-center"><Input type="number" value={plan.limits.aiCalls ?? ""} onChange={e => updatePlan(selectedRole.id, plan.id, "limits", { ...plan.limits, aiCalls: e.target.value === "" ? null : Number(e.target.value) })} placeholder="∞" className="h-7 text-xs w-12 text-center mx-auto" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Module access grid */}
+            {selectedRole.plans.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-foreground mb-2">Accès modules — {selectedRole.plans[0].name}</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {DEFAULT_MODULES.map(mod => {
+                    const access = selectedRole.plans[0].moduleAccess.find(a => a.moduleId === mod.id);
+                    return (
+                      <div key={mod.id} className={`flex items-center justify-between p-2 rounded-lg border ${access?.enabled ? "border-primary/30 bg-primary/5" : "border-border bg-card"}`}>
+                        <div className="flex items-center gap-2">
+                          <Switch checked={access?.enabled ?? false} onCheckedChange={v => {
+                            setRoles(prev => prev.map(r => r.id === selectedRole.id ? {
+                              ...r, plans: r.plans.map((p, i) => i === 0 ? {
+                                ...p, moduleAccess: p.moduleAccess.map(a => a.moduleId === mod.id ? { ...a, enabled: v } : a)
+                              } : p)
+                            } : r));
+                          }} />
+                          <span className="text-xs text-foreground">{mod.name}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Section C — Deal simulator */}
+      <Card className="border-border">
+        <CardHeader className="pb-3"><CardTitle className="text-sm">Simulateur de deal</CardTitle></CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="text-left p-2 font-medium text-muted-foreground">Rôle</th>
+                  <th className="text-left p-2 font-medium text-muted-foreground">Plan</th>
+                  <th className="text-center p-2 font-medium text-muted-foreground">Nb users</th>
+                  <th className="text-right p-2 font-medium text-muted-foreground">Prix unit.</th>
+                  <th className="text-right p-2 font-medium text-muted-foreground">Sous-total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roles.map(role => {
+                  const dc = dealCounts[role.id] || { planId: role.defaultPlanId, count: 0 };
+                  const plan = role.plans.find(p => p.id === dc.planId) || role.plans[0];
+                  const sub = plan.billing === "usage" ? 0 : plan.pricePerUser * dc.count;
+                  return (
+                    <tr key={role.id} className="border-b border-border/30">
+                      <td className="p-2 font-medium text-foreground">{role.name}</td>
+                      <td className="p-2">
+                        <Select value={dc.planId} onValueChange={v => setDealCounts(prev => ({ ...prev, [role.id]: { ...prev[role.id], planId: v } }))}>
+                          <SelectTrigger className="h-7 text-xs w-36"><SelectValue /></SelectTrigger>
+                          <SelectContent>{role.plans.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </td>
+                      <td className="p-2 text-center">
+                        <Input type="number" value={dc.count} onChange={e => setDealCounts(prev => ({ ...prev, [role.id]: { ...prev[role.id], count: Number(e.target.value) } }))} className="h-7 text-xs w-16 text-center mx-auto" min={0} />
+                      </td>
+                      <td className="p-2 text-right text-muted-foreground">{plan.pricePerUser}€/{plan.billing === "annual" ? "an" : "mois"}</td>
+                      <td className="p-2 text-right font-bold text-primary">{sub > 0 ? `${sub}€/m` : "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-muted/30 font-bold">
+                  <td colSpan={4} className="p-2 text-right text-foreground">MRR total</td>
+                  <td className="p-2 text-right text-primary">{dealTotals.mrr.toLocaleString()}€</td>
+                </tr>
+                <tr className="bg-muted/30 font-bold">
+                  <td colSpan={4} className="p-2 text-right text-foreground">ARR total</td>
+                  <td className="p-2 text-right text-primary">{dealTotals.arr.toLocaleString()}€</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
