@@ -1,58 +1,44 @@
 
 
-# Plan — Fix data sync, totals consistency, and corporate document rendering
+# Plan — Mode édition WYSIWYG pour le devis
 
-## Problems identified
+## Problème
 
-1. **Data not updating on save/regenerate**: `AdminQuotePreview` receives data via `navigate({ state })` — a frozen snapshot. When regenerating or editing, `state.totals` and `state.generatePayload` remain the original values. Changes never flow back.
-
-2. **Totals mismatch between sidebar and document**: The sidebar reads `state.totals` (frozen), while the AI-generated markdown may compute different numbers. After regeneration, the sidebar still shows old totals.
-
-3. **Document not corporate enough**: Basic `prose prose-sm` wrapper with minimal styling. No letterhead, no visual hierarchy, no professional framing.
+Le mode édition affiche le markdown brut avec balises (`##`, `**`, `|---|---|`), incompréhensible pour un utilisateur final non-technique.
 
 ## Solution
 
-### 1. Load quote from DB instead of frozen state
+Remplacer le `Textarea` monospace par un éditeur WYSIWYG basé sur **TipTap** (extension de ProseMirror, déjà compatible React). L'utilisateur voit le document formaté et le modifie directement — titres, gras, tableaux, listes — sans voir de balises.
 
-Refactor `AdminQuotePreview.tsx` to:
-- Accept only the quote `id` via route params or navigation state
-- Fetch the full quote record from `business_quotes` on mount
-- Rebuild `totals` and `generatePayload` from the stored config fields (`role_configs`, `selected_setup_ids`, `selected_service_ids`, `engagement_months`, etc.)
-- This ensures save, regenerate, and sidebar always reflect the latest data
+### Fonctionnement
 
-### 2. Fix save to persist all fields
+- **Import/export markdown** : le contenu stocké reste du markdown (compatible avec l'IA et l'affichage preview). TipTap convertit markdown → HTML à l'ouverture et HTML → markdown à la sauvegarde.
+- **Toolbar compacte** : Titres (H2/H3), Gras, Italique, Liste à puces, Liste numérotée, Tableau, Séparateur — positionnée en haut du document en mode édition.
+- **Style cohérent** : L'éditeur utilise les mêmes classes `prose prose-lg` que le mode aperçu pour une transition visuelle fluide.
 
-When saving from the preview page:
-- Save `quote_markdown` AND recalculated `totals` back to DB
-- After regeneration, auto-save the new markdown + totals
-- When returning to the configurator, reload from DB (already works via `fetchQuotes`)
+### Fichiers impactés
 
-### 3. Fix regeneration payload
-
-Instead of using a frozen `generatePayload`, rebuild it from the DB-stored config fields using the same logic as `buildGeneratePayload()` in `BusinessQuoteTab`. Extract this logic into a shared utility or duplicate it in the preview page.
-
-### 4. Corporate document rendering
-
-Upgrade the preview page with:
-- **Letterhead area**: Logo placeholder, "GROWTHINNOV" branding, document reference number, date
-- **Professional typography**: `prose-lg` with custom heading styles, tighter leading, corporate colors
-- **Section dividers**: Subtle horizontal rules with primary accent between major sections
-- **Page margins**: Print-friendly padding (48px+ sides), max-width 850px for A4 feel
-- **Footer**: Confidentiality notice, page reference, version stamp
-- **Financial sidebar**: Gradient accent on total, better visual hierarchy with background fills on key numbers
-- **Print styles**: `@media print` rules for clean PDF export
-
-## Files impacted
-
-| File | Action |
+| Fichier | Action |
 |---------|--------|
-| `AdminQuotePreview.tsx` | **Rewrite** — DB-driven data, corporate layout, recalculated totals |
-| `BusinessQuoteTab.tsx` | **Minor** — Pass only quote ID to preview, extract totals calculation if needed |
-| `businessConfig.ts` | **Minor** — Export a `computeQuoteTotals()` utility if centralizing calculation |
+| `package.json` | **Ajouter** `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-table`, `turndown`, `marked` |
+| `src/components/admin/business/QuoteEditor.tsx` | **Créer** — Composant éditeur WYSIWYG avec toolbar et conversion markdown |
+| `src/pages/admin/AdminQuotePreview.tsx` | **Modifier** — Remplacer le `Textarea` brut par `<QuoteEditor>` |
 
-## Execution order
-1. Extract totals calculation into reusable function
-2. Rewrite `AdminQuotePreview` to load from DB and recalculate
-3. Upgrade document rendering with corporate design
-4. Fix navigation to pass only ID
+### Détail technique
+
+1. **Nouveau composant `QuoteEditor`** :
+   - `useEditor` TipTap avec StarterKit + Table extension
+   - `marked(markdown)` pour initialiser le contenu HTML
+   - `Turndown` pour reconvertir en markdown au `onChange`
+   - Toolbar sticky avec boutons icônes (même style que la toolbar du document)
+   - Classes prose identiques au mode aperçu
+
+2. **Modification `AdminQuotePreview.tsx`** (lignes 276-281) :
+   - Remplacer `<Textarea value={markdown} ...>` par `<QuoteEditor value={markdown} onChange={setMarkdown} />`
+   - Supprimer l'import `Textarea` si plus utilisé
+
+### Ordre d'exécution
+1. Installer les dépendances TipTap
+2. Créer `QuoteEditor.tsx`
+3. Intégrer dans `AdminQuotePreview.tsx`
 
