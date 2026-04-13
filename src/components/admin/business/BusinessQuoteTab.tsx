@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  activePricingRoles, activeSaleModels, activeSegments,
+  DEFAULT_PRICING_ROLES, DEFAULT_SALE_MODELS, DEFAULT_SEGMENTS,
   DEFAULT_SETUP_FEES, DEFAULT_SERVICES,
   type QuoteRoleConfig, type ModuleConfig, type SegmentConfig, type ChannelConfig, type PricingRole, type SaleModel,
 } from "./businessConfig";
