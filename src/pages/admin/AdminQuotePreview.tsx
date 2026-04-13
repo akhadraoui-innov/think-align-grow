@@ -143,7 +143,7 @@ export default function AdminQuotePreview() {
 
   /* ---------- Compute live totals from DB config ---------- */
   const totals = useMemo(() => {
-    if (!quote) return { mrr: 0, arr: 0, setup: 0, servicesOneShot: 0, servicesMonthly: 0, year1: 0, year2: 0, year3: 0, totalContract: 0 };
+    if (!quote) return { mrr: 0, arr: 0, mrrBeforeDiscount: 0, discountAmount: 0, discountPercent: 0, setup: 0, servicesOneShot: 0, servicesMonthly: 0, year1: 0, year2: 0, year3: 0, totalContract: 0, margin: 0 };
     return computeTotals(
       (quote.role_configs || []) as QuoteRoleConfig[],
       (quote.selected_setup_ids || []) as string[],
