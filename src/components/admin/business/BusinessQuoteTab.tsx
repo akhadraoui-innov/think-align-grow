@@ -357,55 +357,20 @@ export function BusinessQuoteTab({
     setRoleConfigs(prev => prev.map(rc => rc.roleId === roleId ? { ...rc, [field]: value } : rc));
   };
 
-  /* ---------- synthesis data ---------- */
-  const sentQuotes = quotes.filter(q => q.status === "sent");
-  const groupedByProspect = useMemo(() => {
-    const map = new Map<string, QuoteRecord[]>();
-    sentQuotes.forEach(q => {
-      const key = q.prospect_name;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(q);
-    });
-    map.forEach(v => v.sort((a, b) => b.version - a.version));
-    return map;
-  }, [sentQuotes]);
-
-  const pipelineTotals = useMemo(() => {
-    // Use latest version per prospect
-    let totalMRR = 0, totalARR = 0, totalContract = 0;
-    groupedByProspect.forEach(versions => {
-      const latest = versions[0];
-      const t = latest.totals as Record<string, number>;
-      totalMRR += t.mrr || 0;
-      totalARR += t.arr || 0;
-      totalContract += t.totalContract || t.year1 || 0;
-    });
-    return { totalMRR, totalARR, totalContract };
-  }, [groupedByProspect]);
-
   const engYears = Math.ceil(engagementMonths / 12);
 
   /* ================================================================ */
   /*  RENDER                                                           */
   /* ================================================================ */
   return (
-    <Tabs defaultValue="configurator" className="space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground tracking-tight">Devis IA</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Composez, historisez et versionnez vos propositions commerciales</p>
+          <h2 className="text-xl font-bold text-foreground tracking-tight">Nouveau devis</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Configurez et générez votre proposition commerciale</p>
         </div>
-        <div className="flex items-center gap-2">
-          <TabsList>
-            <TabsTrigger value="configurator" className="text-xs gap-1.5"><Calculator className="h-3.5 w-3.5" />Configurateur</TabsTrigger>
-            <TabsTrigger value="synthesis" className="text-xs gap-1.5"><BarChart3 className="h-3.5 w-3.5" />Synthèse</TabsTrigger>
-          </TabsList>
-          <Button onClick={resetForm} size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Nouveau</Button>
-        </div>
+        <Button onClick={resetForm} size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Réinitialiser</Button>
       </div>
-
-      {/* ======================== CONFIGURATOR TAB ======================== */}
-      <TabsContent value="configurator" className="space-y-6">
         {/* ---- History bar ---- */}
         <Card className="border-border">
           <CardHeader className="pb-2">
