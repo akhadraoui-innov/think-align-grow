@@ -45,8 +45,8 @@ interface QuoteRecord {
   updated_at: string;
 }
 
-const defaultRoleConfigs = (): QuoteRoleConfig[] =>
-  activePricingRoles.map(r => ({
+const defaultRoleConfigs = (roles: PricingRole[]): QuoteRoleConfig[] =>
+  roles.map(r => ({
     roleId: r.id,
     planId: r.defaultPlanId,
     count: r.valueLevel === "strategic" ? 2 : r.valueLevel === "operational" ? 5 : 20,
