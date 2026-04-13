@@ -1,133 +1,80 @@
 
 
-# Plan consolidé — Rôles & Plans paramétrables + Guide stratégique + Devis IA
+# Plan — Historisation des devis avec gestion de statuts et versioning
 
-## Vue d'ensemble
+## Contexte
 
-3 ajouts majeurs au module Business & Revenue :
+Actuellement les devis sont éphémères (state local, perdus au refresh). Il faut :
+- Persister chaque devis en base
+- Statuts : `draft` → `sent` (verrouillé)
+- Modifiable tant que `draft`
+- Si `sent`, on peut créer une nouvelle version (duplication + incrémentation version)
+- Liste des devis existants avec filtres
 
-1. **Sous-onglet "Rôles & Plans"** dans Pricing — pricing paramétrable par rôle avec plans dédiés, accès modules, quotas granulaires
-2. **Onglet "Guide"** — documentation stratégique GTM, revenue management, méthodologies
-3. **Onglet "Devis IA"** — configurateur multi-modèle avec génération IA de propositions commerciales
+## Architecture
 
----
+### 1. Table `business_quotes` (migration)
 
-## 1. Types et defaults dans `businessConfig.ts`
+```sql
+CREATE TABLE public.business_quotes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  prospect_name text NOT NULL,
+  segment text NOT NULL,
+  user_count integer NOT NULL DEFAULT 50,
+  challenges text DEFAULT '',
+  sale_model_id text NOT NULL,
+  role_configs jsonb NOT NULL DEFAULT '[]',
+  selected_setup_ids jsonb NOT NULL DEFAULT '[]',
+  selected_service_ids jsonb NOT NULL DEFAULT '[]',
+  engagement_months integer NOT NULL DEFAULT 12,
+  totals jsonb NOT NULL DEFAULT '{}',
+  quote_markdown text DEFAULT '',
+  status text NOT NULL DEFAULT 'draft',  -- draft | sent
+  version integer NOT NULL DEFAULT 1,
+  parent_quote_id uuid REFERENCES public.business_quotes(id),
+  created_by uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 
-Nouveaux types :
+ALTER TABLE public.business_quotes ENABLE ROW LEVEL SECURITY;
 
-```typescript
-interface RolePlanAccess {
-  moduleId: string; enabled: boolean;
-  quotaType: "unlimited" | "monthly" | "yearly" | "per_use";
-  quotaLimit: number | null;
-}
-
-interface RolePlan {
-  id: string; name: string;
-  billing: "monthly" | "annual" | "usage";
-  pricePerUser: number; creditsIncluded: number; creditExtraPrice: number;
-  moduleAccess: RolePlanAccess[];
-  limits: { parcours | challenges | workshops | practices | projects | aiCalls: number | null };
-}
-
-interface PricingRole {
-  id: string; name: string; description: string; icon: string;
-  plans: RolePlan[]; defaultPlanId: string;
-  valueLevel: "strategic" | "operational" | "consumption";
-}
-
-interface SaleModel { id; label; description; includesSetup; includesServices; }
-interface QuoteRoleConfig { roleId; planId; count: number; }
+CREATE POLICY "saas_manage_quotes" ON public.business_quotes
+  FOR ALL TO authenticated
+  USING (is_saas_team(auth.uid()))
+  WITH CHECK (is_saas_team(auth.uid()));
 ```
 
-4 rôles par défaut (Décideur/Admin, Manager, Utilisateur, Apprenant externe) avec 2 plans chacun (8 plans total), chacun avec accès modules et quotas configurés par rapport à `DEFAULT_MODULES`.
+### 2. Refonte `BusinessQuoteTab.tsx`
 
-5 modèles de vente : SaaS pur, SaaS + Conseil, Academy Groupe, CaaS, Partnership/White-label.
+**Layout en 2 zones :**
 
----
+**Zone gauche — Liste des devis** (sidebar étroite ou top section)
+- Liste des devis sauvegardés (prospect, segment, statut, version, date)
+- Badge statut : `draft` (jaune), `sent` (vert verrouillé)
+- Boutons : Nouveau, Dupliquer (pour les `sent`)
+- Clic → charge le devis dans le configurateur
 
-## 2. Sous-onglet "Rôles & Plans" dans `BusinessPricingTab.tsx`
+**Zone droite — Configurateur** (existant, enrichi)
+- Bouton "Sauvegarder" → upsert en base (insert si nouveau, update si draft existant)
+- Bouton "Marquer comme envoyé" → passe status à `sent`, verrouille tous les champs
+- Si devis `sent` : tous les inputs disabled, bouton "Nouvelle version" qui duplique avec version+1 et status=draft
+- Le markdown généré par l'IA est stocké dans `quote_markdown`
+- Affichage du markdown dans une zone premium (EnrichedMarkdown ou prose) avec toggle édition quand draft
 
-7ème sous-onglet (icon Users) ajouté au TabsList existant :
+**Logique de versioning :**
+- `parent_quote_id` pointe vers le devis précédent
+- `version` s'incrémente automatiquement
+- On peut naviguer entre versions via la liste
 
-- **Section A — Liste des rôles** : cards CRUD (nom, description, icon, valueLevel éditables), bouton "Ajouter un rôle"
-- **Section B — Plans du rôle sélectionné** : table éditable (nom, billing, prix/user, crédits inclus, prix crédit extra, limites d'usage). Grille d'accès modules avec toggles + type quota + limite.
-- **Section C — Simulateur de deal** : table Rôle × Plan × Nb users avec calcul MRR/ARR temps réel
-
----
-
-## 3. `BusinessGuideTab.tsx` (nouveau)
-
-8 sections en `Accordion` :
-
-| Section | Contenu clé |
-|---------|------------|
-| Mode d'emploi | Workflow onglet par onglet |
-| Go-to-Market | ICP → Channels → Messaging → Launch → Iterate |
-| Revenue Management | Quand seat vs usage vs hybrid vs CaaS |
-| Modèles de vente | 5 combinaisons (SaaS, SaaS+CaaS, Academy, Partnership, White-label) |
-| Valeur ajoutée | Où la valeur se crée : setup vs abo vs usage, pricing par rôle |
-| Scalabilité SaaS | NRR, Magic Number, Rule of 40, seuils |
-| MEDDIC | Scoring Enterprise 6 critères |
-| Risques marché IA | Tokens, agents, build vs buy, AI Act |
-
-UI : `Accordion` + `Card` + `Badge` + callouts tips (Lightbulb icon).
-
----
-
-## 4. Edge function `business-quote/index.ts` (nouveau)
-
-Suit le pattern `ai-coach` :
-- CORS headers manuels (comme les autres fonctions)
-- Validation body (prospectName, segment requis)
-- System prompt expert revenue management / sales engineer
-- Appel Lovable AI Gateway (`google/gemini-2.5-flash`) via `LOVABLE_API_KEY`
-- Retourne `{ quote: string }` markdown
-- Gestion 429/402
-
----
-
-## 5. `BusinessQuoteTab.tsx` (nouveau)
-
-**A — Contexte prospect** : nom, segment (select), nb users (slider), enjeux (textarea)
-
-**B — Modèle de vente** : radio depuis `DEFAULT_SALE_MODELS`
-
-**C — Composition par rôle** : pour chaque rôle dans `DEFAULT_PRICING_ROLES`, sélection du plan + nb users. Totaux MRR/ARR temps réel.
-
-**D — Setup & Services** : checkboxes setup fees + services si modèle inclut CaaS. Durée engagement (12/24/36 mois) avec remises.
-
-**E — Récapitulatif financier** : MRR total (par rôle), ARR, setup one-shot, services, total année 1, marge estimée.
-
-**F — Génération IA** : bouton → edge function → rendu markdown (executive summary, proposition de valeur, détail offre, ROI, conditions). Boutons Copier + Régénérer.
-
----
-
-## 6. `AdminBusiness.tsx` (modifier)
-
-Ajouter 2 onglets :
-- `{ value: "guide", label: "Guide", icon: BookOpen }`
-- `{ value: "quote", label: "Devis IA", icon: FileText }`
-
----
-
-## Fichiers impactés
+### 3. Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `businessConfig.ts` | Ajouter 5 interfaces + `DEFAULT_PRICING_ROLES` (4 rôles, 8 plans), `DEFAULT_SALE_MODELS` (5) |
-| `BusinessPricingTab.tsx` | Ajouter sous-onglet "Rôles & Plans" avec CRUD + simulateur deal |
-| `BusinessGuideTab.tsx` | **Créer** — 8 sections accordéon |
-| `BusinessQuoteTab.tsx` | **Créer** — Configurateur multi-modèle + calcul + IA |
-| `business-quote/index.ts` | **Créer** — Edge function |
-| `AdminBusiness.tsx` | Ajouter 2 onglets |
+| Migration SQL | **Créer** table `business_quotes` + RLS |
+| `BusinessQuoteTab.tsx` | **Refonte** — ajouter liste devis, CRUD, statuts, verrouillage, versioning |
 
-## Ordre d'exécution
-1. Types + defaults (`businessConfig.ts`)
-2. Sous-onglet Rôles & Plans (`BusinessPricingTab.tsx`)
-3. Guide (`BusinessGuideTab.tsx`)
-4. Edge function (`business-quote/index.ts`)
-5. Devis IA (`BusinessQuoteTab.tsx`)
-6. Intégration (`AdminBusiness.tsx`)
+### 4. Ordre d'exécution
+1. Migration : créer la table `business_quotes`
+2. Refonte `BusinessQuoteTab.tsx` : liste + CRUD + statuts + versioning + édition markdown
 
