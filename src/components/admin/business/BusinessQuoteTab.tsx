@@ -55,7 +55,21 @@ const defaultRoleConfigs = (): QuoteRoleConfig[] =>
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
-export function BusinessQuoteTab() {
+interface BusinessQuoteTabProps {
+  modules?: ModuleConfig[];
+  segments?: SegmentConfig[];
+  channels?: ChannelConfig[];
+  pricingRoles?: PricingRole[];
+  saleModels?: SaleModel[];
+}
+
+export function BusinessQuoteTab({
+  modules: externalModules,
+  segments: externalSegments,
+  channels: externalChannels,
+  pricingRoles: externalPricingRoles,
+  saleModels: externalSaleModels,
+}: BusinessQuoteTabProps = {}) {
   const { user } = useAuth();
 
   /* ---------- list state ---------- */
