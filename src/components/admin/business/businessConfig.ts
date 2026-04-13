@@ -777,10 +777,3 @@ export const VALUE_PRICE_MATRIX = [
   { module: "UCM (AI Value Builder)", valueScore: 9, priceContribution: 15 },
   { module: "Toolkits", valueScore: 5, priceContribution: 5 },
 ];
-  { module: "Academy", valueScore: 9, priceContribution: 35 },
-  { module: "Simulateur", valueScore: 8, priceContribution: 20 },
-  { module: "Workshop", valueScore: 7, priceContribution: 15 },
-  { module: "Challenge", valueScore: 6, priceContribution: 10 },
-  { module: "UCM (AI Value Builder)", valueScore: 9, priceContribution: 15 },
-  { module: "Toolkits", valueScore: 5, priceContribution: 5 },
-];
