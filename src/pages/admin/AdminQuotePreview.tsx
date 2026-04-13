@@ -35,14 +35,15 @@ function computeTotals(
   pricingRoles: PricingRole[] = DEFAULT_PRICING_ROLES,
 ) {
   const engagementDiscount = engagementMonths === 24 ? 0.10 : engagementMonths === 36 ? 0.15 : 0;
-  let mrr = 0;
+  let mrrBeforeDiscount = 0;
   roleConfigs.forEach(rc => {
     const role = pricingRoles.find(r => r.id === rc.roleId);
     const plan = role?.plans.find(p => p.id === rc.planId);
     if (!plan || rc.count <= 0 || plan.billing === "usage") return;
-    mrr += plan.pricePerUser * rc.count;
+    mrrBeforeDiscount += plan.pricePerUser * rc.count;
   });
-  mrr = mrr * (1 - engagementDiscount);
+  const discountAmount = mrrBeforeDiscount * engagementDiscount;
+  const mrr = mrrBeforeDiscount - discountAmount;
   const arr = mrr * 12;
 
   const setup = selectedSetupIds.reduce((s, id) => {
@@ -64,14 +65,18 @@ function computeTotals(
   const year2 = engagementMonths >= 24 ? arr + (servicesMonthly * 12) : 0;
   const year3 = engagementMonths >= 36 ? arr + (servicesMonthly * 12) : 0;
   const totalContract = year1 + year2 + year3;
+  const margin = year1 > 0 ? Math.round(((year1 - year1 * 0.3) / year1) * 100) : 0;
 
   return {
     mrr: Math.round(mrr), arr: Math.round(arr),
+    mrrBeforeDiscount: Math.round(mrrBeforeDiscount),
+    discountAmount: Math.round(discountAmount * 12),
+    discountPercent: engagementDiscount * 100,
     setup: Math.round(setup),
     servicesOneShot: Math.round(servicesOneShot),
     servicesMonthly: Math.round(servicesMonthly),
     year1: Math.round(year1), year2: Math.round(year2), year3: Math.round(year3),
-    totalContract: Math.round(totalContract),
+    totalContract: Math.round(totalContract), margin,
   };
 }
 
