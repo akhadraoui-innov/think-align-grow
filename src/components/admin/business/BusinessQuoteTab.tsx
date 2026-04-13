@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DEFAULT_PRICING_ROLES, DEFAULT_SALE_MODELS, DEFAULT_SEGMENTS,
   DEFAULT_SETUP_FEES, DEFAULT_SERVICES,
-  type QuoteRoleConfig,
+  type QuoteRoleConfig, type ModuleConfig, type SegmentConfig, type ChannelConfig, type PricingRole, type SaleModel,
 } from "./businessConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
