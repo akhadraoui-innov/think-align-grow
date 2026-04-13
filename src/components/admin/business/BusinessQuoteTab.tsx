@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DEFAULT_PRICING_ROLES, DEFAULT_SALE_MODELS, DEFAULT_SEGMENTS,
   DEFAULT_SETUP_FEES, DEFAULT_SERVICES,
@@ -19,7 +18,7 @@ import {
 } from "./businessConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, RefreshCw, Sparkles, FileText, Calculator, Plus, Send, Lock, Eye, Pencil, History, Trash2, ExternalLink, TrendingUp, BarChart3 } from "lucide-react";
+import { Copy, Sparkles, FileText, Calculator, Plus, Send, Lock, Pencil, History, Trash2, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 /* ------------------------------------------------------------------ */
@@ -357,55 +356,20 @@ export function BusinessQuoteTab({
     setRoleConfigs(prev => prev.map(rc => rc.roleId === roleId ? { ...rc, [field]: value } : rc));
   };
 
-  /* ---------- synthesis data ---------- */
-  const sentQuotes = quotes.filter(q => q.status === "sent");
-  const groupedByProspect = useMemo(() => {
-    const map = new Map<string, QuoteRecord[]>();
-    sentQuotes.forEach(q => {
-      const key = q.prospect_name;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(q);
-    });
-    map.forEach(v => v.sort((a, b) => b.version - a.version));
-    return map;
-  }, [sentQuotes]);
-
-  const pipelineTotals = useMemo(() => {
-    // Use latest version per prospect
-    let totalMRR = 0, totalARR = 0, totalContract = 0;
-    groupedByProspect.forEach(versions => {
-      const latest = versions[0];
-      const t = latest.totals as Record<string, number>;
-      totalMRR += t.mrr || 0;
-      totalARR += t.arr || 0;
-      totalContract += t.totalContract || t.year1 || 0;
-    });
-    return { totalMRR, totalARR, totalContract };
-  }, [groupedByProspect]);
-
   const engYears = Math.ceil(engagementMonths / 12);
 
   /* ================================================================ */
   /*  RENDER                                                           */
   /* ================================================================ */
   return (
-    <Tabs defaultValue="configurator" className="space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground tracking-tight">Devis IA</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Composez, historisez et versionnez vos propositions commerciales</p>
+          <h2 className="text-xl font-bold text-foreground tracking-tight">Nouveau devis</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Configurez et générez votre proposition commerciale</p>
         </div>
-        <div className="flex items-center gap-2">
-          <TabsList>
-            <TabsTrigger value="configurator" className="text-xs gap-1.5"><Calculator className="h-3.5 w-3.5" />Configurateur</TabsTrigger>
-            <TabsTrigger value="synthesis" className="text-xs gap-1.5"><BarChart3 className="h-3.5 w-3.5" />Synthèse</TabsTrigger>
-          </TabsList>
-          <Button onClick={resetForm} size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Nouveau</Button>
-        </div>
+        <Button onClick={resetForm} size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Réinitialiser</Button>
       </div>
-
-      {/* ======================== CONFIGURATOR TAB ======================== */}
-      <TabsContent value="configurator" className="space-y-6">
         {/* ---- History bar ---- */}
         <Card className="border-border">
           <CardHeader className="pb-2">
@@ -684,79 +648,7 @@ export function BusinessQuoteTab({
             </Card>
           </div>
         </div>
-      </TabsContent>
-
-      {/* ======================== SYNTHESIS TAB ======================== */}
-      <TabsContent value="synthesis" className="space-y-6">
-        {/* Pipeline KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-border">
-            <CardContent className="p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-1">Pipeline MRR cumulé</p>
-              <p className="text-2xl font-bold text-primary">{pipelineTotals.totalMRR.toLocaleString()}€</p>
-              <p className="text-[10px] text-muted-foreground">{groupedByProspect.size} prospect{groupedByProspect.size > 1 ? "s" : ""} engagé{groupedByProspect.size > 1 ? "s" : ""}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border">
-            <CardContent className="p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-1">Pipeline ARR cumulé</p>
-              <p className="text-2xl font-bold text-foreground">{pipelineTotals.totalARR.toLocaleString()}€</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border">
-            <CardContent className="p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-1">Valeur contrats totale</p>
-              <p className="text-2xl font-bold text-foreground">{pipelineTotals.totalContract.toLocaleString()}€</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sent quotes table */}
-        <Card className="border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" />Devis envoyés par prospect</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {sentQuotes.length === 0 ? (
-              <p className="text-xs text-muted-foreground p-4 text-center">Aucun devis envoyé pour le moment</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/50">
-                      <th className="text-left p-2 font-medium text-muted-foreground">Prospect</th>
-                      <th className="text-center p-2 font-medium text-muted-foreground">Version</th>
-                      <th className="text-left p-2 font-medium text-muted-foreground">Segment</th>
-                      <th className="text-left p-2 font-medium text-muted-foreground">Date envoi</th>
-                      <th className="text-right p-2 font-medium text-muted-foreground">MRR</th>
-                      <th className="text-right p-2 font-medium text-muted-foreground">ARR</th>
-                      <th className="text-right p-2 font-medium text-muted-foreground">Total contrat</th>
-                      <th className="text-center p-2 font-medium text-muted-foreground">Engagement</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sentQuotes.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).map(q => {
-                      const t = q.totals as Record<string, number>;
-                      return (
-                        <tr key={q.id} className="border-b border-border/30 hover:bg-muted/30 cursor-pointer" onClick={() => { loadQuote(q); }}>
-                          <td className="p-2 font-semibold text-foreground">{q.prospect_name}</td>
-                          <td className="p-2 text-center"><Badge variant="outline" className="text-[9px]">v{q.version}</Badge></td>
-                          <td className="p-2 text-muted-foreground">{q.segment}</td>
-                          <td className="p-2 text-muted-foreground">{new Date(q.updated_at).toLocaleDateString("fr-FR")}</td>
-                          <td className="p-2 text-right font-medium text-foreground">{(t.mrr || 0).toLocaleString()}€</td>
-                          <td className="p-2 text-right font-medium text-foreground">{(t.arr || 0).toLocaleString()}€</td>
-                          <td className="p-2 text-right font-bold text-primary">{(t.totalContract || t.year1 || 0).toLocaleString()}€</td>
-                          <td className="p-2 text-center">{q.engagement_months}m</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+      </div>
+    </div>
   );
 }
