@@ -90,7 +90,7 @@ export function BusinessQuoteTab({
   const [userCount, setUserCount] = useState(50);
   const [challenges, setChallenges] = useState("");
   const [saleModelId, setSaleModelId] = useState("saas-conseil");
-  const [roleConfigs, setRoleConfigs] = useState<QuoteRoleConfig[]>(defaultRoleConfigs());
+  const [roleConfigs, setRoleConfigs] = useState<QuoteRoleConfig[]>(defaultRoleConfigs(activePricingRoles));
   const [selectedSetupIds, setSelectedSetupIds] = useState<string[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [engagementMonths, setEngagementMonths] = useState(12);
@@ -175,7 +175,7 @@ export function BusinessQuoteTab({
     setUserCount(50);
     setChallenges("");
     setSaleModelId("saas-conseil");
-    setRoleConfigs(defaultRoleConfigs());
+    setRoleConfigs(defaultRoleConfigs(activePricingRoles));
     setSelectedSetupIds([]);
     setSelectedServiceIds([]);
     setEngagementMonths(12);
