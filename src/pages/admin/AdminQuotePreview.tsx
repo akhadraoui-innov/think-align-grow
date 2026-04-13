@@ -274,7 +274,43 @@ export default function AdminQuotePreview() {
           {/* ──── Document panel ──── */}
           <div className="bg-background rounded-xl border border-border shadow-sm print:shadow-none print:border-0 print:rounded-none">
             {editMode && !locked ? (
-              <QuoteEditor value={markdown} onChange={setMarkdown} />
+              <>
+                {/* ── Corporate header (read-only in edit mode) ── */}
+                <div className="p-8 md:p-12 lg:px-16 lg:pt-16 lg:pb-0">
+                  <div className="flex items-start justify-between mb-10 pb-8 border-b-2 border-primary/20">
+                    <div className="flex items-center gap-4">
+                      <Logo size="lg" />
+                      <div>
+                        <span className="font-display text-lg font-bold uppercase tracking-wider text-foreground">GROWTHINNOV</span>
+                        <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">AI Acceleration Platform</p>
+                      </div>
+                    </div>
+                    <div className="text-right text-xs text-muted-foreground space-y-0.5">
+                      <p className="font-mono text-[10px]">Réf : {docRef}</p>
+                      <p>{new Date(quote.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</p>
+                      <p>Version {quote.version}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── WYSIWYG Editor ── */}
+                <QuoteEditor
+                  value={markdown}
+                  onChange={setMarkdown}
+                  prospectName={quote.prospect_name}
+                  docRef={docRef}
+                  createdAt={quote.created_at}
+                  version={quote.version}
+                />
+
+                {/* ── Corporate footer (read-only in edit mode) ── */}
+                <div className="px-8 md:px-12 lg:px-16 pb-8 md:pb-12 lg:pb-16">
+                  <div className="mt-8 pt-8 border-t-2 border-primary/20 flex items-center justify-between text-[10px] text-muted-foreground">
+                    <p>Ce document est confidentiel et destiné exclusivement à {quote.prospect_name}.</p>
+                    <p className="font-mono">{docRef} · v{quote.version}</p>
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="p-8 md:p-12 lg:p-16">
                 {/* ── Letterhead ── */}
