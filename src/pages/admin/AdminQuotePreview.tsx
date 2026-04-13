@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
+import { QuoteEditor } from "@/components/admin/business/QuoteEditor";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { EnrichedMarkdown } from "@/components/academy/EnrichedMarkdown";
@@ -274,11 +274,7 @@ export default function AdminQuotePreview() {
           {/* ──── Document panel ──── */}
           <div className="bg-background rounded-xl border border-border shadow-sm print:shadow-none print:border-0 print:rounded-none">
             {editMode && !locked ? (
-              <Textarea
-                value={markdown}
-                onChange={e => setMarkdown(e.target.value)}
-                className="font-mono text-xs min-h-[80vh] border-0 rounded-xl p-6 focus-visible:ring-0"
-              />
+              <QuoteEditor value={markdown} onChange={setMarkdown} />
             ) : (
               <div className="p-8 md:p-12 lg:p-16">
                 {/* ── Letterhead ── */}
