@@ -120,9 +120,10 @@ export function BusinessPricingTab() {
 
       {/* Sub-tabs */}
       <Tabs defaultValue="strategy" className="w-full">
-        <TabsList className="w-full justify-start bg-muted/30 border border-border h-9 px-1">
+        <TabsList className="w-full justify-start bg-muted/30 border border-border h-9 px-1 flex-wrap">
           <TabsTrigger value="strategy" className="text-xs gap-1.5 data-[state=active]:bg-card"><Target className="h-3.5 w-3.5" />Stratégie</TabsTrigger>
           <TabsTrigger value="plans" className="text-xs gap-1.5 data-[state=active]:bg-card"><DollarSign className="h-3.5 w-3.5" />Plans</TabsTrigger>
+          <TabsTrigger value="roles" className="text-xs gap-1.5 data-[state=active]:bg-card"><Users className="h-3.5 w-3.5" />Rôles & Plans</TabsTrigger>
           <TabsTrigger value="enterprise" className="text-xs gap-1.5 data-[state=active]:bg-card"><Building2 className="h-3.5 w-3.5" />Enterprise</TabsTrigger>
           <TabsTrigger value="credits" className="text-xs gap-1.5 data-[state=active]:bg-card"><Cpu className="h-3.5 w-3.5" />Crédits & IA</TabsTrigger>
           <TabsTrigger value="services" className="text-xs gap-1.5 data-[state=active]:bg-card"><Briefcase className="h-3.5 w-3.5" />Services</TabsTrigger>
