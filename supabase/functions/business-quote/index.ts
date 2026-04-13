@@ -27,6 +27,7 @@ serve(async (req) => {
 
     const engagementYears = Math.ceil((engagement || 12) / 12);
     const multiYear = engagementYears > 1;
+    const engagementDiscount = engagement === 24 ? 10 : engagement === 36 ? 15 : 0;
 
     const systemPrompt = `Tu es un expert en revenue management, sales engineering et conseil stratégique SaaS B2B.
 Tu génères des propositions commerciales professionnelles en markdown structuré.
@@ -34,7 +35,7 @@ Ton style est corporate, précis, orienté valeur client et ROI.
 Tu adaptes le discours au segment client et au modèle de vente choisi.
 Tu justifies chaque ligne de prix par la valeur apportée.
 
-RÈGLES DE CALCUL STRICTES :
+RÈGLES DE CALCUL STRICTES — TU DOIS UTILISER EXACTEMENT LES TOTAUX FOURNIS :
 - Les "prestations one-shot" (setup, workshops, audits, bootcamps) sont facturées UNE SEULE FOIS en Année 1.
 - Les "prestations récurrentes mensuelles" (accompagnement, support) sont facturées CHAQUE MOIS pendant la durée du contrat.
 - L'ARR (Annual Recurring Revenue) = MRR × 12 — c'est l'abonnement SaaS uniquement.
@@ -42,9 +43,38 @@ RÈGLES DE CALCUL STRICTES :
 - Année 2 (si applicable) = ARR + (Services mensuels × 12) — PAS de setup ni de one-shot
 - Année 3 (si applicable) = ARR + (Services mensuels × 12)
 - Total contrat = somme de toutes les années
+${engagementDiscount > 0 ? `- REMISE engagement ${engagement} mois : -${engagementDiscount}% sur le MRR SaaS (déjà appliquée dans les totaux fournis)` : ""}
 
-Tu DOIS inclure un TABLEAU D'INVESTISSEMENT structuré avec ces colonnes : Poste | Type | Montant.
-${multiYear ? `Le contrat étant sur ${engagementYears} ans, tu DOIS afficher un détail par année (Année 1, Année 2${engagementYears >= 3 ? ", Année 3" : ""}) avec le total de chaque année et le total global du contrat.` : ""}`;
+IMPORTANT : les montants dans les totaux fournis sont les montants EXACTS à utiliser. NE RECALCULE PAS les totaux, utilise ceux fournis.
+
+STRUCTURE DES TABLEAUX D'INVESTISSEMENT — OBLIGATOIRE :
+
+Tu DOIS produire PLUSIEURS tableaux séparés (pas un seul tableau monolithique) :
+
+### Tableau 1 — Abonnement SaaS (récurrent mensuel)
+Un tableau avec colonnes : Rôle | Plan | Nb utilisateurs | Prix unitaire/mois | Sous-total mensuel
+Puis une ligne de total MRR et une ligne ARR (MRR × 12).
+${engagementDiscount > 0 ? `Affiche la remise engagement (-${engagementDiscount}%) sur une ligne dédiée avec le montant de la remise en valeur absolue.` : ""}
+
+### Tableau 2 — Prestations one-shot (Année 1 uniquement)
+Un tableau avec colonnes : Prestation | Description courte | Montant
+Inclure les setup fees ET les services one-shot.
+Ligne de sous-total en bas.
+
+${(servicesRecurring && servicesRecurring.length > 0) ? `### Tableau 3 — Services récurrents mensuels
+Un tableau avec colonnes : Service | Description courte | Montant mensuel | Montant annuel
+Ligne de sous-total mensuel et annuel en bas.` : ""}
+
+### Tableau récapitulatif — Investissement global
+${multiYear ? `Un tableau avec colonnes : Poste | Année 1 | ${engagementYears >= 2 ? "Année 2 | " : ""}${engagementYears >= 3 ? "Année 3 | " : ""}Total
+Lignes :
+- Abonnement SaaS (ARR)
+- Prestations one-shot (Y1 uniquement, 0 les autres années)
+- Services récurrents (× 12 par année)
+${engagementDiscount > 0 ? `- Remise engagement -${engagementDiscount}% (afficher le montant économisé en positif)` : ""}
+- **TOTAL par année** (en gras)
+- **TOTAL CONTRAT** (en gras, mis en valeur)` : `Un tableau avec colonnes : Poste | Montant
+Lignes : Abonnement SaaS (ARR), Prestations one-shot, Services récurrents annuels, TOTAL.`}`;
 
     const userPrompt = `Génère une proposition commerciale complète pour :
 
@@ -58,38 +88,39 @@ ${multiYear ? `Le contrat étant sur ${engagementYears} ans, tu DOIS afficher un
 ${(roles || []).map((r: any) => `- ${r.roleName} (${r.planName}) : ${r.count} users × ${r.price}€/${r.billing}`).join("\n") || "Non configuré"}
 
 **Setup fees (one-shot Année 1 uniquement)** :
-${(setupFees || []).map((s: any) => `- ${s.name} : ${s.minPrice}-${s.maxPrice}€`).join("\n") || "Aucun"}
+${(setupFees || []).map((s: any) => `- ${s.name} : ${s.minPrice}-${s.maxPrice}€ — ${s.description || ""}`).join("\n") || "Aucun"}
 
 **Services one-shot (facturés une seule fois en Année 1)** :
-${(servicesOneShot || []).map((s: any) => `- ${s.name} (${s.priceModel}) : ${s.priceRange}`).join("\n") || "Aucun"}
+${(servicesOneShot || []).map((s: any) => `- ${s.name} (${s.priceModel}) : ${s.priceRange} — ${s.description || ""}`).join("\n") || "Aucun"}
 
 **Services récurrents mensuels (facturés chaque mois pendant toute la durée)** :
-${(servicesRecurring || []).map((s: any) => `- ${s.name} : ${s.priceRange}`).join("\n") || "Aucun"}
+${(servicesRecurring || []).map((s: any) => `- ${s.name} : ${s.priceRange} — ${s.description || ""}`).join("\n") || "Aucun"}
 
 **Engagement** : ${engagement || 12} mois (${engagementYears} an${engagementYears > 1 ? "s" : ""})
+${engagementDiscount > 0 ? `**Remise engagement** : -${engagementDiscount}% sur le MRR SaaS` : ""}
 
 **Modules actifs** : ${(activeModules || []).join(", ") || "Tous"}
 
 **Canaux principaux** : ${(mainChannels || []).map((c: any) => `${c.name} (${c.share}%)`).join(", ") || "Non précisé"}
 
-**Totaux calculés (à utiliser comme référence pour tes calculs)** :
-- MRR : ${totals?.mrr || 0}€
-- ARR : ${totals?.arr || 0}€
+**TOTAUX EXACTS À UTILISER (ne pas recalculer, utiliser tels quels)** :
+- MRR : ${totals?.mrr || 0}€/mois
+- ARR : ${totals?.arr || 0}€/an
 - Setup one-shot : ${totals?.setup || 0}€
 - Services one-shot : ${totals?.servicesOneShot || 0}€
-- Services mensuels : ${totals?.servicesMonthly || 0}€/mois
+- Services mensuels : ${totals?.servicesMonthly || 0}€/mois (soit ${(totals?.servicesMonthly || 0) * 12}€/an)
 - Total Année 1 : ${totals?.year1 || 0}€
 ${multiYear ? `- Total Année 2 : ${totals?.year2 || 0}€` : ""}
 ${engagementYears >= 3 ? `- Total Année 3 : ${totals?.year3 || 0}€` : ""}
-- Total contrat (${engagementYears} an${engagementYears > 1 ? "s" : ""}) : ${totals?.totalContract || totals?.year1 || 0}€
+- **Total contrat (${engagementYears} an${engagementYears > 1 ? "s" : ""}) : ${totals?.totalContract || totals?.year1 || 0}€**
 
 Structure la proposition avec :
-1. **Executive Summary** personnalisé (3-4 phrases)
-2. **Proposition de valeur** adaptée au segment et aux enjeux
-3. **Détail de l'offre** (modules, rôles, accès)
-4. **Tableau d'investissement** structuré avec distinction one-shot vs récurrent${multiYear ? " et détail par année" : ""}
-5. **ROI estimé** (qualitatif et quantitatif)
-6. **Conditions & prochaines étapes**`;
+1. **Executive Summary** personnalisé (3-4 phrases orientées valeur)
+2. **Proposition de valeur** adaptée au segment et aux enjeux (avec bullet points)
+3. **Détail de l'offre** (modules, rôles, accès — sous forme de tableau clair)
+4. **Tableaux d'investissement** — OBLIGATOIREMENT les tableaux séparés décrits dans les instructions (SaaS, One-shot, Récurrent, Récapitulatif)
+5. **ROI estimé** (qualitatif et quantitatif avec métriques concrètes)
+6. **Conditions & prochaines étapes** (validité, calendrier de déploiement)`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

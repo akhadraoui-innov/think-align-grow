@@ -117,14 +117,15 @@ export function BusinessQuoteTab({
 
   /* ---------- totals with one-shot vs recurring ---------- */
   const totals = useMemo(() => {
-    let mrr = 0;
+    let mrrBeforeDiscount = 0;
     roleConfigs.forEach(rc => {
       const role = activePricingRoles.find(r => r.id === rc.roleId);
       const plan = role?.plans.find(p => p.id === rc.planId);
       if (!plan || rc.count <= 0 || plan.billing === "usage") return;
-      mrr += plan.pricePerUser * rc.count;
+      mrrBeforeDiscount += plan.pricePerUser * rc.count;
     });
-    mrr = mrr * (1 - engagementDiscount);
+    const discountAmount = mrrBeforeDiscount * engagementDiscount;
+    const mrr = mrrBeforeDiscount - discountAmount;
     const arr = mrr * 12;
 
     const setup = selectedSetupIds.reduce((s, id) => {
@@ -154,6 +155,9 @@ export function BusinessQuoteTab({
 
     return {
       mrr: Math.round(mrr), arr: Math.round(arr),
+      mrrBeforeDiscount: Math.round(mrrBeforeDiscount),
+      discountAmount: Math.round(discountAmount * 12),
+      discountPercent: engagementDiscount * 100,
       setup: Math.round(setup),
       servicesOneShot: Math.round(servicesOneShot),
       servicesMonthly: Math.round(servicesMonthly),

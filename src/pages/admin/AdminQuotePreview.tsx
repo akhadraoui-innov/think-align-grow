@@ -35,14 +35,15 @@ function computeTotals(
   pricingRoles: PricingRole[] = DEFAULT_PRICING_ROLES,
 ) {
   const engagementDiscount = engagementMonths === 24 ? 0.10 : engagementMonths === 36 ? 0.15 : 0;
-  let mrr = 0;
+  let mrrBeforeDiscount = 0;
   roleConfigs.forEach(rc => {
     const role = pricingRoles.find(r => r.id === rc.roleId);
     const plan = role?.plans.find(p => p.id === rc.planId);
     if (!plan || rc.count <= 0 || plan.billing === "usage") return;
-    mrr += plan.pricePerUser * rc.count;
+    mrrBeforeDiscount += plan.pricePerUser * rc.count;
   });
-  mrr = mrr * (1 - engagementDiscount);
+  const discountAmount = mrrBeforeDiscount * engagementDiscount;
+  const mrr = mrrBeforeDiscount - discountAmount;
   const arr = mrr * 12;
 
   const setup = selectedSetupIds.reduce((s, id) => {
@@ -64,14 +65,18 @@ function computeTotals(
   const year2 = engagementMonths >= 24 ? arr + (servicesMonthly * 12) : 0;
   const year3 = engagementMonths >= 36 ? arr + (servicesMonthly * 12) : 0;
   const totalContract = year1 + year2 + year3;
+  const margin = year1 > 0 ? Math.round(((year1 - year1 * 0.3) / year1) * 100) : 0;
 
   return {
     mrr: Math.round(mrr), arr: Math.round(arr),
+    mrrBeforeDiscount: Math.round(mrrBeforeDiscount),
+    discountAmount: Math.round(discountAmount * 12),
+    discountPercent: engagementDiscount * 100,
     setup: Math.round(setup),
     servicesOneShot: Math.round(servicesOneShot),
     servicesMonthly: Math.round(servicesMonthly),
     year1: Math.round(year1), year2: Math.round(year2), year3: Math.round(year3),
-    totalContract: Math.round(totalContract),
+    totalContract: Math.round(totalContract), margin,
   };
 }
 
@@ -138,7 +143,7 @@ export default function AdminQuotePreview() {
 
   /* ---------- Compute live totals from DB config ---------- */
   const totals = useMemo(() => {
-    if (!quote) return { mrr: 0, arr: 0, setup: 0, servicesOneShot: 0, servicesMonthly: 0, year1: 0, year2: 0, year3: 0, totalContract: 0 };
+    if (!quote) return { mrr: 0, arr: 0, mrrBeforeDiscount: 0, discountAmount: 0, discountPercent: 0, setup: 0, servicesOneShot: 0, servicesMonthly: 0, year1: 0, year2: 0, year3: 0, totalContract: 0, margin: 0 };
     return computeTotals(
       (quote.role_configs || []) as QuoteRoleConfig[],
       (quote.selected_setup_ids || []) as string[],
@@ -337,6 +342,12 @@ export default function AdminQuotePreview() {
                 {/* SaaS */}
                 <div className="space-y-2">
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Abonnement SaaS</p>
+                  {totals.discountPercent > 0 && (
+                    <>
+                      <div className="flex justify-between"><span className="text-muted-foreground">MRR brut</span><span className="text-muted-foreground line-through">{totals.mrrBeforeDiscount.toLocaleString()}€</span></div>
+                      <div className="flex justify-between text-emerald-600"><span>Remise -{totals.discountPercent}%</span><span className="font-semibold">-{totals.discountAmount.toLocaleString()}€/an</span></div>
+                    </>
+                  )}
                   <div className="flex justify-between"><span className="text-muted-foreground">MRR</span><span className="font-bold text-foreground">{totals.mrr.toLocaleString()}€</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">ARR</span><span className="font-bold text-foreground">{totals.arr.toLocaleString()}€</span></div>
                 </div>
@@ -383,6 +394,11 @@ export default function AdminQuotePreview() {
                   <p className="text-[10px] text-muted-foreground text-center mt-1">
                     Engagement {quote.engagement_months} mois
                   </p>
+                  {totals.discountPercent > 0 && (
+                    <p className="text-[10px] text-emerald-600 text-center font-medium mt-0.5">
+                      Économie engagement : {totals.discountAmount.toLocaleString()}€/an
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
