@@ -1,44 +1,81 @@
 
 
-# Plan — Mode édition WYSIWYG pour le devis
+# Plan — Éditeur WYSIWYG premium avec widgets et mise en page corporate intégrée
 
-## Problème
+## Constat
 
-Le mode édition affiche le markdown brut avec balises (`##`, `**`, `|---|---|`), incompréhensible pour un utilisateur final non-technique.
+L'éditeur actuel est un champ texte riche basique : on peut mettre en gras ou ajouter un titre, mais le résultat reste "du texte". Il n'y a pas de mise en page corporate pendant l'édition, pas de blocs prêts à l'emploi, et aucune interactivité avancée.
 
-## Solution
+## Solution : un éditeur de document à blocs
 
-Remplacer le `Textarea` monospace par un éditeur WYSIWYG basé sur **TipTap** (extension de ProseMirror, déjà compatible React). L'utilisateur voit le document formaté et le modifie directement — titres, gras, tableaux, listes — sans voir de balises.
+Transformer `QuoteEditor` en un éditeur "block-based" inspiré de Notion, où chaque section du document est un bloc visuel interactif. L'utilisateur compose son devis en insérant et réarrangeant des widgets préétablis, sans jamais toucher de code ni de balises.
 
-### Fonctionnement
+### Widgets préétablis (menu "+" flottant)
 
-- **Import/export markdown** : le contenu stocké reste du markdown (compatible avec l'IA et l'affichage preview). TipTap convertit markdown → HTML à l'ouverture et HTML → markdown à la sauvegarde.
-- **Toolbar compacte** : Titres (H2/H3), Gras, Italique, Liste à puces, Liste numérotée, Tableau, Séparateur — positionnée en haut du document en mode édition.
-- **Style cohérent** : L'éditeur utilise les mêmes classes `prose prose-lg` que le mode aperçu pour une transition visuelle fluide.
+Un bouton "+" apparaît entre chaque bloc (ou via un slash-command `/`). Il ouvre un menu de blocs :
 
-### Fichiers impactés
+| Widget | Rendu |
+|--------|-------|
+| **Tableau investissement** | Table 4 colonnes préformatée (Poste, Détail, Fréquence, Montant HT) avec cellules éditables |
+| **Encadré KPI** | Carte colorée avec icône, chiffre clé et label (ex: MRR, ARR, économie) |
+| **Bloc remise** | Bandeau vert avec pourcentage et montant économisé |
+| **Section signature** | 2 colonnes : Client / Prestataire avec champs Date, Nom, Signature |
+| **Conditions générales** | Bloc accordéon pré-rempli, texte juridique éditable |
+| **Séparateur décoratif** | HR avec filet primaire et motif corporate |
+| **Citation / mise en avant** | Blockquote stylé avec bordure latérale colorée |
+
+### Mise en page corporate EN MODE ÉDITION
+
+L'éditeur est encadré par le même header et footer corporate que le mode aperçu :
+- **En-tête** : Logo GROWTHINNOV, référence document, date (lecture seule, au-dessus de la zone éditable)
+- **Pied** : Mention de confidentialité (lecture seule, en dessous)
+- Transition édition ↔ aperçu invisible : seule la toolbar et les handles de blocs apparaissent/disparaissent
+
+### Interactions avancées
+
+- **Drag & drop** : Chaque bloc a un handle à gauche pour réordonner les sections par glisser-déposer
+- **Menu contextuel** : Clic droit ou bouton "⋯" sur chaque bloc → Dupliquer, Supprimer, Déplacer haut/bas
+- **Slash commands** : Taper `/` dans un paragraphe vide affiche le menu de blocs (comme Notion)
+- **Gestion des tableaux** : Boutons inline pour ajouter/supprimer ligne ou colonne quand le curseur est dans un tableau
+
+### Toolbar restructurée
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│  H2  H3  │  B  I  │  • ─  1. │  ≡Table │  [+ Bloc ▾] │
+│           │        │          │ +row +col│              │
+└─────────────────────────────────────────────────────────┘
+```
+
+Le bouton **[+ Bloc]** ouvre un dropdown avec les widgets illustrés par des icônes et descriptions courtes.
+
+## Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `package.json` | **Ajouter** `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-table`, `turndown`, `marked` |
-| `src/components/admin/business/QuoteEditor.tsx` | **Créer** — Composant éditeur WYSIWYG avec toolbar et conversion markdown |
-| `src/pages/admin/AdminQuotePreview.tsx` | **Modifier** — Remplacer le `Textarea` brut par `<QuoteEditor>` |
+| `src/components/admin/business/QuoteEditor.tsx` | **Réécrire** — Toolbar enrichie, menu d'insertion de blocs, slash commands, drag handles, gestion tableau inline |
+| `src/components/admin/business/quoteWidgets.ts` | **Créer** — Templates HTML des widgets (tableau investissement, KPI, signature, etc.) |
+| `src/pages/admin/AdminQuotePreview.tsx` | **Modifier** — Afficher header/footer corporate autour de l'éditeur en mode édition, passer les props métier |
+| `package.json` | **Modifier** — Ajouter `@tiptap/extension-placeholder` pour les slash commands |
 
-### Détail technique
+## Détail technique
 
-1. **Nouveau composant `QuoteEditor`** :
-   - `useEditor` TipTap avec StarterKit + Table extension
-   - `marked(markdown)` pour initialiser le contenu HTML
-   - `Turndown` pour reconvertir en markdown au `onChange`
-   - Toolbar sticky avec boutons icônes (même style que la toolbar du document)
-   - Classes prose identiques au mode aperçu
+1. **`quoteWidgets.ts`** : Exporte un tableau `QUOTE_WIDGETS` avec pour chaque widget : `id`, `label`, `icon`, `description`, `html` (template HTML TipTap). Les templates utilisent les mêmes classes prose que le document.
 
-2. **Modification `AdminQuotePreview.tsx`** (lignes 276-281) :
-   - Remplacer `<Textarea value={markdown} ...>` par `<QuoteEditor value={markdown} onChange={setMarkdown} />`
-   - Supprimer l'import `Textarea` si plus utilisé
+2. **`QuoteEditor.tsx`** :
+   - Ajouter `Placeholder` extension TipTap (affiche "Tapez / pour insérer un bloc...")
+   - Bouton dropdown "Insérer un bloc" dans la toolbar qui appelle `editor.commands.insertContent(widget.html)`
+   - Slash command listener : quand l'utilisateur tape `/`, filtrer et afficher les widgets dans un popover positionné au curseur
+   - Boutons contextuels tableau : quand `editor.isActive("table")`, afficher +ligne, +colonne, supprimer tableau
+   - Drag handles via TipTap DragHandle ou implémentation custom CSS
 
-### Ordre d'exécution
-1. Installer les dépendances TipTap
-2. Créer `QuoteEditor.tsx`
-3. Intégrer dans `AdminQuotePreview.tsx`
+3. **`AdminQuotePreview.tsx`** :
+   - En mode édition, wrapper l'éditeur dans le même letterhead + footer que le mode aperçu
+   - Passer `prospectName`, `docRef`, `date` au composant pour affichage
+
+## Ordre d'exécution
+1. Créer `quoteWidgets.ts` avec les templates HTML
+2. Installer `@tiptap/extension-placeholder`
+3. Réécrire `QuoteEditor.tsx` avec widgets, slash commands, toolbar enrichie
+4. Modifier `AdminQuotePreview.tsx` pour afficher le cadre corporate en mode édition
 
