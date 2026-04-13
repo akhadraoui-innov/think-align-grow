@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DEFAULT_PRICING_ROLES, DEFAULT_SALE_MODELS, DEFAULT_SEGMENTS,
   DEFAULT_SETUP_FEES, DEFAULT_SERVICES,
@@ -19,7 +18,7 @@ import {
 } from "./businessConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, RefreshCw, Sparkles, FileText, Calculator, Plus, Send, Lock, Eye, Pencil, History, Trash2, ExternalLink, TrendingUp, BarChart3 } from "lucide-react";
+import { Copy, Sparkles, FileText, Calculator, Plus, Send, Lock, Pencil, History, Trash2, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 /* ------------------------------------------------------------------ */
