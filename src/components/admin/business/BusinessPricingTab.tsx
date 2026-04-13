@@ -24,7 +24,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type PricingModel = "seat" | "usage" | "hybrid" | "caas";
 
-export function BusinessPricingTab() {
+interface BusinessPricingTabProps {
+  pricingRoles?: PricingRole[];
+  onPricingRolesChange?: (roles: PricingRole[]) => void;
+}
+
+export function BusinessPricingTab({ pricingRoles: externalRoles, onPricingRolesChange }: BusinessPricingTabProps) {
   // ──── State ────
   const [pricingModel, setPricingModel] = useState<PricingModel>("hybrid");
   const [plans, setPlans] = useState<PlanConfig[]>(DEFAULT_PLANS);
@@ -126,6 +131,7 @@ export function BusinessPricingTab() {
           <TabsTrigger value="strategy" className="text-xs gap-1.5 data-[state=active]:bg-card"><Target className="h-3.5 w-3.5" />Stratégie</TabsTrigger>
           <TabsTrigger value="plans" className="text-xs gap-1.5 data-[state=active]:bg-card"><DollarSign className="h-3.5 w-3.5" />Plans</TabsTrigger>
           <TabsTrigger value="roles" className="text-xs gap-1.5 data-[state=active]:bg-card"><Users className="h-3.5 w-3.5" />Rôles & Plans</TabsTrigger>
+          {/* pass shared roles to sub-tab */}
           <TabsTrigger value="enterprise" className="text-xs gap-1.5 data-[state=active]:bg-card"><Building2 className="h-3.5 w-3.5" />Enterprise</TabsTrigger>
           <TabsTrigger value="credits" className="text-xs gap-1.5 data-[state=active]:bg-card"><Cpu className="h-3.5 w-3.5" />Crédits & IA</TabsTrigger>
           <TabsTrigger value="services" className="text-xs gap-1.5 data-[state=active]:bg-card"><Briefcase className="h-3.5 w-3.5" />Services</TabsTrigger>
