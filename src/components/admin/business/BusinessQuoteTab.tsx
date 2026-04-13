@@ -284,6 +284,8 @@ export function BusinessQuoteTab({
           setupFees: selectedSetupIds.map(id => DEFAULT_SETUP_FEES.find(f => f.id === id)).filter(Boolean),
           services: selectedServiceIds.map(id => DEFAULT_SERVICES.find(s => s.id === id)).filter(Boolean),
           engagement: engagementMonths, totals,
+          activeModules: activeModules?.filter(m => m.active).map(m => m.name),
+          mainChannels: activeChannels?.slice(0, 3).map(c => ({ name: c.name, share: c.share })),
         },
       });
       if (error) throw error;
