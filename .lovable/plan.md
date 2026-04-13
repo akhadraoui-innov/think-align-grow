@@ -1,69 +1,58 @@
 
 
-# Plan — Page dédiée devis premium + calculs multi-années + synthèse engagements
+# Plan — Fix data sync, totals consistency, and corporate document rendering
 
-## 3 chantiers
+## Problems identified
 
-### 1. Page dédiée `/admin/business/quote-preview` avec rendu document corporate
+1. **Data not updating on save/regenerate**: `AdminQuotePreview` receives data via `navigate({ state })` — a frozen snapshot. When regenerating or editing, `state.totals` and `state.generatePayload` remain the original values. Changes never flow back.
 
-**Nouveau fichier** : `src/pages/admin/AdminQuotePreview.tsx`
+2. **Totals mismatch between sidebar and document**: The sidebar reads `state.totals` (frozen), while the AI-generated markdown may compute different numbers. After regeneration, the sidebar still shows old totals.
 
-- Layout plein écran `AdminShell`, conteneur centré max-width 900px (format A4)
-- Header corporate : prospect, segment, date, version, statut (badges)
-- Toolbar sticky : Retour, Copier, Régénérer, Éditer/Aperçu toggle, Sauvegarder (si draft), Marquer envoyé
-- Corps : `EnrichedMarkdown` avec typographie premium (prose classes, spacing adapté)
-- Mode édition : `Textarea` monospace plein écran
-- Sidebar financière compacte : MRR, ARR, Setup, Year1/Year2/Year3, Total contrat
-- Données passées via `useNavigate({ state })` depuis le configurateur
-- Bouton "Voir le devis" dans `BusinessQuoteTab` remplace l'aperçu inline actuel
+3. **Document not corporate enough**: Basic `prose prose-sm` wrapper with minimal styling. No letterhead, no visual hierarchy, no professional framing.
 
-### 2. Calculs financiers corrigés : one-shot vs récurrent + multi-année
+## Solution
 
-**Modifier** `BusinessQuoteTab.tsx` (totals) :
+### 1. Load quote from DB instead of frozen state
 
-Catégoriser les services sélectionnés :
-- **One-shot** : `priceModel` = "Jour" | "Forfait" | "Par participant" | "Commission" → comptés une seule fois en Y1
-- **Récurrent** : `priceModel` = "Mensuel" → × 12 par année
+Refactor `AdminQuotePreview.tsx` to:
+- Accept only the quote `id` via route params or navigation state
+- Fetch the full quote record from `business_quotes` on mount
+- Rebuild `totals` and `generatePayload` from the stored config fields (`role_configs`, `selected_setup_ids`, `selected_service_ids`, `engagement_months`, etc.)
+- This ensures save, regenerate, and sidebar always reflect the latest data
 
-Nouveaux totaux :
-```
-servicesOneShot = somme services one-shot sélectionnés
-servicesMonthly = somme services mensuels sélectionnés
-year1 = ARR + setup + servicesOneShot + (servicesMonthly × 12)
-year2 = (engagement >= 24) ? ARR + (servicesMonthly × 12) : 0
-year3 = (engagement >= 36) ? ARR + (servicesMonthly × 12) : 0
-totalContrat = year1 + year2 + year3
-```
+### 2. Fix save to persist all fields
 
-**Modifier** `business-quote/index.ts` (prompt IA) :
-- Envoyer les détails one-shot vs récurrent séparément
-- Imposer un tableau d'investissement par année dans le prompt
-- Exiger la distinction explicite "prestations uniques (Y1)" vs "prestations récurrentes (mensuelles)"
-- Si engagement > 12 mois, demander un breakdown Year 1 / Year 2 / Year 3
+When saving from the preview page:
+- Save `quote_markdown` AND recalculated `totals` back to DB
+- After regeneration, auto-save the new markdown + totals
+- When returning to the configurator, reload from DB (already works via `fetchQuotes`)
 
-### 3. Onglet "Synthèse Engagements" — suivi interne par version
+### 3. Fix regeneration payload
 
-**Nouveau sous-onglet** dans `BusinessQuoteTab` ou section dédiée :
+Instead of using a frozen `generatePayload`, rebuild it from the DB-stored config fields using the same logic as `buildGeneratePayload()` in `BusinessQuoteTab`. Extract this logic into a shared utility or duplicate it in the preview page.
 
-- Tableau récapitulatif de tous les devis `sent` groupés par prospect
-- Colonnes : Prospect, Version, Date envoi, MRR, ARR, Setup, Total contrat, Engagement (mois)
-- Ligne de totaux : pipeline total engagé, MRR cumulé, ARR cumulé
-- Comparaison entre versions d'un même prospect (delta MRR, delta services)
-- Filtre par statut (draft/sent), par segment, par date
+### 4. Corporate document rendering
 
-## Fichiers impactés
+Upgrade the preview page with:
+- **Letterhead area**: Logo placeholder, "GROWTHINNOV" branding, document reference number, date
+- **Professional typography**: `prose-lg` with custom heading styles, tighter leading, corporate colors
+- **Section dividers**: Subtle horizontal rules with primary accent between major sections
+- **Page margins**: Print-friendly padding (48px+ sides), max-width 850px for A4 feel
+- **Footer**: Confidentiality notice, page reference, version stamp
+- **Financial sidebar**: Gradient accent on total, better visual hierarchy with background fills on key numbers
+- **Print styles**: `@media print` rules for clean PDF export
 
-| Fichier | Action |
+## Files impacted
+
+| File | Action |
 |---------|--------|
-| `src/pages/admin/AdminQuotePreview.tsx` | **Créer** — Page document corporate |
-| `src/components/admin/business/BusinessQuoteTab.tsx` | **Modifier** — Calculs multi-année, navigation preview, onglet synthèse |
-| `supabase/functions/business-quote/index.ts` | **Modifier** — Prompt enrichi one-shot/récurrent + breakdown annuel |
-| `src/App.tsx` | **Modifier** — Route `/admin/business/quote-preview` |
+| `AdminQuotePreview.tsx` | **Rewrite** — DB-driven data, corporate layout, recalculated totals |
+| `BusinessQuoteTab.tsx` | **Minor** — Pass only quote ID to preview, extract totals calculation if needed |
+| `businessConfig.ts` | **Minor** — Export a `computeQuoteTotals()` utility if centralizing calculation |
 
-## Ordre
-1. Calculs financiers corrigés (one-shot vs récurrent, Y1/Y2/Y3)
-2. Prompt IA enrichi (edge function)
-3. Page dédiée `AdminQuotePreview.tsx` + route
-4. Onglet synthèse engagements
-5. Connecter le tout (navigation, sauvegarde depuis preview)
+## Execution order
+1. Extract totals calculation into reusable function
+2. Rewrite `AdminQuotePreview` to load from DB and recalculate
+3. Upgrade document rendering with corporate design
+4. Fix navigation to pass only ID
 
