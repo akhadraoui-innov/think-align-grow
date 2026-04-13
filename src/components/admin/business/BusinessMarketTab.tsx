@@ -19,8 +19,15 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const COLORS = ["hsl(var(--primary))", "hsl(142 76% 36%)", "hsl(262 83% 58%)", "hsl(25 95% 53%)", "hsl(200 80% 50%)"];
 
-export function BusinessMarketTab() {
-  const [segments, setSegments] = useState<SegmentConfig[]>(DEFAULT_SEGMENTS);
+interface BusinessMarketTabProps {
+  segments?: SegmentConfig[];
+  onSegmentsChange?: (segments: SegmentConfig[]) => void;
+}
+
+export function BusinessMarketTab({ segments: externalSegments, onSegmentsChange }: BusinessMarketTabProps) {
+  const [internalSegments, setInternalSegments] = useState<SegmentConfig[]>(DEFAULT_SEGMENTS);
+  const segments = externalSegments || internalSegments;
+  const setSegments = onSegmentsChange || setInternalSegments;
   const [regions, setRegions] = useState<GeoRegion[]>(DEFAULT_GEO_REGIONS);
   const [tam, setTam] = useState(DEFAULT_TAM);
   const [sam, setSam] = useState(DEFAULT_SAM);

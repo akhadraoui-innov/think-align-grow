@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DEFAULT_PRICING_ROLES, DEFAULT_SALE_MODELS, DEFAULT_SEGMENTS,
   DEFAULT_SETUP_FEES, DEFAULT_SERVICES,
-  type QuoteRoleConfig,
+  type QuoteRoleConfig, type ModuleConfig, type SegmentConfig, type ChannelConfig, type PricingRole, type SaleModel,
 } from "./businessConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -45,8 +45,8 @@ interface QuoteRecord {
   updated_at: string;
 }
 
-const defaultRoleConfigs = (): QuoteRoleConfig[] =>
-  DEFAULT_PRICING_ROLES.map(r => ({
+const defaultRoleConfigs = (roles: PricingRole[]): QuoteRoleConfig[] =>
+  roles.map(r => ({
     roleId: r.id,
     planId: r.defaultPlanId,
     count: r.valueLevel === "strategic" ? 2 : r.valueLevel === "operational" ? 5 : 20,
@@ -55,8 +55,29 @@ const defaultRoleConfigs = (): QuoteRoleConfig[] =>
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
-export function BusinessQuoteTab() {
+interface BusinessQuoteTabProps {
+  modules?: ModuleConfig[];
+  segments?: SegmentConfig[];
+  channels?: ChannelConfig[];
+  pricingRoles?: PricingRole[];
+  saleModels?: SaleModel[];
+}
+
+export function BusinessQuoteTab({
+  modules: externalModules,
+  segments: externalSegments,
+  channels: externalChannels,
+  pricingRoles: externalPricingRoles,
+  saleModels: externalSaleModels,
+}: BusinessQuoteTabProps = {}) {
   const { user } = useAuth();
+
+  // Resolve shared state — use props if provided, else defaults
+  const activePricingRoles = externalPricingRoles || DEFAULT_PRICING_ROLES;
+  const activeSegments = externalSegments || DEFAULT_SEGMENTS;
+  const activeSaleModels = externalSaleModels || DEFAULT_SALE_MODELS;
+  const activeModules = externalModules;
+  const activeChannels = externalChannels;
 
   /* ---------- list state ---------- */
   const [quotes, setQuotes] = useState<QuoteRecord[]>([]);
@@ -69,7 +90,7 @@ export function BusinessQuoteTab() {
   const [userCount, setUserCount] = useState(50);
   const [challenges, setChallenges] = useState("");
   const [saleModelId, setSaleModelId] = useState("saas-conseil");
-  const [roleConfigs, setRoleConfigs] = useState<QuoteRoleConfig[]>(defaultRoleConfigs());
+  const [roleConfigs, setRoleConfigs] = useState<QuoteRoleConfig[]>(defaultRoleConfigs(activePricingRoles));
   const [selectedSetupIds, setSelectedSetupIds] = useState<string[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [engagementMonths, setEngagementMonths] = useState(12);
@@ -83,7 +104,7 @@ export function BusinessQuoteTab() {
   const [generating, setGenerating] = useState(false);
   const [editMode, setEditMode] = useState(false);
 
-  const saleModel = DEFAULT_SALE_MODELS.find(m => m.id === saleModelId)!;
+  const saleModel = activeSaleModels.find(m => m.id === saleModelId)!;
   const locked = status === "sent";
   const engagementDiscount = engagementMonths === 24 ? 0.10 : engagementMonths === 36 ? 0.15 : 0;
 
@@ -91,7 +112,7 @@ export function BusinessQuoteTab() {
   const totals = useMemo(() => {
     let mrr = 0;
     roleConfigs.forEach(rc => {
-      const role = DEFAULT_PRICING_ROLES.find(r => r.id === rc.roleId);
+      const role = activePricingRoles.find(r => r.id === rc.roleId);
       const plan = role?.plans.find(p => p.id === rc.planId);
       if (!plan || rc.count <= 0 || plan.billing === "usage") return;
       mrr += plan.pricePerUser * rc.count;
@@ -154,7 +175,7 @@ export function BusinessQuoteTab() {
     setUserCount(50);
     setChallenges("");
     setSaleModelId("saas-conseil");
-    setRoleConfigs(defaultRoleConfigs());
+    setRoleConfigs(defaultRoleConfigs(activePricingRoles));
     setSelectedSetupIds([]);
     setSelectedServiceIds([]);
     setEngagementMonths(12);
@@ -251,7 +272,7 @@ export function BusinessQuoteTab() {
     setGenerating(true);
     try {
       const rolesPayload = roleConfigs.filter(rc => rc.count > 0).map(rc => {
-        const role = DEFAULT_PRICING_ROLES.find(r => r.id === rc.roleId)!;
+        const role = activePricingRoles.find(r => r.id === rc.roleId)!;
         const plan = role.plans.find(p => p.id === rc.planId)!;
         return { roleName: role.name, planName: plan.name, count: rc.count, price: plan.pricePerUser, billing: plan.billing };
       });
@@ -263,6 +284,8 @@ export function BusinessQuoteTab() {
           setupFees: selectedSetupIds.map(id => DEFAULT_SETUP_FEES.find(f => f.id === id)).filter(Boolean),
           services: selectedServiceIds.map(id => DEFAULT_SERVICES.find(s => s.id === id)).filter(Boolean),
           engagement: engagementMonths, totals,
+          activeModules: activeModules?.filter(m => m.active).map(m => m.name),
+          mainChannels: activeChannels?.slice(0, 3).map(c => ({ name: c.name, share: c.share })),
         },
       });
       if (error) throw error;
@@ -358,7 +381,7 @@ export function BusinessQuoteTab() {
                 <Label className="text-xs">Segment *</Label>
                 <Select value={segment} onValueChange={setSegment} disabled={locked}>
                   <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-                  <SelectContent>{DEFAULT_SEGMENTS.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{activeSegments.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
@@ -377,7 +400,7 @@ export function BusinessQuoteTab() {
             <CardHeader className="pb-3"><CardTitle className="text-sm">Modèle de vente</CardTitle></CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {DEFAULT_SALE_MODELS.map(m => (
+                {activeSaleModels.map(m => (
                   <button key={m.id} onClick={() => !locked && setSaleModelId(m.id)} disabled={locked}
                     className={`p-3 rounded-lg border text-left transition-all text-xs ${saleModelId === m.id ? "bg-primary/5 border-primary ring-1 ring-primary/20" : "bg-card border-border hover:border-primary/30"} ${locked ? "opacity-70 cursor-not-allowed" : ""}`}>
                     <p className="font-semibold text-foreground">{m.label}</p>
@@ -409,7 +432,7 @@ export function BusinessQuoteTab() {
                   </thead>
                   <tbody>
                     {roleConfigs.map(rc => {
-                      const role = DEFAULT_PRICING_ROLES.find(r => r.id === rc.roleId)!;
+                      const role = activePricingRoles.find(r => r.id === rc.roleId)!;
                       const plan = role.plans.find(p => p.id === rc.planId)!;
                       const subtotal = plan.billing === "usage" ? 0 : plan.pricePerUser * rc.count;
                       return (
@@ -499,7 +522,7 @@ export function BusinessQuoteTab() {
               <div className="space-y-1.5">
                 <p className="text-muted-foreground font-medium">Revenus récurrents</p>
                 {roleConfigs.filter(rc => rc.count > 0).map(rc => {
-                  const role = DEFAULT_PRICING_ROLES.find(r => r.id === rc.roleId)!;
+                  const role = activePricingRoles.find(r => r.id === rc.roleId)!;
                   const plan = role.plans.find(p => p.id === rc.planId)!;
                   const sub = plan.billing === "usage" ? 0 : plan.pricePerUser * rc.count;
                   if (sub <= 0) return null;

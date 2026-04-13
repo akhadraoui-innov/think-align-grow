@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart3, Package, DollarSign, Megaphone, Globe, Handshake, Building2, Calculator, BookOpen, FileText } from "lucide-react";
@@ -11,6 +12,10 @@ import { BusinessEnterpriseTab } from "@/components/admin/business/BusinessEnter
 import { BusinessSimulatorTab } from "@/components/admin/business/BusinessSimulatorTab";
 import { BusinessGuideTab } from "@/components/admin/business/BusinessGuideTab";
 import { BusinessQuoteTab } from "@/components/admin/business/BusinessQuoteTab";
+import {
+  DEFAULT_MODULES, DEFAULT_CHANNELS, DEFAULT_SEGMENTS, DEFAULT_PRICING_ROLES, DEFAULT_SALE_MODELS,
+  type ModuleConfig, type ChannelConfig, type SegmentConfig, type PricingRole, type SaleModel,
+} from "@/components/admin/business/businessConfig";
 
 const tabs = [
   { value: "overview", label: "Vue d'ensemble", icon: BarChart3 },
@@ -26,6 +31,13 @@ const tabs = [
 ];
 
 export default function AdminBusiness() {
+  // ──── Shared state lifted here ────
+  const [modules, setModules] = useState<ModuleConfig[]>(DEFAULT_MODULES);
+  const [channels, setChannels] = useState<ChannelConfig[]>(DEFAULT_CHANNELS);
+  const [segments, setSegments] = useState<SegmentConfig[]>(DEFAULT_SEGMENTS);
+  const [pricingRoles, setPricingRoles] = useState<PricingRole[]>(DEFAULT_PRICING_ROLES);
+  const [saleModels] = useState<SaleModel[]>(DEFAULT_SALE_MODELS);
+
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
@@ -47,15 +59,23 @@ export default function AdminBusiness() {
           </TabsList>
 
           <TabsContent value="overview"><BusinessOverviewTab /></TabsContent>
-          <TabsContent value="offer"><BusinessOfferTab /></TabsContent>
-          <TabsContent value="pricing"><BusinessPricingTab /></TabsContent>
-          <TabsContent value="channels"><BusinessChannelsTab /></TabsContent>
-          <TabsContent value="market"><BusinessMarketTab /></TabsContent>
+          <TabsContent value="offer"><BusinessOfferTab modules={modules} onModulesChange={setModules} /></TabsContent>
+          <TabsContent value="pricing"><BusinessPricingTab pricingRoles={pricingRoles} onPricingRolesChange={setPricingRoles} /></TabsContent>
+          <TabsContent value="channels"><BusinessChannelsTab channels={channels} onChannelsChange={setChannels} /></TabsContent>
+          <TabsContent value="market"><BusinessMarketTab segments={segments} onSegmentsChange={setSegments} /></TabsContent>
           <TabsContent value="partners"><BusinessPartnersTab /></TabsContent>
           <TabsContent value="enterprise"><BusinessEnterpriseTab /></TabsContent>
           <TabsContent value="simulator"><BusinessSimulatorTab /></TabsContent>
           <TabsContent value="guide"><BusinessGuideTab /></TabsContent>
-          <TabsContent value="quote"><BusinessQuoteTab /></TabsContent>
+          <TabsContent value="quote">
+            <BusinessQuoteTab
+              modules={modules}
+              segments={segments}
+              channels={channels}
+              pricingRoles={pricingRoles}
+              saleModels={saleModels}
+            />
+          </TabsContent>
         </Tabs>
       </div>
     </AdminShell>

@@ -4,13 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { DEFAULT_CHANNELS, DEFAULT_ROADMAP, type ChannelConfig, type RoadmapPhase } from "./businessConfig";
+import { DEFAULT_ROADMAP, type ChannelConfig, type RoadmapPhase } from "./businessConfig";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { ArrowRight, Plus, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export function BusinessChannelsTab() {
-  const [channels, setChannels] = useState<ChannelConfig[]>(DEFAULT_CHANNELS);
+interface Props {
+  channels: ChannelConfig[];
+  onChannelsChange: (channels: ChannelConfig[]) => void;
+}
+
+export function BusinessChannelsTab({ channels, onChannelsChange }: Props) {
   const [funnel, setFunnel] = useState([
     { stage: "Awareness", rate: 100 },
     { stage: "Intérêt", rate: 40 },
@@ -23,15 +27,15 @@ export function BusinessChannelsTab() {
   const totalShare = channels.reduce((s, c) => s + c.share, 0);
 
   const updateShare = (id: string, share: number) => {
-    setChannels(prev => prev.map(c => c.id === id ? { ...c, share } : c));
+    onChannelsChange(channels.map(c => c.id === id ? { ...c, share } : c));
   };
 
   const updateConversion = (id: string, conversionRate: number) => {
-    setChannels(prev => prev.map(c => c.id === id ? { ...c, conversionRate } : c));
+    onChannelsChange(channels.map(c => c.id === id ? { ...c, conversionRate } : c));
   };
 
   const updateCac = (id: string, cac: number) => {
-    setChannels(prev => prev.map(c => c.id === id ? { ...c, cac } : c));
+    onChannelsChange(channels.map(c => c.id === id ? { ...c, cac } : c));
   };
 
   const updateFunnelRate = (idx: number, rate: number) => {
@@ -40,17 +44,17 @@ export function BusinessChannelsTab() {
 
   const addChannel = () => {
     const id = `ch-${Date.now()}`;
-    setChannels(prev => [...prev, { id, name: "Nouveau canal", share: 0, conversionRate: 5, cac: 200, color: "hsl(200 80% 50%)" }]);
+    onChannelsChange([...channels, { id, name: "Nouveau canal", share: 0, conversionRate: 5, cac: 200, color: "hsl(200 80% 50%)" }]);
   };
 
   const removeChannel = (id: string) => {
-    setChannels(prev => prev.filter(c => c.id !== id));
+    onChannelsChange(channels.filter(c => c.id !== id));
   };
 
   // Rebalance to 100%
   const rebalance = () => {
     const factor = 100 / totalShare;
-    setChannels(prev => prev.map(c => ({ ...c, share: Math.round(c.share * factor) })));
+    onChannelsChange(channels.map(c => ({ ...c, share: Math.round(c.share * factor) })));
   };
 
   // Roadmap editing
@@ -93,7 +97,7 @@ export function BusinessChannelsTab() {
             {channels.map(ch => (
               <div key={ch.id} className="grid grid-cols-12 gap-4 items-center group">
                 <div className="col-span-3 md:col-span-2">
-                  <Input value={ch.name} onChange={e => setChannels(prev => prev.map(c => c.id === ch.id ? { ...c, name: e.target.value } : c))} className="text-sm font-medium text-foreground h-7 border-none shadow-none p-0" />
+                  <Input value={ch.name} onChange={e => onChannelsChange(channels.map(c => c.id === ch.id ? { ...c, name: e.target.value } : c))} className="text-sm font-medium text-foreground h-7 border-none shadow-none p-0" />
                 </div>
                 <div className="col-span-4 md:col-span-4">
                   <Slider value={[ch.share]} onValueChange={v => updateShare(ch.id, v[0])} min={0} max={100} step={5} />

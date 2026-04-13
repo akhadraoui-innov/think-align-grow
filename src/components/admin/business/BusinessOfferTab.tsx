@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { DEFAULT_MODULES, SEGMENT_LABELS, type ModuleConfig } from "./businessConfig";
+import { SEGMENT_LABELS, type ModuleConfig } from "./businessConfig";
 import { GraduationCap, Brain, Presentation, Gamepad2, Lightbulb, Layers } from "lucide-react";
 
 const moduleIcons: Record<string, any> = {
@@ -12,15 +11,18 @@ const moduleIcons: Record<string, any> = {
 
 const attractivityDots = (level: number) => "●".repeat(level) + "○".repeat(3 - level);
 
-export function BusinessOfferTab() {
-  const [modules, setModules] = useState<ModuleConfig[]>(DEFAULT_MODULES);
+interface Props {
+  modules: ModuleConfig[];
+  onModulesChange: (modules: ModuleConfig[]) => void;
+}
 
+export function BusinessOfferTab({ modules, onModulesChange }: Props) {
   const toggleModule = (id: string) => {
-    setModules(prev => prev.map(m => m.id === id ? { ...m, active: !m.active } : m));
+    onModulesChange(modules.map(m => m.id === id ? { ...m, active: !m.active } : m));
   };
 
   const cycleAttractivity = (moduleId: string, segment: string) => {
-    setModules(prev => prev.map(m =>
+    onModulesChange(modules.map(m =>
       m.id === moduleId
         ? { ...m, segments: { ...m.segments, [segment]: (m.segments[segment] % 3) + 1 } }
         : m
