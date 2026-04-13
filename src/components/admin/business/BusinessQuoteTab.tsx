@@ -72,6 +72,13 @@ export function BusinessQuoteTab({
 }: BusinessQuoteTabProps = {}) {
   const { user } = useAuth();
 
+  // Resolve shared state — use props if provided, else defaults
+  const activePricingRoles = externalPricingRoles || DEFAULT_PRICING_ROLES;
+  const activeSegments = externalSegments || DEFAULT_SEGMENTS;
+  const activeSaleModels = externalSaleModels || DEFAULT_SALE_MODELS;
+  const activeModules = externalModules;
+  const activeChannels = externalChannels;
+
   /* ---------- list state ---------- */
   const [quotes, setQuotes] = useState<QuoteRecord[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
