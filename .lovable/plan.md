@@ -1,68 +1,69 @@
 
 
-# Plan — Connecter les onglets Business au Devis IA
+# Plan — Page dédiée devis premium + calculs multi-années + synthèse engagements
 
-## Probleme
+## 3 chantiers
 
-Chaque onglet Business (Offre, Pricing, Channels, Marche) utilise un state local independant. Le Devis IA lit les constantes `DEFAULT_*` statiques et ignore toute modification faite dans les autres onglets.
+### 1. Page dédiée `/admin/business/quote-preview` avec rendu document corporate
 
-## Solution : State partagé au niveau `AdminBusiness.tsx`
+**Nouveau fichier** : `src/pages/admin/AdminQuotePreview.tsx`
 
-### Architecture
+- Layout plein écran `AdminShell`, conteneur centré max-width 900px (format A4)
+- Header corporate : prospect, segment, date, version, statut (badges)
+- Toolbar sticky : Retour, Copier, Régénérer, Éditer/Aperçu toggle, Sauvegarder (si draft), Marquer envoyé
+- Corps : `EnrichedMarkdown` avec typographie premium (prose classes, spacing adapté)
+- Mode édition : `Textarea` monospace plein écran
+- Sidebar financière compacte : MRR, ARR, Setup, Year1/Year2/Year3, Total contrat
+- Données passées via `useNavigate({ state })` depuis le configurateur
+- Bouton "Voir le devis" dans `BusinessQuoteTab` remplace l'aperçu inline actuel
 
-Remonter le state editable dans `AdminBusiness.tsx` et le passer en props aux onglets enfants. Ainsi toute modification dans un onglet est immediatement visible dans les autres, notamment le Devis.
+### 2. Calculs financiers corrigés : one-shot vs récurrent + multi-année
 
-```text
-AdminBusiness.tsx (state central)
-├── BusinessOfferTab     ← modules actifs, attractivite
-├── BusinessPricingTab   ← roles, plans, quotas
-├── BusinessChannelsTab  ← canaux, taux conversion
-├── BusinessMarketTab    ← segments, geo
-├── BusinessQuoteTab     ← lit tout le state ci-dessus
-└── ...
+**Modifier** `BusinessQuoteTab.tsx` (totals) :
+
+Catégoriser les services sélectionnés :
+- **One-shot** : `priceModel` = "Jour" | "Forfait" | "Par participant" | "Commission" → comptés une seule fois en Y1
+- **Récurrent** : `priceModel` = "Mensuel" → × 12 par année
+
+Nouveaux totaux :
+```
+servicesOneShot = somme services one-shot sélectionnés
+servicesMonthly = somme services mensuels sélectionnés
+year1 = ARR + setup + servicesOneShot + (servicesMonthly × 12)
+year2 = (engagement >= 24) ? ARR + (servicesMonthly × 12) : 0
+year3 = (engagement >= 36) ? ARR + (servicesMonthly × 12) : 0
+totalContrat = year1 + year2 + year3
 ```
 
-### Ce qui change
+**Modifier** `business-quote/index.ts` (prompt IA) :
+- Envoyer les détails one-shot vs récurrent séparément
+- Imposer un tableau d'investissement par année dans le prompt
+- Exiger la distinction explicite "prestations uniques (Y1)" vs "prestations récurrentes (mensuelles)"
+- Si engagement > 12 mois, demander un breakdown Year 1 / Year 2 / Year 3
 
-**1. `AdminBusiness.tsx`** — Creer le state central :
-- `modules: ModuleConfig[]` (init depuis `DEFAULT_MODULES`)
-- `pricingRoles: PricingRole[]` (init depuis `DEFAULT_PRICING_ROLES`)
-- `segments: SegmentConfig[]` (init depuis `DEFAULT_SEGMENTS`)
-- `channels: ChannelConfig[]` (init depuis `DEFAULT_CHANNELS`)
-- `saleModels: SaleModel[]` (init depuis `DEFAULT_SALE_MODELS`)
+### 3. Onglet "Synthèse Engagements" — suivi interne par version
 
-Passer en props a chaque onglet : `value` + `onChange`.
+**Nouveau sous-onglet** dans `BusinessQuoteTab` ou section dédiée :
 
-**2. `BusinessOfferTab`** — Recevoir `modules` et `onModulesChange` en props au lieu de `useState` interne.
+- Tableau récapitulatif de tous les devis `sent` groupés par prospect
+- Colonnes : Prospect, Version, Date envoi, MRR, ARR, Setup, Total contrat, Engagement (mois)
+- Ligne de totaux : pipeline total engagé, MRR cumulé, ARR cumulé
+- Comparaison entre versions d'un même prospect (delta MRR, delta services)
+- Filtre par statut (draft/sent), par segment, par date
 
-**3. `BusinessPricingTab`** — Recevoir `pricingRoles` et `onPricingRolesChange` en props pour le sous-onglet Roles & Plans.
-
-**4. `BusinessChannelsTab`** — Recevoir `channels` et `onChannelsChange`.
-
-**5. `BusinessQuoteTab`** — Impact principal :
-- Les roles/plans dans le configurateur de deal viennent du state `pricingRoles` (pas de `DEFAULT_PRICING_ROLES`)
-- Les segments dans le select viennent du state `segments`
-- Les modules actifs filtrent les acces dans le recapitulatif
-- Le modele de vente vient du state `saleModels`
-- Le prompt IA envoye a l'edge function inclut les infos reelles (modules actifs, canaux principaux)
-
-### Alternative : persistence DB
-
-Si on veut que les configs survivent au refresh (pas juste dans la session), on pourrait creer une table `business_config` (une seule ligne, JSONB). Mais c'est un second temps — le state partagé resout deja le probleme de coherence inter-onglets.
-
-## Fichiers impactes
+## Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `AdminBusiness.tsx` | State central + passage props |
-| `BusinessOfferTab.tsx` | Props `modules` + `onModulesChange` |
-| `BusinessPricingTab.tsx` | Props `pricingRoles` + `onPricingRolesChange` |
-| `BusinessChannelsTab.tsx` | Props `channels` + `onChannelsChange` |
-| `BusinessMarketTab.tsx` | Props `segments` + `onSegmentsChange` |
-| `BusinessQuoteTab.tsx` | Lire les props au lieu des DEFAULT_* |
+| `src/pages/admin/AdminQuotePreview.tsx` | **Créer** — Page document corporate |
+| `src/components/admin/business/BusinessQuoteTab.tsx` | **Modifier** — Calculs multi-année, navigation preview, onglet synthèse |
+| `supabase/functions/business-quote/index.ts` | **Modifier** — Prompt enrichi one-shot/récurrent + breakdown annuel |
+| `src/App.tsx` | **Modifier** — Route `/admin/business/quote-preview` |
 
 ## Ordre
-1. Refactor `AdminBusiness.tsx` — state + props
-2. Adapter chaque onglet (Offre, Pricing, Channels, Market)
-3. Connecter le Devis aux donnees live
+1. Calculs financiers corrigés (one-shot vs récurrent, Y1/Y2/Y3)
+2. Prompt IA enrichi (edge function)
+3. Page dédiée `AdminQuotePreview.tsx` + route
+4. Onglet synthèse engagements
+5. Connecter le tout (navigation, sauvegarde depuis preview)
 
