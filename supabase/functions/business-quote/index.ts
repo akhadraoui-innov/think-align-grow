@@ -10,7 +10,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { prospectName, segment, userCount, challenges, saleModel, roles, setupFees, services, engagement, totals } = body;
+    const { prospectName, segment, userCount, challenges, saleModel, roles, setupFees, services, engagement, totals, activeModules, mainChannels } = body;
 
     if (!prospectName || !segment) {
       return new Response(JSON.stringify({ error: "prospectName et segment sont requis" }), {
@@ -45,6 +45,10 @@ ${(setupFees || []).map((s: any) => `- ${s.name} : ${s.minPrice}-${s.maxPrice}�
 ${(services || []).map((s: any) => `- ${s.name} : ${s.priceRange}`).join("\n") || "Aucun"}
 
 **Engagement** : ${engagement || 12} mois
+
+**Modules actifs** : ${(activeModules || []).join(", ") || "Tous"}
+
+**Canaux principaux** : ${(mainChannels || []).map((c: any) => `${c.name} (${c.share}%)`).join(", ") || "Non précisé"}
 
 **Totaux calculés** :
 - MRR : ${totals?.mrr || 0}€
