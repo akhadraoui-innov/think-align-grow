@@ -100,6 +100,7 @@ import AdminUCM from "./pages/admin/AdminUCM";
 import AdminUCMSectors from "./pages/admin/AdminUCMSectors";
 import AdminUCMPrompts from "./pages/admin/AdminUCMPrompts";
 import AdminBusiness from "./pages/admin/AdminBusiness";
+import AdminQuotePreview from "./pages/admin/AdminQuotePreview";
 
 const queryClient = new QueryClient();
 
