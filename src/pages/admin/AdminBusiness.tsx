@@ -91,13 +91,6 @@ export default function AdminBusiness() {
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-border/50 p-8">
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Business & Revenue</h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl">
-            Command center stratégique — modélisez, simulez et pilotez votre go-to-market, pricing et croissance.
-          </p>
-        </div>
 
         {/* Level 1 — Main sections */}
         <div className="flex flex-wrap gap-1.5 bg-muted/50 p-1.5 rounded-xl border border-border/30">

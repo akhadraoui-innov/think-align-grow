@@ -648,7 +648,6 @@ export function BusinessQuoteTab({
             </Card>
           </div>
         </div>
-      </div>
     </div>
   );
 }
