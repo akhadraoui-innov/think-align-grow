@@ -1263,6 +1263,77 @@ export type Database = {
         }
         Relationships: []
       }
+      business_quotes: {
+        Row: {
+          challenges: string | null
+          created_at: string
+          created_by: string
+          engagement_months: number
+          id: string
+          parent_quote_id: string | null
+          prospect_name: string
+          quote_markdown: string | null
+          role_configs: Json
+          sale_model_id: string
+          segment: string
+          selected_service_ids: Json
+          selected_setup_ids: Json
+          status: string
+          totals: Json
+          updated_at: string
+          user_count: number
+          version: number
+        }
+        Insert: {
+          challenges?: string | null
+          created_at?: string
+          created_by: string
+          engagement_months?: number
+          id?: string
+          parent_quote_id?: string | null
+          prospect_name: string
+          quote_markdown?: string | null
+          role_configs?: Json
+          sale_model_id: string
+          segment: string
+          selected_service_ids?: Json
+          selected_setup_ids?: Json
+          status?: string
+          totals?: Json
+          updated_at?: string
+          user_count?: number
+          version?: number
+        }
+        Update: {
+          challenges?: string | null
+          created_at?: string
+          created_by?: string
+          engagement_months?: number
+          id?: string
+          parent_quote_id?: string | null
+          prospect_name?: string
+          quote_markdown?: string | null
+          role_configs?: Json
+          sale_model_id?: string
+          segment?: string
+          selected_service_ids?: Json
+          selected_setup_ids?: Json
+          status?: string
+          totals?: Json
+          updated_at?: string
+          user_count?: number
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_quotes_parent_quote_id_fkey"
+            columns: ["parent_quote_id"]
+            isOneToOne: false
+            referencedRelation: "business_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cards: {
         Row: {
           action: string | null
