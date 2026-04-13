@@ -801,7 +801,7 @@ export function BusinessPricingTab({ pricingRoles: externalRoles, onPricingRoles
 
         {/* ═══════ TAB 7 — RÔLES & PLANS ═══════ */}
         <TabsContent value="roles" className="space-y-6 mt-4">
-          <RolesPlansSubTab />
+          <RolesPlansSubTab externalRoles={externalRoles} onRolesChange={onPricingRolesChange} />
         </TabsContent>
       </Tabs>
     </div>
@@ -809,8 +809,14 @@ export function BusinessPricingTab({ pricingRoles: externalRoles, onPricingRoles
 }
 
 // ──── Rôles & Plans Sub-Tab ────
-function RolesPlansSubTab() {
-  const [roles, setRoles] = useState<PricingRole[]>(DEFAULT_PRICING_ROLES);
+function RolesPlansSubTab({ externalRoles, onRolesChange }: { externalRoles?: PricingRole[]; onRolesChange?: (roles: PricingRole[]) => void }) {
+  const [internalRoles, setInternalRoles] = useState<PricingRole[]>(DEFAULT_PRICING_ROLES);
+  const roles = externalRoles || internalRoles;
+  const setRoles = (updater: PricingRole[] | ((prev: PricingRole[]) => PricingRole[])) => {
+    const newVal = typeof updater === "function" ? updater(roles) : updater;
+    if (onRolesChange) onRolesChange(newVal);
+    else setInternalRoles(newVal);
+  };
   const [selectedRoleId, setSelectedRoleId] = useState(roles[0]?.id || "");
   const [dealCounts, setDealCounts] = useState<Record<string, { planId: string; count: number }>>(
     Object.fromEntries(roles.map(r => [r.id, { planId: r.defaultPlanId, count: r.valueLevel === "strategic" ? 2 : r.valueLevel === "operational" ? 5 : 20 }]))
