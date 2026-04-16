@@ -113,10 +113,18 @@ export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
                 <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…" className="pl-7 h-8 text-xs" />
               </div>
               <Select value={filterKind} onValueChange={setFilterKind}>
-                <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous types</SelectItem>
+                  {KINDS.map(k => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterScope} onValueChange={(v: any) => setFilterScope(v)}>
+                <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous</SelectItem>
-                  {KINDS.map(k => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                  <SelectItem value="mine">Mes blocs</SelectItem>
+                  <SelectItem value="global">Globaux</SelectItem>
                 </SelectContent>
               </Select>
             </div>
