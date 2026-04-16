@@ -43,7 +43,32 @@ export default function PortalPratique() {
   });
   const availablePractices = [...orgPractices, ...publicPractices];
 
-  const modes = useMemo(() => Object.entries(MODE_REGISTRY).filter(([key, def]) => { if (filterUniverse !== "all" && def.universe !== filterUniverse) return false; if (filterFamily !== "all" && def.family !== filterFamily) return false; if (search) { const q = search.toLowerCase(); return def.label.toLowerCase().includes(q) || def.description.toLowerCase().includes(q); } return true; }).sort((a, b) => a[1].label.localeCompare(b[1].label)), [search, filterUniverse, filterFamily]);
+  // Build unified catalogue: MODE_REGISTRY entries + org practices mapped as catalogue items
+  const practiceEntries: [string, any][] = useMemo(() => {
+    return availablePractices.map((pr: any) => {
+      const registryDef = getModeDefinition(pr.practice_type);
+      const def = {
+        family: registryDef?.family || ("chat" as ModeFamily),
+        universe: registryDef?.universe || ("leadership" as ModeUniverse),
+        label: pr.title,
+        description: pr.scenario || "",
+        evaluationDimensions: Array.isArray(pr.evaluation_dimensions) ? (pr.evaluation_dimensions as string[]) : [],
+        defaultConfig: {},
+        _practice: pr, // marker to distinguish from registry modes
+      };
+      return [`practice_${pr.id}`, def] as [string, any];
+    });
+  }, [availablePractices]);
+
+  const modes = useMemo(() => {
+    const all: [string, any][] = [...Object.entries(MODE_REGISTRY), ...practiceEntries];
+    return all.filter(([key, def]) => {
+      if (filterUniverse !== "all" && def.universe !== filterUniverse) return false;
+      if (filterFamily !== "all" && def.family !== filterFamily) return false;
+      if (search) { const q = search.toLowerCase(); return def.label.toLowerCase().includes(q) || def.description.toLowerCase().includes(q); }
+      return true;
+    }).sort((a, b) => a[1].label.localeCompare(b[1].label));
+  }, [search, filterUniverse, filterFamily, practiceEntries]);
 
   const universes = Object.keys(UNIVERSE_LABELS) as ModeUniverse[];
   const universeCounts = useMemo(() => { const c: Record<string, number> = {}; Object.values(MODE_REGISTRY).forEach(def => { c[def.universe] = (c[def.universe] || 0) + 1; }); return c; }, []);
