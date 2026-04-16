@@ -108,7 +108,7 @@ export default function PortalPratique() {
               </p>
             </div>
             <div className="flex items-center gap-6">
-              <AnimatedCounter value={String(Object.keys(MODE_REGISTRY).length)} label="Simulations" />
+              <AnimatedCounter value={String(totalCatalogueCount)} label="Simulations" />
               <AnimatedCounter value={String(universes.length)} label="Univers" />
               <Button variant="outline" size="sm" onClick={() => navigate("/portal/pratique/history")} className="gap-1.5 hidden md:flex"><History className="h-3.5 w-3.5" /> Historique</Button>
             </div>
