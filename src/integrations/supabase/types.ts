@@ -870,60 +870,111 @@ export type Database = {
       academy_practices: {
         Row: {
           ai_assistance_level: string
+          attached_data: Json
+          audience: string | null
+          coaching_mode: string
           created_at: string
           difficulty: string | null
+          estimated_minutes: number | null
           evaluation_dimensions: Json
           evaluation_rubric: Json
+          evaluation_strategy: string
+          evaluation_weights: Json
           generation_mode: string
+          guardrails: Json
+          hints: Json
           id: string
+          is_public: boolean
           max_exchanges: number
+          model_override: string | null
           module_id: string | null
+          objectives: Json
           organization_id: string | null
           phases: Json
           practice_type: string
+          restitution_template: Json
           scenario: string
+          status: string
+          success_criteria: Json
           system_prompt: string
           tags: string[]
+          temperature_override: number | null
           title: string
           type_config: Json
+          universe: string | null
+          updated_at: string
         }
         Insert: {
           ai_assistance_level?: string
+          attached_data?: Json
+          audience?: string | null
+          coaching_mode?: string
           created_at?: string
           difficulty?: string | null
+          estimated_minutes?: number | null
           evaluation_dimensions?: Json
           evaluation_rubric?: Json
+          evaluation_strategy?: string
+          evaluation_weights?: Json
           generation_mode?: string
+          guardrails?: Json
+          hints?: Json
           id?: string
+          is_public?: boolean
           max_exchanges?: number
+          model_override?: string | null
           module_id?: string | null
+          objectives?: Json
           organization_id?: string | null
           phases?: Json
           practice_type?: string
+          restitution_template?: Json
           scenario?: string
+          status?: string
+          success_criteria?: Json
           system_prompt?: string
           tags?: string[]
+          temperature_override?: number | null
           title: string
           type_config?: Json
+          universe?: string | null
+          updated_at?: string
         }
         Update: {
           ai_assistance_level?: string
+          attached_data?: Json
+          audience?: string | null
+          coaching_mode?: string
           created_at?: string
           difficulty?: string | null
+          estimated_minutes?: number | null
           evaluation_dimensions?: Json
           evaluation_rubric?: Json
+          evaluation_strategy?: string
+          evaluation_weights?: Json
           generation_mode?: string
+          guardrails?: Json
+          hints?: Json
           id?: string
+          is_public?: boolean
           max_exchanges?: number
+          model_override?: string | null
           module_id?: string | null
+          objectives?: Json
           organization_id?: string | null
           phases?: Json
           practice_type?: string
+          restitution_template?: Json
           scenario?: string
+          status?: string
+          success_criteria?: Json
           system_prompt?: string
           tags?: string[]
+          temperature_override?: number | null
           title?: string
           type_config?: Json
+          universe?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -2212,6 +2263,219 @@ export type Database = {
             columns: ["toolkit_id"]
             isOneToOne: false
             referencedRelation: "toolkits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_blocks: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_global: boolean
+          kind: string
+          name: string
+          organization_id: string | null
+          tags: Json
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_global?: boolean
+          kind: string
+          name: string
+          organization_id?: string | null
+          tags?: Json
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_global?: boolean
+          kind?: string
+          name?: string
+          organization_id?: string | null
+          tags?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_blocks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_organizations: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          organization_id: string
+          practice_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          organization_id: string
+          practice_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          organization_id?: string
+          practice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_organizations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_organizations_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "academy_practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_user_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          organization_id: string | null
+          practice_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          practice_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          practice_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_user_assignments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_user_assignments_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "academy_practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_variants: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          practice_id: string
+          system_prompt: string
+          variant_label: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          practice_id: string
+          system_prompt?: string
+          variant_label: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          practice_id?: string
+          system_prompt?: string
+          variant_label?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_variants_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "academy_practices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_versions: {
+        Row: {
+          change_summary: string | null
+          changed_by: string | null
+          created_at: string
+          id: string
+          practice_id: string
+          snapshot: Json
+          version_number: number
+        }
+        Insert: {
+          change_summary?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          practice_id: string
+          snapshot?: Json
+          version_number?: number
+        }
+        Update: {
+          change_summary?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          practice_id?: string
+          snapshot?: Json
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_versions_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "academy_practices"
             referencedColumns: ["id"]
           },
         ]
