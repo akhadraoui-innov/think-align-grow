@@ -126,7 +126,7 @@ export default function PortalPratique() {
 
           <TabsContent value="catalogue" className="space-y-4 mt-4">
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => setFilterUniverse("all")} className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-all", filterUniverse === "all" ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-background border-border hover:border-primary/40 text-muted-foreground hover:text-foreground")}>Tous ({Object.keys(MODE_REGISTRY).length})</button>
+              <button onClick={() => setFilterUniverse("all")} className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-all", filterUniverse === "all" ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-background border-border hover:border-primary/40 text-muted-foreground hover:text-foreground")}>Tous ({totalCatalogueCount})</button>
               {universes.map(u => <button key={u} onClick={() => setFilterUniverse(filterUniverse === u ? "all" : u)} className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-all", filterUniverse === u ? "bg-primary text-primary-foreground border-primary shadow-sm" : cn("hover:shadow-sm", UNIVERSE_COLORS[u]))}>{UNIVERSE_LABELS[u]} ({universeCounts[u] || 0})</button>)}
             </div>
             <div className="flex flex-wrap gap-3 items-center">
