@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Library, Plus, Trash2, Search, Globe2 } from "lucide-react";
+import { Library, Plus, Trash2, Search, Globe2, Building2, Crown } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { usePracticeBlocks, useUpsertBlock, useDeleteBlock } from "@/hooks/useAdminPractices";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const KINDS = [
   { value: "persona", label: "Persona", color: "bg-blue-500/10 text-blue-700 dark:text-blue-300" },
@@ -28,13 +33,25 @@ interface Props {
 export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
   const [tab, setTab] = useState("browse");
   const [filterKind, setFilterKind] = useState<string>("all");
+  const [filterScope, setFilterScope] = useState<"all" | "mine" | "global">("all");
   const [search, setSearch] = useState("");
   const { data: blocks = [] } = usePracticeBlocks();
   const upsert = useUpsertBlock();
   const remove = useDeleteBlock();
+  const { user } = useAuth();
 
-  // New block draft
-  const [draft, setDraft] = useState({ kind: "persona", name: "", description: "", content: "", is_global: true });
+  // Super-admin gating: only super_admin can promote a block to global
+  const { data: isSuperAdmin = false } = useQuery({
+    queryKey: ["is-super-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("has_role", { _user_id: user!.id, _role: "super_admin" as any });
+      return !!data;
+    },
+  });
+
+  // New block draft — Org-only by default (security-first)
+  const [draft, setDraft] = useState({ kind: "persona", name: "", description: "", content: "", is_global: false });
 
   const filtered = blocks.filter((b: any) => {
     if (filterKind !== "all" && b.kind !== filterKind) return false;
