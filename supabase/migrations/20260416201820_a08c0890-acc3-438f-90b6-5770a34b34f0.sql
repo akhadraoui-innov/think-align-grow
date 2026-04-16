@@ -1,0 +1,2 @@
+ALTER TABLE academy_practice_sessions ADD COLUMN IF NOT EXISTS metadata jsonb NOT NULL DEFAULT '{}'::jsonb;
+CREATE INDEX IF NOT EXISTS idx_practice_sessions_variant ON academy_practice_sessions ((metadata->>'variant_id')) WHERE metadata ? 'variant_id';

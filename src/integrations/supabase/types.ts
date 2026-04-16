@@ -823,6 +823,7 @@ export type Database = {
           evaluation: Json | null
           id: string
           messages: Json
+          metadata: Json
           practice_id: string | null
           score: number | null
           started_at: string
@@ -834,6 +835,7 @@ export type Database = {
           evaluation?: Json | null
           id?: string
           messages?: Json
+          metadata?: Json
           practice_id?: string | null
           score?: number | null
           started_at?: string
@@ -845,6 +847,7 @@ export type Database = {
           evaluation?: Json | null
           id?: string
           messages?: Json
+          metadata?: Json
           practice_id?: string | null
           score?: number | null
           started_at?: string

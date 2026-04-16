@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Send, Sparkles, Loader2, RefreshCw } from "lucide-react";
+import { Send, Sparkles, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import type { AdminPractice } from "@/hooks/useAdminPractices";
 
@@ -26,12 +27,6 @@ export function LivePreviewPanel({ practice }: Props) {
     setLoading(true);
 
     try {
-      const systemOverride = [
-        practice.system_prompt,
-        practice.scenario ? `\n\nCONTEXTE:\n${practice.scenario}` : "",
-        (practice.guardrails ?? []).length ? `\n\nGARDE-FOUS:\n${(practice.guardrails as string[]).map(g => `- ${g}`).join("\n")}` : "",
-      ].join("");
-
       const { data: { session } } = await supabase.auth.getSession();
       const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.functions.supabase.co/academy-practice`;
 
@@ -42,8 +37,7 @@ export function LivePreviewPanel({ practice }: Props) {
           Authorization: `Bearer ${session?.access_token ?? ""}`,
         },
         body: JSON.stringify({
-          practice_id: "__standalone__",
-          system_override: systemOverride,
+          preview_practice: practice, // edge fn assemble the FULL prompt with all params
           messages: next,
         }),
       });
@@ -89,14 +83,19 @@ export function LivePreviewPanel({ practice }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <p className="text-xs font-bold uppercase tracking-widest">Live preview</p>
+      <div className="px-4 py-3 border-b border-border/60 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <p className="text-xs font-bold uppercase tracking-widest">Live preview</p>
+          </div>
+          <Button size="sm" variant="ghost" onClick={reset} className="h-7 px-2">
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
         </div>
-        <Button size="sm" variant="ghost" onClick={reset} className="h-7 px-2">
-          <RefreshCw className="h-3.5 w-3.5" />
-        </Button>
+        <Badge variant="outline" className="text-[9px] gap-1 w-fit">
+          <ShieldCheck className="h-2.5 w-2.5" /> Reflet exact (prompt + posture + garde-fous)
+        </Badge>
       </div>
 
       <ScrollArea className="flex-1 p-3">
@@ -104,7 +103,7 @@ export function LivePreviewPanel({ practice }: Props) {
           <div className="text-center py-12 px-4">
             <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
             <p className="text-xs text-muted-foreground">
-              Testez votre pratique en direct. Le prompt courant est utilisé en temps réel.
+              Testez votre pratique en direct. Toutes les configurations courantes sont injectées (modèle, posture, scénario, objectifs, garde-fous, phases).
             </p>
           </div>
         ) : (
