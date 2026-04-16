@@ -72,37 +72,19 @@ export default function Simulator() {
   
   const [activeTab, setActiveTab] = useState("catalogue");
 
-  // Fetch org-assigned standalone practices
-  const { data: orgPractices = [] } = useQuery({
-    queryKey: ["org-practices", activeOrgId],
-    enabled: !!activeOrgId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("academy_practices")
-        .select("*")
-        .eq("organization_id", activeOrgId!)
-        .is("module_id", null)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: publicPractices = [] } = useQuery({
-    queryKey: ["public-practices"],
+  // Aligned with PortalPratique: RLS returns the union of public + org-targeted + user-assigned practices
+  const { data: availablePractices = [] } = useQuery({
+    queryKey: ["visible-practices-cabinet", activeOrgId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("academy_practices")
         .select("*")
         .is("module_id", null)
-        .is("organization_id", null)
-        .order("created_at", { ascending: false });
+        .order("updated_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
-
-  const availablePractices = [...orgPractices, ...publicPractices];
 
   const modes = useMemo(() => {
     return Object.entries(MODE_REGISTRY)
