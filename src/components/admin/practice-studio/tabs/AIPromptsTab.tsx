@@ -42,7 +42,10 @@ export function AIPromptsTab({ practice, onChange }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label className="text-xs">Modèle (override)</Label>
-            <Select value={practice.model_override ?? ""} onValueChange={v => onChange({ model_override: v || null })}>
+            <Select
+              value={practice.model_override ?? "__default__"}
+              onValueChange={v => onChange({ model_override: v === "__default__" ? null : v })}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {MODELS.map(m => <SelectItem key={m.value || "default"} value={m.value || "__default__"}>{m.label}</SelectItem>)}

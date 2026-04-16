@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Send, Sparkles, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { Send, Sparkles, Loader2, RefreshCw, ShieldCheck, Cpu, MessageCircle, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import type { AdminPractice } from "@/hooks/useAdminPractices";
+import { usePracticeVariants, type AdminPractice } from "@/hooks/useAdminPractices";
 
 interface Props {
   practice: AdminPractice;
@@ -13,10 +13,20 @@ interface Props {
 
 interface Msg { role: "user" | "assistant"; content: string; }
 
+const POSTURE_LABEL: Record<string, string> = {
+  proactive: "Proactif",
+  guided: "Guidé",
+  socratic: "Socratique",
+  challenger: "Challenger",
+  silent: "Silencieux",
+  intensive: "Intensif",
+};
+
 export function LivePreviewPanel({ practice }: Props) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const { data: variants = [] } = usePracticeVariants(practice.id);
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -37,7 +47,7 @@ export function LivePreviewPanel({ practice }: Props) {
           Authorization: `Bearer ${session?.access_token ?? ""}`,
         },
         body: JSON.stringify({
-          preview_practice: practice, // edge fn assemble the FULL prompt with all params
+          preview_practice: practice,
           messages: next,
         }),
       });
@@ -81,6 +91,10 @@ export function LivePreviewPanel({ practice }: Props) {
 
   const reset = () => setMessages([]);
 
+  const modelLabel = (practice.model_override ?? "google/gemini-2.5-flash").split("/").pop();
+  const postureLabel = POSTURE_LABEL[practice.coaching_mode] ?? practice.coaching_mode ?? "guided";
+  const activeVariants = variants.filter((v: any) => v.is_active).length;
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-border/60 space-y-2">
@@ -89,13 +103,26 @@ export function LivePreviewPanel({ practice }: Props) {
             <Sparkles className="h-4 w-4 text-primary" />
             <p className="text-xs font-bold uppercase tracking-widest">Live preview</p>
           </div>
-          <Button size="sm" variant="ghost" onClick={reset} className="h-7 px-2">
-            <RefreshCw className="h-3.5 w-3.5" />
+          <Button size="sm" variant="outline" onClick={reset} className="h-7 px-2 gap-1 text-[11px]">
+            <RefreshCw className="h-3 w-3" /> Reset
           </Button>
         </div>
-        <Badge variant="outline" className="text-[9px] gap-1 w-fit">
-          <ShieldCheck className="h-2.5 w-2.5" /> Reflet exact (prompt + posture + garde-fous)
-        </Badge>
+        <div className="flex flex-wrap gap-1">
+          <Badge variant="outline" className="text-[9px] gap-1 px-1.5 py-0 h-4">
+            <Cpu className="h-2.5 w-2.5" /> {modelLabel}
+          </Badge>
+          <Badge variant="outline" className="text-[9px] gap-1 px-1.5 py-0 h-4">
+            <MessageCircle className="h-2.5 w-2.5" /> {postureLabel}
+          </Badge>
+          {activeVariants > 0 && (
+            <Badge variant="outline" className="text-[9px] gap-1 px-1.5 py-0 h-4">
+              <GitBranch className="h-2.5 w-2.5" /> {activeVariants} variante{activeVariants > 1 ? "s" : ""}
+            </Badge>
+          )}
+          <Badge variant="outline" className="text-[9px] gap-1 px-1.5 py-0 h-4 border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+            <ShieldCheck className="h-2.5 w-2.5" /> Reflet exact
+          </Badge>
+        </div>
       </div>
 
       <ScrollArea className="flex-1 p-3">
@@ -103,7 +130,7 @@ export function LivePreviewPanel({ practice }: Props) {
           <div className="text-center py-12 px-4">
             <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
             <p className="text-xs text-muted-foreground">
-              Testez votre pratique en direct. Toutes les configurations courantes sont injectées (modèle, posture, scénario, objectifs, garde-fous, phases).
+              Testez votre pratique. Modèle, posture, scénario, objectifs, garde-fous et phases sont injectés.
             </p>
           </div>
         ) : (

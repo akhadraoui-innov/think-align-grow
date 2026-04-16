@@ -1,5 +1,5 @@
-import { ReactNode, useEffect } from "react";
-import { ArrowLeft, Save, Copy, PlayCircle, History, Loader2, CheckCircle2, Library, Wand2 } from "lucide-react";
+import { ReactNode, useEffect, useState } from "react";
+import { ArrowLeft, Save, Copy, PlayCircle, Loader2, CheckCircle2, Library, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -16,22 +16,34 @@ interface Props {
   onDuplicate?: () => void;
   onPreviewToggle?: () => void;
   showPreview?: boolean;
-  onShowVersions?: () => void;
   onOpenLibrary?: () => void;
   onOpenCopilot?: () => void;
   isPublic?: boolean;
 }
 
+function formatSavedAgo(date: Date): string {
+  const seconds = Math.max(1, Math.round((Date.now() - date.getTime()) / 1000));
+  if (seconds < 60) return `Enregistré ${seconds}s`;
+  const min = Math.floor(seconds / 60);
+  if (min < 60) return `Enregistré ${min}m`;
+  const h = Math.floor(min / 60);
+  return `Enregistré ${h}h`;
+}
+
 export function StudioShell({
   list, canvas, preview, title, status, saving, lastSavedAt,
-  onSave, onDuplicate, onPreviewToggle, showPreview, onShowVersions,
+  onSave, onDuplicate, onPreviewToggle, showPreview,
   onOpenLibrary, onOpenCopilot, isPublic,
 }: Props) {
   const navigate = useNavigate();
+  const [, forceTick] = useState(0);
 
-  const savedLabel = lastSavedAt
-    ? `Enregistré ${Math.max(1, Math.round((Date.now() - lastSavedAt.getTime()) / 1000))}s`
-    : "Non enregistré";
+  // Tick every 10s to refresh "Enregistré Xs" label
+  useEffect(() => {
+    if (!lastSavedAt) return;
+    const id = window.setInterval(() => forceTick(t => t + 1), 10_000);
+    return () => window.clearInterval(id);
+  }, [lastSavedAt]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -47,6 +59,8 @@ export function StudioShell({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onSave, onPreviewToggle, onDuplicate, onOpenCopilot, onOpenLibrary]);
+
+  const savedLabel = lastSavedAt ? formatSavedAgo(lastSavedAt) : "Non enregistré";
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -74,7 +88,13 @@ export function StudioShell({
             </div>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
               {saving ? (
-                <><Loader2 className="h-3 w-3 animate-spin" /> Enregistrement…</>
+                <>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                  </span>
+                  Enregistrement…
+                </>
               ) : (
                 <><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {savedLabel}</>
               )}
@@ -90,11 +110,6 @@ export function StudioShell({
           {onOpenCopilot && (
             <Button variant="ghost" size="sm" onClick={onOpenCopilot} title="Co-pilote IA (⌘K)">
               <Wand2 className="h-4 w-4 mr-1.5 text-primary" /> Co-pilote
-            </Button>
-          )}
-          {onShowVersions && (
-            <Button variant="ghost" size="sm" onClick={onShowVersions}>
-              <History className="h-4 w-4 mr-1.5" /> Snapshot
             </Button>
           )}
           {onDuplicate && (
