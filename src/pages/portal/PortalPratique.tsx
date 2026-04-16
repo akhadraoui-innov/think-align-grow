@@ -43,10 +43,36 @@ export default function PortalPratique() {
   });
   const availablePractices = [...orgPractices, ...publicPractices];
 
-  const modes = useMemo(() => Object.entries(MODE_REGISTRY).filter(([key, def]) => { if (filterUniverse !== "all" && def.universe !== filterUniverse) return false; if (filterFamily !== "all" && def.family !== filterFamily) return false; if (search) { const q = search.toLowerCase(); return def.label.toLowerCase().includes(q) || def.description.toLowerCase().includes(q); } return true; }).sort((a, b) => a[1].label.localeCompare(b[1].label)), [search, filterUniverse, filterFamily]);
+  // Build unified catalogue: MODE_REGISTRY entries + org practices mapped as catalogue items
+  const practiceEntries: [string, any][] = useMemo(() => {
+    return availablePractices.map((pr: any) => {
+      const registryDef = getModeDefinition(pr.practice_type);
+      const def = {
+        family: registryDef?.family || ("chat" as ModeFamily),
+        universe: registryDef?.universe || ("leadership" as ModeUniverse),
+        label: pr.title,
+        description: pr.scenario || "",
+        evaluationDimensions: Array.isArray(pr.evaluation_dimensions) ? (pr.evaluation_dimensions as string[]) : [],
+        defaultConfig: {},
+        _practice: pr, // marker to distinguish from registry modes
+      };
+      return [`practice_${pr.id}`, def] as [string, any];
+    });
+  }, [availablePractices]);
+
+  const modes = useMemo(() => {
+    const all: [string, any][] = [...Object.entries(MODE_REGISTRY), ...practiceEntries];
+    return all.filter(([key, def]) => {
+      if (filterUniverse !== "all" && def.universe !== filterUniverse) return false;
+      if (filterFamily !== "all" && def.family !== filterFamily) return false;
+      if (search) { const q = search.toLowerCase(); return def.label.toLowerCase().includes(q) || def.description.toLowerCase().includes(q); }
+      return true;
+    }).sort((a, b) => a[1].label.localeCompare(b[1].label));
+  }, [search, filterUniverse, filterFamily, practiceEntries]);
 
   const universes = Object.keys(UNIVERSE_LABELS) as ModeUniverse[];
-  const universeCounts = useMemo(() => { const c: Record<string, number> = {}; Object.values(MODE_REGISTRY).forEach(def => { c[def.universe] = (c[def.universe] || 0) + 1; }); return c; }, []);
+  const totalCatalogueCount = Object.keys(MODE_REGISTRY).length + practiceEntries.length;
+  const universeCounts = useMemo(() => { const c: Record<string, number> = {}; Object.values(MODE_REGISTRY).forEach(def => { c[def.universe] = (c[def.universe] || 0) + 1; }); practiceEntries.forEach(([, def]) => { c[def.universe] = (c[def.universe] || 0) + 1; }); return c; }, [practiceEntries]);
 
   const launchStandalone = (key: string, def: any) => {
     const behaviorPrompt = getBehaviorInjection(key);
@@ -82,7 +108,7 @@ export default function PortalPratique() {
               </p>
             </div>
             <div className="flex items-center gap-6">
-              <AnimatedCounter value={String(Object.keys(MODE_REGISTRY).length)} label="Simulations" />
+              <AnimatedCounter value={String(totalCatalogueCount)} label="Simulations" />
               <AnimatedCounter value={String(universes.length)} label="Univers" />
               <Button variant="outline" size="sm" onClick={() => navigate("/portal/pratique/history")} className="gap-1.5 hidden md:flex"><History className="h-3.5 w-3.5" /> Historique</Button>
             </div>
@@ -100,7 +126,7 @@ export default function PortalPratique() {
 
           <TabsContent value="catalogue" className="space-y-4 mt-4">
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => setFilterUniverse("all")} className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-all", filterUniverse === "all" ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-background border-border hover:border-primary/40 text-muted-foreground hover:text-foreground")}>Tous ({Object.keys(MODE_REGISTRY).length})</button>
+              <button onClick={() => setFilterUniverse("all")} className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-all", filterUniverse === "all" ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-background border-border hover:border-primary/40 text-muted-foreground hover:text-foreground")}>Tous ({totalCatalogueCount})</button>
               {universes.map(u => <button key={u} onClick={() => setFilterUniverse(filterUniverse === u ? "all" : u)} className={cn("px-3 py-1.5 rounded-full text-xs font-medium border transition-all", filterUniverse === u ? "bg-primary text-primary-foreground border-primary shadow-sm" : cn("hover:shadow-sm", UNIVERSE_COLORS[u]))}>{UNIVERSE_LABELS[u]} ({universeCounts[u] || 0})</button>)}
             </div>
             <div className="flex flex-wrap gap-3 items-center">
@@ -113,18 +139,21 @@ export default function PortalPratique() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {modes.map(([key, def], i) => {
                     const isSelected = selectedMode?.key === key;
+                    const isPractice = !!def._practice;
+                    const handleLaunch = (e: React.MouseEvent) => { e.stopPropagation(); isPractice ? launchPractice(def._practice) : launchStandalone(key, def); };
                     return (
-                      <motion.div key={key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i*0.015, 0.3) }} onClick={() => setSelectedMode(isSelected ? null : { key, def })} className={cn("group rounded-xl border bg-card hover:shadow-md transition-all p-4 space-y-3 cursor-pointer", isSelected ? "border-primary shadow-md ring-1 ring-primary/20" : "hover:border-primary/30")}>
+                      <motion.div key={key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i*0.015, 0.3) }} onClick={() => !isPractice && setSelectedMode(isSelected ? null : { key, def })} className={cn("group rounded-xl border bg-card hover:shadow-md transition-all p-4 space-y-3 cursor-pointer", isSelected ? "border-primary shadow-md ring-1 ring-primary/20" : "hover:border-primary/30", isPractice && "border-accent/30 bg-accent/[0.02]")}>
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2.5">
                             <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", UNIVERSE_COLORS[def.universe])}>{FAMILY_ICONS[def.family]}</div>
                             <div><p className="text-sm font-semibold leading-tight">{def.label}</p><p className="text-[10px] text-muted-foreground">{UNIVERSE_LABELS[def.universe]}</p></div>
                           </div>
+                          {isPractice && <Badge className="text-[9px] bg-accent/10 text-accent border-accent/20">Org</Badge>}
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{def.description}</p>
                         <div className="flex items-center justify-between">
                           <div className="flex flex-wrap gap-1">{def.evaluationDimensions.slice(0,2).map((dim: string) => <Badge key={dim} variant="secondary" className="text-[9px] capitalize">{dim.replace(/_/g," ")}</Badge>)}</div>
-                          <Button size="sm" variant="default" className="h-7 gap-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => { e.stopPropagation(); launchStandalone(key, def); }}><Play className="h-3 w-3" /> Lancer</Button>
+                          <Button size="sm" variant="default" className="h-7 gap-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleLaunch}><Play className="h-3 w-3" /> Lancer</Button>
                         </div>
                       </motion.div>
                     );
