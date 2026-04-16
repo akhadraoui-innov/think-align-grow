@@ -33,15 +33,18 @@ export default function PortalPratique() {
   const [aiLevel, setAiLevel] = useState<AIAssistanceLevel>("guided");
   const [activeTab, setActiveTab] = useState("catalogue");
 
-  const { data: orgPractices = [] } = useQuery({
-    queryKey: ["org-practices", activeOrgId], enabled: !!activeOrgId,
-    queryFn: async () => { const { data } = await supabase.from("academy_practices").select("*").eq("organization_id", activeOrgId!).is("module_id", null).order("created_at", { ascending: false }); return data || []; },
+  // RLS now returns the union of public + org-targeted + user-assigned practices automatically
+  const { data: availablePractices = [] } = useQuery({
+    queryKey: ["visible-practices", activeOrgId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("academy_practices")
+        .select("*")
+        .is("module_id", null)
+        .order("updated_at", { ascending: false });
+      return data || [];
+    },
   });
-  const { data: publicPractices = [] } = useQuery({
-    queryKey: ["public-practices"],
-    queryFn: async () => { const { data } = await supabase.from("academy_practices").select("*").is("module_id", null).is("organization_id", null).order("created_at", { ascending: false }); return data || []; },
-  });
-  const availablePractices = [...orgPractices, ...publicPractices];
 
   // Build unified catalogue: MODE_REGISTRY entries + org practices mapped as catalogue items
   const practiceEntries: [string, any][] = useMemo(() => {
