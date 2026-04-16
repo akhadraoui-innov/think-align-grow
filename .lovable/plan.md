@@ -1,113 +1,80 @@
 
 
-## 1. Audit du plan v2 — ce qui est fait vs manquant
+## Audit complet du Practice Studio v2.2
 
-### ✅ Livré
-| Item | Statut |
-|---|---|
-| 5 tables DB (`practice_organizations`, `practice_user_assignments`, `practice_versions`, `practice_blocks`, `practice_variants`) | ✅ |
-| 16 colonnes étendues sur `academy_practices` | ✅ |
-| RLS multi-source (`is_public OR org OR user assignment`) | ✅ |
-| Page `/admin/practices` + `StudioShell` 3 colonnes | ✅ |
-| 8 onglets (Identity, Scenario, AI, Mechanics, Coaching, Evaluation, Distribution, Analytics) | ✅ |
-| Live preview streaming | ✅ |
-| Autosave 800 ms + snapshot manuel | ✅ |
-| Lecture Portal unifiée (public OR org OR user) | ✅ |
-| Hook centralisé `useAdminPractices` | ✅ |
+### ✅ Conforme au plan
+| Item | État | Note |
+|---|---|---|
+| 5 tables DB + 16 colonnes + RLS | ✅ | Conforme |
+| 10 onglets (8 + Variantes + Versions) | ✅ | OK |
+| Edge function `academy-practice` consomme tous les nouveaux champs | ✅ | `coaching_mode`, `model_override`, `evaluation_strategy`, `restitution_template`, `objectives`, `phases`, `guardrails`, `attached_data`, variants A/B routés |
+| Live preview branché sur `preview_practice` (reflet exact) | ✅ | Edge applique `buildSystemPrompt` identique |
+| AICopilot drawer + 9 actions contextuelles | ✅ | OK |
+| Block Library drawer (5 types) | ✅ | OK |
+| Versions tab avec snapshot + restore | ✅ | OK |
+| Auto-snapshot tous les 10 saves | ✅ | OK |
+| Raccourcis ⌘S/⌘⇧P/⌘⇧D/⌘K/⌘L | ✅ | OK |
 
-### ❌ Incohérences critiques (paramètres sans impact runtime)
-1. **`coaching_mode`** (proactive/socratic/challenger/silent) — saisi mais **jamais lu** par `academy-practice` (n'utilise que `ai_assistance_level`)
-2. **`model_override` + `temperature_override`** — l'edge function reste hardcodé sur `gemini-2.5-flash` à 8192 tokens
-3. **`evaluation_strategy` / `evaluation_dimensions` / `evaluation_weights`** — l'edge function évalue toujours via `evaluation_rubric` uniquement
-4. **`restitution_template`** (sections, ton, min_score) — ignoré par le format de restitution figé dans l'edge
-5. **`objectives` SMART + `success_criteria`** — pas injectés dans le system prompt
-6. **`guardrails`** — saisis mais non concaténés
-7. **`phases`** — pas envoyées à l'IA
-8. **`is_public`** — apparaît 2× (Identity + Distribution) → dupliqué (UX confuse)
-9. **Versions** : snapshot manuel uniquement, pas d'auto-snapshot, pas de diff, pas de rollback
-10. **Tables `practice_blocks` / `practice_variants`** créées mais **0 UI**
-11. **Bug runtime** : `Stat` warning ref dans `AnalyticsTab` (composant interne sans forwardRef ciblé par Tabs)
-12. **Live preview** : utilise `system_override` brut → ne reflète pas behavior_injection ni coaching_mode → ne représente PAS la vraie session
+### ❌ Bugs et incohérences détectés
 
-## 2. Plan de finalisation v2.1 (cohérence + UX) puis extensions v2.2
+| # | Problème | Sévérité | Fichier |
+|---|---|---|---|
+| 1 | **Console error** : `ActionRow` reçoit une ref invalide depuis `Sheet/ScrollArea` (function component sans `forwardRef`) | bloquant warning | `AICopilot.tsx` |
+| 2 | `IdentityTab` importe `MODE_REGISTRY` mais le bouton de filtrage par famille UI n'est plus visible nulle part (mode picker pauvre) | UX | `IdentityTab.tsx` |
+| 3 | Le `Select` du modèle utilise `"__default__"` comme valeur sentinel mais retourne `null` mal — peut écrire `"__default__"` en DB | bug data | `AIPromptsTab.tsx` |
+| 4 | Onglet Évaluation : pas de visualisation circulaire des poids (plan B mentionnait donut chart) | UX | `EvaluationTab.tsx` |
+| 5 | Coaching tab : pas de preview du prompt système réellement injecté (plan B) | UX | `CoachingTab.tsx` |
+| 6 | Live preview : pas de bouton "Reset session" visible dans header (déjà présent mais peu lisible) | UX | `LivePreviewPanel.tsx` |
+| 7 | Indicateur autosave statique : `"Enregistré 3s"` ne se met pas à jour après le rendu initial | UX | `StudioShell.tsx` |
+| 8 | Liste des pratiques : pas de stats de session par item (plan B) ni d'icône d'univers | UX | `PracticeListPanel.tsx` |
+| 9 | Tabs débordent légèrement sur 1392px de large (10 onglets) — pas de scroll horizontal | UX | `AdminPracticeStudio.tsx` |
+| 10 | `BlockLibrary` : aucun moyen d'**insérer** un bloc dans un champ courant (drawer ouvert depuis topbar sans contexte) | feature | `BlockLibrary.tsx` |
+| 11 | Snapshot manuel via topbar et via onglet Versions = 2 voies sans coordination claire | UX | `StudioShell.tsx` |
+| 12 | Live preview ne montre pas quel **modèle** ni quelle **posture** sont actifs | UX | `LivePreviewPanel.tsx` |
 
-### Phase A — Cohérence runtime (CRITIQUE, à faire d'abord)
+## Plan de finalisation v2.3
 
-**Edge function `academy-practice`**
-- Lire et utiliser : `model_override`, `temperature_override`, `coaching_mode`, `objectives`, `success_criteria`, `guardrails`, `phases`, `evaluation_strategy`, `evaluation_dimensions`, `evaluation_weights`, `restitution_template`
-- Ajouter 5 templates de posture coaching (proactive/socratique/challenger/silent/intensive) injectés dans le system prompt
-- Construire dynamiquement le bloc `evaluation` selon `evaluation_strategy` (rubric vs dimensions pondérées vs hybride vs holistique)
-- Filtrer les sections de restitution selon `restitution_template.sections`
-- Adapter le ton du feedback selon `restitution_template.tone`
-- Endpoint live preview : renvoyer le **même** prompt assemblé (preview = vérité)
+### Bug fixes (P0)
+1. `AICopilot.tsx` — wrap `ActionRow` avec `forwardRef` (élimine warning console)
+2. `AIPromptsTab.tsx` — convertir `"__default__"` ↔ `null` proprement avant écriture DB
 
-### Phase B — UX Studio polish
+### UX/UI polish (P1)
+3. **Indicateur autosave dynamique** : tick toutes les 10s dans `StudioShell` (timer interne), avec animation pulse pendant la sauvegarde
+4. **Tabs scrollables horizontalement** + tabs avec icône (Identité, Scénario, IA, Mécanique, Coaching, A/B, Évaluation, Diffusion, Analytics, Versions)
+5. **Liste pratiques enrichie** : icône d'univers, badge nombre de sessions, score moyen (mini hook ou prop), badge "Public/Org/Assigné"
+6. **EvaluationTab** : donut SVG des poids (composant inline ~30 lignes) + alerte rouge si ≠ 100%
+7. **CoachingTab** : carte "Aperçu posture injectée" qui affiche les 80 premiers caractères du `COACHING_POSTURES[mode]` (dupliqué côté front en const partagée)
+8. **LivePreviewPanel** : header montre `Model: gemini-2.5-flash` + `Posture: socratic` + `Variantes: 2` (chips), bouton Reset plus visible
 
-- Supprimer doublon `is_public` (garder dans Distribution uniquement, badge en header)
-- Header onglets : badge rouge sur onglets incomplets (titre vide, prompt vide, somme dimensions ≠ 100, aucune diffusion)
-- Indicateur autosave plus visible (chip animé)
-- Fix bug `Stat` ref warning (extraire hors fonction interne)
-- Live preview : badge "Reflet exact" + bouton "Reset session"
-- Ajouter compteur visible des sessions/score moyen dans la liste de pratiques
-- Raccourcis clavier (Cmd+S, Cmd+P, Cmd+D)
-- Onglet **Versions** dédié (sortir de Analytics) avec : auto-snapshot toutes les 10 modifs, diff visuel, bouton rollback
-- Onglet **Évaluation** : visualisation circulaire des poids, alerte si ≠ 100%
-- Onglet **Coaching** : prévisualisation du prompt système injecté pour la posture choisie
+### Cohérence & contexte (P1)
+9. **Snapshot unifié** : retirer le bouton snapshot du topbar (garder uniquement dans onglet Versions) pour éviter la confusion
+10. **BlockLibrary contextuel** : ajouter bouton "Insérer dans le champ courant" qui pousse le contenu dans `system_prompt` ou `guardrails` selon `currentTab` actif (passé en prop)
 
-### Phase C — 3 innovations v2.2 (extensions du plan v2)
+### Vérification Live Preview (P0)
+11. Tester via `supabase--curl_edge_functions` que `academy-practice` répond bien quand on envoie `preview_practice` (vérifier que le system prompt assemblé contient posture + objectifs + garde-fous)
+12. Confirmer que le streaming SSE fonctionne dans le preview (pas de buffer côté edge)
 
-#### C.1 Bibliothèque de blocs réutilisables
-- Drawer global "Library" accessible depuis le top bar
-- 5 types : `persona`, `rubric`, `guardrail`, `mechanic`, `prompt_snippet`
-- Chaque bloc : nom, description, contenu JSONB, scope (global / org)
-- Bouton "Insérer ce bloc" sur chaque champ texte concerné
-- Bouton "Sauver comme bloc" sur chaque section éditée (capitalisation rapide)
-- Filtre par type + recherche full-text
-
-#### C.2 Variantes A/B
-- Nouvel onglet **Variantes** entre Coaching et Évaluation
-- Liste des variantes (max 4) avec poids de routage (sliders sommant 100%)
-- Édition diff côté droit : prompt système alternatif uniquement
-- Routage côté `academy-practice` : tirage pondéré au démarrage de session
-- Persistance variant_id sur `academy_practice_sessions` (champ JSONB metadata)
-- Onglet Analytics enrichi : score moyen et taux complétion **par variante** + winner détecté
-
-#### C.3 AI Co-pilote d'édition
-- Bouton flottant "Co-pilote" en haut à droite du Studio
-- Drawer avec 6 actions one-click contextuelles à l'onglet actif :
-  - Identité : "Suggère 5 titres alternatifs"
-  - Scénario : "Améliore le brief", "Génère 3 objectifs SMART"
-  - AI : "Renforce le system prompt", "Génère 5 garde-fous"
-  - Évaluation : "Génère une rubric pondérée", "Challenge mes critères"
-  - Coaching : "Génère 5 hints adaptés"
-  - Variantes : "Génère 2 variantes opposées"
-- Edge function `practice-copilot` (nouvelle) — Lovable AI Gateway
-- Insertion en mode "diff preview" : l'admin valide avant d'appliquer
-
-## 3. Fichiers impactés
-
+### Fichiers à modifier
 | Cible | Action |
 |---|---|
-| `supabase/functions/academy-practice/index.ts` | **Refonte** : exploiter tous les nouveaux champs |
-| `supabase/functions/practice-copilot/index.ts` | **Nouveau** |
-| `src/components/admin/practice-studio/StudioShell.tsx` | Badges complétion + raccourcis + bouton Library + Co-pilote |
-| `src/components/admin/practice-studio/tabs/IdentityTab.tsx` | Retirer doublon `is_public` |
-| `src/components/admin/practice-studio/tabs/AnalyticsTab.tsx` | Fix ref warning + analytics par variante |
-| `src/components/admin/practice-studio/tabs/EvaluationTab.tsx` | Donut chart poids + alerte ≠100% |
-| `src/components/admin/practice-studio/tabs/CoachingTab.tsx` | Preview prompt généré |
-| `src/components/admin/practice-studio/tabs/VariantsTab.tsx` | **Nouveau** |
-| `src/components/admin/practice-studio/tabs/VersionsTab.tsx` | **Nouveau** (sortir d'Analytics) |
-| `src/components/admin/practice-studio/BlockLibrary.tsx` | **Nouveau** drawer |
-| `src/components/admin/practice-studio/AICopilot.tsx` | **Nouveau** drawer |
-| `src/components/admin/practice-studio/LivePreviewPanel.tsx` | Appeler nouvel endpoint preview cohérent |
-| `src/hooks/useAdminPractices.ts` | + hooks blocks + variants + auto-snapshot |
-| `src/pages/admin/AdminPracticeStudio.tsx` | +2 onglets (Variantes, Versions) + Library + Co-pilote |
+| `src/components/admin/practice-studio/AICopilot.tsx` | forwardRef + bug fix |
+| `src/components/admin/practice-studio/tabs/AIPromptsTab.tsx` | sentinel null fix |
+| `src/components/admin/practice-studio/StudioShell.tsx` | timer autosave, retirer bouton snapshot, scroll horizontal tabs |
+| `src/components/admin/practice-studio/PracticeListPanel.tsx` | univers icon, sessions count, badge diffusion |
+| `src/components/admin/practice-studio/tabs/EvaluationTab.tsx` | donut chart SVG |
+| `src/components/admin/practice-studio/tabs/CoachingTab.tsx` | preview posture injectée |
+| `src/components/admin/practice-studio/LivePreviewPanel.tsx` | header model/posture, reset visible |
+| `src/components/admin/practice-studio/BlockLibrary.tsx` | insertion contextuelle |
+| `src/pages/admin/AdminPracticeStudio.tsx` | passe `currentTab` à BlockLibrary, tabs avec icônes/scroll |
 
-## 4. Ordre d'exécution
+### Hors scope (pour itération suivante)
+- Diff visuel entre versions (heavy, à reporter)
+- Drag-drop des phases (bibliothèque externe)
+- Replay session exemplaires dans Analytics
 
-1. **Phase A** (cohérence runtime) — sans cela, tous les paramètres sont décoratifs
-2. **Phase B** (UX polish + bug fixes)
-3. **Phase C.1** Bibliothèque de blocs
-4. **Phase C.2** Variantes A/B
-5. **Phase C.3** AI Co-pilote
+### Ordre d'exécution
+1. Bug fixes P0 (AICopilot ref + sentinel) — 5 min
+2. Tests live preview via curl edge fn — 5 min  
+3. UX polish P1 (autosave timer, tabs scroll, donut, posture preview, model header) — 25 min
+4. Block library contextuel + suppression snapshot doublon — 10 min
 
