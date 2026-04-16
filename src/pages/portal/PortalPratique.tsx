@@ -152,7 +152,7 @@ export default function PortalPratique() {
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{def.description}</p>
                         <div className="flex items-center justify-between">
-                          <div className="flex flex-wrap gap-1">{def.evaluationDimensions.slice(0,2).map((dim: string) => <Badge key={dim} variant="secondary" className="text-[9px] capitalize">{dim.replace(/_/g," ")}</Badge>)}</div>
+                          <div className="flex flex-wrap gap-1">{(def.evaluationDimensions || []).slice(0,2).map((dim: any, idx: number) => { const label = typeof dim === "string" ? dim : (dim?.name || dim?.label || dim?.key || ""); if (!label) return null; return <Badge key={`${label}-${idx}`} variant="secondary" className="text-[9px] capitalize">{String(label).replace(/_/g," ")}</Badge>; })}</div>
                           <Button size="sm" variant="default" className="h-7 gap-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleLaunch}><Play className="h-3 w-3" /> Lancer</Button>
                         </div>
                       </motion.div>
