@@ -55,12 +55,18 @@ export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
 
   const filtered = blocks.filter((b: any) => {
     if (filterKind !== "all" && b.kind !== filterKind) return false;
+    if (filterScope === "global" && !b.is_global) return false;
+    if (filterScope === "mine" && b.created_by !== user?.id) return false;
     if (search && !b.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
   const handleCreate = () => {
     if (!draft.name.trim()) return;
+    if (draft.is_global && !isSuperAdmin) {
+      toast.error("Seul un super-admin peut créer un bloc global");
+      return;
+    }
     let content: any = draft.content;
     try { content = JSON.parse(draft.content); } catch { content = { text: draft.content }; }
     upsert.mutate({
@@ -71,10 +77,16 @@ export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
       is_global: draft.is_global,
     }, {
       onSuccess: () => {
-        setDraft({ kind: "persona", name: "", description: "", content: "", is_global: true });
+        setDraft({ kind: "persona", name: "", description: "", content: "", is_global: false });
         setTab("browse");
       },
     });
+  };
+
+  const handlePromote = async (id: string) => {
+    if (!isSuperAdmin) { toast.error("Réservé aux super-admins"); return; }
+    const { error } = await supabase.from("practice_blocks").update({ is_global: true }).eq("id", id);
+    if (error) toast.error(error.message); else toast.success("Bloc promu en global");
   };
 
   return (
