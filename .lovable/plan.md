@@ -1,74 +1,77 @@
 
 
-# Plan — Création de contenu NGLA : Formations, Pratiques, Toolkits & Challenges
+# Plan — Refonte complète des 4 toolkits NGLA + affectation Growthinnov
 
-## Contexte
+## Données existantes
 
-Analyse du site **NextGen Legal Advisory (NGLA)** — cabinet spécialisé dans la transformation des directions juridiques. Domaines clés :
-- **IA appliquée aux métiers du droit** (prompting, Copilot, gouvernance IA)
-- **Leadership & positionnement stratégique** (raison d'être, Legal Design, KPIs)
-- **Operating model juridique** (Legal Ops, gouvernance, pilotage, conduite du changement)
+- **Organisation Growthinnov** : `c20a26a5-9e57-4abb-a5c4-77652c1d3e00`
+- **3 toolkits existants** (4 piliers × 5 cartes = 20 cartes chacun) :
+  - `a318ac06` — Transformation juridique par l'IA
+  - `3f394651` — Leadership juridique stratégique
+  - `dd1353b8` — Legal Operations Excellence
+- **3 challenges** liés à ces toolkits
+- **3 academy paths** existants (published)
+- **10 pratiques** dans `practiceTemplates.ts`
+- **Aucune** entrée `organization_toolkits` pour ces toolkits
 
-## Contenu à créer
+## Travail à réaliser
 
-### 3 Formations complètes (academy_paths + modules)
+### 1. Supprimer les cartes et piliers existants des 3 toolkits
 
-| # | Formation | Modules | Heures |
-|---|-----------|---------|--------|
-| 1 | **IA pour les juristes : des fondamentaux à l'impact** | 6 modules (Comprendre l'IA, Prompting juridique, Analyse contractuelle IA, Copilot Word/Outlook, Gouvernance IA, Feuille de route) | 12h |
-| 2 | **Leadership & influence de la direction juridique** | 5 modules (Raison d'être, Legal Design, KPIs & OKR, Éloquence, Valoriser ses succès) | 10h |
-| 3 | **Operating Model juridique : structurer sa transformation** | 5 modules (Diagnostic, Legal Ops, Gouvernance, Pilotage par les données, Conduite du changement) | 10h |
+DELETE les ~60 cartes puis les 12 piliers des 3 toolkits NGLA.
 
-### 10 Pratiques (simulator) — Catégorie "Droit & Transformation juridique"
+### 2. Recréer les 3 toolkits enrichis (7 piliers × 12 cartes = 84 cartes chacun)
 
-Pratiques insérées dans `practiceTemplates.ts` sous une nouvelle catégorie `legal_transformation` :
+| Toolkit | 7 Piliers |
+|---------|-----------|
+| **Transformation IA** ⚖️ | Acculturation IA, Prompting juridique avancé, Analyse contractuelle augmentée, CLM & Automatisation, Microsoft Copilot juridique, Gouvernance & Éthique IA, Feuille de route IA DJ |
+| **Leadership DJ** 👑 | Raison d'être de la DJ, Positionnement stratégique COMEX, Legal Design, KPIs & OKR juridiques, Éloquence & Prise de parole, Valoriser les succès DJ, Management d'équipe juridique |
+| **Legal Ops Excellence** ⚙️ | Operating Model, Process & Workflows, Legal Tech Stack, Knowledge Management, Data & Reporting, Budget & Cost Control, Gouvernance & Organisation |
 
-1. Négociation de clause contractuelle avec un opérationnel
-2. Présentation de la feuille de route IA au COMEX
-3. Rédaction d'un prompt pour analyse de contrat
-4. Atelier Legal Design — simplifier une clause
-5. Défendre le budget de la direction juridique
-6. Gérer un conflit interne Legal/Compliance
-7. Pitcher la valeur de la DJ au CEO
-8. Cadrer un projet d'automatisation contractuelle
-9. Mener un entretien de feedback avec un juriste junior
-10. Animer un comité de pilotage juridique trimestriel
+Chaque carte aura : `title`, `subtitle`, `definition`, `objective`, `action`, `kpi`, `qualification`, `step_name`, `difficulty`, `tags`, phases distribuées (foundations/model/growth/execution).
 
-### 3 Toolkits (toolkits + pillars + cards)
+### 3. Créer le 4e toolkit : "Piloter un projet de transformation juridique" 🧭
 
-| # | Toolkit | Piliers | Cartes/pilier |
-|---|---------|---------|---------------|
-| 1 | **Transformation juridique par l'IA** (⚖️) | 4 : Acculturation, Cas d'usage, Gouvernance, Déploiement | 5 |
-| 2 | **Leadership juridique stratégique** (🎯) | 4 : Positionnement, Communication, Pilotage, Influence | 5 |
-| 3 | **Legal Operations Excellence** (⚙️) | 4 : Process, Outils, Données, Organisation | 5 |
+Structure en 12 piliers multi-famille (~7 cartes chacun = ~84 cartes) :
 
-### 3 Challenges (challenge_templates + subjects + slots)
+| Famille | Piliers |
+|---------|---------|
+| **Questions** (2) | Diagnostic situationnel, Cadrage stratégique |
+| **Insights réponse** (5) | Benchmark marché, Maturité digitale, Parties prenantes, Écosystème Legal Tech, Veille réglementaire |
+| **Actions** (2) | Quick wins 90j, Transformation structurelle 12 mois |
+| **Insights projet** (3) | Gouvernance programme, KPIs transformation, Conduite du changement |
 
-| # | Challenge | Toolkit associé | Sujets |
-|---|-----------|----------------|--------|
-| 1 | **Construire sa feuille de route IA juridique** | Transformation juridique par l'IA | 4 sujets (Diagnostic maturité, Priorisation cas d'usage, Gouvernance, Plan d'action) |
-| 2 | **Repositionner la DJ comme business partner** | Leadership juridique stratégique | 3 sujets (Analyse positionnement, Proposition de valeur, Plan de communication) |
-| 3 | **Optimiser les Legal Ops** | Legal Operations Excellence | 3 sujets (Cartographie process, Sélection outils, KPIs opérationnels) |
+### 4. Affecter les 4 toolkits à l'organisation Growthinnov
+
+INSERT dans `organization_toolkits` pour les 4 toolkits × org `c20a26a5`.
+
+### 5. Mettre à jour les challenges
+
+Les 3 challenges existants restent liés aux mêmes toolkits. On enrichit les `challenge_subjects` et `challenge_slots` pour coller aux nouveaux piliers.
 
 ## Approche technique
 
-1. **Générer le contenu via l'AI Gateway** — Utiliser le script `lovable_ai.py` pour générer les descriptions riches, objectifs, contenus de modules, scénarios de pratiques
-2. **Insérer en base** via l'outil d'insertion Supabase (toolkits, pillars, cards, challenge_templates, subjects, slots)
-3. **Créer les paths et modules** via insertion directe (academy_paths, academy_modules, academy_path_modules)
-4. **Ajouter les pratiques** dans `practiceTemplates.ts` (fichier de config statique)
+1. Générer le contenu riche via AI Gateway (un appel par toolkit)
+2. DELETE cards → DELETE pillars des 3 toolkits existants
+3. INSERT 7 piliers + 84 cartes × 3 toolkits refaits
+4. INSERT nouveau toolkit + 12 piliers + ~84 cartes
+5. INSERT 4 entrées `organization_toolkits`
+6. UPDATE challenge_subjects si nécessaire
 
 ## Fichiers impactés
 
-| Fichier | Action |
-|---------|--------|
-| Base de données | **Insert** — toolkits, pillars, cards, challenge_templates, challenge_subjects, challenge_slots, academy_paths, academy_modules, academy_path_modules |
-| `src/components/simulator/config/practiceTemplates.ts` | **Modifier** — Ajouter catégorie `legal_transformation` avec 10 pratiques |
+| Cible | Action |
+|-------|--------|
+| Tables `cards`, `pillars` | DELETE + INSERT (~336 cartes, ~33 piliers) |
+| Table `toolkits` | INSERT 1 nouveau toolkit |
+| Table `organization_toolkits` | INSERT 4 entrées |
+| Aucun fichier source modifié | — |
 
 ## Ordre d'exécution
 
-1. Générer tout le contenu textuel via AI (descriptions, objectifs, scénarios)
-2. Insérer les 3 toolkits + piliers + cartes
-3. Insérer les 3 challenges + sujets + slots (liés aux toolkits)
-4. Insérer les 3 formations + modules
-5. Ajouter les 10 pratiques dans practiceTemplates.ts
+1. Générer tout le contenu via AI (4 toolkits × ~84 cartes)
+2. Supprimer cartes + piliers existants
+3. Insérer les nouveaux piliers et cartes (3 refaits + 1 nouveau)
+4. Insérer les `organization_toolkits`
+5. Vérifier les challenges
 
