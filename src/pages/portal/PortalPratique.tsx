@@ -24,9 +24,12 @@ const FAMILY_ICONS: Record<ModeFamily, React.ReactNode> = { chat: <MessageSquare
 const FAMILY_LABELS: Record<ModeFamily, string> = { chat: "Chat & Coaching", code: "Code & Review", document: "Document & Rédaction", analysis: "Analyse & Investigation", decision: "Décision & Crise", design: "Design & Board", assessment: "Audit & Conformité" };
 const UNIVERSE_COLORS: Record<ModeUniverse, string> = { engineering: "bg-blue-500/10 text-blue-700 border-blue-200", vibe_coding: "bg-violet-500/10 text-violet-700 border-violet-200", product: "bg-emerald-500/10 text-emerald-700 border-emerald-200", infra: "bg-orange-500/10 text-orange-700 border-orange-200", business_analysis: "bg-cyan-500/10 text-cyan-700 border-cyan-200", transformation: "bg-rose-500/10 text-rose-700 border-rose-200", ma_finance: "bg-amber-500/10 text-amber-700 border-amber-200", leadership: "bg-indigo-500/10 text-indigo-700 border-indigo-200", legal: "bg-slate-500/10 text-slate-700 border-slate-200", strategy: "bg-purple-500/10 text-purple-700 border-purple-200", prompting: "bg-pink-500/10 text-pink-700 border-pink-200", sales_hr: "bg-teal-500/10 text-teal-700 border-teal-200", personal_development: "bg-lime-500/10 text-lime-700 border-lime-200", therapy: "bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-200" };
 
+type PracticeScope = "public" | "org" | "assigned";
+
 export default function PortalPratique() {
   const navigate = useNavigate();
   const { activeOrgId } = useActiveOrg();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [filterUniverse, setFilterUniverse] = useState<string>("all");
   const [filterFamily, setFilterFamily] = useState<string>("all");
@@ -46,6 +49,30 @@ export default function PortalPratique() {
       return data || [];
     },
   });
+
+  // Fetch scope metadata (org links + personal assignments) to compute real badges
+  const { data: scopeMeta = { orgPracticeIds: new Set<string>(), assignmentMap: new Map<string, { due_date: string | null }>() } } = useQuery({
+    queryKey: ["practice-scope-meta", user?.id, availablePractices.map((p: any) => p.id).join(",")],
+    enabled: !!user && availablePractices.length > 0,
+    queryFn: async () => {
+      const ids = availablePractices.map((p: any) => p.id);
+      const [{ data: orgs }, { data: assigns }] = await Promise.all([
+        supabase.from("practice_organizations").select("practice_id").in("practice_id", ids),
+        supabase.from("practice_user_assignments").select("practice_id, due_date").in("practice_id", ids).eq("user_id", user!.id),
+      ]);
+      const orgPracticeIds = new Set((orgs ?? []).map((o: any) => o.practice_id));
+      const assignmentMap = new Map<string, { due_date: string | null }>();
+      (assigns ?? []).forEach((a: any) => assignmentMap.set(a.practice_id, { due_date: a.due_date }));
+      return { orgPracticeIds, assignmentMap };
+    },
+  });
+
+  const getScope = (pr: any): PracticeScope => {
+    if (scopeMeta.assignmentMap.has(pr.id)) return "assigned";
+    if (scopeMeta.orgPracticeIds.has(pr.id)) return "org";
+    return "public";
+  };
+  const getDueDate = (pr: any): string | null => scopeMeta.assignmentMap.get(pr.id)?.due_date ?? null;
 
   // Build unified catalogue: MODE_REGISTRY entries + org practices mapped as catalogue items
   const practiceEntries: [string, any][] = useMemo(() => {
