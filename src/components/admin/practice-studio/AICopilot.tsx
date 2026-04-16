@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import { Sparkles, Wand2, X, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -16,69 +16,15 @@ interface Action {
 }
 
 const ACTIONS: Action[] = [
-  {
-    key: "suggest_titles",
-    label: "Suggérer 5 titres",
-    description: "Propositions alternatives accrocheuses.",
-    tabs: ["identity"],
-    apply: () => null, // Show titles, user picks one manually
-  },
-  {
-    key: "improve_scenario",
-    label: "Améliorer le brief",
-    description: "Renforce réalisme, enjeux, contraintes.",
-    tabs: ["scenario"],
-    apply: (r) => r?.scenario ? { scenario: r.scenario } : null,
-  },
-  {
-    key: "generate_objectives",
-    label: "Générer 3 objectifs SMART",
-    description: "Spécifiques, mesurables, atteignables.",
-    tabs: ["scenario"],
-    apply: (r) => Array.isArray(r?.objectives) ? { objectives: r.objectives } : null,
-  },
-  {
-    key: "reinforce_prompt",
-    label: "Renforcer le system prompt",
-    description: "Posture, ton, persona, mécaniques.",
-    tabs: ["ai"],
-    apply: (r) => r?.system_prompt ? { system_prompt: r.system_prompt } : null,
-  },
-  {
-    key: "generate_guardrails",
-    label: "Générer 5 garde-fous",
-    description: "Interdictions strictes pour l'IA.",
-    tabs: ["ai"],
-    apply: (r) => Array.isArray(r?.guardrails) ? { guardrails: r.guardrails } : null,
-  },
-  {
-    key: "generate_rubric",
-    label: "Générer une rubric pondérée",
-    description: "5 dimensions, somme = 100%.",
-    tabs: ["evaluation"],
-    apply: (r) => Array.isArray(r?.evaluation_dimensions) ? { evaluation_dimensions: r.evaluation_dimensions } : null,
-  },
-  {
-    key: "challenge_criteria",
-    label: "Challenger mes critères",
-    description: "Critique + version améliorée.",
-    tabs: ["evaluation"],
-    apply: (r) => Array.isArray(r?.evaluation_dimensions) ? { evaluation_dimensions: r.evaluation_dimensions } : null,
-  },
-  {
-    key: "generate_hints",
-    label: "Générer 5 indices progressifs",
-    description: "Du plus subtil au plus directif.",
-    tabs: ["coaching"],
-    apply: (r) => Array.isArray(r?.hints) ? { hints: r.hints } : null,
-  },
-  {
-    key: "generate_variants",
-    label: "Générer 2 variantes opposées",
-    description: "Directif vs Socratique.",
-    tabs: ["variants"],
-    apply: () => null, // Insertion via separate mutation in tab
-  },
+  { key: "suggest_titles", label: "Suggérer 5 titres", description: "Propositions alternatives accrocheuses.", tabs: ["identity"], apply: () => null },
+  { key: "improve_scenario", label: "Améliorer le brief", description: "Renforce réalisme, enjeux, contraintes.", tabs: ["scenario"], apply: (r) => r?.scenario ? { scenario: r.scenario } : null },
+  { key: "generate_objectives", label: "Générer 3 objectifs SMART", description: "Spécifiques, mesurables, atteignables.", tabs: ["scenario"], apply: (r) => Array.isArray(r?.objectives) ? { objectives: r.objectives } : null },
+  { key: "reinforce_prompt", label: "Renforcer le system prompt", description: "Posture, ton, persona, mécaniques.", tabs: ["ai"], apply: (r) => r?.system_prompt ? { system_prompt: r.system_prompt } : null },
+  { key: "generate_guardrails", label: "Générer 5 garde-fous", description: "Interdictions strictes pour l'IA.", tabs: ["ai"], apply: (r) => Array.isArray(r?.guardrails) ? { guardrails: r.guardrails } : null },
+  { key: "generate_rubric", label: "Générer une rubric pondérée", description: "5 dimensions, somme = 100%.", tabs: ["evaluation"], apply: (r) => Array.isArray(r?.evaluation_dimensions) ? { evaluation_dimensions: r.evaluation_dimensions } : null },
+  { key: "challenge_criteria", label: "Challenger mes critères", description: "Critique + version améliorée.", tabs: ["evaluation"], apply: (r) => Array.isArray(r?.evaluation_dimensions) ? { evaluation_dimensions: r.evaluation_dimensions } : null },
+  { key: "generate_hints", label: "Générer 5 indices progressifs", description: "Du plus subtil au plus directif.", tabs: ["coaching"], apply: (r) => Array.isArray(r?.hints) ? { hints: r.hints } : null },
+  { key: "generate_variants", label: "Générer 2 variantes opposées", description: "Directif vs Socratique.", tabs: ["variants"], apply: () => null },
 ];
 
 interface Props {
@@ -187,9 +133,10 @@ export function AICopilot({ open, onOpenChange, practice, currentTab, onApply, o
   );
 }
 
-function ActionRow({ action, loading, onClick }: { action: Action; loading: boolean; onClick: () => void }) {
-  return (
+const ActionRow = forwardRef<HTMLButtonElement, { action: Action; loading: boolean; onClick: () => void }>(
+  ({ action, loading, onClick }, ref) => (
     <button
+      ref={ref}
       onClick={onClick}
       disabled={loading}
       className="w-full text-left rounded-lg border border-border/60 hover:border-primary/40 hover:bg-secondary/40 p-3 transition-all disabled:opacity-60"
@@ -202,5 +149,6 @@ function ActionRow({ action, loading, onClick }: { action: Action; loading: bool
         {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0 mt-0.5" /> : <Sparkles className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />}
       </div>
     </button>
-  );
-}
+  )
+);
+ActionRow.displayName = "ActionRow";

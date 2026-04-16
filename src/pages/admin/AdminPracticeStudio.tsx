@@ -120,13 +120,6 @@ export default function AdminPracticeStudio() {
     if (dup) setParams({ id: (dup as any).id });
   };
 
-  const handleSnapshot = () => {
-    if (!draft) return;
-    snapshotMut.mutate({ practiceId: draft.id, summary: "Snapshot manuel" }, {
-      onSuccess: () => toast.success("Version enregistrée"),
-    });
-  };
-
   const handleVariantsGenerated = (variants: Array<{ variant_label: string; system_prompt: string }>) => {
     if (!draft) return;
     variants.forEach((v, i) => {
@@ -139,6 +132,30 @@ export default function AdminPracticeStudio() {
       });
     });
     setTab("variants");
+  };
+
+  const handleInsertBlock = (block: any) => {
+    if (!draft) return;
+    const text = typeof block.content === "string"
+      ? block.content
+      : block.content?.text ?? block.content?.system ?? JSON.stringify(block.content, null, 2);
+    if (tab === "ai") {
+      apply({ system_prompt: `${draft.system_prompt ?? ""}\n\n${text}`.trim() });
+      toast.success("Bloc inséré dans le system prompt");
+    } else if (tab === "evaluation" && Array.isArray(block.content?.dimensions)) {
+      apply({ evaluation_dimensions: block.content.dimensions });
+      toast.success("Rubric appliquée");
+    } else if (tab === "coaching" && Array.isArray(block.content?.hints)) {
+      apply({ hints: [...(draft.hints ?? []), ...block.content.hints] });
+      toast.success("Indices ajoutés");
+    } else if (block.kind === "guardrail") {
+      apply({ guardrails: [...(draft.guardrails ?? []), text] });
+      toast.success("Garde-fou ajouté");
+    } else {
+      apply({ system_prompt: `${draft.system_prompt ?? ""}\n\n${text}`.trim() });
+      toast.success("Bloc inséré dans le system prompt");
+    }
+    setLibraryOpen(false);
   };
 
   const issues = computeTabIssues(draft);
@@ -163,7 +180,6 @@ export default function AdminPracticeStudio() {
         showPreview={showPreview}
         onPreviewToggle={() => setShowPreview(v => !v)}
         onDuplicate={draft ? handleDuplicate : undefined}
-        onShowVersions={draft ? handleSnapshot : undefined}
         onOpenLibrary={() => setLibraryOpen(true)}
         onOpenCopilot={draft ? () => setCopilotOpen(true) : undefined}
         onSave={() => draft && updateMut.mutate({ id: draft.id, patch: draft }, { onSuccess: () => setLastSavedAt(new Date()) })}
@@ -183,18 +199,20 @@ export default function AdminPracticeStudio() {
           ) : (
             <div className="p-6">
               <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-                <TabsList className="mb-5 flex-wrap h-auto">
-                  <TabTrigger value="identity" label="Identité" />
-                  <TabTrigger value="scenario" label="Scénario" />
-                  <TabTrigger value="ai" label="IA & Prompts" />
-                  <TabTrigger value="mechanics" label="Mécanique" />
-                  <TabTrigger value="coaching" label="Coaching" />
-                  <TabTrigger value="variants" label="Variantes A/B" />
-                  <TabTrigger value="evaluation" label="Évaluation" />
-                  <TabTrigger value="distribution" label="Diffusion" />
-                  <TabTrigger value="analytics" label="Analytics" />
-                  <TabTrigger value="versions" label="Versions" />
-                </TabsList>
+                <div className="overflow-x-auto -mx-2 px-2 mb-5">
+                  <TabsList className="inline-flex w-max">
+                    <TabTrigger value="identity" label="Identité" />
+                    <TabTrigger value="scenario" label="Scénario" />
+                    <TabTrigger value="ai" label="IA & Prompts" />
+                    <TabTrigger value="mechanics" label="Mécanique" />
+                    <TabTrigger value="coaching" label="Coaching" />
+                    <TabTrigger value="variants" label="Variantes A/B" />
+                    <TabTrigger value="evaluation" label="Évaluation" />
+                    <TabTrigger value="distribution" label="Diffusion" />
+                    <TabTrigger value="analytics" label="Analytics" />
+                    <TabTrigger value="versions" label="Versions" />
+                  </TabsList>
+                </div>
 
                 {issues[tab] && (
                   <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-300">
@@ -220,7 +238,7 @@ export default function AdminPracticeStudio() {
         preview={draft ? <LivePreviewPanel practice={draft} /> : <div />}
       />
 
-      <BlockLibrary open={libraryOpen} onOpenChange={setLibraryOpen} />
+      <BlockLibrary open={libraryOpen} onOpenChange={setLibraryOpen} onInsert={handleInsertBlock} />
       <AICopilot
         open={copilotOpen}
         onOpenChange={setCopilotOpen}

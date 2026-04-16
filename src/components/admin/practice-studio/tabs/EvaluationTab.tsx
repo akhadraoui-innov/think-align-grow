@@ -51,13 +51,17 @@ export function EvaluationTab({ practice, onChange }: Props) {
       </div>
 
       <div className="rounded-xl border border-border/60 bg-card p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
             <h3 className="text-sm font-semibold">Dimensions évaluées</h3>
             <p className="text-xs text-muted-foreground">
-              Total des poids : <span className={totalWeight === 100 ? "text-emerald-500 font-mono" : "text-amber-500 font-mono"}>{totalWeight}%</span>
+              Total des poids : <span className={totalWeight === 100 ? "text-emerald-500 font-mono" : "text-destructive font-mono"}>{totalWeight}%</span>
+              {totalWeight !== 100 && dims.length > 0 && (
+                <span className="ml-2 text-destructive">⚠ doit être égal à 100%</span>
+              )}
             </p>
           </div>
+          <WeightDonut dims={dims} total={totalWeight} />
           <Button size="sm" variant="outline" onClick={() => onChange({ evaluation_dimensions: [...dims, { name: "", weight: 25 }] })}>
             <Plus className="h-3.5 w-3.5 mr-1" /> Ajouter
           </Button>
@@ -132,6 +136,42 @@ export function EvaluationTab({ practice, onChange }: Props) {
             />
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function WeightDonut({ dims, total }: { dims: Array<{ name: string; weight: number }>; total: number }) {
+  const size = 64;
+  const stroke = 10;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const colors = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--secondary-foreground))", "hsl(142 71% 45%)", "hsl(35 91% 55%)", "hsl(280 80% 60%)"];
+  let offset = 0;
+  const safeTotal = Math.max(total, 1);
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }} title={`Total ${total}%`}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={stroke} />
+        {dims.map((d, i) => {
+          const portion = (d.weight / safeTotal) * c;
+          const seg = (
+            <circle
+              key={i}
+              cx={size / 2} cy={size / 2} r={r}
+              fill="none"
+              stroke={colors[i % colors.length]}
+              strokeWidth={stroke}
+              strokeDasharray={`${portion} ${c - portion}`}
+              strokeDashoffset={-offset}
+            />
+          );
+          offset += portion;
+          return seg;
+        })}
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className={`text-[10px] font-mono font-semibold ${total === 100 ? "text-emerald-500" : "text-destructive"}`}>{total}%</span>
       </div>
     </div>
   );
