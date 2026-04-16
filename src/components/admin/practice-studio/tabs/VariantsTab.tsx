@@ -42,8 +42,8 @@ export function VariantsTab({ practice }: Props) {
         </div>
 
         {!balanced && (
-          <div className="flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
-            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+          <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
             <span>Total des poids : <span className="font-mono">{total}%</span> — devrait être 100% pour un routage équilibré.</span>
           </div>
         )}

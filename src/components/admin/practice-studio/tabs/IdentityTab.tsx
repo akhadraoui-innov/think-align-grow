@@ -1,8 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { MODE_REGISTRY, UNIVERSE_LABELS } from "@/components/simulator/config/modeRegistry";
 import type { AdminPractice } from "@/hooks/useAdminPractices";
 
@@ -14,7 +12,7 @@ interface Props {
 export function IdentityTab({ practice, onChange }: Props) {
   return (
     <div className="space-y-5 max-w-3xl">
-      <Section title="Identité" subtitle="Nom, statut et visibilité">
+      <Section title="Identité" subtitle="Nom et statut">
         <div className="space-y-3">
           <div>
             <Label className="text-xs">Titre</Label>
@@ -45,13 +43,9 @@ export function IdentityTab({ practice, onChange }: Props) {
               </Select>
             </div>
           </div>
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div>
-              <p className="text-sm font-medium">Pratique publique</p>
-              <p className="text-xs text-muted-foreground">Visible par tous les apprenants sans assignation.</p>
-            </div>
-            <Switch checked={practice.is_public} onCheckedChange={v => onChange({ is_public: v })} />
-          </div>
+          <p className="text-[11px] text-muted-foreground">
+            La visibilité publique se gère dans l'onglet <strong>Diffusion</strong>.
+          </p>
         </div>
       </Section>
 
