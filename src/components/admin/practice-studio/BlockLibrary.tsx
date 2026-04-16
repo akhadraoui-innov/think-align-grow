@@ -132,13 +132,22 @@ export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
               <div className="space-y-2">
                 {filtered.map((b: any) => {
                   const kind = KINDS.find(k => k.value === b.kind);
+                  const isMine = b.created_by === user?.id;
                   return (
                     <div key={b.id} className="rounded-lg border border-border/60 p-3 hover:border-primary/40 transition-colors">
                       <div className="flex items-start justify-between gap-2 mb-1.5">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-xs font-semibold truncate">{b.name}</p>
-                            {b.is_global && <Globe2 className="h-3 w-3 text-muted-foreground" />}
+                            {b.is_global ? (
+                              <Badge variant="outline" className="h-4 gap-1 px-1.5 text-[9px] border-amber-500/40 text-amber-600 dark:text-amber-400">
+                                <Globe2 className="h-2.5 w-2.5" /> Global
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="h-4 gap-1 px-1.5 text-[9px] text-muted-foreground">
+                                <Building2 className="h-2.5 w-2.5" /> Org
+                              </Badge>
+                            )}
                           </div>
                           {b.description && <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{b.description}</p>}
                         </div>
@@ -150,9 +159,16 @@ export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
                             Insérer
                           </Button>
                         )}
-                        <Button size="sm" variant="ghost" onClick={() => remove.mutate(b.id)} className="h-7 px-2 ml-auto">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        {isSuperAdmin && !b.is_global && (
+                          <Button size="sm" variant="ghost" onClick={() => handlePromote(b.id)} className="h-7 text-[11px] gap-1" title="Promouvoir en bloc global">
+                            <Crown className="h-3 w-3 text-amber-500" /> Promouvoir
+                          </Button>
+                        )}
+                        {(isMine || isSuperAdmin) && (
+                          <Button size="sm" variant="ghost" onClick={() => remove.mutate(b.id)} className="h-7 px-2 ml-auto">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   );
@@ -192,6 +208,24 @@ export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
                     rows={10}
                     className="font-mono text-xs"
                     placeholder='{"system": "Tu es...", "tone": "..."}'
+                  />
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Label className="text-xs flex items-center gap-1.5">
+                      {draft.is_global ? <Globe2 className="h-3 w-3 text-amber-500" /> : <Building2 className="h-3 w-3 text-muted-foreground" />}
+                      Visibilité : {draft.is_global ? "Globale (toutes les orgs)" : "Mon organisation"}
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {isSuperAdmin
+                        ? "Tu peux créer un bloc global. Sinon il restera limité à ton org."
+                        : "Réservé à ton organisation. Un super-admin peut promouvoir un bloc en global."}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={draft.is_global}
+                    disabled={!isSuperAdmin}
+                    onCheckedChange={v => setDraft({ ...draft, is_global: v })}
                   />
                 </div>
                 <Button onClick={handleCreate} disabled={!draft.name.trim() || upsert.isPending} className="w-full">
