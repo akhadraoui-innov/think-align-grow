@@ -29,18 +29,20 @@ export function DistributionTab({ practice }: Props) {
 
   const [allOrgs, setAllOrgs] = useState<Array<{ id: string; name: string }>>([]);
   const [orgPick, setOrgPick] = useState<string>("");
-  const [allUsers, setAllUsers] = useState<Array<{ id: string; full_name: string | null; email: string | null }>>([]);
+  const [allUsers, setAllUsers] = useState<Array<{ user_id: string; display_name: string | null; email: string | null }>>([]);
   const [userPick, setUserPick] = useState<string>("");
   const [dueDate, setDueDate] = useState<string>("");
 
   useEffect(() => {
     supabase.from("organizations").select("id, name").order("name").then(({ data }) => setAllOrgs(data ?? []));
-    supabase.from("profiles").select("id, full_name, email").order("full_name").limit(500)
+    supabase.from("profiles").select("user_id, display_name, email").order("display_name").limit(500)
       .then(({ data }) => setAllUsers((data as any) ?? []));
   }, []);
 
   const orgIdsLinked = new Set(orgs.map((o: any) => o.organization_id));
   const userIdsLinked = new Set(assignments.map((a: any) => a.user_id));
+  const userLabel = (u?: { display_name: string | null; email: string | null; user_id: string }) =>
+    u ? (u.display_name || u.email || u.user_id.slice(0, 8)) : "—";
 
   return (
     <div className="space-y-5 max-w-3xl">
@@ -104,9 +106,9 @@ export function DistributionTab({ practice }: Props) {
           <Select value={userPick} onValueChange={setUserPick}>
             <SelectTrigger><SelectValue placeholder="Choisir un utilisateur…" /></SelectTrigger>
             <SelectContent className="max-h-72">
-              {allUsers.filter(u => !userIdsLinked.has(u.id)).map(u => (
-                <SelectItem key={u.id} value={u.id}>
-                  {u.full_name || u.email || u.id.slice(0, 8)}
+              {allUsers.filter(u => !userIdsLinked.has(u.user_id)).map(u => (
+                <SelectItem key={u.user_id} value={u.user_id}>
+                  {userLabel(u)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -132,11 +134,11 @@ export function DistributionTab({ practice }: Props) {
         </div>
         <div className="space-y-1.5">
           {assignments.map((a: any) => {
-            const u = allUsers.find(x => x.id === a.user_id);
+            const u = allUsers.find(x => x.user_id === a.user_id);
             return (
               <div key={a.id} className="flex items-center justify-between rounded-lg border p-2.5 text-xs">
                 <div>
-                  <p className="font-medium">{u?.full_name || u?.email || a.user_id.slice(0, 8)}</p>
+                  <p className="font-medium">{userLabel(u)}</p>
                   {a.due_date && <p className="text-muted-foreground">Échéance : {new Date(a.due_date).toLocaleDateString()}</p>}
                 </div>
                 <Button size="sm" variant="ghost" onClick={() => removeAssignment.mutate({ id: a.id, practiceId: practice.id })}>

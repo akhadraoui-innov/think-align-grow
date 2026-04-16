@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
-import { ArrowLeft, Save, Copy, PlayCircle, Loader2, CheckCircle2, Library, Wand2 } from "lucide-react";
+import { ArrowLeft, Copy, PlayCircle, CheckCircle2, Library, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -120,11 +120,6 @@ export function StudioShell({
           {onPreviewToggle && (
             <Button variant={showPreview ? "default" : "outline"} size="sm" onClick={onPreviewToggle} title="Live preview (⌘⇧P)">
               <PlayCircle className="h-4 w-4 mr-1.5" /> Live preview
-            </Button>
-          )}
-          {onSave && (
-            <Button size="sm" onClick={onSave} disabled={saving} title="Sauver (⌘S)">
-              <Save className="h-4 w-4 mr-1.5" /> Sauver
             </Button>
           )}
         </div>
