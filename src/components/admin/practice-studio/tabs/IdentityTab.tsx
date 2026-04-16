@@ -64,7 +64,18 @@ export function IdentityTab({ practice, onChange }: Props) {
           </div>
           <div>
             <Label className="text-xs">Mode (practice_type)</Label>
-            <Select value={practice.practice_type} onValueChange={v => onChange({ practice_type: v })}>
+            <Select
+              value={practice.practice_type}
+              onValueChange={v => {
+                const def = MODE_REGISTRY[v];
+                // Auto-suggest universe if user hasn't set one yet, or it doesn't match the new mode's family
+                const patch: Partial<AdminPractice> = { practice_type: v };
+                if (def && (!practice.universe || practice.universe === "")) {
+                  patch.universe = def.universe;
+                }
+                onChange(patch);
+              }}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent className="max-h-80">
                 {Object.entries(MODE_REGISTRY).map(([k, v]) => (
@@ -72,6 +83,9 @@ export function IdentityTab({ practice, onChange }: Props) {
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              L'univers est suggéré automatiquement à partir du mode (modifiable).
+            </p>
           </div>
         </div>
       </Section>

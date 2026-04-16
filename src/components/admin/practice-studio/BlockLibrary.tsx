@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Library, Plus, Trash2, Search, Globe2 } from "lucide-react";
+import { Library, Plus, Trash2, Search, Globe2, Building2, Crown } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { usePracticeBlocks, useUpsertBlock, useDeleteBlock } from "@/hooks/useAdminPractices";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const KINDS = [
   { value: "persona", label: "Persona", color: "bg-blue-500/10 text-blue-700 dark:text-blue-300" },
@@ -28,22 +33,40 @@ interface Props {
 export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
   const [tab, setTab] = useState("browse");
   const [filterKind, setFilterKind] = useState<string>("all");
+  const [filterScope, setFilterScope] = useState<"all" | "mine" | "global">("all");
   const [search, setSearch] = useState("");
   const { data: blocks = [] } = usePracticeBlocks();
   const upsert = useUpsertBlock();
   const remove = useDeleteBlock();
+  const { user } = useAuth();
 
-  // New block draft
-  const [draft, setDraft] = useState({ kind: "persona", name: "", description: "", content: "", is_global: true });
+  // Super-admin gating: only super_admin can promote a block to global
+  const { data: isSuperAdmin = false } = useQuery({
+    queryKey: ["is-super-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("has_role", { _user_id: user!.id, _role: "super_admin" as any });
+      return !!data;
+    },
+  });
+
+  // New block draft — Org-only by default (security-first)
+  const [draft, setDraft] = useState({ kind: "persona", name: "", description: "", content: "", is_global: false });
 
   const filtered = blocks.filter((b: any) => {
     if (filterKind !== "all" && b.kind !== filterKind) return false;
+    if (filterScope === "global" && !b.is_global) return false;
+    if (filterScope === "mine" && b.created_by !== user?.id) return false;
     if (search && !b.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
   const handleCreate = () => {
     if (!draft.name.trim()) return;
+    if (draft.is_global && !isSuperAdmin) {
+      toast.error("Seul un super-admin peut créer un bloc global");
+      return;
+    }
     let content: any = draft.content;
     try { content = JSON.parse(draft.content); } catch { content = { text: draft.content }; }
     upsert.mutate({
@@ -54,10 +77,16 @@ export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
       is_global: draft.is_global,
     }, {
       onSuccess: () => {
-        setDraft({ kind: "persona", name: "", description: "", content: "", is_global: true });
+        setDraft({ kind: "persona", name: "", description: "", content: "", is_global: false });
         setTab("browse");
       },
     });
+  };
+
+  const handlePromote = async (id: string) => {
+    if (!isSuperAdmin) { toast.error("Réservé aux super-admins"); return; }
+    const { error } = await supabase.from("practice_blocks").update({ is_global: true }).eq("id", id);
+    if (error) toast.error(error.message); else toast.success("Bloc promu en global");
   };
 
   return (
@@ -84,10 +113,18 @@ export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
                 <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher…" className="pl-7 h-8 text-xs" />
               </div>
               <Select value={filterKind} onValueChange={setFilterKind}>
-                <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous types</SelectItem>
+                  {KINDS.map(k => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterScope} onValueChange={(v: any) => setFilterScope(v)}>
+                <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous</SelectItem>
-                  {KINDS.map(k => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                  <SelectItem value="mine">Mes blocs</SelectItem>
+                  <SelectItem value="global">Globaux</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -95,13 +132,22 @@ export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
               <div className="space-y-2">
                 {filtered.map((b: any) => {
                   const kind = KINDS.find(k => k.value === b.kind);
+                  const isMine = b.created_by === user?.id;
                   return (
                     <div key={b.id} className="rounded-lg border border-border/60 p-3 hover:border-primary/40 transition-colors">
                       <div className="flex items-start justify-between gap-2 mb-1.5">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-xs font-semibold truncate">{b.name}</p>
-                            {b.is_global && <Globe2 className="h-3 w-3 text-muted-foreground" />}
+                            {b.is_global ? (
+                              <Badge variant="outline" className="h-4 gap-1 px-1.5 text-[9px] border-amber-500/40 text-amber-600 dark:text-amber-400">
+                                <Globe2 className="h-2.5 w-2.5" /> Global
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="h-4 gap-1 px-1.5 text-[9px] text-muted-foreground">
+                                <Building2 className="h-2.5 w-2.5" /> Org
+                              </Badge>
+                            )}
                           </div>
                           {b.description && <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{b.description}</p>}
                         </div>
@@ -113,9 +159,16 @@ export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
                             Insérer
                           </Button>
                         )}
-                        <Button size="sm" variant="ghost" onClick={() => remove.mutate(b.id)} className="h-7 px-2 ml-auto">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        {isSuperAdmin && !b.is_global && (
+                          <Button size="sm" variant="ghost" onClick={() => handlePromote(b.id)} className="h-7 text-[11px] gap-1" title="Promouvoir en bloc global">
+                            <Crown className="h-3 w-3 text-amber-500" /> Promouvoir
+                          </Button>
+                        )}
+                        {(isMine || isSuperAdmin) && (
+                          <Button size="sm" variant="ghost" onClick={() => remove.mutate(b.id)} className="h-7 px-2 ml-auto">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   );
@@ -155,6 +208,24 @@ export function BlockLibrary({ open, onOpenChange, onInsert }: Props) {
                     rows={10}
                     className="font-mono text-xs"
                     placeholder='{"system": "Tu es...", "tone": "..."}'
+                  />
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Label className="text-xs flex items-center gap-1.5">
+                      {draft.is_global ? <Globe2 className="h-3 w-3 text-amber-500" /> : <Building2 className="h-3 w-3 text-muted-foreground" />}
+                      Visibilité : {draft.is_global ? "Globale (toutes les orgs)" : "Mon organisation"}
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {isSuperAdmin
+                        ? "Tu peux créer un bloc global. Sinon il restera limité à ton org."
+                        : "Réservé à ton organisation. Un super-admin peut promouvoir un bloc en global."}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={draft.is_global}
+                    disabled={!isSuperAdmin}
+                    onCheckedChange={v => setDraft({ ...draft, is_global: v })}
                   />
                 </div>
                 <Button onClick={handleCreate} disabled={!draft.name.trim() || upsert.isPending} className="w-full">

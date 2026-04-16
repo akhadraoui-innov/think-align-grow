@@ -46,6 +46,19 @@ export default function PortalFormationsDashboard() {
     },
   });
 
+  const { data: assignedPractices = [] } = useQuery({
+    queryKey: ["dashboard-assigned-practices", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("practice_user_assignments")
+        .select("id, due_date, practice_id, academy_practices(id, title, scenario, difficulty)")
+        .eq("user_id", user!.id)
+        .order("due_date", { ascending: true, nullsFirst: false });
+      return (data || []).filter((a: any) => a.academy_practices);
+    },
+  });
+
   const completedModules = allProgress.filter((p: any) => p.status === "completed").length;
   const totalTimeSeconds = allProgress.reduce((s: number, p: any) => s + (p.time_spent_seconds || 0), 0);
   const totalTimeHours = Math.round(totalTimeSeconds / 3600 * 10) / 10;
