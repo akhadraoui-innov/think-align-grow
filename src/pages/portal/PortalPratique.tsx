@@ -172,16 +172,31 @@ export default function PortalPratique() {
                     const isSelected = selectedMode?.key === key;
                     const isPractice = !!def._practice;
                     const handleLaunch = (e: React.MouseEvent) => { e.stopPropagation(); isPractice ? launchPractice(def._practice) : launchStandalone(key, def); };
+                    const scope = isPractice ? getScope(def._practice) : null;
+                    const due = isPractice ? getDueDate(def._practice) : null;
+                    const dueDateMs = due ? new Date(due).getTime() : null;
+                    const isUrgent = dueDateMs ? (dueDateMs - Date.now()) < 3 * 24 * 3600 * 1000 : false;
                     return (
                       <motion.div key={key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i*0.015, 0.3) }} onClick={() => !isPractice && setSelectedMode(isSelected ? null : { key, def })} className={cn("group rounded-xl border bg-card hover:shadow-md transition-all p-4 space-y-3 cursor-pointer", isSelected ? "border-primary shadow-md ring-1 ring-primary/20" : "hover:border-primary/30", isPractice && "border-accent/30 bg-accent/[0.02]")}>
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", UNIVERSE_COLORS[def.universe])}>{FAMILY_ICONS[def.family]}</div>
-                            <div><p className="text-sm font-semibold leading-tight">{def.label}</p><p className="text-[10px] text-muted-foreground">{UNIVERSE_LABELS[def.universe]}</p></div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0", UNIVERSE_COLORS[def.universe])}>{FAMILY_ICONS[def.family]}</div>
+                            <div className="min-w-0"><p className="text-sm font-semibold leading-tight truncate">{def.label}</p><p className="text-[10px] text-muted-foreground">{UNIVERSE_LABELS[def.universe]}</p></div>
                           </div>
-                          {isPractice && <Badge className="text-[9px] bg-accent/10 text-accent border-accent/20">Org</Badge>}
+                          {isPractice && scope && (
+                            scope === "assigned" ? <Badge className="text-[9px] gap-1 bg-primary/10 text-primary border-primary/20"><UserCheck className="h-2.5 w-2.5" /> Assignée</Badge>
+                            : scope === "org" ? <Badge className="text-[9px] gap-1 bg-accent/10 text-accent border-accent/20"><Building2 className="h-2.5 w-2.5" /> Org</Badge>
+                            : <Badge variant="outline" className="text-[9px] gap-1"><Globe2 className="h-2.5 w-2.5" /> Public</Badge>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{def.description}</p>
+                        {isPractice && due && (
+                          <div className={cn("flex items-center gap-1.5 text-[10px] font-medium", isUrgent ? "text-destructive" : "text-muted-foreground")}>
+                            <CalendarClock className="h-3 w-3" />
+                            Échéance : {new Date(due).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                            {isUrgent && <span className="ml-1 px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">J-{Math.max(0, Math.ceil((dueDateMs! - Date.now()) / (24 * 3600 * 1000)))}</span>}
+                          </div>
+                        )}
                         <div className="flex items-center justify-between">
                           <div className="flex flex-wrap gap-1">{(def.evaluationDimensions || []).slice(0,2).map((dim: any, idx: number) => { const label = typeof dim === "string" ? dim : (dim?.name || dim?.label || dim?.key || ""); if (!label) return null; return <Badge key={`${label}-${idx}`} variant="secondary" className="text-[9px] capitalize">{String(label).replace(/_/g," ")}</Badge>; })}</div>
                           <Button size="sm" variant="default" className="h-7 gap-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleLaunch}><Play className="h-3 w-3" /> Lancer</Button>
@@ -203,18 +218,34 @@ export default function PortalPratique() {
                 {availablePractices.map((pr: any) => {
                   const def = getModeDefinition(pr.practice_type);
                   const family = def?.family || "chat";
+                  const scope = getScope(pr);
+                  const due = getDueDate(pr);
+                  const dueDateMs = due ? new Date(due).getTime() : null;
+                  const isUrgent = dueDateMs ? (dueDateMs - Date.now()) < 3 * 24 * 3600 * 1000 : false;
                   return (
                     <motion.div key={pr.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="group rounded-xl border bg-card hover:shadow-md hover:border-primary/30 transition-all p-4 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", def ? UNIVERSE_COLORS[def.universe] : "bg-muted")}>{FAMILY_ICONS[family]}</div>
-                          <div><p className="text-sm font-semibold leading-tight">{pr.title}</p>{def && <p className="text-[10px] text-muted-foreground">{def.label}</p>}</div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0", def ? UNIVERSE_COLORS[def.universe] : "bg-muted")}>{FAMILY_ICONS[family]}</div>
+                          <div className="min-w-0"><p className="text-sm font-semibold leading-tight truncate">{pr.title}</p>{def && <p className="text-[10px] text-muted-foreground">{def.label}</p>}</div>
                         </div>
-                        <Badge variant="outline" className="text-[9px]">{pr.difficulty}</Badge>
+                        {scope === "assigned" ? <Badge className="text-[9px] gap-1 bg-primary/10 text-primary border-primary/20"><UserCheck className="h-2.5 w-2.5" /> Assignée</Badge>
+                          : scope === "org" ? <Badge className="text-[9px] gap-1 bg-accent/10 text-accent border-accent/20"><Building2 className="h-2.5 w-2.5" /> Org</Badge>
+                          : <Badge variant="outline" className="text-[9px] gap-1"><Globe2 className="h-2.5 w-2.5" /> Public</Badge>}
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{pr.scenario}</p>
+                      {due && (
+                        <div className={cn("flex items-center gap-1.5 text-[10px] font-medium", isUrgent ? "text-destructive" : "text-muted-foreground")}>
+                          <CalendarClock className="h-3 w-3" />
+                          Échéance : {new Date(due).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                          {isUrgent && <span className="ml-1 px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">J-{Math.max(0, Math.ceil((dueDateMs! - Date.now()) / (24 * 3600 * 1000)))}</span>}
+                        </div>
+                      )}
                       <div className="flex items-center justify-between">
-                        <div className="flex gap-1"><Badge variant="secondary" className="text-[9px]">{pr.max_exchanges} échanges</Badge></div>
+                        <div className="flex gap-1">
+                          <Badge variant="outline" className="text-[9px]">{pr.difficulty}</Badge>
+                          <Badge variant="secondary" className="text-[9px]">{pr.max_exchanges} échanges</Badge>
+                        </div>
                         <Button size="sm" variant="default" className="h-7 gap-1.5 text-xs" onClick={() => launchPractice(pr)}><Play className="h-3 w-3" /> Lancer</Button>
                       </div>
                     </motion.div>
