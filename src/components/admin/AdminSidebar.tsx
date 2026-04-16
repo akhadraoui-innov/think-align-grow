@@ -60,6 +60,7 @@ export function AdminSidebar() {
   const simulatorSubItems = [
     { path: "/admin/simulator", icon: LayoutDashboard, label: "Dashboard", exact: true },
     { path: "/admin/simulator/templates", icon: Library, label: "Bibliothèque" },
+    { path: "/admin/practices", icon: Sparkles, label: "Practice Studio" },
   ];
 
   const isSimulatorRoute = location.pathname.startsWith("/admin/simulator");

@@ -59,6 +59,7 @@ import AdminObservabilityCatalogue from "./pages/admin/AdminObservabilityCatalog
 import AdminObservabilityMatrix from "./pages/admin/AdminObservabilityMatrix";
 import AdminSimulator from "./pages/admin/AdminSimulator";
 import AdminSimulatorTemplates from "./pages/admin/AdminSimulatorTemplates";
+import AdminPracticeStudio from "./pages/admin/AdminPracticeStudio";
 import VerifyCertificate from "./pages/VerifyCertificate";
 import PortalFormations from "./pages/portal/PortalFormations";
 import PortalFormationsDashboard from "./pages/portal/PortalFormationsDashboard";
@@ -161,6 +162,7 @@ function AnimatedRoutes() {
            <Route path="/admin/observability/matrix" element={<AdminObservabilityMatrix />} />
           <Route path="/admin/simulator" element={<AdminSimulator />} />
           <Route path="/admin/simulator/templates" element={<AdminSimulatorTemplates />} />
+          <Route path="/admin/practices" element={<AdminPracticeStudio />} />
           <Route path="/admin/insight" element={<AdminInsight />} />
           <Route path="/admin/ucm" element={<AdminUCM />} />
           <Route path="/admin/ucm/sectors" element={<AdminUCMSectors />} />
