@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, BookOpen, Trophy, Clock, Flame, Target, TrendingUp, Calendar, ChevronRight, Star, GraduationCap, Zap } from "lucide-react";
+import { ArrowLeft, BookOpen, Trophy, Clock, Flame, Target, TrendingUp, Calendar, ChevronRight, Star, GraduationCap, Zap, CalendarClock, UserCheck } from "lucide-react";
 import { useMemo } from "react";
 
 export default function PortalFormationsDashboard() {
@@ -133,6 +133,45 @@ export default function PortalFormationsDashboard() {
             <div className="flex items-center gap-2 text-[10px] text-muted-foreground"><span>Moins</span>{[0,1,2,3,5].map(c => <div key={c} className={cn("h-3 w-3 rounded-sm", getHeatColor(c))} />)}<span>Plus</span></div>
           </CardContent></Card>
         </motion.div>
+
+        {/* Assigned practices */}
+        {assignedPractices.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-lg font-display font-bold flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-primary" /> Pratiques assignées
+              <Badge variant="secondary" className="text-[10px] ml-1">{assignedPractices.length}</Badge>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {assignedPractices.map((a: any) => {
+                const pr = a.academy_practices;
+                const dueMs = a.due_date ? new Date(a.due_date).getTime() : null;
+                const daysLeft = dueMs ? Math.ceil((dueMs - Date.now()) / (24 * 3600 * 1000)) : null;
+                const isUrgent = daysLeft !== null && daysLeft <= 3;
+                return (
+                  <Card key={a.id} className="cursor-pointer hover:shadow-md transition-all group" onClick={() => navigate("/portal/pratique")}>
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+                        <Zap className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm group-hover:text-primary transition-colors line-clamp-1">{pr.title}</p>
+                        <p className="text-[11px] text-muted-foreground line-clamp-1">{pr.scenario}</p>
+                        {a.due_date && (
+                          <div className={cn("flex items-center gap-1 mt-1.5 text-[10px] font-medium", isUrgent ? "text-destructive" : "text-muted-foreground")}>
+                            <CalendarClock className="h-3 w-3" />
+                            {new Date(a.due_date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                            {isUrgent && <span className="px-1.5 py-0.5 rounded bg-destructive/10">J-{Math.max(0, daysLeft!)}</span>}
+                          </div>
+                        )}
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Active paths */}
         {activeEnrollments.length > 0 && (
