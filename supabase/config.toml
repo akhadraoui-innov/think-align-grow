@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.ucm-export]
 verify_jwt = false
+
+[functions.practice-copilot]
+verify_jwt = false

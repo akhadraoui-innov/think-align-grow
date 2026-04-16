@@ -32,6 +32,177 @@ FORMAT : \`\`\`funnel\n{"interest":<0-10>,"trust":<0-10>,"urgency":<0-10>,"closi
   feedback_360: `Joue successivement MANAGER, PAIR, SUBORDONNÉ. Annonce chaque changement. Évalue empathie/clarté/actionabilité.`,
 };
 
+// ── Coaching posture templates ──
+const COACHING_POSTURES: Record<string, string> = {
+  proactive: `POSTURE COACHING — PROACTIF : Tu prends l'initiative. Anticipe les blocages. Propose des angles d'attaque avant que l'apprenant ne demande. Sois directif sans être autoritaire.`,
+  guided: `POSTURE COACHING — GUIDÉ : Tu accompagnes pas à pas. Donne des suggestions claires à chaque étape. Encourage l'autonomie progressive.`,
+  socratic: `POSTURE COACHING — SOCRATIQUE : Réponds presque toujours par une question. Fais émerger la réflexion. Ne donne JAMAIS la réponse directement, même si insisté. Reformule, creuse, élargis.`,
+  challenger: `POSTURE COACHING — CHALLENGER : Confronte systématiquement les hypothèses. Demande des preuves chiffrées. Pointe les biais cognitifs. Sois exigeant et rigoureux mais bienveillant.`,
+  silent: `POSTURE COACHING — SILENCIEUX : Ne donne AUCUN conseil pendant la session. Réponds uniquement aux questions factuelles indispensables. Réserve toute évaluation et feedback pour la restitution finale.`,
+  intensive: `POSTURE COACHING — INTENSIF : Coaching dense. Feedback à chaque échange (qualité, axes d'amélioration, méthode). Relances proactives si réponses courtes. Dose les encouragements et l'exigence.`,
+};
+
+// ── UI assistance level (suggestions chips) ──
+const ASSISTANCE_INSTRUCTIONS: Record<string, string> = {
+  autonomous: `\n\nMODE UI AUTONOME : Ne fournis PAS de suggestions chips. Pas de bloc \`suggestions\`.`,
+  guided: `\n\nAPRÈS chaque réponse, ajoute un bloc JSON de suggestions de réponses possibles pour l'apprenant :
+\`\`\`suggestions
+["suggestion 1", "suggestion 2", "suggestion 3"]
+\`\`\`
+Les suggestions doivent être des pistes de réponse variées et pertinentes (pas les réponses complètes).`,
+  intensive: `\n\nMODE UI INTENSIF : Après chaque réponse, fournis :
+1. Un feedback immédiat sur la qualité de la réponse
+2. Des conseils méthodologiques concrets
+3. Un bloc de suggestions proactives :
+\`\`\`suggestions
+["suggestion guidée 1", "suggestion guidée 2", "suggestion guidée 3"]
+\`\`\``,
+};
+
+// ── Build the assembled system prompt for a practice ──
+function buildSystemPrompt(practice: any, opts: { variantOverride?: string } = {}): string {
+  const practiceType = practice.practice_type || "conversation";
+  const behaviorInjection = BEHAVIOR_INJECTIONS[practiceType] || "";
+  const coachingPosture = COACHING_POSTURES[practice.coaching_mode] ?? COACHING_POSTURES.guided;
+  const assistanceLevel = practice.ai_assistance_level || "guided";
+  const assistanceBlock = ASSISTANCE_INSTRUCTIONS[assistanceLevel] ?? ASSISTANCE_INSTRUCTIONS.guided;
+
+  const adminPrompt = opts.variantOverride
+    ?? practice.system_prompt
+    ?? `Tu es un coach pédagogique bienveillant et exigeant. Guide l'apprenant avec des questions pertinentes, donne du feedback constructif, et aide-le à progresser.`;
+
+  // Scenario block
+  const scenarioBlock = practice.scenario?.trim()
+    ? `\n\n=== CONTEXTE DE LA SIMULATION ===\n${practice.scenario}`
+    : "";
+
+  // Type config context
+  const typeConfig = practice.type_config ?? {};
+  const configContext = Object.keys(typeConfig).length > 0
+    ? `\n\n=== CONFIGURATION DU MODE ===\n${JSON.stringify(typeConfig, null, 2)}`
+    : "";
+
+  // Objectives SMART
+  const objectives = (practice.objectives ?? []) as Array<{ text?: string; weight?: number }>;
+  const objectivesBlock = objectives.length > 0
+    ? `\n\n=== OBJECTIFS PÉDAGOGIQUES (SMART) ===\nL'apprenant doit atteindre ces objectifs :\n${objectives.map((o, i) => `${i + 1}. ${o.text}${o.weight ? ` (poids ${o.weight}%)` : ""}`).join("\n")}`
+    : "";
+
+  // Success criteria
+  const successCriteria = practice.success_criteria ?? {};
+  const successBlock = Object.keys(successCriteria).length > 0
+    ? `\n\n=== CRITÈRES DE RÉUSSITE ===\n${JSON.stringify(successCriteria, null, 2)}`
+    : "";
+
+  // Phases
+  const phases = (practice.phases ?? []) as Array<{ name?: string; goal?: string }>;
+  const phasesBlock = phases.length > 0
+    ? `\n\n=== PHASES DU PARCOURS ===\nDéroule la session en suivant ces phases :\n${phases.map((p, i) => `Phase ${i + 1} — ${p.name} : ${p.goal}`).join("\n")}\nIndique discrètement la phase courante quand elle change.`
+    : "";
+
+  // Guardrails
+  const guardrails = (practice.guardrails ?? []) as string[];
+  const guardrailsBlock = guardrails.length > 0
+    ? `\n\n=== GARDE-FOUS STRICTS (NON NÉGOCIABLES) ===\n${guardrails.map((g) => `- ${g}`).join("\n")}`
+    : "";
+
+  // Attached data
+  const attached = (practice.attached_data ?? []) as any[];
+  const attachedBlock = attached.length > 0
+    ? `\n\n=== DONNÉES ATTACHÉES ===\n${JSON.stringify(attached, null, 2)}`
+    : "";
+
+  const langRule = `\n\n=== RÈGLE LINGUISTIQUE ABSOLUE ===\nTu réponds TOUJOURS intégralement en français. Jamais un mot en anglais sauf termes techniques universels (framework, sprint, KPI, etc.).`;
+
+  return [
+    behaviorInjection,
+    coachingPosture,
+    adminPrompt,
+    scenarioBlock,
+    objectivesBlock,
+    successBlock,
+    phasesBlock,
+    configContext,
+    attachedBlock,
+    guardrailsBlock,
+    assistanceBlock,
+    langRule,
+  ].filter(Boolean).join("\n\n---\n\n");
+}
+
+// ── Build evaluation block according to strategy ──
+function buildEvaluationBlock(practice: any): string {
+  const strategy = practice.evaluation_strategy ?? "dimensions";
+  const restitution = practice.restitution_template ?? {};
+  const tone = restitution.tone ?? "professional";
+  const sections: string[] = restitution.sections ?? ["score", "feedback", "strengths", "improvements", "kpis", "learning_gaps", "explore_next", "best_practices"];
+  const minScore = restitution.min_score ?? 70;
+
+  const dimensions = (practice.evaluation_dimensions ?? []) as Array<{ name: string; weight?: number }>;
+  const rubric = practice.evaluation_rubric ?? [];
+  const weights = practice.evaluation_weights ?? {};
+
+  const toneDirective: Record<string, string> = {
+    professional: "Adopte un ton professionnel, factuel et structuré.",
+    encouraging: "Adopte un ton encourageant, valorisant les progrès.",
+    direct: "Sois direct, concis, sans complaisance.",
+    coaching: "Adopte un ton de coach : questionnement, miroir, projection.",
+  };
+
+  let criteriaText = "";
+  if (strategy === "dimensions" && dimensions.length > 0) {
+    criteriaText = `STRATÉGIE : Dimensions pondérées.\nÉvalue STRICTEMENT sur ces dimensions :\n${dimensions.map(d => `- ${d.name} (poids ${d.weight ?? 0}%)`).join("\n")}\nLe score global est la moyenne pondérée des dimensions.`;
+  } else if (strategy === "rubric" && rubric.length > 0) {
+    criteriaText = `STRATÉGIE : Rubric discrète.\nCritères : ${JSON.stringify(rubric)}`;
+  } else if (strategy === "hybrid") {
+    criteriaText = `STRATÉGIE : Hybride.\nDimensions : ${JSON.stringify(dimensions)}\nRubric : ${JSON.stringify(rubric)}\nPoids : ${JSON.stringify(weights)}`;
+  } else {
+    criteriaText = `STRATÉGIE : Évaluation holistique IA. Évalue la performance globale en cohérence avec les objectifs et le scénario.`;
+  }
+
+  // Build the JSON template based on requested sections
+  const jsonParts: string[] = [];
+  if (sections.includes("score")) jsonParts.push(`  "score": <0-100>`);
+  if (sections.includes("feedback")) jsonParts.push(`  "feedback": "<synthèse 3-5 phrases>"`);
+  jsonParts.push(`  "passed": <true si score >= ${minScore} sinon false>`);
+  if (strategy === "dimensions" || strategy === "hybrid") {
+    jsonParts.push(`  "dimensions": [{"name": "<nom>", "score": <0-10>, "weight": <%>, "comment": "<bref>"}]`);
+  } else {
+    jsonParts.push(`  "dimensions": [{"name": "<critère>", "score": <0-10>}]`);
+  }
+  jsonParts.push(`  "recommendations": ["<conseil 1>", "<conseil 2>", "<conseil 3>"]`);
+  if (sections.includes("kpis")) jsonParts.push(`  "kpis": {"communication_clarity": <0-10>, "analysis_depth": <0-10>, "adaptability": <0-10>, "response_relevance": <0-10>, "idea_structuring": <0-10>}`);
+  if (sections.includes("strengths")) jsonParts.push(`  "strengths": [{"title": "<court>", "detail": "<exemples concrets>"}]`);
+  if (sections.includes("improvements")) jsonParts.push(`  "improvements": [{"title": "<court>", "detail": "<problème>", "how": "<méthode concrète>"}]`);
+  if (sections.includes("learning_gaps")) jsonParts.push(`  "learning_gaps": [{"topic": "<sujet>", "detail": "<pourquoi>", "resources": "<frameworks>"}]`);
+  if (sections.includes("explore_next")) jsonParts.push(`  "explore_next": [{"topic": "<sujet connexe>", "why": "<pourquoi>"}]`);
+  if (sections.includes("best_practices")) jsonParts.push(`  "best_practices": [{"title": "<titre>", "content": "<méthode + retex>"}]`);
+
+  return `C'est le dernier échange. Évalue la performance de l'apprenant.
+
+${criteriaText}
+
+${toneDirective[tone] ?? toneDirective.professional}
+
+Termine ta réponse par un bloc JSON sur une nouvelle ligne au format :
+\`\`\`evaluation
+{
+${jsonParts.join(",\n")}
+}
+\`\`\`
+IMPORTANT : Génère au minimum 2-3 items pour chaque liste. Sois précis, concret, utilise des exemples tirés de la conversation. Tout en FRANÇAIS.`;
+}
+
+// ── Weighted random pick for variants ──
+function pickVariant(variants: any[]): any | null {
+  const active = variants.filter(v => v.is_active && v.weight > 0);
+  if (active.length === 0) return null;
+  const total = active.reduce((s, v) => s + v.weight, 0);
+  let r = Math.random() * total;
+  for (const v of active) { r -= v.weight; if (r <= 0) return v; }
+  return active[0];
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -43,7 +214,6 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // ── JWT Authentication ──
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -57,76 +227,82 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    if (claimsError || !claimsData?.claims?.sub) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = claimsData.claims.sub;
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── Service role client for DB queries ──
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-    const { practice_id, messages, evaluate, system_override } = await req.json();
+    const { practice_id, messages, evaluate, system_override, preview_practice, session_id } = await req.json();
 
     let systemPrompt: string;
-    let rubric: any[] = [];
-    let practiceType = "conversation";
-    let typeConfig: Record<string, any> = {};
+    let model = "google/gemini-2.5-flash";
+    let temperature = 0.7;
+    let maxTokens = 8192;
+    let practice: any = null;
+    let variantPicked: any = null;
 
-    if ((practice_id === "__persona_chat__" || practice_id === "__standalone__" || !practice_id) && system_override) {
+    // ── Live preview from Studio: build full prompt from in-memory practice draft ──
+    if (preview_practice) {
+      practice = preview_practice;
+      systemPrompt = buildSystemPrompt(practice);
+      model = practice.model_override || model;
+      temperature = practice.temperature_override ?? temperature;
+    }
+    // ── Standalone or persona chat with explicit override ──
+    else if ((practice_id === "__persona_chat__" || practice_id === "__standalone__" || !practice_id) && system_override) {
       systemPrompt = system_override;
-    } else if (!practice_id) {
-      // Standalone session without system_override — use generic coach prompt
+    }
+    // ── Generic standalone session ──
+    else if (!practice_id) {
       systemPrompt = `Tu es un coach pédagogique bienveillant et exigeant. Guide l'apprenant avec des questions pertinentes, donne du feedback constructif, et aide-le à progresser.\n\nAPRÈS chaque réponse, ajoute un bloc JSON de suggestions :\n\`\`\`suggestions\n["suggestion 1", "suggestion 2", "suggestion 3"]\n\`\`\`\n\nRÈGLE ABSOLUE : Tu réponds TOUJOURS intégralement en français.`;
-    } else {
-      const { data: practice, error: pErr } = await supabase
+    }
+    // ── Real practice session ──
+    else {
+      const { data: pData, error: pErr } = await supabase
         .from("academy_practices")
         .select("*")
         .eq("id", practice_id)
         .single();
-      if (pErr || !practice) throw new Error("Practice not found");
-      
-      practiceType = practice.practice_type || "conversation";
-      typeConfig = practice.type_config || {};
-      rubric = practice.evaluation_rubric || [];
-      const assistanceLevel = practice.ai_assistance_level || "guided";
+      if (pErr || !pData) throw new Error("Practice not found");
+      practice = pData;
 
-      // Build system prompt: behavior injection + admin custom prompt
-      const behaviorInjection = BEHAVIOR_INJECTIONS[practiceType] || "";
-      const adminPrompt = practice.system_prompt || `Tu es un coach pédagogique bienveillant et exigeant. Guide l'apprenant avec des questions pertinentes, donne du feedback constructif, et aide-le à progresser.`;
-      
-      // Inject type_config context
-      const configContext = Object.keys(typeConfig).length > 0 
-        ? `\n\nCONTEXTE DE CONFIGURATION :\n${JSON.stringify(typeConfig, null, 2)}`
-        : "";
+      // Try to use existing variant from session metadata, else pick weighted
+      const { data: variants } = await supabase
+        .from("practice_variants")
+        .select("*")
+        .eq("practice_id", practice_id);
 
-      // Assistance level instructions
-      const assistanceInstructions: Record<string, string> = {
-        autonomous: `\n\nMODE AUTONOME : Ne fournis PAS de suggestions de réponse. Pas de chips. Évalue uniquement à la fin. Feedback minimal pendant la session. L'apprenant doit trouver par lui-même.`,
-        guided: `\n\nAPRÈS chaque réponse, ajoute un bloc JSON de suggestions de réponses possibles pour l'apprenant :
-\`\`\`suggestions
-["suggestion 1", "suggestion 2", "suggestion 3"]
-\`\`\`
-Les suggestions doivent être des pistes de réponse variées et pertinentes (pas les réponses complètes).`,
-        intensive: `\n\nMODE COACHING INTENSIF : Après chaque réponse, fournis :
-1. Un feedback immédiat sur la qualité de la réponse
-2. Des conseils méthodologiques concrets
-3. Un bloc de suggestions proactives :
-\`\`\`suggestions
-["suggestion guidée 1", "suggestion guidée 2", "suggestion guidée 3"]
-\`\`\`
-Si l'apprenant semble bloqué ou donne des réponses courtes, relance-le avec des questions d'approfondissement.`,
-      };
+      if (variants && variants.length > 0) {
+        let existingVariantId: string | null = null;
+        if (session_id) {
+          const { data: sess } = await supabase
+            .from("academy_practice_sessions")
+            .select("metadata")
+            .eq("id", session_id)
+            .maybeSingle();
+          existingVariantId = (sess?.metadata as any)?.variant_id ?? null;
+        }
+        if (existingVariantId) {
+          variantPicked = variants.find(v => v.id === existingVariantId) ?? null;
+        } else {
+          variantPicked = pickVariant(variants);
+          // Persist variant id on the session for future calls
+          if (session_id && variantPicked) {
+            await supabase
+              .from("academy_practice_sessions")
+              .update({ metadata: { variant_id: variantPicked.id, variant_label: variantPicked.variant_label } })
+              .eq("id", session_id);
+          }
+        }
+      }
 
-      const langRule = `\n\nRÈGLE ABSOLUE : Tu réponds TOUJOURS intégralement en français. Jamais un mot en anglais sauf termes techniques universels (framework, sprint, KPI, etc.). Toutes les suggestions, feedbacks, évaluations, titres doivent être en français.`;
-      systemPrompt = [behaviorInjection, adminPrompt, configContext, assistanceInstructions[assistanceLevel] || assistanceInstructions.guided, langRule].filter(Boolean).join("\n\n---\n\n");
+      systemPrompt = buildSystemPrompt(practice, {
+        variantOverride: variantPicked?.system_prompt || undefined,
+      });
+      model = practice.model_override || model;
+      temperature = practice.temperature_override ?? temperature;
     }
 
     const aiMessages: any[] = [
@@ -134,48 +310,12 @@ Si l'apprenant semble bloqué ou donne des réponses courtes, relance-le avec de
       ...(messages || []),
     ];
 
-    const enrichedEvalFormat = `Termine ta réponse par un bloc JSON sur une nouvelle ligne au format :
-\`\`\`evaluation
-{
-  "score": <0-100>,
-  "feedback": "<synthèse globale dense et utile de la performance, 3-5 phrases>",
-  "dimensions": [{"name": "<critère>", "score": <0-10>}, ...],
-  "recommendations": ["<conseil 1>", "<conseil 2>", "<conseil 3>"],
-  "kpis": {
-    "communication_clarity": <0-10>,
-    "analysis_depth": <0-10>,
-    "adaptability": <0-10>,
-    "response_relevance": <0-10>,
-    "idea_structuring": <0-10>
-  },
-  "strengths": [
-    {"title": "<titre court>", "detail": "<explication détaillée avec exemples tirés de la conversation>"}
-  ],
-  "improvements": [
-    {"title": "<titre court>", "detail": "<explication du problème observé>", "how": "<méthode concrète, étapes précises pour progresser>"}
-  ],
-  "learning_gaps": [
-    {"topic": "<sujet à apprendre>", "detail": "<pourquoi c'est important>", "resources": "<par où commencer, méthodes, frameworks recommandés>"}
-  ],
-  "explore_next": [
-    {"topic": "<sujet connexe>", "why": "<pourquoi cela devrait intéresser l'apprenant>"}
-  ],
-  "best_practices": [
-    {"title": "<titre de la bonne pratique>", "content": "<description détaillée : méthode, retour d'expérience, façon d'interagir avec l'IA sur ce type de sujet>"}
-  ]
-}
-\`\`\`
-IMPORTANT : Génère au minimum 2-3 items pour chaque section (strengths, improvements, learning_gaps, explore_next, best_practices). Sois précis et concret, utilise des exemples tirés de la conversation. Les KPIs sont sur 10 et évaluent : Clarté de communication, Profondeur d'analyse, Adaptabilité, Pertinence des réponses, Structuration des idées. Tout en FRANÇAIS.`;
-
-    if (evaluate && rubric.length > 0) {
-      aiMessages.push({
-        role: "system",
-        content: `C'est le dernier échange. Évalue la performance de l'apprenant en te basant sur ces critères : ${JSON.stringify(rubric)}.\n${enrichedEvalFormat}`,
-      });
+    if (evaluate && practice) {
+      aiMessages.push({ role: "system", content: buildEvaluationBlock(practice) });
     } else if (evaluate) {
       aiMessages.push({
         role: "system",
-        content: `C'est le dernier échange. Évalue la performance globale de l'apprenant.\n${enrichedEvalFormat}`,
+        content: `C'est le dernier échange. Évalue la performance globale de l'apprenant. Retourne un bloc \`\`\`evaluation { "score": <0-100>, "feedback": "...", "dimensions": [...], "recommendations": [...] }\`\`\``,
       });
     }
 
@@ -186,10 +326,11 @@ IMPORTANT : Génère au minimum 2-3 items pour chaque section (strengths, improv
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages: aiMessages,
         stream: true,
-        max_tokens: 8192,
+        temperature,
+        max_tokens: maxTokens,
       }),
     });
 
@@ -203,10 +344,18 @@ IMPORTANT : Génère au minimum 2-3 items pour chaque section (strengths, improv
         status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!aiResp.ok) throw new Error("AI gateway error");
+    if (!aiResp.ok) {
+      const errText = await aiResp.text().catch(() => "");
+      throw new Error(`AI gateway error: ${aiResp.status} ${errText}`);
+    }
 
     return new Response(aiResp.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "X-Variant-Id": variantPicked?.id ?? "",
+        "X-Model-Used": model,
+      },
     });
   } catch (e) {
     console.error("academy-practice error:", e);
