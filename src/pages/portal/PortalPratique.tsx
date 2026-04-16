@@ -139,18 +139,21 @@ export default function PortalPratique() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {modes.map(([key, def], i) => {
                     const isSelected = selectedMode?.key === key;
+                    const isPractice = !!def._practice;
+                    const handleLaunch = (e: React.MouseEvent) => { e.stopPropagation(); isPractice ? launchPractice(def._practice) : launchStandalone(key, def); };
                     return (
-                      <motion.div key={key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i*0.015, 0.3) }} onClick={() => setSelectedMode(isSelected ? null : { key, def })} className={cn("group rounded-xl border bg-card hover:shadow-md transition-all p-4 space-y-3 cursor-pointer", isSelected ? "border-primary shadow-md ring-1 ring-primary/20" : "hover:border-primary/30")}>
+                      <motion.div key={key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i*0.015, 0.3) }} onClick={() => !isPractice && setSelectedMode(isSelected ? null : { key, def })} className={cn("group rounded-xl border bg-card hover:shadow-md transition-all p-4 space-y-3 cursor-pointer", isSelected ? "border-primary shadow-md ring-1 ring-primary/20" : "hover:border-primary/30", isPractice && "border-accent/30 bg-accent/[0.02]")}>
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-2.5">
                             <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", UNIVERSE_COLORS[def.universe])}>{FAMILY_ICONS[def.family]}</div>
                             <div><p className="text-sm font-semibold leading-tight">{def.label}</p><p className="text-[10px] text-muted-foreground">{UNIVERSE_LABELS[def.universe]}</p></div>
                           </div>
+                          {isPractice && <Badge className="text-[9px] bg-accent/10 text-accent border-accent/20">Org</Badge>}
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{def.description}</p>
                         <div className="flex items-center justify-between">
                           <div className="flex flex-wrap gap-1">{def.evaluationDimensions.slice(0,2).map((dim: string) => <Badge key={dim} variant="secondary" className="text-[9px] capitalize">{dim.replace(/_/g," ")}</Badge>)}</div>
-                          <Button size="sm" variant="default" className="h-7 gap-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => { e.stopPropagation(); launchStandalone(key, def); }}><Play className="h-3 w-3" /> Lancer</Button>
+                          <Button size="sm" variant="default" className="h-7 gap-1.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity" onClick={handleLaunch}><Play className="h-3 w-3" /> Lancer</Button>
                         </div>
                       </motion.div>
                     );
