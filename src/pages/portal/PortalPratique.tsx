@@ -71,7 +71,8 @@ export default function PortalPratique() {
   }, [search, filterUniverse, filterFamily, practiceEntries]);
 
   const universes = Object.keys(UNIVERSE_LABELS) as ModeUniverse[];
-  const universeCounts = useMemo(() => { const c: Record<string, number> = {}; Object.values(MODE_REGISTRY).forEach(def => { c[def.universe] = (c[def.universe] || 0) + 1; }); return c; }, []);
+  const totalCatalogueCount = Object.keys(MODE_REGISTRY).length + practiceEntries.length;
+  const universeCounts = useMemo(() => { const c: Record<string, number> = {}; Object.values(MODE_REGISTRY).forEach(def => { c[def.universe] = (c[def.universe] || 0) + 1; }); practiceEntries.forEach(([, def]) => { c[def.universe] = (c[def.universe] || 0) + 1; }); return c; }, [practiceEntries]);
 
   const launchStandalone = (key: string, def: any) => {
     const behaviorPrompt = getBehaviorInjection(key);
