@@ -1,7 +1,7 @@
 // Portal version of Simulator — same logic, portal navigation
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Sparkles, Code, FileText, FolderSearch, Layout, ClipboardCheck, Zap, MessageSquare, Play, History, Building2, GraduationCap, Award, HeartHandshake } from "lucide-react";
+import { Search, Sparkles, Code, FileText, FolderSearch, Layout, ClipboardCheck, Zap, MessageSquare, Play, History, Building2, GraduationCap, Award, HeartHandshake, Globe2, UserCheck, CalendarClock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { PageTransition } from "@/components/ui/PageTransition";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { useNavigate } from "react-router-dom";
 import { useActiveOrg } from "@/contexts/OrgContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
