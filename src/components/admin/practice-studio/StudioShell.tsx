@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { ArrowLeft, Save, Copy, PlayCircle, History, Loader2, CheckCircle2 } from "lucide-react";
+import { ReactNode, useEffect } from "react";
+import { ArrowLeft, Save, Copy, PlayCircle, History, Loader2, CheckCircle2, Library, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -17,17 +17,36 @@ interface Props {
   onPreviewToggle?: () => void;
   showPreview?: boolean;
   onShowVersions?: () => void;
+  onOpenLibrary?: () => void;
+  onOpenCopilot?: () => void;
+  isPublic?: boolean;
 }
 
 export function StudioShell({
   list, canvas, preview, title, status, saving, lastSavedAt,
   onSave, onDuplicate, onPreviewToggle, showPreview, onShowVersions,
+  onOpenLibrary, onOpenCopilot, isPublic,
 }: Props) {
   const navigate = useNavigate();
 
   const savedLabel = lastSavedAt
     ? `Enregistré ${Math.max(1, Math.round((Date.now() - lastSavedAt.getTime()) / 1000))}s`
     : "Non enregistré";
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const meta = e.metaKey || e.ctrlKey;
+      if (!meta) return;
+      if (e.key === "s") { e.preventDefault(); onSave?.(); }
+      else if (e.key === "p" && e.shiftKey) { e.preventDefault(); onPreviewToggle?.(); }
+      else if (e.key === "d" && e.shiftKey) { e.preventDefault(); onDuplicate?.(); }
+      else if (e.key === "k") { e.preventDefault(); onOpenCopilot?.(); }
+      else if (e.key === "l") { e.preventDefault(); onOpenLibrary?.(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onSave, onPreviewToggle, onDuplicate, onOpenCopilot, onOpenLibrary]);
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -47,6 +66,11 @@ export function StudioShell({
                   {status}
                 </Badge>
               )}
+              {isPublic && (
+                <Badge variant="outline" className="text-[10px] uppercase border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+                  Public
+                </Badge>
+              )}
             </div>
             <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
               {saving ? (
@@ -58,23 +82,33 @@ export function StudioShell({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {onOpenLibrary && (
+            <Button variant="ghost" size="sm" onClick={onOpenLibrary} title="Bibliothèque (⌘L)">
+              <Library className="h-4 w-4 mr-1.5" /> Library
+            </Button>
+          )}
+          {onOpenCopilot && (
+            <Button variant="ghost" size="sm" onClick={onOpenCopilot} title="Co-pilote IA (⌘K)">
+              <Wand2 className="h-4 w-4 mr-1.5 text-primary" /> Co-pilote
+            </Button>
+          )}
           {onShowVersions && (
             <Button variant="ghost" size="sm" onClick={onShowVersions}>
-              <History className="h-4 w-4 mr-1.5" /> Versions
+              <History className="h-4 w-4 mr-1.5" /> Snapshot
             </Button>
           )}
           {onDuplicate && (
-            <Button variant="ghost" size="sm" onClick={onDuplicate}>
+            <Button variant="ghost" size="sm" onClick={onDuplicate} title="Dupliquer (⌘⇧D)">
               <Copy className="h-4 w-4 mr-1.5" /> Dupliquer
             </Button>
           )}
           {onPreviewToggle && (
-            <Button variant={showPreview ? "default" : "outline"} size="sm" onClick={onPreviewToggle}>
+            <Button variant={showPreview ? "default" : "outline"} size="sm" onClick={onPreviewToggle} title="Live preview (⌘⇧P)">
               <PlayCircle className="h-4 w-4 mr-1.5" /> Live preview
             </Button>
           )}
           {onSave && (
-            <Button size="sm" onClick={onSave} disabled={saving}>
+            <Button size="sm" onClick={onSave} disabled={saving} title="Sauver (⌘S)">
               <Save className="h-4 w-4 mr-1.5" /> Sauver
             </Button>
           )}
