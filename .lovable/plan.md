@@ -1,151 +1,113 @@
 
 
-## Analyse de l'existant — patterns puissants à conserver
+## 1. Audit du plan v2 — ce qui est fait vs manquant
 
-| Pattern | Localisation | Force |
-|---|---|---|
-| **Mode Registry (50+ modes)** | `modeRegistry.ts` | 14 univers × 7 familles UI, dimensions par défaut |
-| **Behavior Injections** | `promptTemplates.ts` | Mécanique métier (gauges, scoring, phases) injectée par-dessus le prompt admin |
-| **Mode Insights** | `modeInsights.ts` | Pédagogie : skills, tips, audience, durée, exemple |
-| **Practice Templates** | `practiceTemplates.ts` | Presets prêts à l'emploi par mode |
-| **Type Config Schemas** | `typeConfigSchemas.ts` | Champs typés par mode (tension_start, language…) |
-| **AI Assistance Levels** | `SimulatorShell` | 3 niveaux : autonomous / guided / intensive |
-| **Family Routing** | `SimulatorEngine` | Chat / Code / Document / Analysis / Decision / Design / Assessment |
-| **Restitution enrichie** | `academy-practice` edge fn | KPIs + strengths + improvements + learning_gaps + best_practices |
-| **AI Designer** | `PracticeDesigner` | Génération brief → pratique complète |
-
-## Ce qui manque pour un module *world-class*
-
-1. **Pas de console centralisée** : pratiques dispersées (assets / module / portail)
-2. **Pas de multi-org / multi-user assignment**
-3. **Pas de versioning / rollback** des prompts et configs
-4. **Pas de live preview** pendant l'édition
-5. **Pas d'A/B testing** entre variantes de prompt
-6. **Pas d'analytics par pratique** (taux complétion, score moyen, dimensions faibles)
-7. **Pas de bibliothèque de blocs réutilisables** (personas, rubrics, garde-fous)
-8. **Pas d'évaluateur custom** (rubric simple aujourd'hui, pas de pondération visuelle ni de seuils)
-9. **Pas de phases éditables** côté admin (le champ existe mais aucun éditeur)
-10. **Pas de gestion fine des objectifs SMART** ni de critères de succès paramétrables
-
-## Vision — Practice Studio v2
-
-Une console unique qui rend **chaque dimension de chaque mode** paramétrable, avec **live preview**, **versioning**, **diffusion granulaire** et **analytics**.
-
-### Architecture en 8 onglets
-
-```text
-┌─ Liste pratiques ─┬─ Canvas Studio ──────────────────────┬─ Live Preview ─┐
-│ Filtres :         │ 1. Identité & Mode                   │ Mini-chat      │
-│ - org             │ 2. Scénario & Contexte               │ teste config   │
-│ - univers         │ 3. IA & Prompts (versionné)          │ courante       │
-│ - mode            │ 4. Mécanique (behavior injection)    │                │
-│ - statut          │ 5. Accompagnement & Coaching         │ Score live     │
-│ - assigné         │ 6. Évaluation & Restitution          │ Gauges live    │
-│                   │ 7. Diffusion (orgs + users)          │                │
-│ Recherche +       │ 8. Analytics & Versions              │                │
-│ tags + tri        │                                      │                │
-└───────────────────┴──────────────────────────────────────┴────────────────┘
-```
-
-### Détail des 8 onglets
-
-| # | Onglet | Paramètres |
-|---|---|---|
-| 1 | **Identité & Mode** | Titre, mode (50+), univers, famille UI, difficulté, durée, audience, tags, icône |
-| 2 | **Scénario & Contexte** | Brief immersif (markdown), data attachée (CSV/JSON/code), persona IA, phases drag-drop, ressources externes |
-| 3 | **IA & Prompts** | System prompt (Monaco), modèle override, temperature, max_tokens, garde-fous, **diff vs version précédente** |
-| 4 | **Mécanique** | Behavior injection custom OU preset, configuration typée (selon `typeConfigSchemas`), max_exchanges, mécaniques spéciales (timer, événements, jauges) |
-| 5 | **Coaching** | Niveau (autonomous/guided/intensive), mode coaching (proactive/socratique/challenger/silent), hints éditables, suggestions auto, onboarding personnalisé |
-| 6 | **Évaluation & Restitution** | Stratégie (rubric/dimensions/hybride/holistique), dimensions pondérées (sliders sommant 100%), seuils de réussite, template du rapport final (sections cochables, KPIs visibles, ton) |
-| 7 | **Diffusion** | Toggle public · multi-orgs (chips) · multi-users filtrés par org · échéance · notification |
-| 8 | **Analytics & Versions** | Sessions, taux complétion, score moyen, dimensions faibles, replay sessions exemplaires + historique versions avec diff et restore |
-
-### Innovations clés
-
-1. **Bibliothèque de blocs réutilisables** : personas, rubrics, garde-fous, mécaniques mixables entre pratiques (table `practice_blocks`)
-2. **Versioning automatique** : snapshot à chaque save majeur, diff visuel, rollback 1-clic
-3. **Live Preview embarqué** : panneau droit lance une mini-session sur la config en cours, avec score en direct
-4. **A/B variants** : 2 variantes de prompt sur une même pratique, routage 50/50, comparaison analytics
-5. **AI Co-pilote d'édition** : "Améliore ce scénario", "Génère 3 variantes de rubric", "Challenge mes objectifs"
-6. **Diffusion granulaire** : public / org(s) / user(s) avec échéance et rappels
-7. **Coaching modes étendus** : 5 postures (proactive, socratique, challenger, silent, intensive)
-8. **Restitution paramétrable** : choix des sections, ton, KPIs affichés, format export
-
-## Schéma DB
-
-**Nouvelles tables**
-```sql
-practice_organizations(practice_id, organization_id, assigned_at)
-practice_user_assignments(practice_id, user_id, organization_id, assigned_by, due_date)
-practice_versions(practice_id, version_number, snapshot jsonb, changed_by, change_summary)
-practice_blocks(id, kind: persona|rubric|guardrail|mechanic, name, content jsonb, organization_id)
-practice_variants(practice_id, variant_label, system_prompt, weight)
-```
-
-**Colonnes ajoutées à `academy_practices`**
-- `is_public` (bool), `coaching_mode` (text), `objectives` (jsonb SMART), `success_criteria` (jsonb seuils), `evaluation_strategy` (text), `evaluation_weights` (jsonb), `restitution_template` (jsonb), `attached_data` (jsonb), `model_override` (text), `temperature_override` (numeric), `tags` (déjà), `audience` (text)
-
-**RLS** : SaaS team manage tout. Apprenants voient via `is_public OR org match OR user assignment`.
-
-## Lecture côté Portal
-
-`PortalPratique` + `PortalExperiences` requêtent l'union :
-```
-public OR org_active ∈ practice_organizations OR auth.uid() ∈ practice_user_assignments
-```
-Badges : "Public", "Org", "Assignée à toi", "Échéance J-3".
-
-## Composants à créer
-
-| Composant | Rôle |
+### ✅ Livré
+| Item | Statut |
 |---|---|
-| `AdminPracticeStudio.tsx` | Page racine `/admin/practices` |
-| `practice-studio/StudioShell.tsx` | Layout 3 colonnes + autosave + breadcrumb + raccourcis |
-| `practice-studio/PracticeListPanel.tsx` | Liste virtualisée + filtres + recherche |
-| `practice-studio/tabs/IdentityTab.tsx` | Mode picker visuel (univers + cards) |
-| `practice-studio/tabs/ScenarioTab.tsx` | Markdown editor + attachements + phases drag |
-| `practice-studio/tabs/AIPromptsTab.tsx` | Monaco + variants + diff |
-| `practice-studio/tabs/MechanicsTab.tsx` | Behavior preset + config typée (forms générés depuis `typeConfigSchemas`) |
-| `practice-studio/tabs/CoachingTab.tsx` | Sélecteur posture + assistance + hints |
-| `practice-studio/tabs/EvaluationTab.tsx` | Builder dimensions pondérées + restitution template |
-| `practice-studio/tabs/DistributionTab.tsx` | Multi-org chips + table users + échéance |
-| `practice-studio/tabs/AnalyticsTab.tsx` | Stats sessions + replay + versions |
-| `practice-studio/LivePreviewPanel.tsx` | Mini-chat avec config courante |
-| `practice-studio/BlockLibrary.tsx` | Drawer bibliothèque de blocs réutilisables |
-| `practice-studio/AICopilot.tsx` | Bouton "Améliorer / Générer variantes" |
+| 5 tables DB (`practice_organizations`, `practice_user_assignments`, `practice_versions`, `practice_blocks`, `practice_variants`) | ✅ |
+| 16 colonnes étendues sur `academy_practices` | ✅ |
+| RLS multi-source (`is_public OR org OR user assignment`) | ✅ |
+| Page `/admin/practices` + `StudioShell` 3 colonnes | ✅ |
+| 8 onglets (Identity, Scenario, AI, Mechanics, Coaching, Evaluation, Distribution, Analytics) | ✅ |
+| Live preview streaming | ✅ |
+| Autosave 800 ms + snapshot manuel | ✅ |
+| Lecture Portal unifiée (public OR org OR user) | ✅ |
+| Hook centralisé `useAdminPractices` | ✅ |
 
-## Edge functions
+### ❌ Incohérences critiques (paramètres sans impact runtime)
+1. **`coaching_mode`** (proactive/socratic/challenger/silent) — saisi mais **jamais lu** par `academy-practice` (n'utilise que `ai_assistance_level`)
+2. **`model_override` + `temperature_override`** — l'edge function reste hardcodé sur `gemini-2.5-flash` à 8192 tokens
+3. **`evaluation_strategy` / `evaluation_dimensions` / `evaluation_weights`** — l'edge function évalue toujours via `evaluation_rubric` uniquement
+4. **`restitution_template`** (sections, ton, min_score) — ignoré par le format de restitution figé dans l'edge
+5. **`objectives` SMART + `success_criteria`** — pas injectés dans le system prompt
+6. **`guardrails`** — saisis mais non concaténés
+7. **`phases`** — pas envoyées à l'IA
+8. **`is_public`** — apparaît 2× (Identity + Distribution) → dupliqué (UX confuse)
+9. **Versions** : snapshot manuel uniquement, pas d'auto-snapshot, pas de diff, pas de rollback
+10. **Tables `practice_blocks` / `practice_variants`** créées mais **0 UI**
+11. **Bug runtime** : `Stat` warning ref dans `AnalyticsTab` (composant interne sans forwardRef ciblé par Tabs)
+12. **Live preview** : utilise `system_override` brut → ne reflète pas behavior_injection ni coaching_mode → ne représente PAS la vraie session
 
-- `practice-preview` (nouveau) — endpoint léger pour live preview sans persister
-- `academy-practice` (existante) — étendre pour gérer `model_override`, `temperature_override`, `variants`
+## 2. Plan de finalisation v2.1 (cohérence + UX) puis extensions v2.2
 
-## Fichiers à modifier
+### Phase A — Cohérence runtime (CRITIQUE, à faire d'abord)
+
+**Edge function `academy-practice`**
+- Lire et utiliser : `model_override`, `temperature_override`, `coaching_mode`, `objectives`, `success_criteria`, `guardrails`, `phases`, `evaluation_strategy`, `evaluation_dimensions`, `evaluation_weights`, `restitution_template`
+- Ajouter 5 templates de posture coaching (proactive/socratique/challenger/silent/intensive) injectés dans le system prompt
+- Construire dynamiquement le bloc `evaluation` selon `evaluation_strategy` (rubric vs dimensions pondérées vs hybride vs holistique)
+- Filtrer les sections de restitution selon `restitution_template.sections`
+- Adapter le ton du feedback selon `restitution_template.tone`
+- Endpoint live preview : renvoyer le **même** prompt assemblé (preview = vérité)
+
+### Phase B — UX Studio polish
+
+- Supprimer doublon `is_public` (garder dans Distribution uniquement, badge en header)
+- Header onglets : badge rouge sur onglets incomplets (titre vide, prompt vide, somme dimensions ≠ 100, aucune diffusion)
+- Indicateur autosave plus visible (chip animé)
+- Fix bug `Stat` ref warning (extraire hors fonction interne)
+- Live preview : badge "Reflet exact" + bouton "Reset session"
+- Ajouter compteur visible des sessions/score moyen dans la liste de pratiques
+- Raccourcis clavier (Cmd+S, Cmd+P, Cmd+D)
+- Onglet **Versions** dédié (sortir de Analytics) avec : auto-snapshot toutes les 10 modifs, diff visuel, bouton rollback
+- Onglet **Évaluation** : visualisation circulaire des poids, alerte si ≠ 100%
+- Onglet **Coaching** : prévisualisation du prompt système injecté pour la posture choisie
+
+### Phase C — 3 innovations v2.2 (extensions du plan v2)
+
+#### C.1 Bibliothèque de blocs réutilisables
+- Drawer global "Library" accessible depuis le top bar
+- 5 types : `persona`, `rubric`, `guardrail`, `mechanic`, `prompt_snippet`
+- Chaque bloc : nom, description, contenu JSONB, scope (global / org)
+- Bouton "Insérer ce bloc" sur chaque champ texte concerné
+- Bouton "Sauver comme bloc" sur chaque section éditée (capitalisation rapide)
+- Filtre par type + recherche full-text
+
+#### C.2 Variantes A/B
+- Nouvel onglet **Variantes** entre Coaching et Évaluation
+- Liste des variantes (max 4) avec poids de routage (sliders sommant 100%)
+- Édition diff côté droit : prompt système alternatif uniquement
+- Routage côté `academy-practice` : tirage pondéré au démarrage de session
+- Persistance variant_id sur `academy_practice_sessions` (champ JSONB metadata)
+- Onglet Analytics enrichi : score moyen et taux complétion **par variante** + winner détecté
+
+#### C.3 AI Co-pilote d'édition
+- Bouton flottant "Co-pilote" en haut à droite du Studio
+- Drawer avec 6 actions one-click contextuelles à l'onglet actif :
+  - Identité : "Suggère 5 titres alternatifs"
+  - Scénario : "Améliore le brief", "Génère 3 objectifs SMART"
+  - AI : "Renforce le system prompt", "Génère 5 garde-fous"
+  - Évaluation : "Génère une rubric pondérée", "Challenge mes critères"
+  - Coaching : "Génère 5 hints adaptés"
+  - Variantes : "Génère 2 variantes opposées"
+- Edge function `practice-copilot` (nouvelle) — Lovable AI Gateway
+- Insertion en mode "diff preview" : l'admin valide avant d'appliquer
+
+## 3. Fichiers impactés
 
 | Cible | Action |
 |---|---|
-| Migration SQL | 5 tables + 10 colonnes + RLS + backfill |
-| `src/App.tsx` | Route `/admin/practices` |
-| `src/components/admin/AdminSidebar.tsx` | Entrée "Practice Studio" |
-| `src/pages/admin/AdminPracticeStudio.tsx` | **Nouveau** |
-| `src/components/admin/practice-studio/*` | **14 composants nouveaux** |
-| `src/hooks/useAdminPractices.ts` | **Nouveau** — CRUD + versions + diffusion + analytics |
-| `src/pages/portal/PortalPratique.tsx` | Requête union + badges |
-| `src/pages/portal/PortalExperiences.tsx` | Idem |
-| `supabase/functions/practice-preview/index.ts` | **Nouveau** |
-| `supabase/functions/academy-practice/index.ts` | Support overrides + variants |
+| `supabase/functions/academy-practice/index.ts` | **Refonte** : exploiter tous les nouveaux champs |
+| `supabase/functions/practice-copilot/index.ts` | **Nouveau** |
+| `src/components/admin/practice-studio/StudioShell.tsx` | Badges complétion + raccourcis + bouton Library + Co-pilote |
+| `src/components/admin/practice-studio/tabs/IdentityTab.tsx` | Retirer doublon `is_public` |
+| `src/components/admin/practice-studio/tabs/AnalyticsTab.tsx` | Fix ref warning + analytics par variante |
+| `src/components/admin/practice-studio/tabs/EvaluationTab.tsx` | Donut chart poids + alerte ≠100% |
+| `src/components/admin/practice-studio/tabs/CoachingTab.tsx` | Preview prompt généré |
+| `src/components/admin/practice-studio/tabs/VariantsTab.tsx` | **Nouveau** |
+| `src/components/admin/practice-studio/tabs/VersionsTab.tsx` | **Nouveau** (sortir d'Analytics) |
+| `src/components/admin/practice-studio/BlockLibrary.tsx` | **Nouveau** drawer |
+| `src/components/admin/practice-studio/AICopilot.tsx` | **Nouveau** drawer |
+| `src/components/admin/practice-studio/LivePreviewPanel.tsx` | Appeler nouvel endpoint preview cohérent |
+| `src/hooks/useAdminPractices.ts` | + hooks blocks + variants + auto-snapshot |
+| `src/pages/admin/AdminPracticeStudio.tsx` | +2 onglets (Variantes, Versions) + Library + Co-pilote |
 
-## UX corporate
+## 4. Ordre d'exécution
 
-- Autosave debounce 800ms avec indicateur "Enregistré il y a 3s"
-- Snapshots auto à chaque changement majeur (table `practice_versions`)
-- Validation visuelle : badges rouges sur onglets incomplets
-- Raccourcis : Cmd+S, Cmd+P (preview), Cmd+D (duplicate), Cmd+/ (recherche)
-- Duplication, export/import JSON
-- Liste virtualisée (react-window) pour 100+ pratiques
-
-## Compatibilité ascendante
-
-- Pratiques existantes restent accessibles (backfill `is_public=true` pour celles sans org)
-- Onglet "Pratiques" dans Module Detail conservé, lien "Ouvrir dans Studio"
-- Aucune rupture sur les sessions en cours
+1. **Phase A** (cohérence runtime) — sans cela, tous les paramètres sont décoratifs
+2. **Phase B** (UX polish + bug fixes)
+3. **Phase C.1** Bibliothèque de blocs
+4. **Phase C.2** Variantes A/B
+5. **Phase C.3** AI Co-pilote
 
