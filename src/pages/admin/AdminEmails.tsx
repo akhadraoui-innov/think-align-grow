@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Sparkles, Send, Globe, BarChart3, Building2, ShieldOff, FlaskConical, TrendingUp } from "lucide-react";
+import { Mail, Sparkles, Send, Globe, BarChart3, Building2, ShieldOff, FlaskConical, TrendingUp, Activity } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +14,7 @@ import { EmailProvidersTab } from "@/components/admin/email/EmailProvidersTab";
 import { EmailSuppressionsTab } from "@/components/admin/email/EmailSuppressionsTab";
 import { EmailABTestsTab } from "@/components/admin/email/EmailABTestsTab";
 import { EmailAnalyticsTab } from "@/components/admin/email/EmailAnalyticsTab";
+import { EmailReliabilityTab } from "@/components/admin/email/EmailReliabilityTab";
 
 const GLOBAL_OPTION = "__global__";
 
@@ -69,8 +70,9 @@ export default function AdminEmails() {
       </header>
 
       <Tabs defaultValue="analytics" className="space-y-4">
-        <TabsList className="grid grid-cols-8 w-full">
+        <TabsList className="grid grid-cols-9 w-full">
           <TabsTrigger value="analytics"><TrendingUp className="h-4 w-4 mr-1" />Analytics</TabsTrigger>
+          <TabsTrigger value="reliability"><Activity className="h-4 w-4 mr-1" />Reliability</TabsTrigger>
           <TabsTrigger value="templates"><Mail className="h-4 w-4 mr-1" />Templates</TabsTrigger>
           <TabsTrigger value="automations"><Sparkles className="h-4 w-4 mr-1" />Automations</TabsTrigger>
           <TabsTrigger value="abtests"><FlaskConical className="h-4 w-4 mr-1" />A/B Tests</TabsTrigger>
@@ -81,6 +83,7 @@ export default function AdminEmails() {
         </TabsList>
 
         <TabsContent value="analytics"><EmailAnalyticsTab organizationId={scopeOrgId} /></TabsContent>
+        <TabsContent value="reliability"><EmailReliabilityTab /></TabsContent>
         <TabsContent value="templates"><EmailTemplatesTab organizationId={scopeOrgId} /></TabsContent>
         <TabsContent value="automations"><EmailAutomationsTab organizationId={scopeOrgId} /></TabsContent>
         <TabsContent value="abtests"><EmailABTestsTab organizationId={scopeOrgId} /></TabsContent>

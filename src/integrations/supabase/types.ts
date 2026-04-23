@@ -5108,6 +5108,8 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      erase_user_email_data: { Args: { _user_id?: string }; Returns: Json }
+      export_user_email_data: { Args: { _user_id?: string }; Returns: Json }
       find_workshop_by_code: {
         Args: { _code: string }
         Returns: {
@@ -5118,6 +5120,41 @@ export type Database = {
           name: string
           scheduled_at: string
           status: Database["public"]["Enums"]["workshop_status"]
+        }[]
+      }
+      get_email_cron_health: {
+        Args: never
+        Returns: {
+          active: boolean
+          jobname: string
+          last_end: string
+          last_message: string
+          last_start: string
+          last_status: string
+          schedule: string
+        }[]
+      }
+      get_email_provider_health: {
+        Args: { _hours?: number }
+        Returns: {
+          bounced: number
+          circuit_open: boolean
+          dlq: number
+          failed: number
+          failure_rate: number
+          provider: string
+          sent: number
+          total: number
+        }[]
+      }
+      get_email_quota_alerts: {
+        Args: never
+        Returns: {
+          monthly_limit: number
+          organization_id: string
+          organization_name: string
+          sent_count: number
+          usage_percent: number
         }[]
       }
       get_invitation_by_token: {
@@ -5198,6 +5235,7 @@ export type Database = {
         }
         Returns: number
       }
+      purge_expired_email_tokens: { Args: never; Returns: Json }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -5206,6 +5244,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      replay_dlq_message: { Args: { _message_id: string }; Returns: Json }
       sign_email_payload: { Args: { _payload: Json }; Returns: string }
       spend_credits: {
         Args: { _amount: number; _description: string; _user_id: string }

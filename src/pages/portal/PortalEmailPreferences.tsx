@@ -13,6 +13,7 @@ import {
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PortalEmailComplianceTab } from "@/components/portal/PortalEmailComplianceTab";
 
 export default function PortalEmailPreferences() {
   const { data: categories, isLoading: catLoading } = useEmailCategories();
@@ -43,6 +44,7 @@ export default function PortalEmailPreferences() {
         <TabsList>
           <TabsTrigger value="preferences">Préférences</TabsTrigger>
           <TabsTrigger value="history">Historique reçu</TabsTrigger>
+          <TabsTrigger value="compliance">Confidentialité &amp; RGPD</TabsTrigger>
         </TabsList>
 
         <TabsContent value="preferences" className="space-y-4 mt-4">
@@ -126,6 +128,10 @@ export default function PortalEmailPreferences() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="compliance">
+          <PortalEmailComplianceTab />
         </TabsContent>
       </Tabs>
     </div>
