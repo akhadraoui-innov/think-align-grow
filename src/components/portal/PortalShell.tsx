@@ -10,7 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useLastSeenTracker } from "@/hooks/useLastSeenTracker";
 import {
   Search, Bell, HelpCircle, Menu, X,
-  Coins, ChevronRight
+  Coins, ChevronRight, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -113,6 +113,20 @@ export function PortalShell({ children }: PortalShellProps) {
             <Bell className="h-4.5 w-4.5" />
             <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
           </button>
+
+          {/* Email preferences */}
+          <Link
+            to="/portal/preferences"
+            title="Préférences email"
+            className={cn(
+              "h-9 w-9 rounded-lg items-center justify-center transition-colors hidden sm:flex",
+              location.pathname === "/portal/preferences"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            )}
+          >
+            <Mail className="h-4.5 w-4.5" />
+          </Link>
 
           {/* Help */}
           <button className="h-9 w-9 rounded-lg items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors hidden sm:flex">
