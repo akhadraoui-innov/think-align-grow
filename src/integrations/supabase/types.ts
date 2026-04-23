@@ -4642,6 +4642,47 @@ export type Database = {
       }
     }
     Views: {
+      v_academy_quiz_questions_public: {
+        Row: {
+          explanation: string | null
+          id: string | null
+          options: Json | null
+          points: number | null
+          question: string | null
+          question_type: string | null
+          quiz_id: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          explanation?: string | null
+          id?: string | null
+          options?: Json | null
+          points?: number | null
+          question?: string | null
+          question_type?: string | null
+          quiz_id?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          explanation?: string | null
+          id?: string | null
+          options?: Json | null
+          points?: number | null
+          question?: string | null
+          question_type?: string | null
+          quiz_id?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "academy_quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_audit_log_integrity: {
         Row: {
           chain_ok: boolean | null
@@ -4671,6 +4712,41 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_practice_variants_public: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          practice_id: string | null
+          variant_label: string | null
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          practice_id?: string | null
+          variant_label?: string | null
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          practice_id?: string | null
+          variant_label?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_variants_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "academy_practices"
             referencedColumns: ["id"]
           },
         ]
@@ -4728,6 +4804,18 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      find_workshop_by_code: {
+        Args: { _code: string }
+        Returns: {
+          code: string
+          host_id: string
+          id: string
+          max_participants: number
+          name: string
+          scheduled_at: string
+          status: Database["public"]["Enums"]["workshop_status"]
+        }[]
       }
       get_invitation_by_token: {
         Args: { _token: string }
