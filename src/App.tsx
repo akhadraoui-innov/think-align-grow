@@ -102,6 +102,7 @@ import AdminUCMSectors from "./pages/admin/AdminUCMSectors";
 import AdminUCMPrompts from "./pages/admin/AdminUCMPrompts";
 import AdminBusiness from "./pages/admin/AdminBusiness";
 import AdminQuotePreview from "./pages/admin/AdminQuotePreview";
+import AdminEmails from "./pages/admin/AdminEmails";
 import Invitation from "./pages/Invitation";
 
 const queryClient = new QueryClient();
@@ -170,6 +171,7 @@ function AnimatedRoutes() {
           <Route path="/admin/ucm/prompts" element={<AdminUCMPrompts />} />
           <Route path="/admin/business" element={<AdminBusiness />} />
           <Route path="/admin/business/quote-preview" element={<AdminQuotePreview />} />
+          <Route path="/admin/emails" element={<AdminEmails />} />
           {/* Portal routes */}
           <Route path="/portal" element={<PortalFormations />} />
           <Route path="/portal/dashboard" element={<PortalFormationsDashboard />} />
