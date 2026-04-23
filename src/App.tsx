@@ -105,6 +105,7 @@ import AdminBusiness from "./pages/admin/AdminBusiness";
 import AdminQuotePreview from "./pages/admin/AdminQuotePreview";
 import AdminEmails from "./pages/admin/AdminEmails";
 import AdminAudit from "./pages/admin/AdminAudit";
+import AdminHealth from "./pages/admin/AdminHealth";
 import Invitation from "./pages/Invitation";
 import PortalEmailPreferences from "./pages/portal/PortalEmailPreferences";
 import EmailUnsubscribe from "./pages/EmailUnsubscribe";
@@ -178,6 +179,7 @@ function AnimatedRoutes() {
           <Route path="/admin/business/quote-preview" element={<AdminQuotePreview />} />
           <Route path="/admin/emails" element={<AdminEmails />} />
           <Route path="/admin/audit" element={<AdminAudit />} />
+          <Route path="/admin/health" element={<AdminHealth />} />
           {/* Portal routes */}
           <Route path="/portal" element={<PortalFormations />} />
           <Route path="/portal/dashboard" element={<PortalFormationsDashboard />} />
