@@ -8,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Bot, Server, Info, FileText, ShieldAlert } from "lucide-react";
+import { Loader2, Save, Bot, Server, Info, FileText, ShieldAlert, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { DEFAULT_PROMPTS } from "@/constants/defaultPrompts";
 import { RolesPermissionsTab } from "@/components/admin/RolesPermissionsTab";
+import { WebhookAllowlistTab } from "@/components/admin/WebhookAllowlistTab";
 
 interface Provider {
   id: string;
@@ -140,6 +141,9 @@ export default function AdminSettings() {
             <TabsTrigger value="default-prompts" className="gap-1.5 text-xs">
               <FileText className="h-3.5 w-3.5" /> Prompts par défaut
             </TabsTrigger>
+            <TabsTrigger value="webhook-allowlist" className="gap-1.5 text-xs">
+              <Globe className="h-3.5 w-3.5" /> Allowlist webhooks
+            </TabsTrigger>
           </TabsList>
 
           {/* Roles & Permissions */}
@@ -260,6 +264,11 @@ export default function AdminSettings() {
                 ))}
               </div>
             </div>
+          </TabsContent>
+
+          {/* Webhook Allowlist */}
+          <TabsContent value="webhook-allowlist">
+            <WebhookAllowlistTab />
           </TabsContent>
         </Tabs>
       </div>

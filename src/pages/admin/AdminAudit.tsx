@@ -122,7 +122,7 @@ export default function AdminAudit() {
             {integrity.isLoading ? (
               <Badge variant="outline" className="gap-1.5"><Loader2 className="h-3 w-3 animate-spin" />Vérification…</Badge>
             ) : integrity.data?.valid ? (
-              <Badge className="gap-1.5 bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-500/30">
+              <Badge variant="outline" className="gap-1.5 border-primary/30 bg-primary/10 text-primary">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Chaîne intègre · {integrity.data.checked} entrées
               </Badge>
