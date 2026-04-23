@@ -1944,6 +1944,56 @@ export type Database = {
           },
         ]
       }
+      organization_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          organization_id: string
+          revoked_at: string | null
+          role: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          organization_id: string
+          revoked_at?: string | null
+          role?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          organization_id?: string
+          revoked_at?: string | null
+          role?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -4056,9 +4106,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: { Args: { _token: string }; Returns: Json }
       check_ucm_quota: {
         Args: { p_action: string; p_org_id: string }
         Returns: boolean
+      }
+      get_invitation_by_token: {
+        Args: { _token: string }
+        Returns: {
+          accepted_at: string
+          email: string
+          expires_at: string
+          id: string
+          organization_id: string
+          organization_name: string
+          revoked_at: string
+          role: string
+        }[]
       }
       get_ucm_global_prompt: {
         Args: { p_org_id: string; p_section_code: string }
@@ -4098,6 +4162,16 @@ export type Database = {
       is_workshop_participant: {
         Args: { _user_id: string; _workshop_id: string }
         Returns: boolean
+      }
+      log_activity: {
+        Args: {
+          _action: string
+          _entity_id: string
+          _entity_type: string
+          _metadata?: Json
+          _organization_id?: string
+        }
+        Returns: undefined
       }
       spend_credits: {
         Args: { _amount: number; _description: string; _user_id: string }
