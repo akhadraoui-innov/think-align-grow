@@ -4572,9 +4572,17 @@ export type Database = {
         Args: { p_action: string; p_org_id: string }
         Returns: boolean
       }
+      decrypt_email_credentials: {
+        Args: { _encrypted: string; _key: string }
+        Returns: string
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
+      }
+      encrypt_email_credentials: {
+        Args: { _key: string; _plain: Json }
+        Returns: string
       }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
