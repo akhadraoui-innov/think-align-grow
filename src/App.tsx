@@ -7,6 +7,7 @@ import { AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout/AppShell";
 import ScrollToTop from "@/components/ScrollToTop";
 import { OrgProvider } from "@/contexts/OrgContext";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import Index from "./pages/Index";
 import Explore from "./pages/Explore";
 import Plans from "./pages/Plans";
@@ -217,7 +218,7 @@ function AnimatedRoutes() {
           <Route path="/portal/ucm/:id/uc/:ucId" element={<PortalUCMProject />} />
           <Route path="/portal/ucm/:id/synthesis" element={<PortalUCMProject />} />
           <Route path="/portal/ucm/:id/chat" element={<PortalUCMProject />} />
-          <Route path="/portal/preferences" element={<PortalEmailPreferences />} />
+          <Route path="/portal/preferences" element={<AuthGuard><PortalEmailPreferences /></AuthGuard>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

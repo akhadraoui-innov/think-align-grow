@@ -274,6 +274,7 @@ export function EmailAutomationsTab({ organizationId }: { organizationId: string
                       value={editing.conditions || {}}
                       onChange={(next) => setEditing({ ...editing, conditions: next })}
                       payloadHints={eventMeta?.payloadHints || []}
+                      triggerEvent={editing.trigger_event}
                     />
                   </AccordionContent>
                 </AccordionItem>

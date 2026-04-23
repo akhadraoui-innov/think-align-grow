@@ -1,23 +1,44 @@
-import { Plus, X } from "lucide-react";
+import { useState } from "react";
+import { Plus, X, FlaskConical, CheckCircle2, XCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { ConditionRule, ConditionsDSL, CONDITION_OPS } from "@/hooks/useEmailAutomations";
+import { evalConditions, SAMPLE_PAYLOADS } from "@/lib/conditions-eval";
 
 interface Props {
   value: ConditionsDSL | Record<string, never>;
   onChange: (next: ConditionsDSL) => void;
   payloadHints?: string[];
+  triggerEvent?: string;
 }
 
 const EMPTY_RULE: ConditionRule = { path: "payload.", op: "==", value: "" };
 
-export function ConditionsBuilder({ value, onChange, payloadHints = [] }: Props) {
+export function ConditionsBuilder({ value, onChange, payloadHints = [], triggerEvent }: Props) {
   const v: ConditionsDSL = (value && typeof value === "object" ? (value as ConditionsDSL) : {}) || {};
   const all = Array.isArray(v.all) ? v.all : [];
   const any = Array.isArray(v.any) ? v.any : [];
+
+  const sample = triggerEvent ? SAMPLE_PAYLOADS[triggerEvent] ?? {} : {};
+  const [dryRunOpen, setDryRunOpen] = useState(false);
+  const [payloadJson, setPayloadJson] = useState<string>(() =>
+    JSON.stringify({ payload: sample }, null, 2)
+  );
+
+  let report: ReturnType<typeof evalConditions> | null = null;
+  let parseError: string | null = null;
+  if (dryRunOpen) {
+    try {
+      const ctx = JSON.parse(payloadJson);
+      report = evalConditions(v, ctx);
+    } catch (e: any) {
+      parseError = e?.message ?? "JSON invalide";
+    }
+  }
 
   const update = (key: "all" | "any", rules: ConditionRule[]) => {
     const next: ConditionsDSL = { ...v, [key]: rules };
@@ -124,6 +145,64 @@ export function ConditionsBuilder({ value, onChange, payloadHints = [] }: Props)
           Aucune condition. L'automation se déclenche pour <strong>tous</strong> les événements de ce type.
         </div>
       )}
+
+      <div className="pt-2 border-t border-border">
+        <div className="flex items-center justify-between mb-2">
+          <Label className="text-xs font-semibold flex items-center gap-1">
+            <FlaskConical className="h-3.5 w-3.5" /> Tester (dry-run)
+          </Label>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="text-xs h-7"
+            onClick={() => setDryRunOpen((o) => !o)}
+          >
+            {dryRunOpen ? "Masquer" : "Ouvrir"}
+          </Button>
+        </div>
+
+        {dryRunOpen && (
+          <div className="space-y-2">
+            <p className="text-[10px] text-muted-foreground flex items-start gap-1">
+              <Info className="h-3 w-3 mt-[2px] shrink-0" />
+              Saisissez un payload JSON simulé. L'évaluation utilise la même logique que l'edge function `trigger-email`.
+            </p>
+            <Textarea
+              value={payloadJson}
+              onChange={(e) => setPayloadJson(e.target.value)}
+              className="font-mono text-[11px] resize-none min-h-[120px]"
+              spellCheck={false}
+            />
+            {parseError ? (
+              <div className="flex items-center gap-2 text-xs text-destructive p-2 rounded-lg bg-destructive/10 border border-destructive/30">
+                <XCircle className="h-3.5 w-3.5" /> JSON invalide : {parseError}
+              </div>
+            ) : report ? (
+              <div className={`p-2 rounded-lg border text-xs ${report.passed ? "bg-primary/10 border-primary/30" : "bg-muted/30 border-border"}`}>
+                <div className="flex items-center gap-2 font-semibold">
+                  {report.passed ? <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground" />}
+                  {report.reason}
+                </div>
+                {report.details.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {report.details.map((d, i) => (
+                      <div key={i} className="flex items-center gap-2 font-mono text-[10px]">
+                        <Badge variant="outline" className="text-[9px]">{d.group.toUpperCase()}</Badge>
+                        {d.result ? <CheckCircle2 className="h-3 w-3 text-primary" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                        <span className="text-muted-foreground">{d.rule.path}</span>
+                        <span>{d.rule.op}</span>
+                        <span className="text-muted-foreground">{JSON.stringify(d.rule.value)}</span>
+                        <span className="ml-auto opacity-60">→ {JSON.stringify(d.leftValue)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
