@@ -222,8 +222,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             </div>
           </Command>
         </div>
-      </DialogContent>
-    </Dialog>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
 
