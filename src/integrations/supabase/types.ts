@@ -4584,6 +4584,10 @@ export type Database = {
         Args: { _key: string; _plain: Json }
         Returns: string
       }
+      encrypt_email_credentials_admin: {
+        Args: { _plain: Json }
+        Returns: string
+      }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
