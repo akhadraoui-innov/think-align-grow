@@ -127,6 +127,15 @@ export default {
         "pulse-soft": "pulse-soft 2s ease-in-out infinite",
         "glow": "glow 2s ease-in-out infinite",
       },
+      transitionTimingFunction: {
+        "studio": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "spring": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+      },
+      transitionDuration: {
+        "180": "180ms",
+        "280": "280ms",
+        "420": "420ms",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
