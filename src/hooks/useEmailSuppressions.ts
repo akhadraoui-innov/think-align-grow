@@ -18,7 +18,8 @@ export function useEmailSuppressions(organizationId?: string | null, opts?: { ac
   return useQuery({
     queryKey: ["email-suppressions", organizationId ?? "global", opts],
     queryFn: async () => {
-      let q: any = (supabase.from("email_suppressions" as any) as any)
+      let q = supabase
+        .from("email_suppressions")
         .select("*")
         .order("suppressed_at", { ascending: false })
         .limit(500);
@@ -38,7 +39,8 @@ export function useReactivateSuppression() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await (supabase.from("email_suppressions" as any) as any)
+      const { error } = await supabase
+        .from("email_suppressions")
         .update({ reactivated_at: new Date().toISOString(), reactivated_by: user?.id ?? null })
         .eq("id", id);
       if (error) throw error;
@@ -56,12 +58,15 @@ export function useAddSuppression() {
       reason: "bounce" | "complaint" | "unsubscribe" | "manual";
       metadata?: any;
     }) => {
-      const { error } = await (supabase.from("email_suppressions" as any) as any).upsert({
-        email: payload.email.toLowerCase(),
-        organization_id: payload.organization_id,
-        reason: payload.reason,
-        metadata: payload.metadata ?? {},
-      }, { onConflict: "email,organization_id,reason" });
+      const { error } = await supabase.from("email_suppressions").upsert(
+        {
+          email: payload.email.toLowerCase(),
+          organization_id: payload.organization_id,
+          reason: payload.reason,
+          metadata: payload.metadata ?? {},
+        },
+        { onConflict: "email,organization_id,reason" },
+      );
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["email-suppressions"] }),

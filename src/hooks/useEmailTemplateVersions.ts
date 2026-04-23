@@ -17,7 +17,8 @@ export function useEmailTemplateVersions(templateId: string | null) {
     queryKey: ["email-template-versions", templateId],
     enabled: !!templateId,
     queryFn: async () => {
-      const { data, error } = await (supabase.from("email_template_versions" as any) as any)
+      const { data, error } = await supabase
+        .from("email_template_versions")
         .select("*")
         .eq("template_id", templateId!)
         .order("version", { ascending: false })
@@ -32,7 +33,8 @@ export function useRestoreEmailTemplateVersion() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ templateId, version }: { templateId: string; version: EmailTemplateVersion }) => {
-      const { data, error } = await (supabase.from("email_templates") as any)
+      const { data, error } = await supabase
+        .from("email_templates")
         .update({
           subject: version.subject,
           markdown_body: version.markdown_body,
