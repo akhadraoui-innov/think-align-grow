@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Building2, Users, Layers, Presentation, Lightbulb, GraduationCap,
   CreditCard, ScrollText, Settings, ArrowLeft, Sparkles, Briefcase, Route, UserCircle,
   Megaphone, Map, BarChart3, ChevronDown, Library, Activity, Zap, Award, Rocket,
-  Brain, DollarSign,
+  Brain, DollarSign, Mail,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -67,6 +67,7 @@ export function AdminSidebar() {
 
   const systemItems = [
     { path: "/admin/business", icon: DollarSign, label: "Business & Revenue", show: true },
+    { path: "/admin/emails", icon: Mail, label: "Email Studio", show: perms.hasAny("email.compose", "email.templates.manage", "email.automations.manage", "email.providers.manage", "email.logs.view") },
     { path: "/admin/billing", icon: CreditCard, label: "Crédits & Abonnements", show: perms.has("admin.billing.view") },
     { path: "/admin/logs", icon: ScrollText, label: "Logs d'activité", show: perms.has("admin.logs.view") },
     { path: "/admin/settings", icon: Settings, label: "Paramètres", show: perms.hasAny("admin.settings.ai", "admin.settings.roles", "admin.settings.platform") },

@@ -56,3 +56,9 @@ verify_jwt = false
 
 [functions.process-email-queue]
 verify_jwt = true
+
+[functions.trigger-email]
+verify_jwt = false
+
+[functions.email-marketing-ai]
+verify_jwt = false
