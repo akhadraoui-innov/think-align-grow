@@ -265,11 +265,13 @@ Deno.serve(async (req) => {
     // ── 6. Use credentials from JSONB column (already plaintext-safe) ─
     const credentials: Record<string, any> = (providerConfig.credentials as any) || {};
 
-    // Map template category to priority lane (Lot E2)
-    const priorityLane: 'transactional' | 'marketing' | 'bulk' = 
-      categoryForTemplate(templateCode!) === 'transactional' ? 'transactional'
-      : categoryForTemplate(templateCode!) === 'marketing' ? 'marketing'
-      : 'transactional';
+    // ── 6bis. Subscriber preferences & suppression check ─────────────
+    const category = categoryForTemplate(templateCode!);
+    const isTransactional = category === "transactional";
+    // Priority lane mapping (Lot E2) — used for queue routing in future async path
+    const priorityLane: 'transactional' | 'marketing' | 'bulk' =
+      category === 'marketing' ? 'marketing' : 'transactional';
+    void priorityLane;
 
     if (!isTransactional) {
       // Suppression list
