@@ -94,6 +94,9 @@ export function EmailProvidersTab({ organizationId }: { organizationId: string |
         )}
       </div>
 
+      {/* Webhook receiver — Lot E2 */}
+      <EmailWebhookReceiverPanel organizationId={organizationId} />
+
       <div className="grid gap-3">
         {configs.map(c => {
           const provider = providers.find(p => p.code === c.provider_code);
