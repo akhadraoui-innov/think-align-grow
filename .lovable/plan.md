@@ -1,138 +1,128 @@
 
 
-# Plan v2.6.1 — World-Class Edition (verrouillé)
+# Suite v2.6.1 — Lots E1 → E4 séquentiels
 
-## Décisions verrouillées
-- **Q1 = C** — Phasage : v2.6.1 (Lots A→E cœur world-class) puis v2.7 (Lots F+G : DX/API/SDK/observabilité avancée)
-- **Q2 = B** — API publique REST + SDK reportés en v2.7
-- **Q3 = A,B** — Multi-locale FR+EN minimum dès v2.6.1, extension ES+DE en v2.7
-- **Q4 = B** — Status page sur sous-domaine dédié `status.growthinnov.com` (DNS séparé)
-- **Q5 = A** — Audit log immuable hash-chain dès v2.6.1 (compliance Enterprise)
+Exécution dans l'ordre recommandé : **E1 (Sécurité Enterprise) → E2 (Délivrabilité) → E3 (Notifications & UX) → E4 (Health & Observabilité)**.
+
+Chaque lot est livré, audité, puis on enchaîne sur le suivant.
 
 ---
 
-## v2.6.1 — Cœur world-class (cycle actuel)
+## Lot E1 — Sécurité & Compliance Enterprise
 
-### Lot A — Stabilisation Email (bloquants)
-1. Migration SQL : helper `get_org_effective_features(org_id)` joignant `organization_subscriptions` actif + `subscription_plans.features` + `organizations.email_features_override`
-2. Seed `subscription_plans.features` (Starter / Pro / Enterprise) avec flags `custom_email_domain`, `custom_email_provider`, `email_co_branding`, `email_tracking`
-3. Seed `email_provider_configs` global Lovable + replanification cron `cron_dispatch_login_reminders` (9h quotidien via `pg_cron` + `pg_net`)
-4. Refactor `dispatch_email_event` : `extensions.http_post` synchrone → `net.http_post` async + signature HMAC sortante
-5. Patch `trigger-email/index.ts` : retire la jointure cassée `organizations.plan_id`, consomme le helper, vérifie HMAC entrante
-6. Upload logo GROWTHINNOV SVG dans `brand-assets/growthinnov-logo.svg`
+**Objectif** : fermer les 3 chantiers sécurité critiques restants, débloquer commercialisation Enterprise.
 
-### Lot B — Sécurité (6 findings + extensions)
-7. RLS `workshops` : `is_workshop_participant OR is_workshop_host OR is_saas_team` + RPC `get_workshop_by_code` SECURITY DEFINER
-8. RLS `practice_variants` : SELECT scopé via parent ; `system_prompt` réservé aux auteurs / SaaS team
-9. RLS `academy_practices` standalone : `created_by = auth.uid() OR is_saas_team`
-10. Storage `ucm-exports` : path-based `(storage.foldername(name))[1] = organization_id::text`
-11. Vue `v_academy_quiz_questions_public` masquant `correct_answer` ; refactor hooks client
-12. RLS `realtime.messages` topic-scoped (`workshop:<id>` + check participant)
-13. **+ SSRF guard** sur webhooks sortants (allowlist domains validée avant `net.http_post`)
-14. **+ Audit log immuable** : table `audit_logs_immutable` append-only avec hash chain SHA-256 (`prev_hash` → `current_hash`), trigger d'insertion automatique, vue de vérification d'intégrité
-15. **+ Content Security Policy emails** : sanitization HTML stricte, anti-phishing pattern detection (URLs masquées, scripts inline bloqués)
+### Backend (BDD + migrations)
+- Table `audit_logs_immutable(id, prev_hash, current_hash, actor_id, organization_id, action, entity_type, entity_id, payload jsonb, created_at)` — append-only, RLS read-only pour SaaS team.
+- Trigger `BEFORE INSERT` qui calcule `current_hash = sha256(prev_hash || row_payload)` ; `prev_hash` lu depuis dernière ligne ou `'GENESIS'`.
+- Refus de tout `UPDATE`/`DELETE` via policy + revoke privileges.
+- Fonction `verify_audit_chain_integrity()` retournant `{valid: bool, broken_at: uuid}` pour vue admin.
+- Fonction `is_url_allowed(url text)` : parse host, refuse IPs privées (10/8, 172.16/12, 192.168/16, 127/8, ::1, link-local), refuse `localhost`, valide contre table `webhook_allowlist_domains`.
+- Hook dans `dispatch_email_event` et tout `net.http_post` sortant : `IF NOT is_url_allowed(target) THEN RAISE EXCEPTION`.
 
-### Lot C — Email Studio Pro
-16. **Branding** : upload `brand_logo_url` (SVG/PNG ≤200KB), toggles `email_features_override` plan-by-plan (super_admin), inputs `inactivity_reminder_days`, `email_tracking_enabled`, `email_sender_domain`, statut DNS SPF/DKIM/DMARC + **BIMI**
-17. **Templates** : renderer JS partagé `src/lib/email-render.ts` (preview live = réel), bouton "Envoi de test", drawer **Versioning** consommant `email_template_versions` (diff Git-style + restore), **multi-locale FR/EN** (table `email_template_translations` + fallback intelligent)
-18. **Providers** : test connexion par config, masquage `***` des secrets, regenerate, form dynamique depuis `config_schema`, **circuit breaker par provider** (auto-disable si taux échec > 20% sur 100 derniers envois)
-19. **Logs** : drawer détail run (payload, HTML rendu, erreur, headers, response), filtres status/provider/event/org/date, bouton **Replay** via `enqueue_email`
-20. **Suppressions list** : table `suppressed_emails` filtrable par type (bounce/complaint/unsubscribe), action "Réactiver" avec confirmation, lien depuis logs
-21. **Inline AI** : boutons "✨ rewrite/shorten/translate" dans chaque champ markdown via `email-marketing-ai`
-22. **A/B testing automation** : 2 subjects par template, mesure open rate, déclaration significance Bayesian (table `email_ab_tests`)
+### Edge Functions
+- `trigger-email/index.ts` : ajouter sanitization HTML stricte avant envoi (allowlist tags via DOMPurify-equivalent Deno : `<a href>`, `<p>`, `<br>`, `<strong>`, `<em>`, `<ul>`, `<ol>`, `<li>`, `<img src alt>`, `<table>`, `<tr>`, `<td>`, `<h1-h6>`). Bloque `<script>`, `<iframe>`, `on*=`, `javascript:`.
+- Détecteur anti-phishing : flag les emails contenant URL avec text-link ≠ href-domain (`<a href="evil.com">paypal.com</a>`), homoglyphes Unicode courants (Cyrillic `а` vs Latin `a`), URLs raccourcies non-allowlistées.
+- Si flag → log dans `email_security_flags` + bloque envoi (admin doit valider).
 
-### Lot D — Naviguation multi-tenant (Q4=A initial)
-23. `AdminSidebar` : groupe collapsible "EMAIL" (Templates / Automations / Providers / Logs / Branding / Suppressions / A/B Tests)
-24. **Espace ADMIN portail client** : nouvel onglet `ADMIN` dans header `PortalShell` (à côté de FORMATIONS, PRATIQUE, etc.), visible si perm `email.compose | org.settings.manage | org.members.manage`
-25. Routes : `/portal/admin/emails`, `/portal/admin/branding`, `/portal/admin/subscription`, `/portal/admin/members`, `/portal/admin/quotas`
-26. Composants `EmailStudioScoped`, `BrandingPanelScoped`, `SubscriptionPanel`, `MembersPanel`, `QuotasPanel` (OrgSwitcher caché, scope auto-org forcé)
-27. **Command Palette globale Cmd+K** Linear-style (actions Email + navigation + IA) dans portail et admin
-28. `OrgSwitcher` déplacé dans header `AdminShell` global
+### Frontend (admin)
+- Page `/admin/audit` : liste paginée `audit_logs_immutable` avec filtres (actor, action, date, entity_type), badge "Chaîne intègre" en haut (vert/rouge selon `verify_audit_chain_integrity()`), export CSV.
+- Onglet "Allowlist webhooks" dans `/admin/settings` : CRUD `webhook_allowlist_domains` (super_admin only).
+- Onglet "Security flags" dans `AdminEmails` : liste emails bloqués pour phishing suspect, bouton "Valider et envoyer" / "Confirmer blocage".
 
-### Lot E — Architecture systémique
-29. **Webhook receiver `email-events`** : edge function publique avec signature verification, handlers `lovable` / `resend` / `sendgrid` ; mappe events → `suppressed_emails` (bounce/complaint) + update `email_automation_runs.opened_at/clicked_at`
-30. **Quotas email** : table `email_quota_usage(org_id, period_start, sent_count, plan_limit)`, function `check_email_quota(org_id)` appelée au début de `trigger-email`, widget jauge mensuelle + **upgrade prompt contextuel** à 80%
-31. **Page `/admin/health`** (System Health Dashboard) : status providers (ping), DB linter (count findings), cron jobs (last run), pgmq backlog, secrets manquants, brand assets présents, refresh 30s, badges colorés
-32. **Notifications in-app realtime** : table `notifications(user_id, organization_id, type, title, body, link, read_at)` + RLS user-scoped, hook `useNotifications`, canal Supabase Realtime, dropdown réel dans header portail + admin (remplace pastille décorative), triggers DB pour welcome/suspended/quota warning/certificate earned/email failed
-33. **Priority lanes pgmq** : queues `transactional` > `marketing` > `bulk` (drainées dans cet ordre par `process-email-queue`)
-34. **Idempotency keys** sur `trigger-email` (header `X-Idempotency-Key`, table `email_idempotency_keys` 24h TTL)
-
-### Documentation v2.6.1
-35. `docs/audit/v2.6.1-world-class-resolution.md` (résolutions par finding)
-36. `docs/releases/v2.6.1-world-class.md`
-37. Mémoires : `architecture/effective-features-helper`, `features/in-app-notifications`, `architecture/system-health-dashboard`, `features/portal-admin-space`, `features/email-deliverability-engineering`, `architecture/circuit-breakers`, `compliance/audit-log-immutable`
+### Audit E1
+Linter Supabase 0 finding • test chaîne hash (insertion + verify) • test SSRF (tentative `http://169.254.169.254` → bloquée) • test sanitization (script inline → stripped).
 
 ---
 
-## v2.7 — DX, API publique & observabilité avancée (cycle suivant, planifié)
+## Lot E2 — Délivrabilité avancée
 
-### Lot F — Developer Experience
-- API publique REST `/v1/emails/*` (envoi, list, search, replay) avec auth API key scopée par org
-- Webhooks sortants signés HMAC configurables par client (events email)
-- OpenAPI spec auto-générée + page `/docs/api` (Scalar)
-- SDK TypeScript `@growthinnov/emails` publié npm avec typings auto-générés
-- Sandbox mode (flag `is_sandbox` sur API keys, isole envois test)
-- Edge function `observability-ingest` (traces structurées) + dashboard `/admin/observability/traces`
-- DSAR self-service `/portal/admin/privacy` (export RGPD complet, suppression cascade)
+**Objectif** : bounces réels Resend/SendGrid → `suppressed_emails` automatique, priority lanes pgmq.
 
-### Lot G — Maturité plateforme
-- Status page publique sur `status.growthinnov.com` (DNS séparé : uptime providers, last incidents, SLO 99.9%)
-- Multi-locale ES + DE
-- Schema migration UI variables templates (renommage safe propagé)
-- Live collaboration sur templates (multi-curseur)
-- Email designer visuel par blocs (shortcodes `{{block:hero|...}}`)
-- DPA téléchargeable + RGPD article 30 register
-- BYOK (Bring Your Own Key) Enterprise + rotation secrets automatique 90j
-- Documentation : `docs/api/openapi.yaml`, `docs/sla.md`, `docs/security/dpa-template.pdf`
+### Backend
+- Table `email_webhook_secrets(provider_code, secret, created_at)` chiffrée via vault.
+- Migration : ajout colonnes `priority text default 'transactional'` et `dispatched_at` à `pgmq_email_queue` ; index `(priority, enqueued_at)`.
+- 3 queues pgmq : `email_transactional`, `email_marketing`, `email_bulk` (création via `email_domain--setup_email_infra` patterns).
+- RPC `enqueue_email_priority(payload, priority)` qui route vers la bonne queue.
 
----
+### Edge Functions
+- **Nouvelle** `email-events/index.ts` (publique, `verify_jwt = false`) :
+  - Détecte provider via header (`svix-signature` / `resend-signature` / `x-twilio-email-event-webhook-signature`).
+  - Vérifie HMAC selon doc provider.
+  - Mappe events : `bounce.hard` / `complaint` / `unsubscribe` → INSERT `suppressed_emails` ; `delivered` / `opened` / `clicked` → UPDATE `email_automation_runs.opened_at|clicked_at|delivered_at`.
+- `process-email-queue/index.ts` : drainage prioritaire `transactional → marketing → bulk` (boucle 3 reads séquentielles).
+- `trigger-email` : utilise `enqueue_email_priority` selon `template.category`.
 
-## Architecture cible v2.6.1
+### Frontend
+- `EmailProvidersTab.tsx` : section "Webhook entrant" affichant URL `https://[project].supabase.co/functions/v1/email-events?provider=resend` + secret généré + bouton "Régénérer" + instructions copier-coller pour chaque provider.
+- `EmailReliabilityTab.tsx` : ajout panneau "Priority lanes" avec 3 jauges (backlog par queue) + débit observé.
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  ADMIN SAAS                  │  PORTAL CLIENT (nouveau ADMIN)   │
-│  /admin/emails (full)        │  /portal/admin/emails (org)      │
-│  /admin/health               │  /portal/admin/branding          │
-│  OrgSwitcher dans header     │  /portal/admin/subscription      │
-│  Cmd+K palette               │  /portal/admin/members           │
-│                              │  /portal/admin/quotas            │
-└──────────────┬───────────────┴──────────────┬──────────────────┘
-               │                              │
-               └────────── shared ────────────┘
-                            ▼
-            get_org_effective_features(org_id)
-            check_email_quota(org_id)
-            check_circuit_breaker(provider)
-                            ▼
-       ┌────────────────────┴────────────────────┐
-       ▼                                         ▼
- trigger-email                            email-events
- (HMAC + idempotency + SSRF)              (webhook in signé)
-       │                                         │
-       ▼                                         ▼
- Priority lanes pgmq                    suppressed_emails
- (transactional > marketing > bulk)     opened_at / clicked_at
-       │
-       ▼
- Adapters + Circuit Breaker (4 providers)
-       │
-       ▼
- Audit log immuable (hash chain SHA-256)
- + Notifications realtime in-app
-```
+### Audit E2
+Test webhook Resend signé/non-signé • bounce test → suppressed_emails • envoi 100 marketing + 5 transactional → vérifier que les 5 transactional partent en premier.
 
 ---
 
-## Livrables v2.6.1
+## Lot E3 — Notifications in-app & Command Palette
 
-1. ✅ Emails opérationnels (logo, providers seedés, plans flagués, helper centralisé)
-2. ✅ 6 findings sécurité + SSRF guard + audit immuable + CSP emails
-3. ✅ Email Studio Pro (preview live, test, versioning, replay, suppressions, A/B, inline AI, multi-locale FR/EN)
-4. ✅ Sidebar EMAIL admin + espace ADMIN portail client + Cmd+K
-5. ✅ Webhooks bounces multi-providers (Lovable + Resend + SendGrid)
-6. ✅ Quotas email + System Health Dashboard + circuit breakers + priority lanes
-7. ✅ Notifications in-app realtime
-8. ✅ Idempotency keys
-9. ✅ Documentation + mémoire à jour
+**Objectif** : remplacer pastille décorative par vraies notifications realtime, ajouter Cmd+K global.
+
+### Backend
+- Table `notifications(id, user_id, organization_id, type, title, body, link, severity, read_at, created_at)` + RLS user-scoped (`user_id = auth.uid()`).
+- Activer realtime publication.
+- Triggers DB sur événements clés :
+  - `welcome` (after insert profiles)
+  - `org.suspended` / `org.reactivated` (after update organizations.status)
+  - `quota.warning` (after insert email_quota_usage si > 80%)
+  - `certificate.earned` (after insert academy_certificates)
+  - `email.failed` (after insert email_send_log si status='dlq')
+- Fonction `mark_notifications_read(ids uuid[])`.
+
+### Frontend
+- Hook `useNotifications()` : query + canal realtime `notifications:user_id=eq.{uid}`, auto-add nouvelles.
+- Composant `NotificationsDropdown.tsx` (header portail + admin) : badge count unread, liste 20 dernières, click → navigate `link` + mark read, "Tout marquer lu".
+- `CommandPalette.tsx` (déjà existant partiellement) : étendre actions (recherche templates, automations, users, orgs ; commandes IA ; navigation rapide). Bind global `Cmd+K` / `Ctrl+K` dans `AdminShell` et `PortalShell`.
+
+### Audit E3
+Insertion notif via SQL → apparaît temps réel sans refresh • Cmd+K ouvre palette sur toutes pages • permissions RLS testées (user A ne voit pas notifs user B).
+
+---
+
+## Lot E4 — Health Dashboard global & Observabilité
+
+**Objectif** : étendre `EmailReliabilityTab` à vue système complète.
+
+### Backend
+- Fonction `get_system_health()` retournant JSON :
+  - `providers[]` (depuis `get_email_provider_health`)
+  - `cron_jobs[]` (depuis `get_email_cron_health`)
+  - `linter_findings_count` (count direct)
+  - `pgmq_backlogs[]` (par queue)
+  - `secrets_status[]` (vault keys présents)
+  - `brand_assets_status` (logo upload présent)
+  - `audit_chain_valid` (depuis `verify_audit_chain_integrity`)
+- Fonction `get_edge_function_metrics(hours int)` : P50/P95 latence depuis `analytics_query` agrégé.
+
+### Frontend
+- Page `/admin/health` (nouvelle route, lien dans `AdminSidebar`) :
+  - 6 cartes status (providers, cron, DB linter, queues, secrets, audit chain) avec badges vert/orange/rouge.
+  - Sparklines uptime providers 30j.
+  - Tableau métriques P50/P95 par edge function.
+  - Refresh auto 30s.
+- Bandeau sticky en haut de `AdminShell` si finding critique (`error` linter ou `audit_chain_invalid` ou provider down).
+
+### Audit E4
+Toutes cartes affichent données réelles • simuler provider down → bandeau apparaît • metrics edge functions cohérents avec logs.
+
+---
+
+## Documentation & Mémoires (à chaque lot)
+
+- `docs/releases/v2.6.1-lot-E{n}.md`
+- Mises à jour mémoires : `compliance/audit-log-immutable`, `architecture/circuit-breakers`, `architecture/system-health-dashboard`, `features/in-app-notifications`, `features/email-deliverability-engineering`.
+
+---
+
+## Démarrage
+
+On démarre par **Lot E1 (Sécurité Enterprise)** dès approbation. Audit en fin de E1, puis enchaînement automatique sur E2, E3, E4.
 
