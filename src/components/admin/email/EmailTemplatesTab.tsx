@@ -214,6 +214,34 @@ export function EmailTemplatesTab({ organizationId }: { organizationId: string |
           </div>
         )}
       </main>
+
+      {selected && (
+        <>
+          <EmailVersionsDrawer
+            open={showVersions}
+            onOpenChange={setShowVersions}
+            templateId={selected.id}
+            currentSubject={selected.subject}
+            currentMarkdown={selected.markdown_body}
+          />
+          <EmailSendTestDialog
+            open={showTest}
+            onOpenChange={setShowTest}
+            templateId={selected.id}
+            inlineSubject={selected.subject}
+            inlineMarkdown={selected.markdown_body}
+            organizationId={organizationId}
+          />
+          {showTranslations && (
+            <EmailTranslationsPanel
+              templateId={selected.id}
+              defaultSubject={selected.subject}
+              defaultMarkdown={selected.markdown_body}
+              onClose={() => setShowTranslations(false)}
+            />
+          )}
+        </>
+      )}
     </div>
   );
 }
