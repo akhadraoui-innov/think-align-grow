@@ -14,6 +14,7 @@ import {
 } from "@/hooks/useEmailProviders";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
+import { EmailWebhookReceiverPanel } from "./EmailWebhookReceiverPanel";
 
 export function EmailProvidersTab({ organizationId }: { organizationId: string | null }) {
   const perms = usePermissions();
@@ -92,6 +93,9 @@ export function EmailProvidersTab({ organizationId }: { organizationId: string |
           </Button>
         )}
       </div>
+
+      {/* Webhook receiver — Lot E2 */}
+      <EmailWebhookReceiverPanel organizationId={organizationId} />
 
       <div className="grid gap-3">
         {configs.map(c => {

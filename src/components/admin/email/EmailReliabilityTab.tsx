@@ -22,6 +22,7 @@ import {
 } from "@/hooks/useEmailReliability";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { EmailPriorityLanesPanel } from "./EmailPriorityLanesPanel";
 
 export function EmailReliabilityTab() {
   const [hours, setHours] = useState(24);
@@ -57,6 +58,9 @@ export function EmailReliabilityTab() {
           </Button>
         </div>
       </div>
+
+      {/* Priority lanes (Lot E2) */}
+      <EmailPriorityLanesPanel />
 
       {/* Provider Health */}
       <Card>

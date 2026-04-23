@@ -268,6 +268,10 @@ Deno.serve(async (req) => {
     // ── 6bis. Subscriber preferences & suppression check ─────────────
     const category = categoryForTemplate(templateCode!);
     const isTransactional = category === "transactional";
+    // Priority lane mapping (Lot E2) — used for queue routing in future async path
+    const priorityLane: 'transactional' | 'marketing' | 'bulk' =
+      category === 'marketing' ? 'marketing' : 'transactional';
+    void priorityLane;
 
     if (!isTransactional) {
       // Suppression list

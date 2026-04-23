@@ -1931,14 +1931,18 @@ export type Database = {
       email_automation_runs: {
         Row: {
           automation_id: string | null
+          bounced_at: string | null
           clicked_at: string | null
+          complained_at: string | null
           created_at: string
+          delivered_at: string | null
           error: string | null
           id: string
           idempotency_key: string | null
           opened_at: string | null
           organization_id: string | null
           payload: Json
+          provider_message_id: string | null
           provider_used: string | null
           recipient_email: string
           scheduled_at: string
@@ -1946,17 +1950,22 @@ export type Database = {
           status: string
           template_code: string
           trigger_event: string
+          unsubscribed_at: string | null
         }
         Insert: {
           automation_id?: string | null
+          bounced_at?: string | null
           clicked_at?: string | null
+          complained_at?: string | null
           created_at?: string
+          delivered_at?: string | null
           error?: string | null
           id?: string
           idempotency_key?: string | null
           opened_at?: string | null
           organization_id?: string | null
           payload?: Json
+          provider_message_id?: string | null
           provider_used?: string | null
           recipient_email: string
           scheduled_at?: string
@@ -1964,17 +1973,22 @@ export type Database = {
           status?: string
           template_code: string
           trigger_event: string
+          unsubscribed_at?: string | null
         }
         Update: {
           automation_id?: string | null
+          bounced_at?: string | null
           clicked_at?: string | null
+          complained_at?: string | null
           created_at?: string
+          delivered_at?: string | null
           error?: string | null
           id?: string
           idempotency_key?: string | null
           opened_at?: string | null
           organization_id?: string | null
           payload?: Json
+          provider_message_id?: string | null
           provider_used?: string | null
           recipient_email?: string
           scheduled_at?: string
@@ -1982,6 +1996,7 @@ export type Database = {
           status?: string
           template_code?: string
           trigger_event?: string
+          unsubscribed_at?: string | null
         }
         Relationships: [
           {
@@ -2649,6 +2664,47 @@ export type Database = {
           used_at?: string | null
         }
         Relationships: []
+      }
+      email_webhook_secrets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          last_rotated_at: string
+          organization_id: string | null
+          provider_code: string
+          secret: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          last_rotated_at?: string
+          organization_id?: string | null
+          provider_code: string
+          secret: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          last_rotated_at?: string
+          organization_id?: string | null
+          provider_code?: string
+          secret?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_webhook_secrets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       game_plan_steps: {
         Row: {
@@ -3597,27 +3653,47 @@ export type Database = {
       }
       suppressed_emails: {
         Row: {
+          bounced_at: string | null
           created_at: string
           email: string
           id: string
           metadata: Json | null
+          organization_id: string | null
+          provider_code: string | null
           reason: string
+          source: string
         }
         Insert: {
+          bounced_at?: string | null
           created_at?: string
           email: string
           id?: string
           metadata?: Json | null
+          organization_id?: string | null
+          provider_code?: string | null
           reason: string
+          source?: string
         }
         Update: {
+          bounced_at?: string | null
           created_at?: string
           email?: string
           id?: string
           metadata?: Json | null
+          organization_id?: string | null
+          provider_code?: string | null
           reason?: string
+          source?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "suppressed_emails_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_members: {
         Row: {
@@ -5168,6 +5244,10 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      delete_priority_email: {
+        Args: { _msg_id: number; _priority: string }
+        Returns: boolean
+      }
       dispatch_email_event: {
         Args: {
           _entity_id: string
@@ -5189,6 +5269,10 @@ export type Database = {
       }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
+        Returns: number
+      }
+      enqueue_email_priority: {
+        Args: { _payload: Json; _priority?: string }
         Returns: number
       }
       erase_user_email_data: { Args: { _user_id?: string }; Returns: Json }
@@ -5240,6 +5324,10 @@ export type Database = {
           usage_percent: number
         }[]
       }
+      get_email_webhook_secret: {
+        Args: { _organization_id?: string; _provider_code: string }
+        Returns: string
+      }
       get_invitation_by_token: {
         Args: { _token: string }
         Returns: {
@@ -5255,6 +5343,14 @@ export type Database = {
       }
       get_or_create_email_hmac_secret: { Args: never; Returns: string }
       get_org_effective_features: { Args: { _org_id: string }; Returns: Json }
+      get_priority_lane_metrics: {
+        Args: never
+        Returns: {
+          priority: string
+          queue_length: number
+          total_messages: number
+        }[]
+      }
       get_ucm_global_prompt: {
         Args: { p_org_id: string; p_section_code: string }
         Returns: string
@@ -5337,10 +5433,24 @@ export type Database = {
           read_ct: number
         }[]
       }
+      read_priority_email_batch: {
+        Args: { _batch_size?: number; _priority: string; _vt?: number }
+        Returns: {
+          enqueued_at: string
+          message: Json
+          msg_id: number
+          read_ct: number
+          vt: string
+        }[]
+      }
       replay_dlq_message: { Args: { _message_id: string }; Returns: Json }
       review_email_security_flag: {
         Args: { _decision: string; _flag_id: string }
         Returns: undefined
+      }
+      rotate_email_webhook_secret: {
+        Args: { _organization_id?: string; _provider_code: string }
+        Returns: string
       }
       sign_email_payload: { Args: { _payload: Json }; Returns: string }
       spend_credits: {
