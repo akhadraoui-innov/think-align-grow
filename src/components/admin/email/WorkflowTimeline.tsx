@@ -74,7 +74,7 @@ export function WorkflowTimeline({ automations, onEdit }: Props) {
                     {item.organization_id && <Badge variant="secondary" className="text-[9px] py-0 h-4">Org</Badge>}
                     {!item.is_active && <Badge variant="outline" className="text-[9px] py-0 h-4">Off</Badge>}
                     {item.conditions && Object.keys(item.conditions).length > 0 && (
-                      <Filter className="h-3 w-3 text-amber-500" />
+                      <Filter className="h-3 w-3 text-primary" />
                     )}
                   </div>
                   <div className="flex items-center gap-1.5">
