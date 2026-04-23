@@ -9,6 +9,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getAdapter } from "../_shared/email-adapters/index.ts";
 import { renderEmail } from "../_shared/email-render.ts";
+import { sanitizeEmailHtml, detectPhishing, shouldBlockSend } from "../_shared/email-security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -350,6 +351,36 @@ Deno.serve(async (req) => {
       footer: { organizationLine: org?.name || "GROWTHINNOV", unsubscribeUrl },
     });
 
+    // ── 7bis. Sanitize HTML + anti-phishing detection ────────────────
+    const sanitizedHtml = sanitizeEmailHtml(rendered.html);
+    const securityFlags = detectPhishing(sanitizedHtml);
+    if (shouldBlockSend(securityFlags)) {
+      const { data: flagRow } = await supabase.from("email_security_flags").insert({
+        organization_id: body.organization_id || null,
+        template_id: template.id,
+        recipient_email: body.recipient_email,
+        flag_type: securityFlags[0].type,
+        severity: securityFlags[0].severity,
+        details: { flags: securityFlags, template_code: templateCode, event: body.event },
+        raw_html: sanitizedHtml.slice(0, 50_000),
+        status: "blocked",
+      }).select("id").maybeSingle();
+      await supabase.from("email_send_log").insert({
+        message_id: crypto.randomUUID(),
+        template_name: templateCode!,
+        recipient_email: body.recipient_email,
+        status: "blocked_security",
+        error_message: `phishing detector: ${securityFlags.map((f) => f.type).join(", ")}`,
+        metadata: { flag_id: flagRow?.id, flags: securityFlags, category, event: body.event },
+      });
+      return json({
+        blocked: true,
+        reason: "security_flag",
+        flag_id: flagRow?.id,
+        flags: securityFlags,
+      }, 409);
+    }
+
     // ── 8. Persist pending log row before send ───────────────────────
     const messageId = crypto.randomUUID();
     await supabase.from("email_send_log").insert({
@@ -379,7 +410,7 @@ Deno.serve(async (req) => {
       fromName: providerConfig.from_name || "GROWTHINNOV",
       replyTo: providerConfig.reply_to || undefined,
       subject: rendered.subject,
-      html: rendered.html,
+      html: sanitizedHtml,
       text: rendered.text,
       headers: extraHeaders,
     }, credentials);

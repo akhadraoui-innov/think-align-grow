@@ -2277,6 +2277,59 @@ export type Database = {
           },
         ]
       }
+      email_security_flags: {
+        Row: {
+          created_at: string
+          details: Json
+          flag_type: string
+          id: string
+          organization_id: string | null
+          raw_html: string | null
+          recipient_email: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          severity: string
+          status: string
+          template_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          flag_type: string
+          id?: string
+          organization_id?: string | null
+          raw_html?: string | null
+          recipient_email?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          status?: string
+          template_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          flag_type?: string
+          id?: string
+          organization_id?: string | null
+          raw_html?: string | null
+          recipient_email?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          status?: string
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_security_flags_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -4468,6 +4521,30 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_allowlist_domains: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          domain: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          domain: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          domain?: string
+          id?: string
+        }
+        Relationships: []
+      }
       workshop_actions: {
         Row: {
           assignee_id: string | null
@@ -5226,6 +5303,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_audit_event: {
+        Args: {
+          _action: string
+          _entity_id?: string
+          _entity_type?: string
+          _organization_id?: string
+          _payload?: Json
+        }
+        Returns: number
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -5245,6 +5332,10 @@ export type Database = {
         }[]
       }
       replay_dlq_message: { Args: { _message_id: string }; Returns: Json }
+      review_email_security_flag: {
+        Args: { _decision: string; _flag_id: string }
+        Returns: undefined
+      }
       sign_email_payload: { Args: { _payload: Json }; Returns: string }
       spend_credits: {
         Args: { _amount: number; _description: string; _user_id: string }
@@ -5254,6 +5345,7 @@ export type Database = {
         Args: { _field: string; _org_id: string; _tokens?: number }
         Returns: undefined
       }
+      verify_audit_chain_integrity: { Args: never; Returns: Json }
     }
     Enums: {
       app_role:
