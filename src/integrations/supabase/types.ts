@@ -5336,6 +5336,17 @@ export type Database = {
           status: Database["public"]["Enums"]["workshop_status"]
         }[]
       }
+      get_edge_function_metrics: {
+        Args: { _hours?: number }
+        Returns: {
+          error_rate: number
+          errors: number
+          function_name: string
+          invocations: number
+          p50_ms: number
+          p95_ms: number
+        }[]
+      }
       get_email_cron_health: {
         Args: never
         Returns: {
@@ -5398,6 +5409,7 @@ export type Database = {
           total_messages: number
         }[]
       }
+      get_system_health: { Args: never; Returns: Json }
       get_ucm_global_prompt: {
         Args: { p_org_id: string; p_section_code: string }
         Returns: string
