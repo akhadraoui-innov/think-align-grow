@@ -1317,6 +1317,48 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs_immutable: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          current_hash: string
+          entity_id: string | null
+          entity_type: string | null
+          id: number
+          occurred_at: string
+          organization_id: string | null
+          payload: Json
+          prev_hash: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          current_hash: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: number
+          occurred_at?: string
+          organization_id?: string | null
+          payload?: Json
+          prev_hash?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          current_hash?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: number
+          occurred_at?: string
+          organization_id?: string | null
+          payload?: Json
+          prev_hash?: string | null
+        }
+        Relationships: []
+      }
       business_quotes: {
         Row: {
           challenges: string | null
@@ -1933,6 +1975,30 @@ export type Database = {
           },
         ]
       }
+      email_idempotency_keys: {
+        Row: {
+          created_at: string
+          expires_at: string
+          key: string
+          organization_id: string | null
+          response_payload: Json | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          key: string
+          organization_id?: string | null
+          response_payload?: Json | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          key?: string
+          organization_id?: string | null
+          response_payload?: Json | null
+        }
+        Relationships: []
+      }
       email_provider_configs: {
         Row: {
           created_at: string
@@ -2022,6 +2088,41 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      email_quota_usage: {
+        Row: {
+          id: string
+          organization_id: string | null
+          period_start: string
+          plan_limit: number | null
+          sent_count: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id?: string | null
+          period_start?: string
+          plan_limit?: number | null
+          sent_count?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string | null
+          period_start?: string
+          plan_limit?: number | null
+          sent_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_quota_usage_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_send_log: {
         Row: {
@@ -4541,6 +4642,15 @@ export type Database = {
       }
     }
     Views: {
+      v_audit_log_integrity: {
+        Row: {
+          chain_ok: boolean | null
+          computed_prev: string | null
+          id: number | null
+          prev_hash: string | null
+        }
+        Relationships: []
+      }
       v_email_stats: {
         Row: {
           clicked_count: number | null
@@ -4568,6 +4678,21 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { _token: string }; Returns: Json }
+      append_audit_log: {
+        Args: {
+          _action: string
+          _entity_id?: string
+          _entity_type?: string
+          _organization_id?: string
+          _payload?: Json
+        }
+        Returns: number
+      }
+      check_circuit_breaker: {
+        Args: { _provider_code: string }
+        Returns: boolean
+      }
+      check_email_quota: { Args: { _org_id: string }; Returns: boolean }
       check_ucm_quota: {
         Args: { p_action: string; p_org_id: string }
         Returns: boolean
@@ -4617,6 +4742,7 @@ export type Database = {
           role: string
         }[]
       }
+      get_org_effective_features: { Args: { _org_id: string }; Returns: Json }
       get_ucm_global_prompt: {
         Args: { p_org_id: string; p_section_code: string }
         Returns: string
@@ -4638,6 +4764,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_email_quota: {
+        Args: { _by?: number; _org_id: string }
+        Returns: undefined
       }
       is_org_admin: {
         Args: { _org_id: string; _user_id: string }
