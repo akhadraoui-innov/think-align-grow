@@ -25,6 +25,26 @@ export function EmailProvidersTab({ organizationId }: { organizationId: string |
   const del = useDeleteEmailProviderConfig();
 
   const [editing, setEditing] = useState<any | null>(null);
+  const [testing, setTesting] = useState<Record<string, boolean>>({});
+  const [testResults, setTestResults] = useState<Record<string, { ok: boolean; detail: string; circuit: string }>>({});
+
+  const handleTest = async (configId: string) => {
+    setTesting(t => ({ ...t, [configId]: true }));
+    try {
+      const { data, error } = await supabase.functions.invoke("test-email-provider", {
+        body: { config_id: configId },
+      });
+      if (error) throw error;
+      const res = data as any;
+      setTestResults(r => ({ ...r, [configId]: { ok: !!res.ok, detail: res.detail || res.error || "", circuit: res.circuit_breaker || "closed" } }));
+      if (res.ok) toast.success("Connexion OK", { description: res.detail });
+      else toast.error("Connexion KO", { description: res.detail || res.error });
+    } catch (e: any) {
+      toast.error("Test impossible", { description: e?.message });
+    } finally {
+      setTesting(t => ({ ...t, [configId]: false }));
+    }
+  };
 
   const handleSave = async () => {
     if (!editing?.provider_code || !editing?.from_email) {
