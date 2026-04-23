@@ -25,9 +25,7 @@ export function useEmailABTests(organizationId?: string | null) {
   return useQuery({
     queryKey: ["email-ab-tests", organizationId ?? "global"],
     queryFn: async () => {
-      let q: any = (supabase.from("email_ab_tests" as any) as any)
-        .select("*")
-        .order("started_at", { ascending: false });
+      let q = supabase.from("email_ab_tests").select("*").order("started_at", { ascending: false });
       if (organizationId === null) q = q.is("organization_id", null);
       else if (organizationId) q = q.eq("organization_id", organizationId);
       const { data, error } = await q;
@@ -50,8 +48,8 @@ export function useUpsertABTest() {
         status: payload.status ?? "running",
       };
       const { data, error } = payload.id
-        ? await (supabase.from("email_ab_tests" as any) as any).update(row).eq("id", payload.id).select().single()
-        : await (supabase.from("email_ab_tests" as any) as any).insert(row).select().single();
+        ? await supabase.from("email_ab_tests").update(row).eq("id", payload.id).select().single()
+        : await supabase.from("email_ab_tests").insert(row).select().single();
       if (error) throw error;
       return data;
     },
@@ -63,7 +61,8 @@ export function useStopABTest() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, winner }: { id: string; winner: "A" | "B" }) => {
-      const { error } = await (supabase.from("email_ab_tests" as any) as any)
+      const { error } = await supabase
+        .from("email_ab_tests")
         .update({ status: "completed", winner, completed_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
