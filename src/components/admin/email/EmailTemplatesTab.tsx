@@ -168,7 +168,7 @@ export function EmailTemplatesTab({ organizationId }: { organizationId: string |
                       <div className="text-xs text-muted-foreground mb-2 pb-2 border-b">
                         Sujet : <strong>{selected.subject.replace(/\{\{firstName\}\}/g, SAMPLE_VARS.firstName)}</strong>
                       </div>
-                      <div dangerouslySetInnerHTML={{ __html: renderPreview(selected.markdown_body, SAMPLE_VARS) }} />
+                      <div dangerouslySetInnerHTML={{ __html: renderEmail({ subject: selected.subject, markdown: selected.markdown_body, variables: SAMPLE_VARS, branding: { coBrand: false } }).html }} />
                     </div>
                   </div>
                 </div>
