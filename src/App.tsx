@@ -217,7 +217,7 @@ function AnimatedRoutes() {
           <Route path="/portal/ucm/:id/uc/:ucId" element={<PortalUCMProject />} />
           <Route path="/portal/ucm/:id/synthesis" element={<PortalUCMProject />} />
           <Route path="/portal/ucm/:id/chat" element={<PortalUCMProject />} />
-          <Route path="/portal/preferences" element={<PortalEmailPreferences />} />
+          <Route path="/portal/preferences" element={<AuthGuard><PortalEmailPreferences /></AuthGuard>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
