@@ -127,6 +127,19 @@ export function EmailTemplatesTab({ organizationId }: { organizationId: string |
                       </Button>
                     </>
                   )}
+                  {selected.id && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => setShowVersions(true)}>
+                        <History className="h-3.5 w-3.5 mr-1" />Versions
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setShowTranslations(true)}>
+                        <Languages className="h-3.5 w-3.5 mr-1" />Locales
+                      </Button>
+                    </>
+                  )}
+                  <Button size="sm" variant="outline" onClick={() => setShowTest(true)}>
+                    <Send className="h-3.5 w-3.5 mr-1" />Test
+                  </Button>
                   {canManage && (
                     <>
                       <div className="flex items-center gap-2">
