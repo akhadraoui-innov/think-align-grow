@@ -102,6 +102,7 @@ import AdminUCMSectors from "./pages/admin/AdminUCMSectors";
 import AdminUCMPrompts from "./pages/admin/AdminUCMPrompts";
 import AdminBusiness from "./pages/admin/AdminBusiness";
 import AdminQuotePreview from "./pages/admin/AdminQuotePreview";
+import Invitation from "./pages/Invitation";
 
 const queryClient = new QueryClient();
 
@@ -227,6 +228,7 @@ const App = () => (
         <ScrollToTop />
         <Routes>
           <Route path="/verify/:id" element={<VerifyCertificate />} />
+          <Route path="/invitation/:token" element={<Invitation />} />
           <Route path="*" element={
             <OrgProvider>
               <AnimatedRoutes />
