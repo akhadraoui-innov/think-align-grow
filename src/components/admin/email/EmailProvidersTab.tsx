@@ -14,6 +14,7 @@ import {
 } from "@/hooks/useEmailProviders";
 import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
+import { EmailWebhookReceiverPanel } from "./EmailWebhookReceiverPanel";
 
 export function EmailProvidersTab({ organizationId }: { organizationId: string | null }) {
   const perms = usePermissions();
