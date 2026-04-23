@@ -119,7 +119,37 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 1. Resolve automation (org > global) ─────────────────────────
+    // ── 1. Resolve automation (org > global) + evaluate conditions ───
+    // Conditions DSL (Lot D3): { all?: Rule[], any?: Rule[] }
+    //   Rule = { path: "payload.daysInactive", op: ">=" | "==" | "<" | ">" | "<=" | "!=" | "in" | "contains", value: any }
+    function getPath(obj: any, path: string): any {
+      return path.split(".").reduce((acc, k) => (acc == null ? acc : acc[k]), obj);
+    }
+    function evalRule(rule: any, ctx: any): boolean {
+      const v = getPath(ctx, rule.path);
+      const target = rule.value;
+      switch (rule.op) {
+        case "==": return v == target;
+        case "!=": return v != target;
+        case ">": return Number(v) > Number(target);
+        case ">=": return Number(v) >= Number(target);
+        case "<": return Number(v) < Number(target);
+        case "<=": return Number(v) <= Number(target);
+        case "in": return Array.isArray(target) && target.includes(v);
+        case "contains": return Array.isArray(v) ? v.includes(target) : String(v ?? "").includes(String(target));
+        case "exists": return v != null;
+        default: return true;
+      }
+    }
+    function evalConditions(conditions: any, ctx: any): boolean {
+      if (!conditions || (typeof conditions === "object" && Object.keys(conditions).length === 0)) return true;
+      const all = Array.isArray(conditions.all) ? conditions.all : [];
+      const any = Array.isArray(conditions.any) ? conditions.any : [];
+      const allOk = all.length === 0 || all.every((r: any) => evalRule(r, ctx));
+      const anyOk = any.length === 0 || any.some((r: any) => evalRule(r, ctx));
+      return allOk && anyOk;
+    }
+
     let automation: any = null;
     let templateCode: string | null = body.override_template_code ?? null;
 
@@ -133,11 +163,13 @@ Deno.serve(async (req) => {
           ? `organization_id.eq.${body.organization_id},organization_id.is.null`
           : `organization_id.is.null`);
 
-      automation = (autoRows || []).find((a) => a.organization_id === body.organization_id)
-        || (autoRows || []).find((a) => a.organization_id === null);
+      const evalCtx = { payload: body.payload ?? {}, event: body.event, organization_id: body.organization_id };
+      const candidates = (autoRows || []).filter((a) => evalConditions(a.conditions, evalCtx));
+      automation = candidates.find((a) => a.organization_id === body.organization_id)
+        || candidates.find((a) => a.organization_id === null);
 
       if (!automation) {
-        return json({ skipped: true, reason: `no active automation for event '${body.event}'` }, 200);
+        return json({ skipped: true, reason: `no matching automation for event '${body.event}' (conditions or none)` }, 200);
       }
       templateCode = automation.template_code;
     }
