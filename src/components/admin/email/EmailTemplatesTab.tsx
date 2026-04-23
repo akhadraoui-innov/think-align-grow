@@ -27,6 +27,9 @@ export function EmailTemplatesTab({ organizationId }: { organizationId: string |
 
   const [selected, setSelected] = useState<EmailTemplate | null>(null);
   const [showAI, setShowAI] = useState<null | "compose" | "refine">(null);
+  const [showVersions, setShowVersions] = useState(false);
+  const [showTest, setShowTest] = useState(false);
+  const [showTranslations, setShowTranslations] = useState(false);
 
   useEffect(() => {
     if (!selected && templates.length > 0) setSelected(templates[0]);
