@@ -9,11 +9,14 @@ import { useCredits } from "@/hooks/useCredits";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLastSeenTracker } from "@/hooks/useLastSeenTracker";
 import {
-  Search, Bell, HelpCircle, Menu, X,
+  Search, HelpCircle, Menu, X,
   Coins, ChevronRight, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
+import { CommandPalette } from "@/components/layout/CommandPalette";
+import { useEffect, useCallback } from "react";
 
 interface PortalShellProps {
   children: React.ReactNode;
@@ -36,7 +39,20 @@ export function PortalShell({ children }: PortalShellProps) {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
   useLastSeenTracker();
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      setCmdOpen((o) => !o);
+    }
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   const isImmersive =
     /^\/portal\/module\//.test(location.pathname) ||
@@ -62,6 +78,7 @@ export function PortalShell({ children }: PortalShellProps) {
 
   return (
     <AuthGuard redirectTo="/auth">
+    <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
     <div className="portal h-screen flex flex-col bg-background font-sans overflow-hidden">
       {/* ── Top Nav ── */}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-xl">
@@ -97,8 +114,12 @@ export function PortalShell({ children }: PortalShellProps) {
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Search */}
-          <button className="h-9 w-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+          {/* Search → Command palette */}
+          <button
+            onClick={() => setCmdOpen(true)}
+            title="Recherche (Cmd+K)"
+            className="h-9 w-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          >
             <Search className="h-4.5 w-4.5" />
           </button>
 
@@ -109,10 +130,7 @@ export function PortalShell({ children }: PortalShellProps) {
           </div>
 
           {/* Notifications */}
-          <button className="h-9 w-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors relative">
-            <Bell className="h-4.5 w-4.5" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
-          </button>
+          <NotificationsDropdown variant="portal" />
 
           {/* Email preferences */}
           <Link
