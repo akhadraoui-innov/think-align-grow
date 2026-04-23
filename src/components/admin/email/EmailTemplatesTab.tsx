@@ -1,43 +1,20 @@
 import { useState, useEffect } from "react";
-import { Plus, Sparkles, Trash2, Save, Eye } from "lucide-react";
+import { Plus, Sparkles, Trash2, Save, Eye, Send, History, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useEmailTemplates, useUpsertEmailTemplate, useDeleteEmailTemplate, EmailTemplate } from "@/hooks/useEmailTemplates";
 import { usePermissions } from "@/hooks/usePermissions";
 import { EmailMarketingAIChat } from "./EmailMarketingAIChat";
-
-const SAMPLE_VARS = {
-  firstName: "Marie",
-  organization: { name: "Acme SaaS" },
-  recipient: { email: "marie@acme.com" },
-};
-
-function renderPreview(markdown: string, vars: any): string {
-  // Mirror of edge renderer (simplified) for client preview
-  let html = markdown.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, p) => {
-    const v = p.split(".").reduce((a: any, k: string) => a?.[k], vars);
-    return v == null ? "" : String(v);
-  });
-  html = html.replace(/\{\{\s*button:([^|]+)\|([^}]+)\s*\}\}/g, (_, l, u) =>
-    `<a href="${u}" style="display:inline-block;padding:10px 20px;background:#2563EB;color:#fff;border-radius:8px;text-decoration:none;margin:8px 0;font-weight:600">${l.trim()}</a>`,
-  );
-  html = html
-    .replace(/^### (.+)$/gm, "<h3 style='font-size:16px;color:#0F172A;margin:18px 0 8px'>$1</h3>")
-    .replace(/^## (.+)$/gm, "<h2 style='font-size:20px;color:#0F172A;margin:22px 0 10px'>$1</h2>")
-    .replace(/^# (.+)$/gm, "<h1 style='font-size:24px;color:#0F172A;margin:0 0 14px'>$1</h1>")
-    .replace(/^---+$/gm, "<hr style='border:none;border-top:1px solid #E2E8F0;margin:24px 0'/>")
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "<a href='$2' style='color:#2563EB'>$1</a>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\n\n/g, "</p><p style='margin:0 0 12px;color:#0F172A;line-height:1.6'>")
-    .replace(/^(?!<)(.+)$/gm, "<p style='margin:0 0 12px;color:#0F172A;line-height:1.6'>$1</p>");
-  return html;
-}
+import { EmailVersionsDrawer } from "./EmailVersionsDrawer";
+import { EmailSendTestDialog } from "./EmailSendTestDialog";
+import { EmailTranslationsPanel } from "./EmailTranslationsPanel";
+import { renderEmail, SAMPLE_VARS } from "@/lib/email-render";
 
 export function EmailTemplatesTab({ organizationId }: { organizationId: string | null }) {
   const perms = usePermissions();
