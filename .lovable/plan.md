@@ -1,156 +1,154 @@
 
 
-# Plan v2.5 — Gouvernance, Traçabilité & Gestion utilisateurs
+# Plan v2.6 — Email Platform GROWTHINNOV (verrouillé)
 
 ## Décisions verrouillées
-1. **Q1 = C** — Traçabilité **complète niveau base de données via triggers** (audit exhaustif, conformité SOC2/ISO)
-2. **Q2 = B** — Système d'invitations **robuste** : table `organization_invitations` avec token, expiration 7j, page d'acceptation
-3. **Q3 = B** — Présence `last_seen_at` mise à jour **à chaque changement de page** (faible coût)
+- **Q1 = C** : Markdown + composants prédéfinis
+- **Q2 = D** : Inactivité configurable par org (défaut 30j)
+- **Q3 = B** : Sender domain custom = plan **Enterprise**
+- **Q4 = B** : Tracking opt-in par org (RGPD)
+- **Q5 = B** : Co-branding (logo client + GROWTHINNOV) = plan **Enterprise**
+- **Q6 = C avec exception** : Fournisseur email custom = **Enterprise par défaut**, mais **paramétrable par client** (override possible plan-by-plan via `subscription_plans.features.custom_email_provider = true` activable manuellement par SaaS team sur n'importe quelle org)
+- **Q7 = C** : IA Marketing Saas accessible à **tous les rôles disposant de la permission `email.compose`** (DB-driven, cohérent v2.5)
 
 ---
 
-## Phase 1 — Traçabilité complète via triggers DB
+## Architecture cible
 
-**Objectif :** chaque action sensible laisse une trace automatique, sans dépendre du code client.
-
-**Migration SQL :**
-- Créer fonction `log_activity()` générique (insère dans `activity_logs` avec `actor_id`, `action`, `entity_type`, `entity_id`, `metadata`, `organization_id`)
-- Triggers `AFTER INSERT/UPDATE/DELETE` sur :
-  - `organizations` → `org.created/updated/deleted`
-  - `organization_members` → `org.member.added/role_changed/removed`
-  - `user_roles` → `user.role.granted/revoked`
-  - `teams` & `team_members` → `team.*`
-  - `user_credits` & `credit_transactions` → `credits.adjusted/spent/earned`
-  - `role_permissions` → `permission.toggled`
-  - `profiles` (status change) → `user.suspended/reactivated`
-- Index sur `(organization_id, created_at DESC)` et `(actor_id, created_at DESC)` pour lecture rapide
-- Hook client `useActivityLog` pour les events non-DB (login/logout/page_view critiques) appelant un edge function `log-activity`
-
-**Affichage :**
-- Refonte `/admin/logs` : filtres (organisation, acteur, type d'action, plage de dates), pagination, export CSV
-- Onglet "Activité" enrichi dans détail org et détail user
-
----
-
-## Phase 2 — Invitations email complètes
-
-**Migration SQL :**
-- Table `organization_invitations` : `id`, `organization_id`, `email`, `role`, `token (uuid unique)`, `invited_by`, `expires_at (default now()+7d)`, `accepted_at`, `created_at`
-- RLS : org admins peuvent créer/voir invitations de leur org ; SaaS team voit tout ; invité (non-authentifié) accède via token
-- Fonction `accept_invitation(_token uuid)` SECURITY DEFINER : vérifie validité, crée `organization_members`, marque `accepted_at`
-
-**Edge Function `send-invitation` :**
-- Reçoit `{ email, organization_id, role }`
-- Génère token, insert en DB, envoie email branded via infra email Lovable existante
-- Lien : `https://heeplab.com/invitation/:token`
-
-**UI :**
-- Activer bouton "Inviter" dans `OrgMembersTab` → modal (email + select rôle)
-- Section "Invitations en attente" dans `OrgMembersTab` (renvoyer / révoquer)
-- Nouvelle page `/invitation/:token` :
-  - Si non connecté → propose signup/login (email pré-rempli)
-  - Si connecté → bouton "Rejoindre l'organisation" qui appelle `accept_invitation`
-
-*(Email infra : si pas encore configurée, dialog domaine email proposé en amont)*
+```text
+┌───────────────────────────────────────────────────────────────┐
+│  EMAIL STUDIO (/admin/emails)                                 │
+│  ┌──────────┬───────────┬──────────┬─────────┬─────────────┐ │
+│  │Templates │Automations│ Logs/    │Domaines │ Fournisseurs│ │
+│  │ + IA     │ + IA      │ Stats    │ + Logos │  Email      │ │
+│  └──────────┴───────────┴──────────┴─────────┴─────────────┘ │
+└───────────────────────┬───────────────────────────────────────┘
+                        ▼
+   ┌────────────────────┴─────────────────────┐
+   ▼                    ▼                     ▼
+ templates           automations          providers
+ (global+org)        (events+conds)     (lovable/resend/
+                                         sendgrid/smtp)
+                        ▼
+            ┌───────────────────────┐
+            │ trigger-email (EF)    │
+            │ - resolve template    │
+            │ - resolve provider    │
+            │ - resolve branding    │
+            │   (logo client+GI)    │
+            │ - render + enqueue    │
+            └───────────┬───────────┘
+                        ▼
+        ┌──────────────────────────┐
+        │ providers adapters       │
+        │ - lovable_email (queue)  │
+        │ - resend                 │
+        │ - sendgrid               │
+        │ - smtp                   │
+        └──────────────────────────┘
+```
 
 ---
 
-## Phase 3 — Sécurité owner & cohérence profils
+## Phase 1 — Design system email co-brandé
 
-**Migration SQL :**
-- Trigger `BEFORE DELETE/UPDATE` sur `organization_members` : empêche retrait/dégradation si `role='owner'` ET dernier owner de l'org (raise exception)
-- Mise à jour `handle_new_user` : copie `NEW.email` dans `profiles.email`
-- Backfill : `UPDATE profiles SET email = (SELECT email FROM auth.users WHERE id = profiles.user_id) WHERE email IS NULL`
+- Composant React Email partagé `GrowthinnovLayout` : header adaptatif (1 ou 2 logos selon `org.brand_logo_url` + plan), hero couleur #2563EB, footer mentions
+- Constantes brand + logo SVG hébergé dans bucket public **`brand-assets`** (nouveau)
+- Bucket `brand-assets` : SELECT public, INSERT/UPDATE réservé SaaS team
 
-**UI :**
-- `OrgMembersTab` : compléter le menu déroulant avec **owner** et **guest**
-- Message d'erreur clair si tentative de retrait du dernier owner
+## Phase 2 — Schéma DB Email Studio + providers + branding
+
+Migration unique :
+- Tables : `email_providers`, `email_provider_configs` (credentials chiffrés pgcrypto), `email_templates`, `email_template_versions`, `email_automations`, `email_automation_runs`
+- Vue `v_email_stats` (agrégats sent/failed/opened par template/org/jour)
+- Colonnes ajoutées : `organizations.brand_logo_url`, `organizations.email_sender_domain`, `organizations.email_tracking_enabled`, `organizations.inactivity_reminder_days`
+- `subscription_plans.features` jsonb enrichi : `custom_email_domain`, `custom_email_provider`, `email_co_branding` (chaque flag overridable manuellement par org)
+- RLS multi-tenant cohérente v2.5 + triggers d'audit `log_activity`
+- Seed : 4 templates par défaut markdown (welcome, account_suspended, login_reminder, invitation)
+- Permission `email.compose` ajoutée au référentiel
+
+## Phase 3 — Edge Function `trigger-email` (cœur)
+
+Reçoit `{ event, organization_id?, recipient_email, payload }` :
+1. Résout automation active (org > global) matchant `event`
+2. Résout template (org > global)
+3. Résout provider (org > global) + déchiffre credentials
+4. Résout branding co-brandé selon flags effectifs de l'org
+5. Render markdown → HTML composants email + injection variables
+6. Si tracking activé : pixel + réécriture liens
+7. Délègue à l'adapter du provider (lovable = enqueue pgmq, sinon API directe)
+8. Insert `email_automation_runs` pour traçabilité
+9. Idempotence : `event + entity_id + template_code`
+
+## Phase 4 — Templates métier
+
+1. **welcome** (`user.created`) — "Bienvenue {{firstName}}", 10 crédits offerts, CTA "Découvrir"
+2. **account_suspended** (`user.status.suspended`) — ton sobre, raison optionnelle, contact support
+3. **login_reminder** (`user.inactive_Nd`) — "Ça fait N jours", 3 nouveautés, CTA reconnexion
+4. **invitation** (refonte v2.5) — branding complet
+
+Déclencheurs :
+- Welcome & Suspended : triggers DB `pg_net` POST → `trigger-email`
+- Login Reminder : cron quotidien SQL (scan `profiles` selon `inactivity_reminder_days` org)
+- Invitation : EF v2.5 réorientée vers `trigger-email`
+
+## Phase 5 — IA Marketing Saas
+
+Edge Function `email-marketing-ai` (Lovable AI, `google/gemini-3-flash-preview`, streaming SSE) :
+- Mode `compose` : génère subject + markdown + variables suggérées depuis un brief
+- Mode `refine` : améliore un template existant (ton, CTA, mobile)
+- Mode `automation_design` : tool calling → propose `trigger_event`, `conditions`, `delay_minutes` en JSON structuré
+- System prompt expert email marketing SaaS B2B, RGPD, mobile-first
+- Contexte injecté : nom org, plan, persona cible, événements disponibles
+
+UI :
+- Panneau latéral chat dans éditeur Templates (bouton **✨ Assistant IA**)
+- Bouton **✨ Suggérer un déclencheur** dans éditeur Automations
+- Modal **✨ Générer depuis un brief** sur liste Templates
+
+Accès gardé par permission `email.compose` (vérification via hook `usePermissions`)
+
+## Phase 6 — UI Email Studio (`/admin/emails`)
+
+5 onglets :
+1. **Templates** — liste filtrée (global/org), éditeur split markdown + preview live, versioning, assistant IA
+2. **Automations** — table déclencheur → template, builder visuel "Quand X → Si Y → Envoyer Z après N min", assistant IA
+3. **Logs & Stats** — graphique 30j (sent/failed/opened/clicked), filtres org/template/event/provider, export CSV
+4. **Domaines & Branding** — par org : statut DNS, upload `brand_logo_url`, toggle tracking, période inactivité
+5. **Fournisseurs Email** — liste providers actifs (global + par org), formulaire dynamique selon `config_schema`, test d'envoi, **toggle "Activer fournisseur custom" par org** (override SaaS team)
+
+## Phase 7 — Adapters multi-fournisseurs
+
+`supabase/functions/_shared/email-adapters/` :
+- `lovable.ts` — enqueue pgmq (existant)
+- `resend.ts` — POST `https://api.resend.com/emails` via gateway connector
+- `sendgrid.ts` — POST `https://api.sendgrid.com/v3/mail/send`
+- `smtp.ts` — Deno SMTP (host/port/user/pass)
+
+Interface commune `send({ to, from, subject, html, text, headers })` → `{ success, message_id, error }`.
+Credentials chiffrés au repos (pgcrypto), déchiffrés uniquement dans l'EF.
+
+## Phase 8 — Hooks, page admin & sidebar
+
+- Hooks : `useEmailTemplates`, `useEmailAutomations`, `useEmailProviders`, `useEmailStats`, `useEmailMarketingAI`
+- Page : `src/pages/admin/AdminEmails.tsx` + entrée sidebar admin
+- Composants : `EmailTemplateEditor`, `EmailAutomationBuilder`, `EmailMarketingAIChat`, `EmailProviderForm`, `EmailLogsTable`, `EmailDomainBrandingPanel`
+
+## Phase 9 — Documentation & mémoire
+
+- `docs/releases/v2.6-email-platform.md`
+- Mémoire `mem://features/email-platform`
 
 ---
 
-## Phase 4 — Présence (`last_seen_at` à chaque navigation)
+## Livrables
 
-- Hook `useLastSeenTracker` dans `AppShell` et `PortalShell` : sur chaque changement de `location.pathname`, appel debounced (max 1×/30s) à `UPDATE profiles SET last_seen_at = now() WHERE user_id = auth.uid()`
-- Indicateur visuel "En ligne" si `last_seen_at < 5min` dans `OrgMembersTab` et `AdminUsers`
-
----
-
-## Phase 5 — Refonte gestion équipes (`team_members` actif)
-
-- Nouvelle modal "Gérer les membres" dans `OrgTeamsTab` :
-  - Liste des membres de l'organisation avec checkboxes
-  - Sélection du `lead_user_id`
-  - Bulk insert/delete dans `team_members`
-- Affichage avatars empilés (max 5 + compteur) dans la liste des équipes
-- Filtre "Membre de l'équipe" dans détail équipe
-
----
-
-## Phase 6 — UX admin utilisateurs enrichie
-
-**`AdminUsers.tsx` :**
-- Colonne **Email** visible (lecture depuis `profiles.email`)
-- Filtre déroulant par **rôle** (multi-select)
-- Filtre par **organisation**
-- Filtre par **statut** (actif / suspendu)
-- Compteur dynamique en haut
-
-**`UserInfoTab.tsx` :**
-- Toggle **"Suspendre / Réactiver"** (update `profiles.status` entre `active` et `suspended`)
-- Affichage statut avec badge coloré
-- Section "Dernière activité" avec 5 derniers événements de `activity_logs`
-
----
-
-## Phase 7 — Hardening sécurité
-
-- Activer **Leaked Password Protection** (HIBP check) via configuration auth
-- Restreindre policies SELECT publiques sur buckets `avatars` et `academy-assets` aux fichiers du user/org propriétaire
-- Lancer le linter Supabase final pour valider
-
----
-
-## Hors scope (à traiter ultérieurement)
-
-- Suppression définitive d'un compte (RGPD) — Edge Function dédiée service-role
-- SSO entreprise / 2FA
-- Séparation enum `app_role` vs `org_role` (refacto v2.6)
-- Webhook `auth.user.deleted` (dépend du plan Supabase)
-
----
-
-## Fichiers impactés
-
-**SQL (1 migration majeure)** : triggers `log_activity`, table `organization_invitations`, fonction `accept_invitation`, triggers owner-protection, `handle_new_user` mise à jour, backfill emails, policies bucket.
-
-**Edge Functions** : `send-invitation` (nouveau), `log-activity` (nouveau, optionnel pour events non-DB).
-
-**Hooks (nouveaux)** : `useActivityLog`, `useLastSeenTracker`, `useInvitations`.
-
-**Composants modifiés** :
-- `src/components/admin/OrgMembersTab.tsx` (invitations, owner protection, rôles complets)
-- `src/components/admin/OrgTeamsTab.tsx` (gestion membres équipe)
-- `src/components/admin/UserInfoTab.tsx` (suspension, activité récente)
-- `src/components/layout/AppShell.tsx` + `PortalShell.tsx` (heartbeat last_seen)
-- `src/pages/admin/AdminUsers.tsx` (filtres, email)
-- `src/pages/admin/AdminLogs.tsx` (refonte filtres + export CSV)
-
-**Pages nouvelles** :
-- `src/pages/Invitation.tsx` (acceptation invitation via token)
-
-**Documentation** : `docs/releases/v2.5-governance.md` créée en clôture.
-
----
-
-## Livrables attendus
-
-1. ✅ Toute action sensible **automatiquement tracée** en base, visible dans `/admin/logs` avec filtres puissants
-2. ✅ Bouton **"Inviter"** fonctionnel : envoi email branded, page d'acceptation, expiration 7j
-3. ✅ **Impossible** de laisser une organisation sans propriétaire
-4. ✅ **Email** des utilisateurs visible et synchronisé partout
-5. ✅ Indicateur **"En ligne"** réel basé sur dernière navigation
-6. ✅ **Équipes** réellement utilisables (gestion membres + lead)
-7. ✅ Écran **Utilisateurs** filtrable par rôle/org/statut, suspension en 1 clic
-8. ✅ **Mots de passe compromis** bloqués au signup/changement
-9. ✅ **Buckets** sécurisés au niveau fichier
+1. ✅ Tous emails co-brandés (logo client + GROWTHINNOV) si plan/override le permet
+2. ✅ 4 templates fonctionnels (welcome, suspended, reminder, invitation refondue)
+3. ✅ Email Studio admin : 5 onglets opérationnels
+4. ✅ Surcharge templates/automations/providers par organisation
+5. ✅ Multi-fournisseurs : Lovable / Resend / SendGrid / SMTP, **activable par org en exception**
+6. ✅ IA Marketing Saas (rédaction + paramétrage déclencheurs) gardée par permission `email.compose`
+7. ✅ Logs, stats, tracking opt-in RGPD, export CSV
+8. ✅ Continuité totale avec v2.5 (audit, RLS, multi-tenant, queue pgmq)
 
