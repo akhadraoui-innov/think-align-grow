@@ -4528,6 +4528,8 @@ export type Database = {
           description: string | null
           domain: string
           id: string
+          is_active: boolean
+          match_suffix: boolean
         }
         Insert: {
           created_at?: string
@@ -4535,6 +4537,8 @@ export type Database = {
           description?: string | null
           domain: string
           id?: string
+          is_active?: boolean
+          match_suffix?: boolean
         }
         Update: {
           created_at?: string
@@ -4542,6 +4546,8 @@ export type Database = {
           description?: string | null
           domain?: string
           id?: string
+          is_active?: boolean
+          match_suffix?: boolean
         }
         Relationships: []
       }
