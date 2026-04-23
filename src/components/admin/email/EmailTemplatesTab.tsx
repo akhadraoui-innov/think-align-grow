@@ -232,14 +232,24 @@ export function EmailTemplatesTab({ organizationId }: { organizationId: string |
             inlineMarkdown={selected.markdown_body}
             organizationId={organizationId}
           />
-          {showTranslations && (
-            <EmailTranslationsPanel
-              templateId={selected.id}
-              defaultSubject={selected.subject}
-              defaultMarkdown={selected.markdown_body}
-              onClose={() => setShowTranslations(false)}
-            />
-          )}
+          <Sheet open={showTranslations} onOpenChange={setShowTranslations}>
+            <SheetContent className="w-[720px] sm:max-w-[720px] overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <Languages className="h-4 w-4" />
+                  Traductions multi-locales
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-4">
+                <EmailTranslationsPanel
+                  templateId={selected.id}
+                  defaultSubject={selected.subject}
+                  defaultMarkdown={selected.markdown_body}
+                  canManage={canManage}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
         </>
       )}
     </div>
