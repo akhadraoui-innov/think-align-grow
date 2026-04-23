@@ -179,9 +179,9 @@ export function ConditionsBuilder({ value, onChange, payloadHints = [], triggerE
                 <XCircle className="h-3.5 w-3.5" /> JSON invalide : {parseError}
               </div>
             ) : report ? (
-              <div className={`p-2 rounded-lg border text-xs ${report.passed ? "bg-success/10 border-success/30 text-success-foreground" : "bg-muted/30 border-border"}`}>
+              <div className={`p-2 rounded-lg border text-xs ${report.passed ? "bg-primary/10 border-primary/30" : "bg-muted/30 border-border"}`}>
                 <div className="flex items-center gap-2 font-semibold">
-                  {report.passed ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground" />}
+                  {report.passed ? <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground" />}
                   {report.reason}
                 </div>
                 {report.details.length > 0 && (
@@ -189,7 +189,7 @@ export function ConditionsBuilder({ value, onChange, payloadHints = [], triggerE
                     {report.details.map((d, i) => (
                       <div key={i} className="flex items-center gap-2 font-mono text-[10px]">
                         <Badge variant="outline" className="text-[9px]">{d.group.toUpperCase()}</Badge>
-                        {d.result ? <CheckCircle2 className="h-3 w-3 text-green-600" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                        {d.result ? <CheckCircle2 className="h-3 w-3 text-primary" /> : <XCircle className="h-3 w-3 text-destructive" />}
                         <span className="text-muted-foreground">{d.rule.path}</span>
                         <span>{d.rule.op}</span>
                         <span className="text-muted-foreground">{JSON.stringify(d.rule.value)}</span>
