@@ -7,6 +7,7 @@ import { AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout/AppShell";
 import ScrollToTop from "@/components/ScrollToTop";
 import { OrgProvider } from "@/contexts/OrgContext";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import Index from "./pages/Index";
 import Explore from "./pages/Explore";
 import Plans from "./pages/Plans";
