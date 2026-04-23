@@ -67,6 +67,7 @@ export function useAdminUsers() {
         xp: p.xp,
         created_at: p.created_at,
         last_seen_at: p.last_seen_at,
+        email: (p as any).email ?? undefined,
         roles: rolesMap[p.user_id] || [],
         organizations: orgsMap[p.user_id] || [],
         credit_balance: creditsMap[p.user_id] ?? 0,
