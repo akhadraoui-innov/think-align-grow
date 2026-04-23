@@ -68,17 +68,21 @@ export default function AdminEmails() {
       </header>
 
       <Tabs defaultValue="templates" className="space-y-4">
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="templates"><Mail className="h-4 w-4 mr-1" />Templates</TabsTrigger>
           <TabsTrigger value="automations"><Sparkles className="h-4 w-4 mr-1" />Automations</TabsTrigger>
+          <TabsTrigger value="abtests"><FlaskConical className="h-4 w-4 mr-1" />A/B Tests</TabsTrigger>
           <TabsTrigger value="logs"><BarChart3 className="h-4 w-4 mr-1" />Logs & Stats</TabsTrigger>
-          <TabsTrigger value="branding"><Globe className="h-4 w-4 mr-1" />Domaines & Branding</TabsTrigger>
-          <TabsTrigger value="providers"><Send className="h-4 w-4 mr-1" />Fournisseurs</TabsTrigger>
+          <TabsTrigger value="suppressions"><ShieldOff className="h-4 w-4 mr-1" />Suppressions</TabsTrigger>
+          <TabsTrigger value="branding"><Globe className="h-4 w-4 mr-1" />Branding</TabsTrigger>
+          <TabsTrigger value="providers"><Send className="h-4 w-4 mr-1" />Providers</TabsTrigger>
         </TabsList>
 
         <TabsContent value="templates"><EmailTemplatesTab organizationId={scopeOrgId} /></TabsContent>
         <TabsContent value="automations"><EmailAutomationsTab organizationId={scopeOrgId} /></TabsContent>
+        <TabsContent value="abtests"><EmailABTestsTab organizationId={scopeOrgId} /></TabsContent>
         <TabsContent value="logs"><EmailLogsTab organizationId={scopeOrgId} /></TabsContent>
+        <TabsContent value="suppressions"><EmailSuppressionsTab organizationId={scopeOrgId} /></TabsContent>
         <TabsContent value="branding"><EmailDomainBrandingTab /></TabsContent>
         <TabsContent value="providers"><EmailProvidersTab organizationId={scopeOrgId} /></TabsContent>
       </Tabs>
