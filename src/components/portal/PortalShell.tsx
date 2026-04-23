@@ -10,11 +10,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useLastSeenTracker } from "@/hooks/useLastSeenTracker";
 import {
   Search, HelpCircle, Menu, X,
-  Coins, ChevronRight, Mail
+  Coins, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
+import { EmailWidget } from "@/components/email/EmailWidget";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { useEffect, useCallback } from "react";
 
@@ -129,22 +130,11 @@ export function PortalShell({ children }: PortalShellProps) {
             {balance}
           </div>
 
+          {/* Email Widget */}
+          <EmailWidget variant="portal" />
+
           {/* Notifications */}
           <NotificationsDropdown variant="portal" />
-
-          {/* Email preferences */}
-          <Link
-            to="/portal/preferences"
-            title="Préférences email"
-            className={cn(
-              "h-9 w-9 rounded-lg items-center justify-center transition-colors hidden sm:flex",
-              location.pathname === "/portal/preferences"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            )}
-          >
-            <Mail className="h-4.5 w-4.5" />
-          </Link>
 
           {/* Help */}
           <button className="h-9 w-9 rounded-lg items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors hidden sm:flex">

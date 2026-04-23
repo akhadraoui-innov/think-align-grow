@@ -4,10 +4,12 @@ import { AdminSidebar } from "./AdminSidebar";
 import { AdminGuard } from "./AdminGuard";
 import { useLocation } from "react-router-dom";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
+import { EmailWidget } from "@/components/email/EmailWidget";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { HealthBanner } from "./HealthBanner";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface AdminShellProps {
   children: React.ReactNode;
@@ -39,6 +41,8 @@ export function AdminShell({ children }: AdminShellProps) {
   const location = useLocation();
   const label = breadcrumbMap[location.pathname] || "Administration";
   const [cmdOpen, setCmdOpen] = useState(false);
+  const { has } = usePermissions();
+  const canViewEmails = has("email.logs.view") || has("admin.logs.view");
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -81,7 +85,10 @@ export function AdminShell({ children }: AdminShellProps) {
                   ⌘K
                 </kbd>
               </Button>
-              <NotificationsDropdown variant="admin" />
+              <div className="flex items-center gap-1">
+                {canViewEmails && <EmailWidget variant="admin" />}
+                <NotificationsDropdown variant="admin" />
+              </div>
             </header>
             <main className="flex-1 overflow-auto">{children}</main>
           </div>
