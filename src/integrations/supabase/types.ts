@@ -5134,6 +5134,29 @@ export type Database = {
           schedule: string
         }[]
       }
+      get_email_provider_health: {
+        Args: { _hours?: number }
+        Returns: {
+          bounced: number
+          circuit_open: boolean
+          dlq: number
+          failed: number
+          failure_rate: number
+          provider: string
+          sent: number
+          total: number
+        }[]
+      }
+      get_email_quota_alerts: {
+        Args: never
+        Returns: {
+          monthly_limit: number
+          organization_id: string
+          organization_name: string
+          sent_count: number
+          usage_percent: number
+        }[]
+      }
       get_invitation_by_token: {
         Args: { _token: string }
         Returns: {
@@ -5221,6 +5244,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      replay_dlq_message: { Args: { _message_id: string }; Returns: Json }
       sign_email_payload: { Args: { _payload: Json }; Returns: string }
       spend_credits: {
         Args: { _amount: number; _description: string; _user_id: string }
