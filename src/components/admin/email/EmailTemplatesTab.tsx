@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
 import { toast } from "sonner";
 import { useEmailTemplates, useUpsertEmailTemplate, useDeleteEmailTemplate, EmailTemplate } from "@/hooks/useEmailTemplates";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -27,6 +29,9 @@ export function EmailTemplatesTab({ organizationId }: { organizationId: string |
 
   const [selected, setSelected] = useState<EmailTemplate | null>(null);
   const [showAI, setShowAI] = useState<null | "compose" | "refine">(null);
+  const [showVersions, setShowVersions] = useState(false);
+  const [showTest, setShowTest] = useState(false);
+  const [showTranslations, setShowTranslations] = useState(false);
 
   useEffect(() => {
     if (!selected && templates.length > 0) setSelected(templates[0]);
@@ -124,6 +129,19 @@ export function EmailTemplatesTab({ organizationId }: { organizationId: string |
                       </Button>
                     </>
                   )}
+                  {selected.id && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => setShowVersions(true)}>
+                        <History className="h-3.5 w-3.5 mr-1" />Versions
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setShowTranslations(true)}>
+                        <Languages className="h-3.5 w-3.5 mr-1" />Locales
+                      </Button>
+                    </>
+                  )}
+                  <Button size="sm" variant="outline" onClick={() => setShowTest(true)}>
+                    <Send className="h-3.5 w-3.5 mr-1" />Test
+                  </Button>
                   {canManage && (
                     <>
                       <div className="flex items-center gap-2">
@@ -198,6 +216,44 @@ export function EmailTemplatesTab({ organizationId }: { organizationId: string |
           </div>
         )}
       </main>
+
+      {selected && (
+        <>
+          <EmailVersionsDrawer
+            open={showVersions}
+            onOpenChange={setShowVersions}
+            templateId={selected.id}
+            currentSubject={selected.subject}
+            currentMarkdown={selected.markdown_body}
+          />
+          <EmailSendTestDialog
+            open={showTest}
+            onOpenChange={setShowTest}
+            templateId={selected.id}
+            inlineSubject={selected.subject}
+            inlineMarkdown={selected.markdown_body}
+            organizationId={organizationId}
+          />
+          <Sheet open={showTranslations} onOpenChange={setShowTranslations}>
+            <SheetContent className="w-[720px] sm:max-w-[720px] overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <Languages className="h-4 w-4" />
+                  Traductions multi-locales
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-4">
+                <EmailTranslationsPanel
+                  templateId={selected.id}
+                  defaultSubject={selected.subject}
+                  defaultMarkdown={selected.markdown_body}
+                  canManage={canManage}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </>
+      )}
     </div>
   );
 }
