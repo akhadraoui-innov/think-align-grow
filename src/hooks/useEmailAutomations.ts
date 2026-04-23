@@ -1,13 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type ConditionRule = {
+  path: string;
+  op: "==" | "!=" | ">" | ">=" | "<" | "<=" | "in" | "contains" | "exists";
+  value: any;
+};
+export type ConditionsDSL = { all?: ConditionRule[]; any?: ConditionRule[] };
+
 export interface EmailAutomation {
   id: string;
   code: string;
   organization_id: string | null;
   name: string;
+  description?: string | null;
   trigger_event: string;
-  conditions: any;
+  conditions: ConditionsDSL | Record<string, never>;
   template_code: string;
   delay_minutes: number;
   is_active: boolean;
