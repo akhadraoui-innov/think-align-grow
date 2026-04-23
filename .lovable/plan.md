@@ -1,128 +1,112 @@
 
 
-# Suite v2.6.1 — Lots E1 → E4 séquentiels
+# Lot E5 → "Studio" — Refonte UI générationnelle
 
-Exécution dans l'ordre recommandé : **E1 (Sécurité Enterprise) → E2 (Délivrabilité) → E3 (Notifications & UX) → E4 (Health & Observabilité)**.
-
-Chaque lot est livré, audité, puis on enchaîne sur le suivant.
+Pas un widget. Un **langage d'interface** : opinionné, signature, world-class. On dépasse la commande initiale (widget mail) pour livrer une **transformation cohérente** dont le widget Email n'est qu'une instance.
 
 ---
 
-## Lot E1 — Sécurité & Compliance Enterprise
+## Parti pris (non négociables)
 
-**Objectif** : fermer les 3 chantiers sécurité critiques restants, débloquer commercialisation Enterprise.
-
-### Backend (BDD + migrations)
-- Table `audit_logs_immutable(id, prev_hash, current_hash, actor_id, organization_id, action, entity_type, entity_id, payload jsonb, created_at)` — append-only, RLS read-only pour SaaS team.
-- Trigger `BEFORE INSERT` qui calcule `current_hash = sha256(prev_hash || row_payload)` ; `prev_hash` lu depuis dernière ligne ou `'GENESIS'`.
-- Refus de tout `UPDATE`/`DELETE` via policy + revoke privileges.
-- Fonction `verify_audit_chain_integrity()` retournant `{valid: bool, broken_at: uuid}` pour vue admin.
-- Fonction `is_url_allowed(url text)` : parse host, refuse IPs privées (10/8, 172.16/12, 192.168/16, 127/8, ::1, link-local), refuse `localhost`, valide contre table `webhook_allowlist_domains`.
-- Hook dans `dispatch_email_event` et tout `net.http_post` sortant : `IF NOT is_url_allowed(target) THEN RAISE EXCEPTION`.
-
-### Edge Functions
-- `trigger-email/index.ts` : ajouter sanitization HTML stricte avant envoi (allowlist tags via DOMPurify-equivalent Deno : `<a href>`, `<p>`, `<br>`, `<strong>`, `<em>`, `<ul>`, `<ol>`, `<li>`, `<img src alt>`, `<table>`, `<tr>`, `<td>`, `<h1-h6>`). Bloque `<script>`, `<iframe>`, `on*=`, `javascript:`.
-- Détecteur anti-phishing : flag les emails contenant URL avec text-link ≠ href-domain (`<a href="evil.com">paypal.com</a>`), homoglyphes Unicode courants (Cyrillic `а` vs Latin `a`), URLs raccourcies non-allowlistées.
-- Si flag → log dans `email_security_flags` + bloque envoi (admin doit valider).
-
-### Frontend (admin)
-- Page `/admin/audit` : liste paginée `audit_logs_immutable` avec filtres (actor, action, date, entity_type), badge "Chaîne intègre" en haut (vert/rouge selon `verify_audit_chain_integrity()`), export CSV.
-- Onglet "Allowlist webhooks" dans `/admin/settings` : CRUD `webhook_allowlist_domains` (super_admin only).
-- Onglet "Security flags" dans `AdminEmails` : liste emails bloqués pour phishing suspect, bouton "Valider et envoyer" / "Confirmer blocage".
-
-### Audit E1
-Linter Supabase 0 finding • test chaîne hash (insertion + verify) • test SSRF (tentative `http://169.254.169.254` → bloquée) • test sanitization (script inline → stripped).
+1. **Command Bar comme colonne vertébrale** (façon Linear/Raycast) — toute action est à 1 touche (`⌘K`), 1 geste, ou 1 raccourci sémantique (`g e` = go emails, `g h` = health, `n` = nouveau).
+2. **Header unifié "OmniBar"** — un seul rail de boutons identiques entre Admin et Portal, gauche=identité, centre=navigation, droite=signaux (Mail, Bell, Credits, Avatar). Tous les signaux suivent **le même contrat visuel** (icône 18px, badge 9px, dropdown 380px glassmorphique éditorial).
+3. **Glassmorphisme assumé, pas timide** : `backdrop-blur(40px) saturate(180%)`, fond translucide multi-couches, bord lumineux 1px hairline, ombre stratifiée (proche/lointaine).
+4. **Densité éditoriale** : typographie Space Grotesk en titrage, micro-caps (10px tracking 0.15em) pour labels, chiffres en variant tabulaire (`font-feature-settings: "tnum"`), aucune compromission sur les marges.
+5. **Mouvement signature** : transitions sur courbe `cubic-bezier(0.32, 0.72, 0, 1)` (Apple-like), durées 180ms/280ms/420ms strictes, `prefers-reduced-motion` respecté.
+6. **Couleur signal** : pillar colors deviennent le système de **statut sémantique** (innovation=info, growth=success, business=warn, thinking=danger), exit emerald/amber/rose ad hoc.
 
 ---
 
-## Lot E2 — Délivrabilité avancée
+## Livrable 1 — Système de Design "Studio"
 
-**Objectif** : bounces réels Resend/SendGrid → `suppressed_emails` automatique, priority lanes pgmq.
+`src/styles/studio.css` (importé dans `index.css`) introduit :
 
-### Backend
-- Table `email_webhook_secrets(provider_code, secret, created_at)` chiffrée via vault.
-- Migration : ajout colonnes `priority text default 'transactional'` et `dispatched_at` à `pgmq_email_queue` ; index `(priority, enqueued_at)`.
-- 3 queues pgmq : `email_transactional`, `email_marketing`, `email_bulk` (création via `email_domain--setup_email_infra` patterns).
-- RPC `enqueue_email_priority(payload, priority)` qui route vers la bonne queue.
+- **Surfaces** : 4 niveaux glassmorphiques (`--surface-1` à `--surface-4`) avec saturation et blur progressifs.
+- **Hairline borders** : `--hairline: 0 0% 100% / 0.08` pour bord interne lumineux + `border` standard pour bord externe.
+- **Shadows stratifiées** : `--shadow-sticker` (carte flottante), `--shadow-pop` (dropdown), `--shadow-monolith` (modal/command bar) — chacune en double-couche (proche dure + lointaine douce).
+- **Animation tokens** : `--ease-out-quart`, `--ease-spring`, `--duration-fast/base/slow`.
+- **Easing utilities Tailwind** : `ease-studio`, `ease-spring` exposés via `tailwind.config.ts`.
+- **Keyframes** : `studio-pop-in` (scale 0.96 + opacity + blur 8px→0), `studio-shimmer` (loading), `studio-tick` (badge increment).
 
-### Edge Functions
-- **Nouvelle** `email-events/index.ts` (publique, `verify_jwt = false`) :
-  - Détecte provider via header (`svix-signature` / `resend-signature` / `x-twilio-email-event-webhook-signature`).
-  - Vérifie HMAC selon doc provider.
-  - Mappe events : `bounce.hard` / `complaint` / `unsubscribe` → INSERT `suppressed_emails` ; `delivered` / `opened` / `clicked` → UPDATE `email_automation_runs.opened_at|clicked_at|delivered_at`.
-- `process-email-queue/index.ts` : drainage prioritaire `transactional → marketing → bulk` (boucle 3 reads séquentielles).
-- `trigger-email` : utilise `enqueue_email_priority` selon `template.category`.
+## Livrable 2 — `OmniHeader` partagé
 
-### Frontend
-- `EmailProvidersTab.tsx` : section "Webhook entrant" affichant URL `https://[project].supabase.co/functions/v1/email-events?provider=resend` + secret généré + bouton "Régénérer" + instructions copier-coller pour chaque provider.
-- `EmailReliabilityTab.tsx` : ajout panneau "Priority lanes" avec 3 jauges (backlog par queue) + débit observé.
+`src/components/shell/OmniHeader.tsx` remplace le `<header>` actuel des deux shells.
 
-### Audit E2
-Test webhook Resend signé/non-signé • bounce test → suppressed_emails • envoi 100 marketing + 5 transactional → vérifier que les 5 transactional partent en premier.
+- API : `<OmniHeader variant="portal|admin" left={...} center={...} signals={[...]} />`.
+- Hauteur 56px portal / 48px admin, fond `surface-2`, bord-bas hairline.
+- Contient un slot **SignalRail** qui rend les widgets (Search trigger, Mail, Bell, Credits, Avatar) avec spacing strict 4px et règle de séparation visuelle (chip vs ghost).
+- `PortalShell.tsx` et `AdminShell.tsx` réécrits pour consommer `OmniHeader` (élimine la duplication header).
 
----
+## Livrable 3 — `SignalWidget` (factorise Bell/Mail)
 
-## Lot E3 — Notifications in-app & Command Palette
+`src/components/shell/SignalWidget.tsx` — primitive qui gouverne **toutes** les cloches.
 
-**Objectif** : remplacer pastille décorative par vraies notifications realtime, ajouter Cmd+K global.
+- Props : `icon`, `label`, `count`, `tone` (`neutral|info|warn|danger`), `dropdown` (render-prop), `pulse` (boolean).
+- Badge animé via `studio-tick` lors d'un increment (compare prev/next via `useRef`).
+- Dropdown ancrée à droite, largeur 384px, header en micro-caps + action secondaire, footer avec lien "voir tout" + raccourci clavier visible (kbd).
+- `NotificationsDropdown` réécrit comme `<SignalWidget>` avec render-prop.
+- `EmailWidget` créé comme `<SignalWidget>` avec render-prop (cf. Livrable 4).
 
-### Backend
-- Table `notifications(id, user_id, organization_id, type, title, body, link, severity, read_at, created_at)` + RLS user-scoped (`user_id = auth.uid()`).
-- Activer realtime publication.
-- Triggers DB sur événements clés :
-  - `welcome` (after insert profiles)
-  - `org.suspended` / `org.reactivated` (after update organizations.status)
-  - `quota.warning` (after insert email_quota_usage si > 80%)
-  - `certificate.earned` (after insert academy_certificates)
-  - `email.failed` (after insert email_send_log si status='dlq')
-- Fonction `mark_notifications_read(ids uuid[])`.
+## Livrable 4 — `EmailWidget` (Admin + Portal)
 
-### Frontend
-- Hook `useNotifications()` : query + canal realtime `notifications:user_id=eq.{uid}`, auto-add nouvelles.
-- Composant `NotificationsDropdown.tsx` (header portail + admin) : badge count unread, liste 20 dernières, click → navigate `link` + mark read, "Tout marquer lu".
-- `CommandPalette.tsx` (déjà existant partiellement) : étendre actions (recherche templates, automations, users, orgs ; commandes IA ; navigation rapide). Bind global `Cmd+K` / `Ctrl+K` dans `AdminShell` et `PortalShell`.
+Hook `useEmailWidget(variant)` :
 
-### Audit E3
-Insertion notif via SQL → apparaît temps réel sans refresh • Cmd+K ouvre palette sur toutes pages • permissions RLS testées (user A ne voit pas notifs user B).
+- **Admin** : `email_send_log` agrégé 24h (sent/failed/bounced/opened), `get_priority_lane_metrics`, `get_email_provider_health`, count `email_security_flags` non revus. Realtime sur `email_send_log` filtré `status in (failed,dlq)`.
+- **Portal** : 5 derniers emails reçus via `recipient_email = user.email`, flag `localStorage:email-widget-last-seen` pour les non lus.
 
----
+Rendu :
 
-## Lot E4 — Health Dashboard global & Observabilité
+- **Admin** — Header "EMAIL STUDIO • 24H". Grille 3 KPI tabulaires (Sent / Failed / Bounced) avec mini-sparkline 24 buckets (SVG inline). Section "Lanes" avec 3 jauges horizontales (transactional/marketing/bulk, couleur signal selon backlog). Liste 3 derniers échecs (template • destinataire tronqué • raison). Footer raccourcis : Composer (`g c`), Templates (`g t`), Logs (`g l`), Health (`g h`).
+- **Portal** — Header "VOTRE BOÎTE". Liste 5 emails (sujet bold • from • time-ago micro). Footer : Préférences (`g p`).
 
-**Objectif** : étendre `EmailReliabilityTab` à vue système complète.
+## Livrable 5 — `CommandBar v2`
 
-### Backend
-- Fonction `get_system_health()` retournant JSON :
-  - `providers[]` (depuis `get_email_provider_health`)
-  - `cron_jobs[]` (depuis `get_email_cron_health`)
-  - `linter_findings_count` (count direct)
-  - `pgmq_backlogs[]` (par queue)
-  - `secrets_status[]` (vault keys présents)
-  - `brand_assets_status` (logo upload présent)
-  - `audit_chain_valid` (depuis `verify_audit_chain_integrity`)
-- Fonction `get_edge_function_metrics(hours int)` : P50/P95 latence depuis `analytics_query` agrégé.
+Réécriture de `CommandPalette.tsx` :
 
-### Frontend
-- Page `/admin/health` (nouvelle route, lien dans `AdminSidebar`) :
-  - 6 cartes status (providers, cron, DB linter, queues, secrets, audit chain) avec badges vert/orange/rouge.
-  - Sparklines uptime providers 30j.
-  - Tableau métriques P50/P95 par edge function.
-  - Refresh auto 30s.
-- Bandeau sticky en haut de `AdminShell` si finding critique (`error` linter ou `audit_chain_invalid` ou provider down).
+- Ouverture en **center-modal** (max-w-2xl, top-20%) avec `studio-pop-in` (scale + blur fade).
+- Sections : **Suggestions** (contextuelles à la route active), **Aller à** (toutes routes), **Email**, **Sécurité**, **Academy**, **Aide**.
+- **Raccourcis sémantiques** type Linear : `g e` (go emails), `g h` (health), `g a` (academy), `g w` (workshops). Affichés en kbd à droite de chaque item.
+- **Actions inline** : "Composer email…", "Replay DLQ…", "Marquer toutes notifs lues" exécutent une mutation directement (sans navigation).
+- Footer : ligne d'aide avec `↑↓ naviguer • ↵ exécuter • ⎋ fermer • ⌘K basculer`.
+- Indicateur "Pro tip" rotatif en bas (3 astuces qui tournent toutes les 8s).
 
-### Audit E4
-Toutes cartes affichent données réelles • simuler provider down → bandeau apparaît • metrics edge functions cohérents avec logs.
+## Livrable 6 — Micro-interactions transversales
+
+- **Numbers ticker** : composant `<Tick value={n} />` qui anime les chiffres en roulement (CountUp custom 280ms).
+- **Skeleton shimmer Studio** : remplacement des `<Skeleton>` par variante shimmer dégradé hairline.
+- **Toast Studio** : surcharge de `sonner` via `<Toaster richColors closeButton position="bottom-right" />` avec classes `font-display` + glassmorphisme.
+- **Focus rings** : `--ring` exploité via `focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2` global → tous les boutons interactifs ont un focus signature.
+
+## Livrable 7 — Audit & docs
+
+- `docs/releases/v2.7.0-studio.md` — manifeste design avec captures avant/après.
+- `mem://style/studio-design-system.md` — règles : surfaces, easing, tokens, micro-caps, ticker.
+- Test responsive : 384×709 (mobile actuel) → OmniHeader collapse en `OmniHeaderMobile` (logo + ⌘K + cloche unifiée fusionnant Mail+Bell sous un swipe-tab).
+- Test a11y : focus-visible, `aria-label` sur tous SignalWidget, `prefers-reduced-motion` désactive `studio-pop-in`/`studio-tick`.
 
 ---
 
-## Documentation & Mémoires (à chaque lot)
+## Détails techniques
 
-- `docs/releases/v2.6.1-lot-E{n}.md`
-- Mises à jour mémoires : `compliance/audit-log-immutable`, `architecture/circuit-breakers`, `architecture/system-health-dashboard`, `features/in-app-notifications`, `features/email-deliverability-engineering`.
+- **Pas de dépendance externe ajoutée** (CountUp et ticker en-house, ~30 LOC).
+- **Tokens CSS** : tout sous `--studio-*` pour éviter collisions avec tokens existants. Le `.portal` scope override les surfaces avec teinte bleu signature.
+- **Performance** : `useEmailWidget` `staleTime: 30s`, channel realtime unique par variant, cleanup propre.
+- **Backward compat** : `NotificationsDropdown` exporte toujours pareil (signature identique), implémentation interne change.
+- **Permissions** : `EmailWidget` admin gated par `email.logs.view` via `usePermissions()`.
 
----
+## Ce qu'on ne fait PAS dans ce lot
 
-## Démarrage
+- Pas de dark mode complet (préparation tokens uniquement, switch viendra Lot E6).
+- Pas de refonte des pages admin internes (focus shell + signaux).
+- Pas de redesign sidebar (reste cohérente, juste les hairlines homogénéisées).
 
-On démarre par **Lot E1 (Sécurité Enterprise)** dès approbation. Audit en fin de E1, puis enchaînement automatique sur E2, E3, E4.
+## Audit final
+
+1. ⌘K depuis n'importe où ouvre la CommandBar v2 stylée.
+2. Mail widget admin : injection d'un échec en DB → ticker badge + toast + apparition en liste dans <2s.
+3. Mail widget portail : envoi d'un email reçu → notif realtime + badge.
+4. Bell widget : continue de fonctionner sans régression (même API).
+5. Mobile 384px : OmniHeader collapse, signaux fusionnés accessibles.
+6. `prefers-reduced-motion: reduce` : animations sup­primées, transitions ramenées à 0ms.
+7. Linter Supabase 0 finding, 0 régression console.
 
