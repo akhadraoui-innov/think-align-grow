@@ -4934,6 +4934,18 @@ export type Database = {
       }
     }
     Views: {
+      email_cron_health: {
+        Row: {
+          active: boolean | null
+          jobname: string | null
+          last_end: string | null
+          last_message: string | null
+          last_start: string | null
+          last_status: string | null
+          schedule: string | null
+        }
+        Relationships: []
+      }
       v_academy_quiz_questions_public: {
         Row: {
           explanation: string | null
@@ -5108,6 +5120,8 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      erase_user_email_data: { Args: { _user_id?: string }; Returns: Json }
+      export_user_email_data: { Args: { _user_id?: string }; Returns: Json }
       find_workshop_by_code: {
         Args: { _code: string }
         Returns: {
@@ -5198,6 +5212,7 @@ export type Database = {
         }
         Returns: number
       }
+      purge_expired_email_tokens: { Args: never; Returns: Json }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
