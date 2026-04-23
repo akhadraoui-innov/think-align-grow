@@ -1847,6 +1847,87 @@ export type Database = {
         }
         Relationships: []
       }
+      email_ab_tests: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string | null
+          significance_pct: number | null
+          started_at: string
+          status: string
+          template_id: string
+          updated_at: string
+          variant_a_clicked: number
+          variant_a_opened: number
+          variant_a_sent: number
+          variant_a_subject: string
+          variant_b_clicked: number
+          variant_b_opened: number
+          variant_b_sent: number
+          variant_b_subject: string
+          winner: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id?: string | null
+          significance_pct?: number | null
+          started_at?: string
+          status?: string
+          template_id: string
+          updated_at?: string
+          variant_a_clicked?: number
+          variant_a_opened?: number
+          variant_a_sent?: number
+          variant_a_subject: string
+          variant_b_clicked?: number
+          variant_b_opened?: number
+          variant_b_sent?: number
+          variant_b_subject: string
+          winner?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string | null
+          significance_pct?: number | null
+          started_at?: string
+          status?: string
+          template_id?: string
+          updated_at?: string
+          variant_a_clicked?: number
+          variant_a_opened?: number
+          variant_a_sent?: number
+          variant_a_subject?: string
+          variant_b_clicked?: number
+          variant_b_opened?: number
+          variant_b_sent?: number
+          variant_b_subject?: string
+          winner?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_ab_tests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_ab_tests_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_automation_runs: {
         Row: {
           automation_id: string | null
@@ -2186,6 +2267,94 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      email_suppressions: {
+        Row: {
+          email: string
+          id: string
+          is_active: boolean | null
+          metadata: Json
+          organization_id: string | null
+          reactivated_at: string | null
+          reactivated_by: string | null
+          reason: string
+          source_provider: string | null
+          suppressed_at: string
+        }
+        Insert: {
+          email: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json
+          organization_id?: string | null
+          reactivated_at?: string | null
+          reactivated_by?: string | null
+          reason: string
+          source_provider?: string | null
+          suppressed_at?: string
+        }
+        Update: {
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json
+          organization_id?: string | null
+          reactivated_at?: string | null
+          reactivated_by?: string | null
+          reason?: string
+          source_provider?: string | null
+          suppressed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_suppressions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_template_translations: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          locale: string
+          markdown_body: string
+          subject: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          locale: string
+          markdown_body: string
+          subject: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          locale?: string
+          markdown_body?: string
+          subject?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_template_translations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_template_versions: {
         Row: {
@@ -4772,6 +4941,15 @@ export type Database = {
       check_ucm_quota: {
         Args: { p_action: string; p_org_id: string }
         Returns: boolean
+      }
+      compute_ab_significance: {
+        Args: {
+          _a_opened: number
+          _a_sent: number
+          _b_opened: number
+          _b_sent: number
+        }
+        Returns: number
       }
       cron_dispatch_login_reminders: { Args: never; Returns: undefined }
       decrypt_email_credentials: {
