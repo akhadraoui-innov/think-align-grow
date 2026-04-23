@@ -52,7 +52,7 @@ export function useEmailRuns(filters?: {
       if (filters?.status) q = q.eq("status", filters.status);
       const { data, error } = await q;
       if (error) throw error;
-      return data as EmailRun[];
+      return (data || []) as unknown as EmailRun[];
     },
   });
 }
@@ -61,12 +61,12 @@ export function useEmailStats(organizationId?: string | null) {
   return useQuery({
     queryKey: ["email-stats", organizationId ?? "all"],
     queryFn: async () => {
-      let q = supabase.from("v_email_stats" as any).select("*").order("day", { ascending: false }).limit(500);
+      let q: any = supabase.from("v_email_stats" as any).select("*").order("day", { ascending: false }).limit(500);
       if (organizationId === null) q = q.is("organization_id", null);
       else if (organizationId) q = q.eq("organization_id", organizationId);
       const { data, error } = await q;
       if (error) throw error;
-      return (data || []) as EmailStatsRow[];
+      return (data || []) as unknown as EmailStatsRow[];
     },
   });
 }

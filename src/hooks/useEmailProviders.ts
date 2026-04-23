@@ -77,11 +77,11 @@ export function useUpsertEmailProviderConfig() {
       // Encrypt credentials via RPC if provided
       let credentials_encrypted: string | null = null;
       if (params.credentials && Object.keys(params.credentials).length > 0) {
-        const { data, error } = await supabase.rpc("encrypt_email_credentials_admin", {
+        const { data, error } = await (supabase.rpc as any)("encrypt_email_credentials_admin", {
           _plain: params.credentials,
         });
         if (error) throw error;
-        credentials_encrypted = data;
+        credentials_encrypted = data as string;
       }
 
       const row: any = {
