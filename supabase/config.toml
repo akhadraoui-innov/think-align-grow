@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.practice-copilot]
 verify_jwt = false
+
+[functions.process-email-queue]
+verify_jwt = true
