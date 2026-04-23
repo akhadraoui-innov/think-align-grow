@@ -75,12 +75,26 @@ export function useDeleteEmailAutomation() {
 }
 
 export const TRIGGER_EVENTS = [
-  { value: "user.created", label: "Création de compte" },
-  { value: "user.status.suspended", label: "Compte suspendu" },
-  { value: "user.inactive_Nd", label: "Inactivité (N jours)" },
-  { value: "invitation.sent", label: "Invitation envoyée" },
-  { value: "subscription.upgraded", label: "Abonnement upgrade" },
-  { value: "subscription.downgraded", label: "Abonnement downgrade" },
-  { value: "credits.low", label: "Crédits faibles" },
-  { value: "academy.path.completed", label: "Parcours Academy terminé" },
+  { value: "user.created", label: "Création de compte", payloadHints: ["firstName", "displayName"] },
+  { value: "user.status.suspended", label: "Compte suspendu", payloadHints: ["displayName"] },
+  { value: "user.inactive", label: "Inactivité (N jours)", payloadHints: ["firstName", "daysInactive"] },
+  { value: "org.invitation.sent", label: "Invitation envoyée", payloadHints: ["inviterName", "orgName", "acceptUrl"] },
+  { value: "subscription.upgraded", label: "Abonnement upgrade", payloadHints: ["planName"] },
+  { value: "subscription.downgraded", label: "Abonnement downgrade", payloadHints: ["planName"] },
+  { value: "credits.low", label: "Crédits faibles", payloadHints: ["balance", "threshold"] },
+  { value: "academy.path.completed", label: "Parcours Academy terminé", payloadHints: ["pathName", "score"] },
+  { value: "academy.path.enrolled", label: "Inscription parcours", payloadHints: ["pathName"] },
+  { value: "campaign.scheduled", label: "Campagne planifiée (manuel)", payloadHints: [] },
+];
+
+export const CONDITION_OPS: Array<{ value: ConditionRule["op"]; label: string }> = [
+  { value: "==", label: "égal à" },
+  { value: "!=", label: "différent de" },
+  { value: ">", label: ">" },
+  { value: ">=", label: "≥" },
+  { value: "<", label: "<" },
+  { value: "<=", label: "≤" },
+  { value: "in", label: "dans (liste)" },
+  { value: "contains", label: "contient" },
+  { value: "exists", label: "existe" },
 ];
