@@ -26,6 +26,24 @@ interface TriggerBody {
   override_template_code?: string;
 }
 
+// Map template codes → preference category. Anything starting with "auth." or
+// "transactional." is considered required and bypasses opt-in checks.
+function categoryForTemplate(code: string): string {
+  if (code.startsWith("auth.") || code.startsWith("transactional.")) return "transactional";
+  if (code.startsWith("academy.")) return "academy";
+  if (code.startsWith("digest.")) return "digest";
+  if (code.startsWith("product.")) return "product";
+  if (code.startsWith("marketing.") || code.startsWith("campaign.")) return "marketing";
+  // Default: treat as transactional to avoid silently dropping system emails.
+  return "transactional";
+}
+
+function randomToken(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 async function verifyHmac(rawBody: string, signatureHeader: string | null, secret: string): Promise<boolean> {
   if (!signatureHeader) return false;
   const expected = signatureHeader.startsWith("sha256=") ? signatureHeader.slice(7) : signatureHeader;
