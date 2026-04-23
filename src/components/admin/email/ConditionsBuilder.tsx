@@ -1,15 +1,19 @@
-import { Plus, X } from "lucide-react";
+import { useState } from "react";
+import { Plus, X, FlaskConical, CheckCircle2, XCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { ConditionRule, ConditionsDSL, CONDITION_OPS } from "@/hooks/useEmailAutomations";
+import { evalConditions, SAMPLE_PAYLOADS } from "@/lib/conditions-eval";
 
 interface Props {
   value: ConditionsDSL | Record<string, never>;
   onChange: (next: ConditionsDSL) => void;
   payloadHints?: string[];
+  triggerEvent?: string;
 }
 
 const EMPTY_RULE: ConditionRule = { path: "payload.", op: "==", value: "" };
