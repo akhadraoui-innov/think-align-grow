@@ -9,7 +9,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { usePillars, useCards } from "@/hooks/useToolkitData";
 import { useNotifications } from "@/hooks/useNotifications";
 import {
@@ -86,16 +86,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   }, [location.pathname, unreadCount]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={cn(
-          "p-0 gap-0 max-w-2xl border-0 bg-transparent shadow-none",
-          "top-[20%] translate-y-0",
-          "data-[state=open]:animate-none"
-        )}
-        hideClose
-      >
-        <div className="studio-surface-4 studio-shadow-monolith rounded-2xl overflow-hidden studio-pop-in">
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+        />
+        <DialogPrimitive.Content
+          className={cn(
+            "fixed left-[50%] top-[18%] z-50 w-[calc(100vw-32px)] max-w-2xl translate-x-[-50%]",
+            "focus:outline-none"
+          )}
+        >
+        <div className="studio-surface-4 studio-shadow-monolith rounded-2xl overflow-hidden studio-pop-in relative">
           <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/40 pointer-events-none" />
           <Command className="bg-transparent">
             <div className="flex items-center gap-2.5 px-4 border-b border-foreground/[0.06]">
