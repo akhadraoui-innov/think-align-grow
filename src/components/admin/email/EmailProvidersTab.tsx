@@ -103,25 +103,45 @@ export function EmailProvidersTab({ organizationId }: { organizationId: string |
                   <Send className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm">{provider?.name || c.provider_code}</span>
                     {c.is_default && <Badge variant="default" className="text-[10px]">Défaut</Badge>}
                     {!c.is_active && <Badge variant="secondary" className="text-[10px]">Inactif</Badge>}
                     {!c.organization_id && <Badge variant="outline" className="text-[10px]">Global</Badge>}
+                    {testResults[c.id] && (
+                      <Badge variant={testResults[c.id].ok ? "default" : "destructive"} className="text-[10px] gap-1">
+                        {testResults[c.id].ok ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                        {testResults[c.id].ok ? "OK" : "KO"}
+                      </Badge>
+                    )}
+                    {testResults[c.id]?.circuit === "open" && (
+                      <Badge variant="destructive" className="text-[10px] gap-1">
+                        <Activity className="h-3 w-3" />Circuit ouvert
+                      </Badge>
+                    )}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {c.from_name ? `${c.from_name} <${c.from_email}>` : c.from_email}
                   </div>
+                  {testResults[c.id]?.detail && (
+                    <div className="text-[10px] text-muted-foreground mt-1">{testResults[c.id].detail}</div>
+                  )}
                 </div>
               </div>
-              {canManage && (
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="ghost" onClick={() => setEditing({ ...c, credentials_input: undefined })}>Éditer</Button>
-                  <Button size="sm" variant="ghost" onClick={() => del.mutate(c.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => handleTest(c.id)} disabled={testing[c.id]}>
+                  {testing[c.id] ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Activity className="h-3 w-3 mr-1" />}
+                  Tester
+                </Button>
+                {canManage && (
+                  <>
+                    <Button size="sm" variant="ghost" onClick={() => setEditing({ ...c, credentials_input: undefined })}>Éditer</Button>
+                    <Button size="sm" variant="ghost" onClick={() => del.mutate(c.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </Card>
           );
         })}
