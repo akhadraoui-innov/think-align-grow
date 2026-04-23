@@ -1,6 +1,10 @@
-// Edge Function: trigger-email
-// Core dispatcher for the v2.6 Email Platform.
-// Resolves automation → template → provider → branding → renders → sends.
+// Edge Function: trigger-email (v2.6.1 — world-class edition)
+// - Consumes get_org_effective_features() helper (single source of truth)
+// - Idempotency keys via X-Idempotency-Key header (24h TTL)
+// - Circuit breaker per provider
+// - Email monthly quota enforcement
+// - Audit log immutable trace on send
+// - Logs to email_send_log + email_automation_runs
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getAdapter } from "../_shared/email-adapters/index.ts";
@@ -8,7 +12,7 @@ import { renderEmail } from "../_shared/email-render.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-idempotency-key, x-event-signature",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -18,11 +22,9 @@ interface TriggerBody {
   recipient_email: string;
   recipient_user_id?: string | null;
   payload?: Record<string, any>;
-  entity_id?: string | null;          // for idempotency
-  override_template_code?: string;     // bypass automation lookup
+  entity_id?: string | null;
+  override_template_code?: string;
 }
-
-const ENC_KEY = Deno.env.get("EMAIL_CREDENTIALS_KEY") || "growthinnov_default_key_v1";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -36,6 +38,30 @@ Deno.serve(async (req) => {
     const body: TriggerBody = await req.json();
     if (!body?.event || !body?.recipient_email) {
       return json({ error: "event and recipient_email are required" }, 400);
+    }
+
+    // ── 0. Idempotency check (header X-Idempotency-Key) ──────────────
+    const idemKey = req.headers.get("x-idempotency-key");
+    if (idemKey) {
+      const { data: existing } = await supabase
+        .from("email_idempotency_keys")
+        .select("response_payload")
+        .eq("key", idemKey)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      if (existing?.response_payload) {
+        return json({ ...existing.response_payload, replayed: true }, 200);
+      }
+    }
+
+    // ── 0bis. Quota enforcement ──────────────────────────────────────
+    if (body.organization_id) {
+      const { data: quotaOk } = await supabase.rpc("check_email_quota", {
+        _org_id: body.organization_id,
+      });
+      if (quotaOk === false) {
+        return json({ error: "email_quota_exceeded", organization_id: body.organization_id }, 429);
+      }
     }
 
     // ── 1. Resolve automation (org > global) ─────────────────────────
@@ -52,7 +78,6 @@ Deno.serve(async (req) => {
           ? `organization_id.eq.${body.organization_id},organization_id.is.null`
           : `organization_id.is.null`);
 
-      // Prefer org-specific
       automation = (autoRows || []).find((a) => a.organization_id === body.organization_id)
         || (autoRows || []).find((a) => a.organization_id === null);
 
@@ -62,7 +87,7 @@ Deno.serve(async (req) => {
       templateCode = automation.template_code;
     }
 
-    // ── 2. Idempotency check ─────────────────────────────────────────
+    // ── 2. Idempotency check by entity_id (legacy path) ──────────────
     if (body.entity_id) {
       const { data: existing } = await supabase
         .from("email_automation_runs")
@@ -93,40 +118,28 @@ Deno.serve(async (req) => {
       return json({ error: `template '${templateCode}' not found or inactive` }, 404);
     }
 
-    // ── 4. Resolve org context (branding + plan + features) ──────────
+    // ── 4. Resolve org context + EFFECTIVE FEATURES via helper RPC ───
     let org: any = null;
-    let planFeatures: Record<string, any> = {};
+    let effective: Record<string, any> = {};
     if (body.organization_id) {
       const { data: orgRow } = await supabase
         .from("organizations")
-        .select("id, name, brand_logo_url, email_sender_domain, email_tracking_enabled, email_features_override, plan_id")
+        .select("id, name, brand_logo_url, email_sender_domain, email_tracking_enabled")
         .eq("id", body.organization_id)
         .maybeSingle();
       org = orgRow;
-      if (orgRow?.plan_id) {
-        const { data: plan } = await supabase
-          .from("subscription_plans")
-          .select("features")
-          .eq("id", orgRow.plan_id)
-          .maybeSingle();
-        planFeatures = (plan?.features as any) || {};
-      }
     }
-
-    // Effective feature flags = plan features + org override
-    const overrides = (org?.email_features_override as any) || {};
-    const effective = {
-      custom_email_domain: overrides.custom_email_domain ?? planFeatures.custom_email_domain ?? false,
-      custom_email_provider: overrides.custom_email_provider ?? planFeatures.custom_email_provider ?? false,
-      email_co_branding: overrides.email_co_branding ?? planFeatures.email_co_branding ?? false,
-    };
+    const { data: feats } = await supabase.rpc("get_org_effective_features", {
+      _org_id: body.organization_id ?? null,
+    });
+    effective = (feats as Record<string, any>) || {};
 
     // ── 5. Resolve provider (org > global) honoring entitlement ──────
     let providerConfig: any = null;
     if (body.organization_id && effective.custom_email_provider) {
       const { data: orgCfg } = await supabase
         .from("email_provider_configs")
-        .select("id, provider_code, credentials_encrypted, from_email, from_name, reply_to, is_default, is_active")
+        .select("id, provider_code, credentials, from_email, from_name, reply_to, is_default, is_active")
         .eq("organization_id", body.organization_id)
         .eq("is_active", true)
         .order("is_default", { ascending: false })
@@ -137,7 +150,7 @@ Deno.serve(async (req) => {
     if (!providerConfig) {
       const { data: globalCfg } = await supabase
         .from("email_provider_configs")
-        .select("id, provider_code, credentials_encrypted, from_email, from_name, reply_to, is_default, is_active")
+        .select("id, provider_code, credentials, from_email, from_name, reply_to, is_default, is_active")
         .is("organization_id", null)
         .eq("is_active", true)
         .order("is_default", { ascending: false })
@@ -149,24 +162,25 @@ Deno.serve(async (req) => {
       return json({ error: "No active email provider configured" }, 500);
     }
 
-    // ── 6. Decrypt credentials ───────────────────────────────────────
-    let credentials: Record<string, any> = {};
-    if (providerConfig.credentials_encrypted) {
-      const { data: dec, error: decErr } = await supabase.rpc("decrypt_email_credentials", {
-        _encrypted: providerConfig.credentials_encrypted,
-        _key: ENC_KEY,
-      });
-      if (decErr) {
-        console.warn("[trigger-email] decrypt failed, using empty creds", decErr.message);
-      } else if (dec) {
-        try { credentials = typeof dec === "string" ? JSON.parse(dec) : dec; } catch { credentials = {}; }
-      }
+    // ── 5bis. Circuit breaker check ──────────────────────────────────
+    const { data: cbOk } = await supabase.rpc("check_circuit_breaker", {
+      _provider_code: providerConfig.provider_code,
+    });
+    if (cbOk === false) {
+      return json({
+        error: "provider_circuit_open",
+        provider: providerConfig.provider_code,
+        hint: "Provider has > 20% failure rate on last 100 sends. Auto-disabled.",
+      }, 503);
     }
+
+    // ── 6. Use credentials from JSONB column (already plaintext-safe) ─
+    const credentials: Record<string, any> = (providerConfig.credentials as any) || {};
 
     // ── 7. Render ────────────────────────────────────────────────────
     const variables = {
       ...(body.payload || {}),
-      organization: org ? { name: org.name } : undefined,
+      organization: org ? { name: org.name } : { name: "GROWTHINNOV" },
       recipient: { email: body.recipient_email },
     };
 
@@ -182,7 +196,22 @@ Deno.serve(async (req) => {
       footer: { organizationLine: org?.name || "GROWTHINNOV" },
     });
 
-    // ── 8. Send via adapter ──────────────────────────────────────────
+    // ── 8. Persist pending log row before send ───────────────────────
+    const messageId = crypto.randomUUID();
+    await supabase.from("email_send_log").insert({
+      message_id: messageId,
+      template_name: templateCode!,
+      recipient_email: body.recipient_email,
+      status: "pending",
+      metadata: {
+        provider: providerConfig.provider_code,
+        organization_id: body.organization_id || null,
+        event: body.event,
+        idempotency_key: idemKey || null,
+      },
+    });
+
+    // ── 9. Send via adapter ──────────────────────────────────────────
     const adapter = getAdapter(providerConfig.provider_code);
     const sendRes = await adapter.send({
       to: body.recipient_email,
@@ -194,7 +223,20 @@ Deno.serve(async (req) => {
       text: rendered.text,
     }, credentials);
 
-    // ── 9. Persist run for traceability ──────────────────────────────
+    // ── 10. Persist final status to email_send_log + run ─────────────
+    await supabase.from("email_send_log").insert({
+      message_id: messageId,
+      template_name: templateCode!,
+      recipient_email: body.recipient_email,
+      status: sendRes.success ? "sent" : "failed",
+      error_message: sendRes.error || null,
+      metadata: {
+        provider: providerConfig.provider_code,
+        organization_id: body.organization_id || null,
+        event: body.event,
+      },
+    });
+
     await supabase.from("email_automation_runs").insert({
       automation_id: automation?.id || null,
       template_code: templateCode!,
@@ -206,19 +248,49 @@ Deno.serve(async (req) => {
       recipient_user_id: body.recipient_user_id || null,
       payload: body.payload || {},
       provider_used: providerConfig.provider_code,
-      message_id: sendRes.messageId || null,
+      message_id: sendRes.messageId || messageId,
       status: sendRes.success ? "sent" : "failed",
       sent_at: sendRes.success ? new Date().toISOString() : null,
       error: sendRes.error || null,
     });
 
-    return json({
+    // ── 11. Increment org quota counter (best-effort) ────────────────
+    if (body.organization_id && sendRes.success) {
+      await supabase.rpc("increment_email_quota", { _org_id: body.organization_id, _by: 1 });
+    }
+
+    // ── 12. Append to immutable audit log (best-effort) ──────────────
+    await supabase.rpc("append_audit_log", {
+      _action: sendRes.success ? "email.sent" : "email.failed",
+      _entity_type: "email",
+      _entity_id: messageId,
+      _organization_id: body.organization_id || null,
+      _payload: {
+        event: body.event,
+        template: templateCode,
+        provider: providerConfig.provider_code,
+        recipient_email: body.recipient_email,
+      },
+    });
+
+    const responsePayload = {
       success: sendRes.success,
-      message_id: sendRes.messageId,
+      message_id: sendRes.messageId || messageId,
       provider: providerConfig.provider_code,
       template_code: templateCode,
       error: sendRes.error,
-    }, sendRes.success ? 200 : 502);
+    };
+
+    // ── 13. Persist idempotency key payload ──────────────────────────
+    if (idemKey) {
+      await supabase.from("email_idempotency_keys").upsert({
+        key: idemKey,
+        response_payload: responsePayload,
+        organization_id: body.organization_id || null,
+      });
+    }
+
+    return json(responsePayload, sendRes.success ? 200 : 502);
 
   } catch (err: any) {
     console.error("[trigger-email] error:", err);
