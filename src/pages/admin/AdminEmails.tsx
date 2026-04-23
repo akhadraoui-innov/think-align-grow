@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Sparkles, Send, Globe, BarChart3, Building2, ShieldOff, FlaskConical } from "lucide-react";
+import { Mail, Sparkles, Send, Globe, BarChart3, Building2, ShieldOff, FlaskConical, TrendingUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +13,7 @@ import { EmailDomainBrandingTab } from "@/components/admin/email/EmailDomainBran
 import { EmailProvidersTab } from "@/components/admin/email/EmailProvidersTab";
 import { EmailSuppressionsTab } from "@/components/admin/email/EmailSuppressionsTab";
 import { EmailABTestsTab } from "@/components/admin/email/EmailABTestsTab";
+import { EmailAnalyticsTab } from "@/components/admin/email/EmailAnalyticsTab";
 
 const GLOBAL_OPTION = "__global__";
 
@@ -67,17 +68,19 @@ export default function AdminEmails() {
         </div>
       </header>
 
-      <Tabs defaultValue="templates" className="space-y-4">
-        <TabsList className="grid grid-cols-7 w-full">
+      <Tabs defaultValue="analytics" className="space-y-4">
+        <TabsList className="grid grid-cols-8 w-full">
+          <TabsTrigger value="analytics"><TrendingUp className="h-4 w-4 mr-1" />Analytics</TabsTrigger>
           <TabsTrigger value="templates"><Mail className="h-4 w-4 mr-1" />Templates</TabsTrigger>
           <TabsTrigger value="automations"><Sparkles className="h-4 w-4 mr-1" />Automations</TabsTrigger>
           <TabsTrigger value="abtests"><FlaskConical className="h-4 w-4 mr-1" />A/B Tests</TabsTrigger>
-          <TabsTrigger value="logs"><BarChart3 className="h-4 w-4 mr-1" />Logs & Stats</TabsTrigger>
+          <TabsTrigger value="logs"><BarChart3 className="h-4 w-4 mr-1" />Logs</TabsTrigger>
           <TabsTrigger value="suppressions"><ShieldOff className="h-4 w-4 mr-1" />Suppressions</TabsTrigger>
           <TabsTrigger value="branding"><Globe className="h-4 w-4 mr-1" />Branding</TabsTrigger>
           <TabsTrigger value="providers"><Send className="h-4 w-4 mr-1" />Providers</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="analytics"><EmailAnalyticsTab organizationId={scopeOrgId} /></TabsContent>
         <TabsContent value="templates"><EmailTemplatesTab organizationId={scopeOrgId} /></TabsContent>
         <TabsContent value="automations"><EmailAutomationsTab organizationId={scopeOrgId} /></TabsContent>
         <TabsContent value="abtests"><EmailABTestsTab organizationId={scopeOrgId} /></TabsContent>
