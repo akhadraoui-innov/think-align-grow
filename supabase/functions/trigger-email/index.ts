@@ -26,6 +26,25 @@ interface TriggerBody {
   override_template_code?: string;
 }
 
+async function verifyHmac(rawBody: string, signatureHeader: string | null, secret: string): Promise<boolean> {
+  if (!signatureHeader) return false;
+  const expected = signatureHeader.startsWith("sha256=") ? signatureHeader.slice(7) : signatureHeader;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sigBytes = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(rawBody));
+  const computed = Array.from(new Uint8Array(sigBytes)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  // constant-time compare
+  if (expected.length !== computed.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ computed.charCodeAt(i);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -35,7 +54,25 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const body: TriggerBody = await req.json();
+    // Read raw body once for HMAC verification + JSON parsing
+    const rawBody = await req.text();
+
+    // ── 0pre. HMAC signature verification (server-to-server calls) ──
+    // If X-Event-Signature is present, it MUST be valid (DB dispatcher path).
+    // Direct UI calls without the header are accepted (auth via Supabase JWT).
+    const sigHeader = req.headers.get("x-event-signature");
+    if (sigHeader) {
+      const { data: secretRow, error: secretErr } = await supabase.rpc("get_or_create_email_hmac_secret");
+      if (secretErr || !secretRow) {
+        console.error("[trigger-email] hmac secret unavailable:", secretErr);
+        return json({ error: "hmac_secret_unavailable" }, 500);
+      }
+      const ok = await verifyHmac(rawBody, sigHeader, secretRow as string);
+      if (!ok) return json({ error: "invalid_signature" }, 401);
+    }
+
+    let body: TriggerBody;
+    try { body = JSON.parse(rawBody); } catch { return json({ error: "invalid_json" }, 400); }
     if (!body?.event || !body?.recipient_email) {
       return json({ error: "event and recipient_email are required" }, 400);
     }

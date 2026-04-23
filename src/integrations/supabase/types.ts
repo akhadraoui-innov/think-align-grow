@@ -4830,6 +4830,7 @@ export type Database = {
           role: string
         }[]
       }
+      get_or_create_email_hmac_secret: { Args: never; Returns: string }
       get_org_effective_features: { Args: { _org_id: string }; Returns: Json }
       get_ucm_global_prompt: {
         Args: { p_org_id: string; p_section_code: string }
@@ -4866,6 +4867,7 @@ export type Database = {
         Returns: boolean
       }
       is_saas_team: { Args: { _user_id: string }; Returns: boolean }
+      is_url_allowed: { Args: { _url: string }; Returns: boolean }
       is_workshop_host: {
         Args: { _user_id: string; _workshop_id: string }
         Returns: boolean
@@ -4901,6 +4903,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      sign_email_payload: { Args: { _payload: Json }; Returns: string }
       spend_credits: {
         Args: { _amount: number; _description: string; _user_id: string }
         Returns: Json
