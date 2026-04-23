@@ -187,7 +187,24 @@ export function UserInfoTab({ profile, onSave, saving }: Props) {
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Statut</p>
-            <Badge variant="outline" className={profile.status === "active" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs" : "text-xs"}>{profile.status}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className={
+                profile.status === "active" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs"
+                : profile.status === "suspended" ? "bg-red-500/10 text-red-600 border-red-500/30 text-xs"
+                : "text-xs"
+              }>
+                {profile.status === "active" ? "Actif" : profile.status === "suspended" ? "Suspendu" : profile.status}
+              </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 text-[10px]"
+                onClick={() => onSave({ status: profile.status === "active" ? "suspended" : "active" })}
+                disabled={saving}
+              >
+                {profile.status === "active" ? "Suspendre" : "Réactiver"}
+              </Button>
+            </div>
           </div>
         </div>
       </Section>

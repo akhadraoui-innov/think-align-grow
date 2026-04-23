@@ -1,9 +1,11 @@
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { DataTable } from "@/components/admin/DataTable";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -19,9 +21,32 @@ const ROLE_COLORS: Record<string, string> = {
   member: "bg-muted text-muted-foreground border-border",
 };
 
+function isOnline(lastSeen?: string | null) {
+  if (!lastSeen) return false;
+  return Date.now() - new Date(lastSeen).getTime() < 5 * 60 * 1000;
+}
+
 export default function AdminUsers() {
   const navigate = useNavigate();
   const { users, isLoading } = useAdminUsers();
+  const [roleFilter, setRoleFilter] = useState<string>("__all__");
+  const [statusFilter, setStatusFilter] = useState<string>("__all__");
+  const [orgFilter, setOrgFilter] = useState<string>("__all__");
+
+  const orgOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const u of users) for (const o of u.organizations) map.set(o.id, o.name);
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [users]);
+
+  const filtered = useMemo(() => {
+    return users.filter((u) => {
+      if (roleFilter !== "__all__" && !u.roles.includes(roleFilter)) return false;
+      if (statusFilter !== "__all__" && u.status !== statusFilter) return false;
+      if (orgFilter !== "__all__" && !u.organizations.some((o) => o.id === orgFilter)) return false;
+      return true;
+    });
+  }, [users, roleFilter, statusFilter, orgFilter]);
 
   const columns = [
     {
@@ -30,18 +55,28 @@ export default function AdminUsers() {
       sortable: true,
       render: (row: any) => (
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={row.avatar_url} />
-            <AvatarFallback className="text-xs bg-primary/10 text-primary">
-              {(row.display_name || "?")[0]?.toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium text-foreground text-sm">{row.display_name || "Sans nom"}</p>
-            <p className="text-[11px] text-muted-foreground font-mono truncate max-w-[200px]">{row.user_id}</p>
+          <div className="relative">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={row.avatar_url} />
+              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                {(row.display_name || row.email || "?")[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            {isOnline(row.last_seen_at) && (
+              <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-background" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="font-medium text-foreground text-sm truncate">{row.display_name || "Sans nom"}</p>
+            <p className="text-[11px] text-muted-foreground truncate max-w-[220px]">{row.email || row.user_id}</p>
           </div>
         </div>
       ),
+    },
+    {
+      key: "email",
+      label: "Email",
+      render: (row: any) => <span className="text-xs text-muted-foreground">{row.email || "—"}</span>,
     },
     {
       key: "roles",
@@ -79,17 +114,15 @@ export default function AdminUsers() {
       render: (row: any) => <span className="text-sm font-mono">{row.credit_balance}</span>,
     },
     {
-      key: "xp",
-      label: "XP",
-      sortable: true,
-      render: (row: any) => <span className="text-sm font-mono">{row.xp}</span>,
-    },
-    {
       key: "status",
       label: "Statut",
       render: (row: any) => (
-        <Badge variant="outline" className={row.status === "active" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs" : "text-xs"}>
-          {row.status === "active" ? "Actif" : row.status}
+        <Badge variant="outline" className={
+          row.status === "active" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs"
+          : row.status === "suspended" ? "bg-red-500/10 text-red-600 border-red-500/30 text-xs"
+          : "text-xs"
+        }>
+          {row.status === "active" ? "Actif" : row.status === "suspended" ? "Suspendu" : row.status}
         </Badge>
       ),
     },
@@ -105,25 +138,57 @@ export default function AdminUsers() {
     },
   ];
 
+  const allRoles = useMemo(() => {
+    const set = new Set<string>();
+    users.forEach((u) => u.roles.forEach((r) => set.add(r)));
+    return [...set].sort();
+  }, [users]);
+
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
         <div>
           <h1 className="text-2xl font-display font-bold text-foreground">Utilisateurs</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {users.length} utilisateur{users.length > 1 ? "s" : ""} sur la plateforme
+            {filtered.length} / {users.length} utilisateur{users.length > 1 ? "s" : ""}
           </p>
         </div>
+
+        <div className="flex flex-wrap gap-3">
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-[180px] text-xs"><SelectValue placeholder="Rôle" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Tous les rôles</SelectItem>
+              {allRoles.map((r) => <SelectItem key={r} value={r}>{r.replace(/_/g, " ")}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[150px] text-xs"><SelectValue placeholder="Statut" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Tous statuts</SelectItem>
+              <SelectItem value="active">Actif</SelectItem>
+              <SelectItem value="suspended">Suspendu</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={orgFilter} onValueChange={setOrgFilter}>
+            <SelectTrigger className="w-[200px] text-xs"><SelectValue placeholder="Organisation" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Toutes orgs</SelectItem>
+              {orgOptions.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : (
           <DataTable
-            data={users}
+            data={filtered}
             columns={columns}
             searchKey="display_name"
-            searchPlaceholder="Rechercher un utilisateur..."
+            searchPlaceholder="Rechercher par nom ou email..."
             onRowClick={(row) => navigate(`/admin/users/${row.user_id}`)}
           />
         )}

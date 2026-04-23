@@ -7,6 +7,7 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useAuth } from "@/hooks/useAuth";
 import { useCredits } from "@/hooks/useCredits";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLastSeenTracker } from "@/hooks/useLastSeenTracker";
 import {
   Search, Bell, HelpCircle, Menu, X,
   Coins, ChevronRight
@@ -35,6 +36,7 @@ export function PortalShell({ children }: PortalShellProps) {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  useLastSeenTracker();
 
   const isImmersive =
     /^\/portal\/module\//.test(location.pathname) ||

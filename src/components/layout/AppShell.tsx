@@ -6,6 +6,7 @@ import { PortalShell } from "@/components/portal/PortalShell";
 import { BottomNav } from "./BottomNav";
 import { CommandPalette } from "./CommandPalette";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLastSeenTracker } from "@/hooks/useLastSeenTracker";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ export function AppShell({ children }: AppShellProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [cmdOpen, setCmdOpen] = useState(false);
+  useLastSeenTracker();
 
   const isLandingPage = location.pathname === "/";
   const isAuthPage = location.pathname === "/auth" || location.pathname === "/reset-password";
