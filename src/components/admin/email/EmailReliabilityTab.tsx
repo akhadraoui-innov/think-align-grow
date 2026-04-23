@@ -130,7 +130,7 @@ export function EmailReliabilityTab() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
-              Alertes quota (>80%)
+              Alertes quota (&gt;80%)
             </CardTitle>
             <CardDescription>Organisations approchant leur plafond mensuel.</CardDescription>
           </CardHeader>
