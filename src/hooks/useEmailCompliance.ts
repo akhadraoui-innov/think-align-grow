@@ -32,7 +32,7 @@ export function useEraseEmailData() {
         _user_id: userId ?? undefined,
       });
       if (error) throw error;
-      const result = data as { success?: boolean; error?: string };
+      const result = data as { success?: boolean; error?: string; logs_anonymized?: number; preferences_deleted?: number; tokens_deleted?: number };
       if (!result?.success) throw new Error(result?.error ?? "erase_failed");
       return result;
     },
