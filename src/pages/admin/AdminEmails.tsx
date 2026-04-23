@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Sparkles, Send, Globe, BarChart3, Building2 } from "lucide-react";
+import { Mail, Sparkles, Send, Globe, BarChart3, Building2, ShieldOff, FlaskConical } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,6 +11,8 @@ import { EmailAutomationsTab } from "@/components/admin/email/EmailAutomationsTa
 import { EmailLogsTab } from "@/components/admin/email/EmailLogsTab";
 import { EmailDomainBrandingTab } from "@/components/admin/email/EmailDomainBrandingTab";
 import { EmailProvidersTab } from "@/components/admin/email/EmailProvidersTab";
+import { EmailSuppressionsTab } from "@/components/admin/email/EmailSuppressionsTab";
+import { EmailABTestsTab } from "@/components/admin/email/EmailABTestsTab";
 
 const GLOBAL_OPTION = "__global__";
 
