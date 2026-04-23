@@ -104,6 +104,9 @@ import AdminBusiness from "./pages/admin/AdminBusiness";
 import AdminQuotePreview from "./pages/admin/AdminQuotePreview";
 import AdminEmails from "./pages/admin/AdminEmails";
 import Invitation from "./pages/Invitation";
+import PortalEmailPreferences from "./pages/portal/PortalEmailPreferences";
+import EmailUnsubscribe from "./pages/EmailUnsubscribe";
+import EmailConfirm from "./pages/EmailConfirm";
 
 const queryClient = new QueryClient();
 
@@ -214,6 +217,7 @@ function AnimatedRoutes() {
           <Route path="/portal/ucm/:id/uc/:ucId" element={<PortalUCMProject />} />
           <Route path="/portal/ucm/:id/synthesis" element={<PortalUCMProject />} />
           <Route path="/portal/ucm/:id/chat" element={<PortalUCMProject />} />
+          <Route path="/portal/preferences" element={<PortalEmailPreferences />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
@@ -231,6 +235,8 @@ const App = () => (
         <Routes>
           <Route path="/verify/:id" element={<VerifyCertificate />} />
           <Route path="/invitation/:token" element={<Invitation />} />
+          <Route path="/email/unsubscribe" element={<EmailUnsubscribe />} />
+          <Route path="/email/confirm" element={<EmailConfirm />} />
           <Route path="*" element={
             <OrgProvider>
               <AnimatedRoutes />

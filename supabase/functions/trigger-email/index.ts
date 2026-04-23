@@ -26,6 +26,24 @@ interface TriggerBody {
   override_template_code?: string;
 }
 
+// Map template codes → preference category. Anything starting with "auth." or
+// "transactional." is considered required and bypasses opt-in checks.
+function categoryForTemplate(code: string): string {
+  if (code.startsWith("auth.") || code.startsWith("transactional.")) return "transactional";
+  if (code.startsWith("academy.")) return "academy";
+  if (code.startsWith("digest.")) return "digest";
+  if (code.startsWith("product.")) return "product";
+  if (code.startsWith("marketing.") || code.startsWith("campaign.")) return "marketing";
+  // Default: treat as transactional to avoid silently dropping system emails.
+  return "transactional";
+}
+
+function randomToken(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 async function verifyHmac(rawBody: string, signatureHeader: string | null, secret: string): Promise<boolean> {
   if (!signatureHeader) return false;
   const expected = signatureHeader.startsWith("sha256=") ? signatureHeader.slice(7) : signatureHeader;
@@ -214,11 +232,78 @@ Deno.serve(async (req) => {
     // ── 6. Use credentials from JSONB column (already plaintext-safe) ─
     const credentials: Record<string, any> = (providerConfig.credentials as any) || {};
 
+    // ── 6bis. Subscriber preferences & suppression check ─────────────
+    const category = categoryForTemplate(templateCode!);
+    const isTransactional = category === "transactional";
+
+    if (!isTransactional) {
+      // Suppression list
+      const { data: suppressed } = await supabase
+        .from("email_suppressions")
+        .select("id")
+        .eq("email", body.recipient_email)
+        .eq("is_active", true)
+        .or(body.organization_id
+          ? `organization_id.eq.${body.organization_id},organization_id.is.null`
+          : `organization_id.is.null`)
+        .limit(1)
+        .maybeSingle();
+      if (suppressed) {
+        await supabase.from("email_send_log").insert({
+          message_id: crypto.randomUUID(),
+          template_name: templateCode!,
+          recipient_email: body.recipient_email,
+          status: "suppressed",
+          metadata: { reason: "suppression_list", category, event: body.event },
+        });
+        return json({ skipped: true, reason: "recipient_suppressed", category }, 200);
+      }
+      // Explicit opt-out
+      const { data: pref } = await supabase
+        .from("email_subscriber_preferences")
+        .select("subscribed")
+        .eq("email", body.recipient_email)
+        .eq("category_code", category)
+        .or(body.organization_id
+          ? `organization_id.eq.${body.organization_id},organization_id.is.null`
+          : `organization_id.is.null`)
+        .order("organization_id", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      if (pref && pref.subscribed === false) {
+        await supabase.from("email_send_log").insert({
+          message_id: crypto.randomUUID(),
+          template_name: templateCode!,
+          recipient_email: body.recipient_email,
+          status: "suppressed",
+          metadata: { reason: "preference_opt_out", category, event: body.event },
+        });
+        return json({ skipped: true, reason: "recipient_opted_out", category }, 200);
+      }
+    }
+
+    // ── 6ter. Generate one-click unsubscribe token (non-transactional) ─
+    let unsubscribeUrl: string | undefined;
+    let unsubscribeToken: string | undefined;
+    if (!isTransactional) {
+      unsubscribeToken = randomToken();
+      await supabase.from("email_unsubscribe_tokens").insert({
+        token: unsubscribeToken,
+        email: body.recipient_email,
+        organization_id: body.organization_id || null,
+        category_code: category,
+        template_code: templateCode,
+      });
+      const publicBase = Deno.env.get("PUBLIC_APP_URL") || "https://heeplab.com";
+      unsubscribeUrl = `${publicBase}/email/unsubscribe?token=${unsubscribeToken}`;
+    }
+
     // ── 7. Render ────────────────────────────────────────────────────
     const variables = {
       ...(body.payload || {}),
       organization: org ? { name: org.name } : { name: "GROWTHINNOV" },
       recipient: { email: body.recipient_email },
+      unsubscribe_url: unsubscribeUrl || "",
     };
 
     const rendered = renderEmail({
@@ -230,7 +315,7 @@ Deno.serve(async (req) => {
         orgName: org?.name || null,
         coBrand: !!(effective.email_co_branding && org?.brand_logo_url),
       },
-      footer: { organizationLine: org?.name || "GROWTHINNOV" },
+      footer: { organizationLine: org?.name || "GROWTHINNOV", unsubscribeUrl },
     });
 
     // ── 8. Persist pending log row before send ───────────────────────
@@ -245,10 +330,16 @@ Deno.serve(async (req) => {
         organization_id: body.organization_id || null,
         event: body.event,
         idempotency_key: idemKey || null,
+        category,
       },
     });
 
-    // ── 9. Send via adapter ──────────────────────────────────────────
+    // ── 9. Send via adapter (with RFC 8058 List-Unsubscribe headers) ──
+    const extraHeaders: Record<string, string> = {};
+    if (unsubscribeUrl) {
+      extraHeaders["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
+      extraHeaders["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+    }
     const adapter = getAdapter(providerConfig.provider_code);
     const sendRes = await adapter.send({
       to: body.recipient_email,
@@ -258,6 +349,7 @@ Deno.serve(async (req) => {
       subject: rendered.subject,
       html: rendered.html,
       text: rendered.text,
+      headers: extraHeaders,
     }, credentials);
 
     // ── 10. Persist final status to email_send_log + run ─────────────

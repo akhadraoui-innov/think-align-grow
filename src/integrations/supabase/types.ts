@@ -2056,6 +2056,78 @@ export type Database = {
           },
         ]
       }
+      email_categories: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          is_required: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          is_required?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          is_required?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      email_confirmation_tokens: {
+        Row: {
+          category_code: string
+          confirmed_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          organization_id: string | null
+          token: string
+        }
+        Insert: {
+          category_code: string
+          confirmed_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          organization_id?: string | null
+          token: string
+        }
+        Update: {
+          category_code?: string
+          confirmed_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          organization_id?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_confirmation_tokens_category_code_fkey"
+            columns: ["category_code"]
+            isOneToOne: false
+            referencedRelation: "email_categories"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "email_confirmation_tokens_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_idempotency_keys: {
         Row: {
           created_at: string
@@ -2267,6 +2339,57 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      email_subscriber_preferences: {
+        Row: {
+          category_code: string
+          double_opt_in_confirmed_at: string | null
+          email: string
+          id: string
+          organization_id: string | null
+          source: string | null
+          subscribed: boolean
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category_code: string
+          double_opt_in_confirmed_at?: string | null
+          email: string
+          id?: string
+          organization_id?: string | null
+          source?: string | null
+          subscribed?: boolean
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category_code?: string
+          double_opt_in_confirmed_at?: string | null
+          email?: string
+          id?: string
+          organization_id?: string | null
+          source?: string | null
+          subscribed?: boolean
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_subscriber_preferences_category_code_fkey"
+            columns: ["category_code"]
+            isOneToOne: false
+            referencedRelation: "email_categories"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "email_subscriber_preferences_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_suppressions: {
         Row: {
@@ -4951,6 +5074,8 @@ export type Database = {
         }
         Returns: number
       }
+      confirm_email_opt_in: { Args: { _token: string }; Returns: Json }
+      consume_unsubscribe_token: { Args: { _token: string }; Returns: Json }
       cron_dispatch_login_reminders: { Args: never; Returns: undefined }
       decrypt_email_credentials: {
         Args: { _encrypted: string; _key: string }
