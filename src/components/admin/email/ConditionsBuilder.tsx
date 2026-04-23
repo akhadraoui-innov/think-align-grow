@@ -23,6 +23,23 @@ export function ConditionsBuilder({ value, onChange, payloadHints = [], triggerE
   const all = Array.isArray(v.all) ? v.all : [];
   const any = Array.isArray(v.any) ? v.any : [];
 
+  const sample = triggerEvent ? SAMPLE_PAYLOADS[triggerEvent] ?? {} : {};
+  const [dryRunOpen, setDryRunOpen] = useState(false);
+  const [payloadJson, setPayloadJson] = useState<string>(() =>
+    JSON.stringify({ payload: sample }, null, 2)
+  );
+
+  let report: ReturnType<typeof evalConditions> | null = null;
+  let parseError: string | null = null;
+  if (dryRunOpen) {
+    try {
+      const ctx = JSON.parse(payloadJson);
+      report = evalConditions(v, ctx);
+    } catch (e: any) {
+      parseError = e?.message ?? "JSON invalide";
+    }
+  }
+
   const update = (key: "all" | "any", rules: ConditionRule[]) => {
     const next: ConditionsDSL = { ...v, [key]: rules };
     if (next.all?.length === 0) delete next.all;
