@@ -2789,6 +2789,53 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          organization_id: string | null
+          read_at: string | null
+          severity: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          organization_id?: string | null
+          read_at?: string | null
+          severity?: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          organization_id?: string | null
+          read_at?: string | null
+          severity?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       observatory_assets: {
         Row: {
           asset_id: string
@@ -5415,6 +5462,8 @@ export type Database = {
         }
         Returns: number
       }
+      mark_all_notifications_read: { Args: never; Returns: number }
+      mark_notifications_read: { Args: { _ids: string[] }; Returns: number }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -5423,6 +5472,18 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      notify_user: {
+        Args: {
+          _body?: string
+          _link?: string
+          _organization_id?: string
+          _severity?: string
+          _title: string
+          _type: string
+          _user_id: string
+        }
+        Returns: string
       }
       purge_expired_email_tokens: { Args: never; Returns: Json }
       read_email_batch: {
