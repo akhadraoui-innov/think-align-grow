@@ -4572,6 +4572,7 @@ export type Database = {
         Args: { p_action: string; p_org_id: string }
         Returns: boolean
       }
+      cron_dispatch_login_reminders: { Args: never; Returns: undefined }
       decrypt_email_credentials: {
         Args: { _encrypted: string; _key: string }
         Returns: string
@@ -4579,6 +4580,17 @@ export type Database = {
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
+      }
+      dispatch_email_event: {
+        Args: {
+          _entity_id: string
+          _event: string
+          _organization_id: string
+          _payload: Json
+          _recipient_email: string
+          _recipient_user_id: string
+        }
+        Returns: undefined
       }
       encrypt_email_credentials: {
         Args: { _key: string; _plain: Json }
