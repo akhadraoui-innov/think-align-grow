@@ -5,6 +5,7 @@ import { AdminGuard } from "./AdminGuard";
 import { useLocation } from "react-router-dom";
 import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 import { CommandPalette } from "@/components/layout/CommandPalette";
+import { HealthBanner } from "./HealthBanner";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 
@@ -24,6 +25,7 @@ const breadcrumbMap: Record<string, string> = {
   "/admin/settings": "Paramètres",
   "/admin/observability": "Observabilité",
   "/admin/audit": "Audit immuable",
+  "/admin/health": "Health système",
   "/admin/academy": "Academy",
   "/admin/academy/personae": "Academy — Personae",
   "/admin/academy/paths": "Academy — Parcours",
@@ -57,6 +59,7 @@ export function AdminShell({ children }: AdminShellProps) {
         <div className="min-h-screen flex w-full bg-background">
           <AdminSidebar />
           <div className="flex-1 flex flex-col min-w-0">
+            <HealthBanner />
             <header className="sticky top-0 z-40 flex h-12 items-center gap-3 border-b border-border/50 bg-background/80 backdrop-blur-xl px-4">
               <SidebarTrigger className="h-7 w-7 text-muted-foreground hover:text-foreground" />
               <div className="h-4 w-px bg-border/50" />
