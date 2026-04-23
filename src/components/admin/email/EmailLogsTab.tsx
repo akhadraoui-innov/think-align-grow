@@ -92,8 +92,8 @@ export function EmailLogsTab({ organizationId }: { organizationId: string | null
                   {r.error && <div className="text-[10px] text-destructive mt-1 max-w-[240px] truncate">{r.error}</div>}
                 </TableCell>
                 <TableCell className="text-xs">
-                  {r.opened_at && <Eye className="h-3 w-3 inline text-blue-600 mr-1" />}
-                  {r.clicked_at && <MousePointer className="h-3 w-3 inline text-violet-600" />}
+                  {r.opened_at && <Eye className="h-3 w-3 inline text-primary mr-1" />}
+                  {r.clicked_at && <MousePointer className="h-3 w-3 inline text-accent-foreground" />}
                 </TableCell>
               </TableRow>
             ))}
