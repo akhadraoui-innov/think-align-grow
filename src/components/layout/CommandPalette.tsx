@@ -29,7 +29,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const { data: pillars } = usePillars();
   const { data: cards } = useCards();
   const navigate = useNavigate();
-  const { isAdmin, isSaasTeam } = useAdminRole();
+  const { isAdmin } = useAdminRole();
 
   const go = (path: string) => {
     navigate(path);
@@ -60,7 +60,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           ))}
         </CommandGroup>
 
-        {(isAdmin || isSaasTeam) && (
+        {isAdmin && (
           <>
             <CommandSeparator />
             <CommandGroup heading="Administration">
