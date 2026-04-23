@@ -4934,18 +4934,6 @@ export type Database = {
       }
     }
     Views: {
-      email_cron_health: {
-        Row: {
-          active: boolean | null
-          jobname: string | null
-          last_end: string | null
-          last_message: string | null
-          last_start: string | null
-          last_status: string | null
-          schedule: string | null
-        }
-        Relationships: []
-      }
       v_academy_quiz_questions_public: {
         Row: {
           explanation: string | null
@@ -5132,6 +5120,18 @@ export type Database = {
           name: string
           scheduled_at: string
           status: Database["public"]["Enums"]["workshop_status"]
+        }[]
+      }
+      get_email_cron_health: {
+        Args: never
+        Returns: {
+          active: boolean
+          jobname: string
+          last_end: string
+          last_message: string
+          last_start: string
+          last_status: string
+          schedule: string
         }[]
       }
       get_invitation_by_token: {
