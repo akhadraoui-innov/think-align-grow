@@ -9,6 +9,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getAdapter } from "../_shared/email-adapters/index.ts";
 import { renderEmail } from "../_shared/email-render.ts";
+import { sanitizeEmailHtml, detectPhishing, shouldBlockSend } from "../_shared/email-security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
