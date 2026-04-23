@@ -18,7 +18,7 @@ interface Props {
 
 const EMPTY_RULE: ConditionRule = { path: "payload.", op: "==", value: "" };
 
-export function ConditionsBuilder({ value, onChange, payloadHints = [] }: Props) {
+export function ConditionsBuilder({ value, onChange, payloadHints = [], triggerEvent }: Props) {
   const v: ConditionsDSL = (value && typeof value === "object" ? (value as ConditionsDSL) : {}) || {};
   const all = Array.isArray(v.all) ? v.all : [];
   const any = Array.isArray(v.any) ? v.any : [];
