@@ -16,6 +16,7 @@ import { EmailABTestsTab } from "@/components/admin/email/EmailABTestsTab";
 import { EmailAnalyticsTab } from "@/components/admin/email/EmailAnalyticsTab";
 import { EmailReliabilityTab } from "@/components/admin/email/EmailReliabilityTab";
 import { EmailSecurityFlagsTab } from "@/components/admin/email/EmailSecurityFlagsTab";
+import { AdminShell } from "@/components/admin/AdminShell";
 
 const GLOBAL_OPTION = "__global__";
 
@@ -33,19 +34,24 @@ export default function AdminEmails() {
     },
   });
 
-  if (perms.loading) return null;
+  if (perms.loading) return <AdminShell><div /></AdminShell>;
   const allowed = perms.hasAny("email.compose", "email.templates.manage", "email.automations.manage", "email.providers.manage", "email.logs.view");
   if (!allowed) {
     return (
-      <Card className="p-12 text-center">
-        <p className="text-sm text-muted-foreground">Accès refusé. Vous n'avez pas les permissions email requises.</p>
-      </Card>
+      <AdminShell>
+        <div className="p-6">
+          <Card className="p-12 text-center">
+            <p className="text-sm text-muted-foreground">Accès refusé. Vous n'avez pas les permissions email requises.</p>
+          </Card>
+        </div>
+      </AdminShell>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex items-start justify-between">
+    <AdminShell>
+      <div className="p-6 space-y-6">
+        <header className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
             <Mail className="h-6 w-6 text-primary-foreground" />
