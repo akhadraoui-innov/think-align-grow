@@ -31,10 +31,22 @@ function isOnline(lastSeen?: string | null) {
 
 export default function AdminUsers() {
   const navigate = useNavigate();
-  const { users, isLoading } = useAdminUsers();
+  const { users, isLoading, toggleStatus } = useAdminUsers();
   const [roleFilter, setRoleFilter] = useState<string>("__all__");
   const [statusFilter, setStatusFilter] = useState<string>("__all__");
   const [orgFilter, setOrgFilter] = useState<string>("__all__");
+
+  const handleToggleStatus = (row: any) => {
+    const newStatus = row.status === "active" ? "suspended" : "active";
+    toggleStatus.mutate(
+      { userId: row.user_id, newStatus },
+      {
+        onSuccess: () =>
+          toast.success(newStatus === "suspended" ? "Compte suspendu" : "Compte réactivé"),
+        onError: (e: any) => toast.error(e?.message ?? "Erreur"),
+      },
+    );
+  };
 
   const orgOptions = useMemo(() => {
     const map = new Map<string, string>();
