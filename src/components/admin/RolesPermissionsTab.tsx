@@ -366,7 +366,7 @@ export function RolesPermissionsTab() {
                               >
                                 <Switch
                                   checked={hasIt}
-                                  onCheckedChange={() => togglePermission(perm.key, hasIt)}
+                                  onCheckedChange={() => togglePermission(perm.key, hasIt, perm.label)}
                                   disabled={!canEdit}
                                   className="shrink-0"
                                 />
