@@ -108,12 +108,24 @@ export function useAdminUsers() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
   });
 
+  const toggleStatus = useMutation({
+    mutationFn: async ({ userId, newStatus }: { userId: string; newStatus: "active" | "suspended" }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ status: newStatus } as any)
+        .eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
+  });
+
   return {
     users: list.data || [],
     isLoading: list.isLoading,
     addRole,
     removeRole,
     adjustCredits,
+    toggleStatus,
     refetch: list.refetch,
   };
 }
