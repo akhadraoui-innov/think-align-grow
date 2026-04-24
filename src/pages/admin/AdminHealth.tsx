@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { AdminShell } from "@/components/admin/AdminShell";
 
 type Status = "ok" | "warn" | "error";
 
@@ -73,18 +74,20 @@ export default function AdminHealth() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
-        <Skeleton className="h-10 w-64" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-40" />
-          ))}
+      <AdminShell>
+        <div className="p-6 space-y-4">
+          <Skeleton className="h-10 w-64" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-40" />
+            ))}
+          </div>
         </div>
-      </div>
+      </AdminShell>
     );
   }
 
-  if (!data) return null;
+  if (!data) return <AdminShell><div /></AdminShell>;
 
   // Compute statuses
   const providersDown = data.providers.filter((p) => p.circuit_open).length;
@@ -114,7 +117,8 @@ export default function AdminHealth() {
   const totalBacklog = data.pgmq_backlogs.reduce((s, q) => s + (q.backlog || 0), 0);
 
   return (
-    <div className="p-6 space-y-6 max-w-[1400px]">
+    <AdminShell>
+      <div className="p-6 space-y-6 max-w-[1400px]">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Health & Observabilité</h1>
@@ -302,6 +306,7 @@ export default function AdminHealth() {
           </p>
         )}
       </Card>
-    </div>
+      </div>
+    </AdminShell>
   );
 }
