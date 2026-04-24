@@ -147,9 +147,15 @@ export function RolesPermissionsTab() {
     })).filter(d => d.permissions.length > 0);
   }, [searchQuery, DOMAINS]);
 
-  // Toggle a permission for the selected role
-  const togglePermission = async (permKey: string, currentlyGranted: boolean) => {
-    if (!canEdit) return;
+  // Confirmation dialog state for mass permission revocations
+  const [confirmRevoke, setConfirmRevoke] = useState<{
+    permKey: string;
+    permLabel: string;
+    impactedCount: number;
+  } | null>(null);
+
+  // Apply the actual mutation (no checks)
+  const applyTogglePermission = async (permKey: string, currentlyGranted: boolean) => {
     try {
       if (currentlyGranted) {
         await supabase
@@ -163,10 +169,29 @@ export function RolesPermissionsTab() {
           .insert({ role: selectedRole as any, permission_key: permKey });
       }
       queryClient.invalidateQueries({ queryKey: ["role-permissions-db"] });
+      const impacted = roleCounts?.[selectedRole] ?? 0;
+      toast.success(
+        currentlyGranted
+          ? `Permission retirée${impacted > 0 ? ` (${impacted} utilisateur${impacted > 1 ? "s" : ""} impacté${impacted > 1 ? "s" : ""})` : ""}`
+          : `Permission ajoutée${impacted > 0 ? ` (${impacted} utilisateur${impacted > 1 ? "s" : ""})` : ""}`,
+      );
     } catch (e: any) {
       toast.error("Erreur lors de la modification");
     }
   };
+
+  // Toggle a permission for the selected role — with safeguard for mass revocations
+  const togglePermission = async (permKey: string, currentlyGranted: boolean, permLabel: string) => {
+    if (!canEdit) return;
+    const impacted = roleCounts?.[selectedRole] ?? 0;
+    // Safeguard: confirm when REMOVING a permission for >5 users
+    if (currentlyGranted && impacted > 5) {
+      setConfirmRevoke({ permKey, permLabel, impactedCount: impacted });
+      return;
+    }
+    await applyTogglePermission(permKey, currentlyGranted);
+  };
+
 
   const toggleCompareRole = (role: string) => {
     setCompareRoles(prev =>
