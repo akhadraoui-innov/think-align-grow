@@ -29,7 +29,21 @@ interface Props {
 const HIERARCHY_LEVELS = ["Direction générale", "Directeur", "Responsable", "Manager", "Chef de projet", "Expert / Consultant", "Collaborateur", "Stagiaire / Alternant"];
 
 export function UserInfoTab({ profile, onSave, saving }: Props) {
+  const navigate = useNavigate();
+  const { isAdmin: isSuperAdmin } = useAdminRole();
+  const deleteUser = useDeleteUser();
   const [allUsers, setAllUsers] = useState<{ user_id: string; display_name: string | null }[]>([]);
+
+  // Danger zone state
+  const [dangerOpen, setDangerOpen] = useState(false);
+  const [dangerStep, setDangerStep] = useState<1 | 2>(1);
+  const [dangerMode, setDangerMode] = useState<DeleteMode>("anonymize");
+  const [emailConfirm, setEmailConfirm] = useState("");
+
+  const expectedEmail = (profile.email || "").trim().toLowerCase();
+  const canConfirmDelete =
+    !!expectedEmail && emailConfirm.trim().toLowerCase() === expectedEmail;
+
   const [form, setForm] = useState({
     display_name: profile.display_name || "",
     email: (profile as any).email || "",
