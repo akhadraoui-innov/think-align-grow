@@ -151,6 +151,40 @@ export default function AdminUsers() {
         </span>
       ),
     },
+    {
+      key: "_actions",
+      label: "",
+      render: (row: any) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate(`/admin/users/${row.user_id}`)}>
+                <Eye className="h-3.5 w-3.5 mr-2" /> Voir le détail
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {row.status === "active" ? (
+                <DropdownMenuItem
+                  onClick={() => handleToggleStatus(row)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Pause className="h-3.5 w-3.5 mr-2" /> Suspendre
+                </DropdownMenuItem>
+              ) : row.status === "suspended" ? (
+                <DropdownMenuItem onClick={() => handleToggleStatus(row)}>
+                  <Play className="h-3.5 w-3.5 mr-2" /> Réactiver
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
   ];
 
   const allRoles = useMemo(() => {
