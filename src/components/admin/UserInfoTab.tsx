@@ -1,17 +1,24 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Loader2, Save, Plus, X, User, Briefcase, MapPin, Phone, Mail, Globe,
-  Target, Heart, Linkedin,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Loader2, Save, Plus, X, User, Briefcase, Globe,
+  Target, Heart, ShieldAlert, Trash2,
 } from "lucide-react";
 import type { AdminUserDetail } from "@/hooks/useAdminUserDetail";
+import { useAdminRole } from "@/hooks/useAdminRole";
+import { useDeleteUser, type DeleteMode } from "@/hooks/useDeleteUser";
 
 interface Props {
   profile: AdminUserDetail;
