@@ -26,6 +26,7 @@ interface MemberWithProfile {
     xp: number;
     status?: string;
     last_seen_at?: string | null;
+    email?: string | null;
   } | null;
 }
 
