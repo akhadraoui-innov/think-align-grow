@@ -6,7 +6,10 @@ import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Loader2, MoreHorizontal, Eye, Pause, Play } from "lucide-react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
