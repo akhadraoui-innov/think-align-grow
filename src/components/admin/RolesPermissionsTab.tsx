@@ -18,12 +18,16 @@ import {
   Check, X, Users, ChevronRight, ChevronDown, Loader2, Search,
   LayoutDashboard, Building2, Layers, Presentation, Lightbulb,
   CreditCard, ScrollText, Settings, Compass, Gamepad2, Sparkles, User, Map,
-  Eye, GitCompare, Shield,
+  Eye, GitCompare, Shield, ShieldAlert,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ALL_ROLES = Constants.public.Enums.app_role;
 const SAAS_ROLES = ["super_admin", "customer_lead", "innovation_lead", "performance_lead", "product_actor"];
