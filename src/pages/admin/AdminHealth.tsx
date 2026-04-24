@@ -306,6 +306,7 @@ export default function AdminHealth() {
           </p>
         )}
       </Card>
-    </div>
+      </div>
+    </AdminShell>
   );
 }
