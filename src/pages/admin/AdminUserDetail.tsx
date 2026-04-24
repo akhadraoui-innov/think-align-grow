@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { useAdminUserDetail } from "@/hooks/useAdminUserDetail";
+import { useAdminUserDetail, type AppRole } from "@/hooks/useAdminUserDetail";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
