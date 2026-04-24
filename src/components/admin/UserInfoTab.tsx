@@ -1,17 +1,24 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Loader2, Save, Plus, X, User, Briefcase, MapPin, Phone, Mail, Globe,
-  Target, Heart, Linkedin,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Loader2, Save, Plus, X, User, Briefcase, Globe,
+  Target, Heart, ShieldAlert, Trash2,
 } from "lucide-react";
 import type { AdminUserDetail } from "@/hooks/useAdminUserDetail";
+import { useAdminRole } from "@/hooks/useAdminRole";
+import { useDeleteUser, type DeleteMode } from "@/hooks/useDeleteUser";
 
 interface Props {
   profile: AdminUserDetail;
@@ -22,7 +29,21 @@ interface Props {
 const HIERARCHY_LEVELS = ["Direction générale", "Directeur", "Responsable", "Manager", "Chef de projet", "Expert / Consultant", "Collaborateur", "Stagiaire / Alternant"];
 
 export function UserInfoTab({ profile, onSave, saving }: Props) {
+  const navigate = useNavigate();
+  const { isAdmin: isSuperAdmin } = useAdminRole();
+  const deleteUser = useDeleteUser();
   const [allUsers, setAllUsers] = useState<{ user_id: string; display_name: string | null }[]>([]);
+
+  // Danger zone state
+  const [dangerOpen, setDangerOpen] = useState(false);
+  const [dangerStep, setDangerStep] = useState<1 | 2>(1);
+  const [dangerMode, setDangerMode] = useState<DeleteMode>("anonymize");
+  const [emailConfirm, setEmailConfirm] = useState("");
+
+  const expectedEmail = (profile.email || "").trim().toLowerCase();
+  const canConfirmDelete =
+    !!expectedEmail && emailConfirm.trim().toLowerCase() === expectedEmail;
+
   const [form, setForm] = useState({
     display_name: profile.display_name || "",
     email: (profile as any).email || "",
@@ -209,6 +230,32 @@ export function UserInfoTab({ profile, onSave, saving }: Props) {
         </div>
       </Section>
 
+      {/* Danger zone — Super Admin only */}
+      {isSuperAdmin && profile.status !== "deleted" && (
+        <div className="rounded-xl border-2 border-destructive/40 bg-destructive/5 p-6 space-y-3">
+          <h3 className="text-sm font-semibold text-destructive flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4" /> Zone dangereuse
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            La suppression d'un compte est définitive et tracée dans le journal d'audit immuable.
+            Une archive RGPD complète est téléchargée automatiquement avant la suppression.
+          </p>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="gap-2"
+            onClick={() => {
+              setDangerStep(1);
+              setDangerMode("anonymize");
+              setEmailConfirm("");
+              setDangerOpen(true);
+            }}
+          >
+            <Trash2 className="h-4 w-4" /> Supprimer ce compte (RGPD)
+          </Button>
+        </div>
+      )}
+
       {/* Save */}
       <div className="flex justify-end sticky bottom-4 z-10">
         <Button onClick={handleSave} disabled={saving} className="gap-2 shadow-lg">
@@ -216,6 +263,108 @@ export function UserInfoTab({ profile, onSave, saving }: Props) {
           Enregistrer toutes les modifications
         </Button>
       </div>
+
+      {/* Danger zone dialog (2 steps) */}
+      <AlertDialog open={dangerOpen} onOpenChange={(open) => { setDangerOpen(open); if (!open) setDangerStep(1); }}>
+        <AlertDialogContent className="max-w-lg">
+          {dangerStep === 1 ? (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                  <ShieldAlert className="h-5 w-5" /> Supprimer ce compte ?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <span className="block">
+                    Vous êtes sur le point de supprimer le compte de{" "}
+                    <strong className="text-foreground">{profile.display_name || profile.email || profile.user_id}</strong>.
+                  </span>
+                  <span className="block">Une archive RGPD au format JSON sera téléchargée. L'action est tracée.</span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="py-2">
+                <RadioGroup value={dangerMode} onValueChange={(v) => setDangerMode(v as DeleteMode)}>
+                  <label className="flex items-start gap-3 rounded-lg border border-border/60 bg-card p-3 cursor-pointer hover:bg-secondary/30">
+                    <RadioGroupItem value="anonymize" id="mode-anon" className="mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-foreground">Anonymiser <span className="text-xs font-normal text-muted-foreground">(recommandé)</span></p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Le profil est anonymisé, les rôles et accès sont retirés. L'historique d'activité est préservé sans donnée personnelle.
+                      </p>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 cursor-pointer hover:bg-destructive/10">
+                    <RadioGroupItem value="hard_delete" id="mode-hard" className="mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-destructive">Suppression définitive</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Le compte d'authentification est également effacé. Action irréversible.
+                      </p>
+                    </div>
+                  </label>
+                </RadioGroup>
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <Button variant="destructive" onClick={() => setDangerStep(2)}>Continuer</Button>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                  <ShieldAlert className="h-5 w-5" /> Confirmation finale
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {expectedEmail ? (
+                    <>Pour confirmer, saisissez l'email exact <strong className="text-foreground">{expectedEmail}</strong>.</>
+                  ) : (
+                    <>Cet utilisateur n'a pas d'email enregistré. Saisissez <strong className="text-foreground">SUPPRIMER</strong> pour confirmer.</>
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="py-2">
+                <Input
+                  autoFocus
+                  value={emailConfirm}
+                  onChange={(e) => setEmailConfirm(e.target.value)}
+                  placeholder={expectedEmail || "SUPPRIMER"}
+                  className="text-sm"
+                />
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={
+                    deleteUser.isPending ||
+                    (expectedEmail
+                      ? !canConfirmDelete
+                      : emailConfirm.trim().toUpperCase() !== "SUPPRIMER")
+                  }
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    try {
+                      await deleteUser.mutateAsync({
+                        userId: profile.user_id,
+                        mode: dangerMode,
+                        userLabel: profile.display_name || profile.email || undefined,
+                      });
+                      setDangerOpen(false);
+                      navigate("/admin/users");
+                    } catch {
+                      // toast handled in hook
+                    }
+                  }}
+                >
+                  {deleteUser.isPending ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Suppression…</>
+                  ) : dangerMode === "hard_delete" ? "Supprimer définitivement" : "Anonymiser"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

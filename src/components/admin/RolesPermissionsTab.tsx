@@ -18,12 +18,16 @@ import {
   Check, X, Users, ChevronRight, ChevronDown, Loader2, Search,
   LayoutDashboard, Building2, Layers, Presentation, Lightbulb,
   CreditCard, ScrollText, Settings, Compass, Gamepad2, Sparkles, User, Map,
-  Eye, GitCompare, Shield,
+  Eye, GitCompare, Shield, ShieldAlert,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ALL_ROLES = Constants.public.Enums.app_role;
 const SAAS_ROLES = ["super_admin", "customer_lead", "innovation_lead", "performance_lead", "product_actor"];
@@ -143,9 +147,15 @@ export function RolesPermissionsTab() {
     })).filter(d => d.permissions.length > 0);
   }, [searchQuery, DOMAINS]);
 
-  // Toggle a permission for the selected role
-  const togglePermission = async (permKey: string, currentlyGranted: boolean) => {
-    if (!canEdit) return;
+  // Confirmation dialog state for mass permission revocations
+  const [confirmRevoke, setConfirmRevoke] = useState<{
+    permKey: string;
+    permLabel: string;
+    impactedCount: number;
+  } | null>(null);
+
+  // Apply the actual mutation (no checks)
+  const applyTogglePermission = async (permKey: string, currentlyGranted: boolean) => {
     try {
       if (currentlyGranted) {
         await supabase
@@ -159,10 +169,29 @@ export function RolesPermissionsTab() {
           .insert({ role: selectedRole as any, permission_key: permKey });
       }
       queryClient.invalidateQueries({ queryKey: ["role-permissions-db"] });
+      const impacted = roleCounts?.[selectedRole] ?? 0;
+      toast.success(
+        currentlyGranted
+          ? `Permission retirée${impacted > 0 ? ` (${impacted} utilisateur${impacted > 1 ? "s" : ""} impacté${impacted > 1 ? "s" : ""})` : ""}`
+          : `Permission ajoutée${impacted > 0 ? ` (${impacted} utilisateur${impacted > 1 ? "s" : ""})` : ""}`,
+      );
     } catch (e: any) {
       toast.error("Erreur lors de la modification");
     }
   };
+
+  // Toggle a permission for the selected role — with safeguard for mass revocations
+  const togglePermission = async (permKey: string, currentlyGranted: boolean, permLabel: string) => {
+    if (!canEdit) return;
+    const impacted = roleCounts?.[selectedRole] ?? 0;
+    // Safeguard: confirm when REMOVING a permission for >5 users
+    if (currentlyGranted && impacted > 5) {
+      setConfirmRevoke({ permKey, permLabel, impactedCount: impacted });
+      return;
+    }
+    await applyTogglePermission(permKey, currentlyGranted);
+  };
+
 
   const toggleCompareRole = (role: string) => {
     setCompareRoles(prev =>
@@ -337,7 +366,7 @@ export function RolesPermissionsTab() {
                               >
                                 <Switch
                                   checked={hasIt}
-                                  onCheckedChange={() => togglePermission(perm.key, hasIt)}
+                                  onCheckedChange={() => togglePermission(perm.key, hasIt, perm.label)}
                                   disabled={!canEdit}
                                   className="shrink-0"
                                 />
@@ -519,6 +548,41 @@ export function RolesPermissionsTab() {
           </div>
         </div>
       </div>
+
+      {/* Mass-revocation safeguard dialog */}
+      <AlertDialog open={!!confirmRevoke} onOpenChange={(open) => { if (!open) setConfirmRevoke(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <ShieldAlert className="h-5 w-5" /> Confirmer le retrait de permission
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                Vous êtes sur le point de retirer la permission{" "}
+                <strong className="text-foreground">{confirmRevoke?.permLabel}</strong> au rôle{" "}
+                <strong className="text-foreground">{ROLE_LABELS[selectedRole] ?? selectedRole}</strong>.
+              </span>
+              <span className="block">
+                <strong className="text-destructive">{confirmRevoke?.impactedCount} utilisateur{(confirmRevoke?.impactedCount ?? 0) > 1 ? "s" : ""}</strong>{" "}
+                perdr{(confirmRevoke?.impactedCount ?? 0) > 1 ? "ont" : "a"} immédiatement cet accès. L'action est tracée dans le journal d'audit immuable.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                const ctx = confirmRevoke;
+                setConfirmRevoke(null);
+                if (ctx) await applyTogglePermission(ctx.permKey, true);
+              }}
+            >
+              Confirmer le retrait
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

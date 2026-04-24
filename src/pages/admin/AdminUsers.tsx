@@ -6,7 +6,10 @@ import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Loader2, MoreHorizontal, Eye, Pause, Play } from "lucide-react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -28,10 +31,22 @@ function isOnline(lastSeen?: string | null) {
 
 export default function AdminUsers() {
   const navigate = useNavigate();
-  const { users, isLoading } = useAdminUsers();
+  const { users, isLoading, toggleStatus } = useAdminUsers();
   const [roleFilter, setRoleFilter] = useState<string>("__all__");
   const [statusFilter, setStatusFilter] = useState<string>("__all__");
   const [orgFilter, setOrgFilter] = useState<string>("__all__");
+
+  const handleToggleStatus = (row: any) => {
+    const newStatus = row.status === "active" ? "suspended" : "active";
+    toggleStatus.mutate(
+      { userId: row.user_id, newStatus },
+      {
+        onSuccess: () =>
+          toast.success(newStatus === "suspended" ? "Compte suspendu" : "Compte réactivé"),
+        onError: (e: any) => toast.error(e?.message ?? "Erreur"),
+      },
+    );
+  };
 
   const orgOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -134,6 +149,40 @@ export default function AdminUsers() {
         <span className="text-xs text-muted-foreground">
           {format(new Date(row.created_at), "dd MMM yyyy", { locale: fr })}
         </span>
+      ),
+    },
+    {
+      key: "_actions",
+      label: "",
+      render: (row: any) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate(`/admin/users/${row.user_id}`)}>
+                <Eye className="h-3.5 w-3.5 mr-2" /> Voir le détail
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {row.status === "active" ? (
+                <DropdownMenuItem
+                  onClick={() => handleToggleStatus(row)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Pause className="h-3.5 w-3.5 mr-2" /> Suspendre
+                </DropdownMenuItem>
+              ) : row.status === "suspended" ? (
+                <DropdownMenuItem onClick={() => handleToggleStatus(row)}>
+                  <Play className="h-3.5 w-3.5 mr-2" /> Réactiver
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       ),
     },
   ];

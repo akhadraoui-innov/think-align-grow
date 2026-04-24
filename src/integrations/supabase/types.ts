@@ -5282,6 +5282,10 @@ export type Database = {
       }
       confirm_email_opt_in: { Args: { _token: string }; Returns: Json }
       consume_unsubscribe_token: { Args: { _token: string }; Returns: Json }
+      count_users_by_role: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
+        Returns: number
+      }
       cron_dispatch_login_reminders: { Args: never; Returns: undefined }
       decrypt_email_credentials: {
         Args: { _encrypted: string; _key: string }
