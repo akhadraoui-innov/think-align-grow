@@ -548,6 +548,41 @@ export function RolesPermissionsTab() {
           </div>
         </div>
       </div>
+
+      {/* Mass-revocation safeguard dialog */}
+      <AlertDialog open={!!confirmRevoke} onOpenChange={(open) => { if (!open) setConfirmRevoke(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <ShieldAlert className="h-5 w-5" /> Confirmer le retrait de permission
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                Vous êtes sur le point de retirer la permission{" "}
+                <strong className="text-foreground">{confirmRevoke?.permLabel}</strong> au rôle{" "}
+                <strong className="text-foreground">{ROLE_LABELS[selectedRole] ?? selectedRole}</strong>.
+              </span>
+              <span className="block">
+                <strong className="text-destructive">{confirmRevoke?.impactedCount} utilisateur{(confirmRevoke?.impactedCount ?? 0) > 1 ? "s" : ""}</strong>{" "}
+                perdr{(confirmRevoke?.impactedCount ?? 0) > 1 ? "ont" : "a"} immédiatement cet accès. L'action est tracée dans le journal d'audit immuable.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                const ctx = confirmRevoke;
+                setConfirmRevoke(null);
+                if (ctx) await applyTogglePermission(ctx.permKey, true);
+              }}
+            >
+              Confirmer le retrait
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
