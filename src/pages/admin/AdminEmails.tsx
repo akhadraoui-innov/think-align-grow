@@ -101,6 +101,7 @@ export default function AdminEmails() {
         <TabsContent value="branding"><EmailDomainBrandingTab /></TabsContent>
         <TabsContent value="providers"><EmailProvidersTab organizationId={scopeOrgId} /></TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </AdminShell>
   );
 }
