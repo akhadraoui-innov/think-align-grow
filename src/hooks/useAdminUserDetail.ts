@@ -187,16 +187,16 @@ export function useAdminUserDetail(userId: string | undefined) {
   });
 
   const addRole = useMutation({
-    mutationFn: async (role: string) => {
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId!, role } as any);
+    mutationFn: async (role: AppRole) => {
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId!, role });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-user-roles", userId] }),
   });
 
   const removeRole = useMutation({
-    mutationFn: async (role: string) => {
-      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId!).eq("role", role as any);
+    mutationFn: async (role: AppRole) => {
+      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId!).eq("role", role);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-user-roles", userId] }),
