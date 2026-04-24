@@ -83,7 +83,7 @@ export default function AdminUserDetail() {
 
   const handleAddRole = async (role: string) => {
     try {
-      await addRole.mutateAsync(role);
+      await addRole.mutateAsync(role as AppRole);
       toast({ title: `Rôle "${role.replace(/_/g, " ")}" ajouté` });
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
@@ -92,7 +92,7 @@ export default function AdminUserDetail() {
 
   const handleRemoveRole = async (role: string) => {
     try {
-      await removeRole.mutateAsync(role);
+      await removeRole.mutateAsync(role as AppRole);
       toast({ title: `Rôle "${role.replace(/_/g, " ")}" retiré` });
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
