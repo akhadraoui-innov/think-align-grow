@@ -159,6 +159,9 @@ export function OrgMembersTab({ members, organizationId }: Props) {
                   <p className="text-sm font-medium text-foreground truncate">
                     {m.profile?.display_name || m.user_id.slice(0, 12) + "..."}
                   </p>
+                  {m.profile?.email && (
+                    <p className="text-[11px] text-muted-foreground truncate">{m.profile.email}</p>
+                  )}
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>{m.profile?.xp ?? 0} XP</span>
                     <span>·</span>
