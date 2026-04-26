@@ -1,212 +1,203 @@
 
-# Lot 5 — Productivité Admin
+# Audit complet plateforme — état post Lots 1-5
 
-## Audit préalable (état réel constaté)
+## Note méthodologique
+Audit réalisé en lecture seule : linter Supabase, scan sécurité, inventaire pages/routes/edge functions/migrations/tests, vérif adoption Lots 1-5. Tous les chiffres ci-dessous sont **constatés**, pas estimés.
 
-| Existant ✅ | Manquant ❌ |
+---
+
+## 1. Vue chiffrée
+
+| Domaine | Métrique |
 |---|---|
-| `useInvitations` complet (send/revoke/resend) **déjà intégré** dans `OrgMembersTab` | Bulk actions sur listes (suspendre/changer rôle en masse) |
-| `toggleStatus`, `addRole`, `removeRole` mutations atomiques | Filtres + recherche persistés en URL (deep-link, partage, retour navigateur) |
-| `AdminAudit.tsx` lit `audit_logs_immutable` | Export CSV des vues admin filtrées |
-| Filtres role/status/org dans `AdminUsers` (mais state local volatile) | Command palette globale (⌘K) — navigation, actions, recherche user |
-| `DataTable` réutilisable | Saved views (« mes admins suspendus », « orgs sans owner »…) |
-| Hooks `useAdminUsers`, `useOrganizations` typés | — |
-
-**Conclusion** : la « visibilité des invitations en attente » initialement listée pour Lot 5 est **déjà livrée**. On la retire et on monte le niveau d'ambition vers les standards Linear / Stripe / Vercel.
-
----
-
-## Pourquoi ce lot maintenant (vue PO)
-
-Les Lots 1-4 ont fait de la plateforme un système **sûr, conforme et auditable**. Le Lot 5 le rend **opérable à l'échelle** : un admin qui gère 500 utilisateurs ne peut plus cliquer ligne par ligne. Sans bulk actions, sans deep-link, sans export, on perd 30 minutes par opération récurrente. C'est la marche entre « outil interne » et « console SaaS pro ».
-
-**Bénéfice direct** : un support qui traite 10 demandes RGPD le matin le fait en 2 min au lieu de 20.
+| Pages admin | **40** |
+| Edge functions | **32** |
+| Migrations SQL | **87** |
+| Routes définies | **80+** (`src/App.tsx`) |
+| Tests fichiers | **5** (`example`, `exportCsv`, `ImpersonationBanner`, `delete-user_test`, `impersonate-user_test`) |
+| Linter Supabase | **0 finding** ✅ |
+| Scan sécurité | **17 findings** (6 errors, 11 warnings) ⚠️ |
+| `audit_logs_immutable` | 2 entrées (système quasi neuf en prod) |
+| Données réelles | 1 user, 1 org, 1 profile (tenant pilote) |
 
 ---
 
-## Brique 1 — Multi-sélection + bulk actions (DataTable)
+## 2. Fonctionnel — ce qui est livré et opérationnel
 
-### Le problème
-Suspendre 50 comptes inactifs = 50 clics + 50 confirmations. Aujourd'hui impossible sans script SQL.
+### ✅ Solide
+- **Lot 1 (admin unifié)** : `useAdminUsers`, `DataTable`, typage strict `AppRole`.
+- **Lot 2 (RGPD + garde-fous)** : `delete-user` Edge Function avec archive JSON + anonymisation, `count_users_by_role` pour bloquer les retraits massifs.
+- **Lot 3 (status)** : suspend/reactivate atomique, audité.
+- **Lot 4 (sécurité op)** : `requires_2fa` SQL, `Force2FAGuard`, page `/account/security`, edge function `impersonate-user`, `ImpersonationBanner`, override `usePermissions` en read-only, audit immuable.
+- **Lot 5 (productivité)** : `useUrlFilters`/`useSavedViews`/`useBulkSelection`, `exportCsv` RFC 4180 + tests verts, `DataTable` patché (`selectable`/`exportable`/`bulkActions`), pilote complet sur `AdminUsers`.
 
-### Ce qu'on met en place
-- Patch `DataTable.tsx` : prop optionnelle `selectable?: boolean` + `getRowId?: (row) => string` + `onSelectionChange?: (ids: string[]) => void`.
-- Colonne checkbox à gauche (header = select-all sur la **vue filtrée**, pas tout le dataset).
-- État `selectedIds` interne + bus de notification au parent.
-- Barre flottante en bas (sticky) quand `selectedIds.length > 0` : « N sélectionné(s) » + slot `bulkActions` rendu par le parent.
-- Reset auto sur changement de filtre / refetch.
+### ⚠️ Adoption partielle Lot 5 (constaté)
+- **6 pages utilisent `DataTable`** mais **seul `AdminUsers` exploite `selectable`/`exportable`/URL filters/saved views**.
+- Pages restantes à roller-out : `AdminOrganizations`, `AdminAudit`, `AdminLogs`, `AdminBilling`, `AdminAcademyTracking` (qui a son propre export legacy à harmoniser).
 
-### Bulk actions livrées (sur `AdminUsers`)
-| Action | Garde-fou | Audit |
+### ❌ Manquant fonctionnel
+- **Pas de Command Palette ⌘K** alors qu'elle figurait dans le plan Lot 5 ; le composant `cmdk` shadcn est présent mais non instancié.
+- **Pas de saved views partagées** (localStorage uniquement → perdues au changement de navigateur).
+- **Bulk actions absentes** sur Organizations (suspend toute une org).
+
+---
+
+## 3. Sécurité — 6 errors + 11 warnings (scan plateforme)
+
+### 🔴 ERRORS (6) — exploitables, à fermer en priorité
+
+| # | Surface | Risque concret |
 |---|---|---|
-| Suspendre / Réactiver | Refus si la sélection contient l'admin courant ou un super_admin | `bulk.status_changed` |
-| Ajouter un rôle | Réutilise `addRole` en boucle, refus si > 100 | `bulk.role_added` |
-| Retirer un rôle | Confirmation si retrait `customer_lead`/`super_admin`. Réutilise garde-fou Lot 2 (`count_users_by_role`) | `bulk.role_removed` |
-| Exporter sélection en CSV | — | `bulk.export` |
+| **S1** | `realtime.messages` sans RLS | N'importe quel user authentifié peut s'abonner à n'importe quel topic (workshops, notifications d'autrui, challenge_responses…). **Faille la plus critique du système**. |
+| **S2** | `email_confirmation_tokens` policy SELECT `USING (true)` rôle `public` | Tokens de confirmation et emails lisibles **sans authentification**. |
+| **S3** | `email_unsubscribe_tokens` policy SELECT `USING (true)` rôle `public` | Même problème : énumération de tous les emails + désabonnement non consenti possible. |
+| **S4** | `ai_configurations.api_key` en clair | Toute la SaaS Team peut lire les clés API IA. Une compromission d'un saas_analyst = exfiltration totale. |
+| **S5** | `email_provider_configs.credentials` JSONB en clair | Org admins peuvent lire les credentials SMTP/Resend. |
+| **S6** | `email_webhook_secrets` en clair lisible par toute la SaaS Team | Permet de forger des webhooks signés. |
 
-Toutes les actions appellent **les mutations existantes** (`toggleStatus`, `addRole`, `removeRole`) — aucun nouveau RPC, atomicité préservée par `Promise.allSettled` + reporting d'erreurs partielles dans un toast récap (« 48 ok, 2 erreurs : voir détails »).
+### 🟠 WARNINGS (11) résumés
+- Academy : `academy_practices`, `academy_contents`, `academy_exercises`, `academy_quizzes`, `academy_quiz_questions` lisibles par **n'importe quel user authentifié si le module existe** → exposition `system_prompt`, `correct_answer`, `evaluation_rubric`.
+- `email_categories` : SELECT `USING (true)` rôle `public`.
+- `email_automations_read_global` / `email_templates_read_global` : tout user authentifié lit les templates et automations globaux.
+- `academy-assets` storage : tout user authentifié peut écraser n'importe quel fichier (pas de check ownership).
+- `ucm-exports` storage : pas de DELETE pour membres org + INSERT non vérifié côté serveur.
+- `profiles` : risque latent (pas d'erreur immédiate).
 
-### Réutilise
-`DataTable`, `useAdminUsers`, `Checkbox` shadcn, `audit_logs_immutable` (via `append_audit_log` côté client wrapper).
-
----
-
-## Brique 2 — Filtres + recherche persistés en URL
-
-### Le problème
-Un admin filtre `role=customer_lead status=suspended`, partage l'URL → le destinataire arrive sur une vue vide. Refresh = filtres perdus. Impossible de bookmarker « comptes suspendus ».
-
-### Ce qu'on met en place
-- Hook `useUrlFilters<T>(defaults, schema)` : wrapper `useSearchParams` + Zod parsing.
-- Synchronisation **bi-directionnelle** : changement de Select → push URL ; navigation back → restaure les filtres.
-- Pas de re-render en boucle (debounce + dirty-check).
-- Appliqué à : `AdminUsers`, `AdminOrganizations`, `AdminAudit`, `AdminLogs`.
-- `DataTable` accepte aussi `defaultSearch` qu'il lit depuis l'URL via le hook parent.
-
-### Saved views (mini)
-- Bouton « ⭐ Sauvegarder cette vue » → écrit `{name, search_params}` dans `localStorage` (clé `admin.savedViews.{page}`).
-- Dropdown "Vues" en haut à droite de chaque page.
-- Vues par défaut pré-fournies : « Suspendus », « Sans organisation », « Inactifs > 30j », « Super admins », « Orgs sans owner ».
-
-### Réutilise
-`react-router-dom` (déjà là), `zod` (déjà là), `localStorage` pattern utilisé par `OrgSwitcher`.
+### Constat positif
+- `supabase--linter` retourne **0 finding** : aucune table sans RLS, search_path correctement configuré sur les SECURITY DEFINER vérifiés (résultat vide = conforme).
 
 ---
 
-## Brique 3 — Export CSV des vues admin
+## 4. Technique / DB
 
-### Le problème
-Le seul export existant est dans `AdminAcademyTracking`. Aucune autre liste admin n'est exportable. Demande récurrente du métier (compta, support, RGPD : « donne-moi la liste des users actifs au 1er du mois »).
+### ✅ Bon
+- 87 migrations versionnées, ordre temporel cohérent.
+- `audit_logs_immutable` en place et utilisé par les Lots 2-4.
+- `usePermissions` overridé pour bloquer impersonation read-only.
+- `types.ts` régénéré (5715 lignes).
 
-### Ce qu'on met en place
-- Utilitaire `src/lib/exportCsv.ts` : `exportRowsToCsv(rows, columns, filename)` avec :
-  - Échappement RFC 4180 (virgules, guillemets, retours ligne).
-  - BOM UTF-8 (Excel friendly).
-  - Sérialisation propre des champs nested (rôles → `"role1;role2"`).
-- Bouton "⬇ Exporter" en haut de chaque `DataTable` (prop `exportable?: boolean` + `exportFilename?: string`).
-- Exporte la **vue filtrée + triée**, pas le dataset brut.
-- Audit : `append_audit_log('admin.export', resource, count, {filters, filename})`.
-
-### Réutilise
-Pattern existant dans `AdminAcademyTracking`, `DataTable`, `audit_logs_immutable`.
+### ⚠️ Points de vigilance
+- **Tests** : 5 fichiers seulement, dont 2 nouveaux Lot 4. Pas de test unitaire `usePermissions` (le cœur du contrôle d'accès), ni `useUrlFilters`, ni `useBulkSelection`.
+- **Edge functions** : 3 fonctions email (`send-test-email`, `test-email-provider`, `email-marketing-ai`) n'ont pas été corrigées (mentionnées en fin Lot 4).
+- **Pas de `check_rate_limit`** : retiré du Lot 4. Reste un trou : un attaquant avec JWT admin peut spammer `delete-user`.
 
 ---
 
-## Brique 4 — Command palette globale (⌘K)
+## 5. Edge functions (32) — état
 
-### Le problème
-Naviguer depuis n'importe quelle page admin vers la fiche d'un user précis = 4 clics. Standard du marché : `Cmd+K` ouvre une palette qui fait tout.
-
-### Ce qu'on met en place
-- Composant `CommandPalette.tsx` basé sur `cmdk` (déjà installé via `Command` shadcn — vérifié dans `components/ui`).
-- Raccourci `⌘/Ctrl+K` global, monté dans `AdminShell`.
-- Sections :
-  1. **Navigation** : tous les liens du sidebar admin (statique).
-  2. **Utilisateurs** : recherche live (nom/email) sur `useAdminUsers().users` (déjà en cache react-query).
-  3. **Organisations** : recherche live sur `useOrganizations()`.
-  4. **Actions rapides** : « Créer une org », « Voir l'audit », « Mes vues sauvegardées », « Lancer un scan sécurité ».
-- Sélection user → navigate `/admin/users/:id`. Sélection action → exécute.
-- Aucun appel réseau supplémentaire (réutilise les caches existants).
-
-### Réutilise
-`cmdk` (composant `Command` shadcn déjà présent), caches react-query existants, navigation `react-router-dom`.
+- **Sensibles auditées** : `delete-user` ✅, `impersonate-user` ✅, `verify-certificate` (public OK), `trigger-email`.
+- **Sans tests** : 30 sur 32. Notamment `business-quote`, `ucm-*` (5 fonctions), `academy-generate` (au cœur du business simulator).
+- **Risque moyen** : `process-email-priority-queue` + `process-email-queue` cohabitent — vérifier doublon ou priorité voulue (à confirmer avec PO).
 
 ---
 
-## Architecture — cohérence avec l'existant
+## 6. UI / Navigation
 
-| Brique | S'appuie sur | Duplication évitée |
+### ✅ Bon
+- Multi-shell architecture stable (`AppShell` / `PortalShell` / `WorkspaceShell`).
+- `ImpersonationBanner` global dans `AppShell`.
+- Routes admin lisibles, profondeur cohérente (`/admin/<scope>/<resource>/:id`).
+
+### ⚠️ À renforcer
+- **Pas d'OrgSwitcher visible côté Admin** dans cet audit (à vérifier — sinon impossible de naviguer entre tenants).
+- Pas de breadcrumbs sur les pages admin profondes (`/admin/academy/paths/:id` etc.).
+- 80+ routes déclarées en flat dans `App.tsx` — devient ingérable. Refacto en `<Route>` imbriqués envisageable (Lot 7+).
+
+---
+
+## 7. Plan de remédiation : **Lot 6 — Hardening sécurité plateforme**
+
+### Pourquoi maintenant (vue PO)
+Les Lots 1-5 ont solidifié l'**administration**. Le scan révèle que la couche **données / temps réel / secrets** reste fragile — c'est la zone qui peut faire perdre un client en une heure (fuite emails, clés API exfiltrées, écoute realtime). Avant d'ajouter des features (observabilité, onboarding entreprise), on ferme ces trous.
+
+### Brique 1 — Realtime sécurisé (S1) [PRIORITÉ ABSOLUE]
+- Ajouter RLS sur `realtime.messages` scopée par `auth.uid()` + topic.
+- Pattern recommandé : helper `is_realtime_authorized(_user_id, _topic)` SECURITY DEFINER, basé sur `is_workshop_participant` / `notification_owner` déjà existants.
+- Tests : un user A ne peut pas s'abonner aux notifications de B.
+
+### Brique 2 — Tokens email & catégories (S2, S3, warnings email)
+- `email_confirmation_tokens` : DROP de la policy SELECT publique → service_role only. Validation token via fonction RPC `validate_confirmation_token(_token)`.
+- Idem `email_unsubscribe_tokens` → RPC `validate_unsubscribe_token`.
+- `email_categories` : restreindre à `authenticated` minimum.
+- `email_templates_read_global` / `email_automations_read_global` : restreindre à SaaS team.
+
+### Brique 3 — Chiffrement des secrets (S4, S5, S6)
+- Activer **Vault Supabase** (pgsodium déjà disponible).
+- Migrer 3 colonnes :
+  - `ai_configurations.api_key` → `vault.secrets`, ne stocker que `secret_id`.
+  - `email_provider_configs.credentials` → idem.
+  - `email_webhook_secrets.secret` → idem.
+- Helper SQL `get_decrypted_secret(_secret_id)` SECURITY DEFINER avec garde rôle.
+- Patcher les 3-4 edge functions concernées (`trigger-email`, `test-email-provider`, `ai-coach`…) pour récupérer via RPC.
+- Audit log à chaque déchiffrement (`secret.accessed`).
+
+### Brique 4 — Academy access control (warnings)
+- Ajouter helper `has_academy_access(_user_id, _module_id)` qui check enrollment via `academy_progress` ou `academy_path_assignments`.
+- Remplacer `view_practices`/`view_contents`/`view_exercises`/`view_quizzes`/`view_quiz_q` par cette vérification.
+- Cas particulier `quiz_q.correct_answer` : retourner `null` côté SELECT tant que la réponse n'est pas soumise (vue dédiée ou colonne masquée).
+
+### Brique 5 — Storage hardening
+- `academy-assets` : INSERT/UPDATE limité à SaaS team (cohérent avec design : assets pédagogiques curés).
+- `ucm-exports` : ajouter DELETE pour `org_admin`, vérifier path `^{org_id}/` côté policy avec `storage.foldername()[1] = org_id::text`.
+
+### Brique 6 — Tests E2E sécurité (filet)
+Suites Vitest + Deno :
+- `realtime-isolation_test.ts` : user A ne reçoit pas les events de B.
+- `email-tokens_test.ts` : 401 sur SELECT public sans token valide.
+- `secrets-vault_test.ts` : un saas_analyst ne peut pas appeler `get_decrypted_secret` sans rôle approprié.
+- `academy-access_test.ts` : non-enrolled = 0 ligne sur 5 tables academy.
+- Ajouter test unitaire `usePermissions.test.tsx` (cœur du système).
+
+---
+
+## 8. Hors périmètre Lot 6 (vrais Lot 7+)
+
+| Sujet | Pourquoi reporter |
+|---|---|
+| Rate limiting `delete-user`/`adjust_credits` | Indépendant du hardening DB ; tracked pour Lot 7. |
+| Roll-out complet Lot 5 sur 5 pages restantes | Productivité, pas sécurité. Peut s'enchaîner après Lot 6. |
+| Command Palette ⌘K | Productivité, low risk. |
+| Cohorts / observability dashboards | Lot business (Lot 8). |
+| Refacto routes en `<Route>` imbriqués | Pure DX, sans gain immédiat utilisateur. |
+
+---
+
+## 9. Critères d'acceptation Lot 6
+
+1. `security--run_security_scan` passe de **17 → ≤ 4 warnings** (les 4 résiduels documentés et acceptés).
+2. **0 error** restant.
+3. `supabase--linter` toujours à 0 finding.
+4. Aucun token email lisible sans authentification (test `curl` direct).
+5. Un user authentifié ne reçoit aucun event Realtime concernant un workshop dont il n'est pas participant.
+6. Un saas_analyst tentant `SELECT api_key FROM ai_configurations` → policy refuse OU récupère uniquement un `secret_id` opaque.
+7. Suites de tests sécurité (5 nouvelles) au vert.
+
+---
+
+## 10. Effort & risque
+
+| Brique | Complexité | Risque migration |
 |---|---|---|
-| Bulk actions | `DataTable`, mutations existantes (`toggleStatus`, `addRole`, `removeRole`), garde-fou Lot 2 | ✅ |
-| URL filters | `react-router-dom`, `zod`, pattern de `AdminPracticeStudio` | ✅ |
-| Saved views | `localStorage` (pattern `OrgSwitcher`) | ✅ |
-| Export CSV | Pattern de `AdminAcademyTracking`, audit log Lot 2 | ✅ |
-| ⌘K palette | `Command` shadcn déjà installé, caches react-query existants | ✅ |
+| Realtime RLS | Moyenne | Moyen (peut casser des subscribes existants → tester chaque feature realtime) |
+| Tokens email | Faible | Faible (impacte seulement auth-email-hook + unsubscribe) |
+| Vault secrets | Élevée | Moyen (3 EF à patcher, rollback testé) |
+| Academy access | Moyenne | Moyen (enrollment doit exister sur tous les chemins légitimes) |
+| Storage | Faible | Faible |
+| Tests | Moyenne | Très faible |
 
-**Aucune nouvelle dépendance npm. Aucun nouveau RPC. Aucun nouveau bucket.**
-
----
-
-## Livrables détaillés (suivi PO)
-
-### Composants nouveaux
-- `src/components/admin/BulkActionBar.tsx` (barre flottante sticky).
-- `src/components/admin/SavedViewsMenu.tsx` (dropdown vues + sauvegarde).
-- `src/components/admin/CommandPalette.tsx` (⌘K).
-
-### Hooks nouveaux
-- `src/hooks/useUrlFilters.ts` (sync URL ↔ state, Zod).
-- `src/hooks/useSavedViews.ts` (CRUD localStorage par page).
-- `src/hooks/useBulkSelection.ts` (set d'IDs, helpers select-all/clear).
-
-### Utilitaires nouveaux
-- `src/lib/exportCsv.ts` (RFC 4180 + BOM UTF-8).
-- `src/lib/auditClient.ts` (wrapper `append_audit_log` côté client pour bulk/export).
-
-### Patches
-- `src/components/admin/DataTable.tsx` : props `selectable`, `getRowId`, `onSelectionChange`, `exportable`, `exportFilename`, `bulkActions` slot.
-- `src/components/admin/AdminShell.tsx` : monte `<CommandPalette />`.
-- `src/pages/admin/AdminUsers.tsx` : sélection + bulk actions + URL filters + export + saved views.
-- `src/pages/admin/AdminOrganizations.tsx` : URL filters + export + saved views.
-- `src/pages/admin/AdminAudit.tsx` : URL filters + export.
-- `src/pages/admin/AdminLogs.tsx` : URL filters + export.
-
-### Tests
-- `src/lib/exportCsv.test.ts` : RFC 4180 (virgules, guillemets, newlines, unicode).
-- `src/hooks/useUrlFilters.test.ts` : sync, restauration back-button, defaults.
-- `src/hooks/useBulkSelection.test.ts` : select-all sur vue filtrée, reset sur refetch.
-- `src/components/admin/CommandPalette.test.tsx` : raccourci ⌘K, recherche fuzzy, navigation.
-
-### Mémoire
-- `mem://admin/productivity-patterns.md` : règles bulk (jamais sur super_admin, recap toast erreurs partielles), URL filters obligatoires sur listes, export CSV systématique, ⌘K standard.
-- Mise à jour `mem://index.md`.
+**Livraison estimée** : 1 bloc, livrable sans interruption utilisateur final si on respecte l'ordre Brique 2 → 5 → 4 → 3 → 1 → 6.
 
 ---
 
-## Critères d'acceptation (validation PO)
+## 11. Ordre d'exécution proposé
 
-1. Sur `/admin/users`, sélectionner 20 users → barre flottante visible → « Suspendre » → toast « 20 ok » → tous les badges passent rouge → entrée `bulk.status_changed` dans `/admin/audit`.
-2. Tenter bulk-suspendre une sélection contenant `akhadraoui@asmos-consulting.com` → refus avec message clair, aucune action effectuée.
-3. Filtrer `role=customer_lead status=active` → URL devient `?role=customer_lead&status=active` → copier-coller dans un nouvel onglet → même vue.
-4. Sauvegarder la vue « Customer leads actifs » → apparaît dans dropdown → un clic restaure filtres + URL.
-5. Cliquer « Exporter » sur une vue de 47 utilisateurs → CSV téléchargé, ouvrable propre dans Excel/Numbers, accents OK, rôles séparés par `;`.
-6. ⌘K depuis n'importe quelle page admin → palette ouvre → taper « ammar » → résultat user → Enter → fiche utilisateur.
-7. `bun test` : 4 nouvelles suites vertes.
-8. `supabase--linter` : 0 nouveau finding.
-9. Aucune régression sur les pages déjà livrées (Lots 1-4).
+1. **Brique 2** (tokens email) — quick win, faible risque, ferme 2 errors publics.
+2. **Brique 5** (storage) — quick win, indépendant.
+3. **Brique 4** (academy) — moyen, borné.
+4. **Brique 3** (vault secrets) — gros morceau, on déroule avec tests à chaque étape.
+5. **Brique 1** (realtime) — sensible, en dernier pour pouvoir rollback proprement.
+6. **Brique 6** (tests) — au fil de l'eau + suite finale.
 
----
-
-## Hors périmètre Lot 5 (reporté)
-
-- **Saved views partagées en équipe** (table `admin_saved_views`) → Lot 6 (observabilité), nécessite UI de partage + RLS dédiée.
-- **Bulk actions sur organisations** (suspendre toute une org) → Lot 6, impact métier large.
-- **Import CSV** (créer 100 users d'un coup) → Lot 7 onboarding entreprise, nécessite validation + dédup + email d'invitation atomique.
-- **Filtres avancés type query-builder** (AND/OR imbriqués) → seulement si demande utilisateur réelle, sinon over-engineering.
-
----
-
-## Estimation effort
-
-| Brique | Complexité | Risque |
-|---|---|---|
-| Bulk actions + DataTable patch | Moyenne | Faible (réutilise mutations existantes) |
-| URL filters + saved views | Faible | Faible |
-| Export CSV | Faible | Très faible |
-| ⌘K palette | Moyenne | Faible (`cmdk` déjà installé) |
-
-**Livrable d'un bloc, sans régression.** Les pages admin existantes gagnent les fonctionnalités de manière progressive — un admin qui ne connaît pas ⌘K continue à cliquer normalement.
-
----
-
-## Ordre d'exécution
-
-1. `useUrlFilters` + `useSavedViews` + `useBulkSelection` (foundations).
-2. Patch `DataTable` (selectable, exportable, bulkActions slot).
-3. `exportCsv.ts` + `auditClient.ts` + `BulkActionBar` + `SavedViewsMenu`.
-4. `CommandPalette` + montage dans `AdminShell`.
-5. Refacto `AdminUsers` (toutes briques) — page pilote.
-6. Roll-out `AdminOrganizations`, `AdminAudit`, `AdminLogs`.
-7. Tests + mémoire + linter.
+Mémoire à mettre à jour : `mem://security/data-protection-baseline.md` + `mem://index.md`.
 
 Prêt à lancer dès ton OK.
