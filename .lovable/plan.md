@@ -1,203 +1,161 @@
+# Audit complet post Lot 6 — Préparation Lot 7
 
-# Audit complet plateforme — état post Lots 1-5
-
-## Note méthodologique
-Audit réalisé en lecture seule : linter Supabase, scan sécurité, inventaire pages/routes/edge functions/migrations/tests, vérif adoption Lots 1-5. Tous les chiffres ci-dessous sont **constatés**, pas estimés.
-
----
-
-## 1. Vue chiffrée
+## 1. Vue chiffrée (constat 26 avril, post Lot 6)
 
 | Domaine | Métrique |
 |---|---|
 | Pages admin | **40** |
 | Edge functions | **32** |
-| Migrations SQL | **87** |
-| Routes définies | **80+** (`src/App.tsx`) |
-| Tests fichiers | **5** (`example`, `exportCsv`, `ImpersonationBanner`, `delete-user_test`, `impersonate-user_test`) |
-| Linter Supabase | **0 finding** ✅ |
-| Scan sécurité | **17 findings** (6 errors, 11 warnings) ⚠️ |
-| `audit_logs_immutable` | 2 entrées (système quasi neuf en prod) |
-| Données réelles | 1 user, 1 org, 1 profile (tenant pilote) |
+| Migrations SQL | **91** (4 nouvelles Lot 6) |
+| Tests fichiers | **5** (inchangé — dette persistante) |
+| Linter Supabase | **112 warn** (1 seul type : `pg_graphql_anon_table_exposed`) |
+| Scan sécurité | **122 findings** (4 errors restants, 6 warnings hors graphql) |
+| Findings métier critiques | **4 errors** secrets/realtime (cf §3) |
 
 ---
 
-## 2. Fonctionnel — ce qui est livré et opérationnel
+## 2. Bilan Lot 6 — ce qui a réellement été livré
 
-### ✅ Solide
-- **Lot 1 (admin unifié)** : `useAdminUsers`, `DataTable`, typage strict `AppRole`.
-- **Lot 2 (RGPD + garde-fous)** : `delete-user` Edge Function avec archive JSON + anonymisation, `count_users_by_role` pour bloquer les retraits massifs.
-- **Lot 3 (status)** : suspend/reactivate atomique, audité.
-- **Lot 4 (sécurité op)** : `requires_2fa` SQL, `Force2FAGuard`, page `/account/security`, edge function `impersonate-user`, `ImpersonationBanner`, override `usePermissions` en read-only, audit immuable.
-- **Lot 5 (productivité)** : `useUrlFilters`/`useSavedViews`/`useBulkSelection`, `exportCsv` RFC 4180 + tests verts, `DataTable` patché (`selectable`/`exportable`/`bulkActions`), pilote complet sur `AdminUsers`.
+### ✅ Fermé
+- **B2 tokens email** : `email_confirmation_tokens` et `email_unsubscribe_tokens` sortis du SELECT public, RPC `validate_*_token` opérationnelles.
+- **B5 storage** : `academy-assets` write réservé SaaS Team, `ucm-exports` DELETE org-scoped, `avatars` retiré de `anon`.
+- **B4 academy** : helper `has_academy_access`, vues `academy_quiz_questions_safe` et `academy_certificates_public`, INSERT sur `academy_progress` borné par enrollment.
+- **B6 doc** : `mem://security/data-protection-baseline.md` créée.
 
-### ⚠️ Adoption partielle Lot 5 (constaté)
-- **6 pages utilisent `DataTable`** mais **seul `AdminUsers` exploite `selectable`/`exportable`/URL filters/saved views**.
-- Pages restantes à roller-out : `AdminOrganizations`, `AdminAudit`, `AdminLogs`, `AdminBilling`, `AdminAcademyTracking` (qui a son propre export legacy à harmoniser).
+### ⚠️ Partiel / régression
+- **B1 Realtime** : la migration `20260426114415` a tenté un `DROP POLICY` puis `CREATE POLICY` sur `realtime.messages` avec un bloc `EXCEPTION WHEN insufficient_privilege` qui **avale silencieusement l'échec**. Le scan sécurité revient avec une `error` MISSING_RLS sur `realtime.messages` → **la policy n'a pas été créée**. À refaire via `realtime.broadcasts_authorized` (API officielle Supabase) ou via une fonction trigger côté application.
+- **B3 Vault secrets** : reporté → 3 errors persistantes (`ai_configurations.api_key`, `email_provider_configs.credentials`, `email_webhook_secrets.secret`).
 
-### ❌ Manquant fonctionnel
-- **Pas de Command Palette ⌘K** alors qu'elle figurait dans le plan Lot 5 ; le composant `cmdk` shadcn est présent mais non instancié.
-- **Pas de saved views partagées** (localStorage uniquement → perdues au changement de navigateur).
-- **Bulk actions absentes** sur Organizations (suspend toute une org).
+### ❌ Non traité
+- **3 edge functions email** (`email-events`, `process-email-queue`, `process-email-priority-queue`) : build errors de typage corrigés, mais aucune validation fonctionnelle (déploiement non testé).
+- **Aucun test E2E sécurité** (B6 du Lot 6).
 
 ---
 
-## 3. Sécurité — 6 errors + 11 warnings (scan plateforme)
+## 3. Findings résiduels (122 → priorisés)
 
-### 🔴 ERRORS (6) — exploitables, à fermer en priorité
+### 🔴 Errors (4) — bloquants
+| # | Surface | Origine | Décision Lot 7 |
+|---|---|---|---|
+| E1 | `realtime.messages` sans RLS effective | Migration silencieusement avalée | **Refaire via API Realtime officielle** |
+| E2 | `ai_configurations.api_key` plaintext | Pas migré | **Vault pgsodium** |
+| E3 | `email_provider_configs.credentials` plaintext | Pas migré | **Vault pgsodium** |
+| E4 | `email_webhook_secrets.secret` plaintext | Pas migré | **Vault pgsodium** |
 
-| # | Surface | Risque concret |
-|---|---|---|
-| **S1** | `realtime.messages` sans RLS | N'importe quel user authentifié peut s'abonner à n'importe quel topic (workshops, notifications d'autrui, challenge_responses…). **Faille la plus critique du système**. |
-| **S2** | `email_confirmation_tokens` policy SELECT `USING (true)` rôle `public` | Tokens de confirmation et emails lisibles **sans authentification**. |
-| **S3** | `email_unsubscribe_tokens` policy SELECT `USING (true)` rôle `public` | Même problème : énumération de tous les emails + désabonnement non consenti possible. |
-| **S4** | `ai_configurations.api_key` en clair | Toute la SaaS Team peut lire les clés API IA. Une compromission d'un saas_analyst = exfiltration totale. |
-| **S5** | `email_provider_configs.credentials` JSONB en clair | Org admins peuvent lire les credentials SMTP/Resend. |
-| **S6** | `email_webhook_secrets` en clair lisible par toute la SaaS Team | Permet de forger des webhooks signés. |
+### 🟠 Warnings métier (6 hors graphql)
+- `academy_certificate_config.api_key_hash` plaintext → migrer Vault avec E2-E4.
+- `profiles` / `email_automation_runs` / `email_send_log` / `observatory_assets` / `audit_logs_immutable` : informationnels, configuration restrictive volontaire — à documenter et `ignore` côté scan.
 
-### 🟠 WARNINGS (11) résumés
-- Academy : `academy_practices`, `academy_contents`, `academy_exercises`, `academy_quizzes`, `academy_quiz_questions` lisibles par **n'importe quel user authentifié si le module existe** → exposition `system_prompt`, `correct_answer`, `evaluation_rubric`.
-- `email_categories` : SELECT `USING (true)` rôle `public`.
-- `email_automations_read_global` / `email_templates_read_global` : tout user authentifié lit les templates et automations globaux.
-- `academy-assets` storage : tout user authentifié peut écraser n'importe quel fichier (pas de check ownership).
-- `ucm-exports` storage : pas de DELETE pour membres org + INSERT non vérifié côté serveur.
-- `profiles` : risque latent (pas d'erreur immédiate).
-
-### Constat positif
-- `supabase--linter` retourne **0 finding** : aucune table sans RLS, search_path correctement configuré sur les SECURITY DEFINER vérifiés (résultat vide = conforme).
+### 🟡 112 warnings `pg_graphql_anon_table_exposed`
+- **Cause** : 112 tables/vues de `public` ont `GRANT SELECT` au rôle `anon` → pg_graphql expose leur schéma via `/graphql/v1` (pas les données, RLS protège).
+- **Impact réel** : faible. Énumération des tables possible sans authentification, mais aucune donnée exposée.
+- **Fix** : `REVOKE SELECT ON ALL TABLES IN SCHEMA public FROM anon` puis `GRANT` ciblé sur les rares tables qui doivent rester publiques (`academy_certificates_public`, `cards` publiques certificat). À faire en **un sweep** Lot 7.
 
 ---
 
-## 4. Technique / DB
+## 4. Dette technique transverse
 
-### ✅ Bon
-- 87 migrations versionnées, ordre temporel cohérent.
-- `audit_logs_immutable` en place et utilisé par les Lots 2-4.
-- `usePermissions` overridé pour bloquer impersonation read-only.
-- `types.ts` régénéré (5715 lignes).
+### Tests
+- Toujours **5 fichiers** pour 32 edge functions + 80 routes. Pas de tests `usePermissions`, `useUrlFilters`, `useBulkSelection`, ni des helpers SECURITY DEFINER ajoutés aux Lots 4-6.
+- **Lot 7 doit livrer** une suite minimale : `permissions.test.tsx`, `realtime-isolation_test.ts`, `vault-secrets_test.ts`, `email-tokens_test.ts`.
 
-### ⚠️ Points de vigilance
-- **Tests** : 5 fichiers seulement, dont 2 nouveaux Lot 4. Pas de test unitaire `usePermissions` (le cœur du contrôle d'accès), ni `useUrlFilters`, ni `useBulkSelection`.
-- **Edge functions** : 3 fonctions email (`send-test-email`, `test-email-provider`, `email-marketing-ai`) n'ont pas été corrigées (mentionnées en fin Lot 4).
-- **Pas de `check_rate_limit`** : retiré du Lot 4. Reste un trou : un attaquant avec JWT admin peut spammer `delete-user`.
+### Productivité (Lot 5 — adoption partielle)
+- Seul `AdminUsers` exploite `selectable`/`exportable`/URL filters/saved views.
+- 5 pages restantes : `AdminOrganizations`, `AdminAudit`, `AdminLogs`, `AdminBilling`, `AdminAcademyTracking`.
+- **⌘K Command Palette** absente.
+- À traiter en **Lot 8** (productivité), après hardening complet.
 
----
+### Edge functions sans tests
+- 30/32 sans test. Sensibles non couvertes : `business-quote`, `ucm-*` (5), `academy-generate`, `practice-copilot`, `verify-certificate`.
 
-## 5. Edge functions (32) — état
-
-- **Sensibles auditées** : `delete-user` ✅, `impersonate-user` ✅, `verify-certificate` (public OK), `trigger-email`.
-- **Sans tests** : 30 sur 32. Notamment `business-quote`, `ucm-*` (5 fonctions), `academy-generate` (au cœur du business simulator).
-- **Risque moyen** : `process-email-priority-queue` + `process-email-queue` cohabitent — vérifier doublon ou priorité voulue (à confirmer avec PO).
+### Routes
+- `App.tsx` : 80+ routes flat. Refacto en routes imbriqués → Lot 9 DX.
 
 ---
 
-## 6. UI / Navigation
+## 5. Plan **Lot 7 — Vault, Realtime fix, GraphQL exposure, tests**
 
-### ✅ Bon
-- Multi-shell architecture stable (`AppShell` / `PortalShell` / `WorkspaceShell`).
-- `ImpersonationBanner` global dans `AppShell`.
-- Routes admin lisibles, profondeur cohérente (`/admin/<scope>/<resource>/:id`).
+### Brique A — Refonte Realtime (E1) [PRIORITÉ]
+1. Vérifier l'API actuelle Supabase Realtime : `realtime.send` requiert un check applicatif (pas de RLS sur `messages` directement en mode hosted).
+2. Approche recommandée : ne plus tenter de modifier `realtime.messages` directement. À la place :
+   - Auditer chaque `useEffect` qui fait `supabase.channel('xxx').subscribe()` côté client.
+   - Pour les canaux sensibles (workshops, notifications, challenge_responses), passer par **Postgres Changes filtrés** (déjà protégés par RLS des tables sources) au lieu de Broadcast/Presence libres.
+   - Documenter dans `mem://security/data-protection-baseline.md` la règle : **pas de Broadcast/Presence non scopé**.
+3. Marquer le finding E1 comme `ignore` avec justification une fois la migration code terminée et auditée.
 
-### ⚠️ À renforcer
-- **Pas d'OrgSwitcher visible côté Admin** dans cet audit (à vérifier — sinon impossible de naviguer entre tenants).
-- Pas de breadcrumbs sur les pages admin profondes (`/admin/academy/paths/:id` etc.).
-- 80+ routes déclarées en flat dans `App.tsx` — devient ingérable. Refacto en `<Route>` imbriqués envisageable (Lot 7+).
+### Brique B — Vault pgsodium (E2, E3, E4 + warning certificate_config)
+1. Activer `pgsodium` (déjà disponible sur Supabase Hosted).
+2. Créer table `app_secrets` (id, label, secret_id uuid → vault.secrets, owner_scope, created_at).
+3. Migration des données existantes :
+   - `ai_configurations.api_key` → ajouter colonne `api_key_secret_id uuid`, copier dans Vault, NULL la colonne plaintext, retirer du SELECT.
+   - Idem `email_provider_configs.credentials` (JSONB → un secret par champ ou JSON chiffré global).
+   - Idem `email_webhook_secrets.secret`.
+   - Idem `academy_certificate_config.api_key_hash`.
+4. Helper SQL `app_get_secret(_secret_id uuid)` SECURITY DEFINER, garde sur rôle (saas team uniquement pour ai_configurations, org_admin pour email_provider).
+5. Patcher 4 edge functions : `ai-coach` (déjà multi-provider), `trigger-email`, `test-email-provider`, `verify-certificate`.
+6. Audit log à chaque déchiffrement (`secret.decrypted`) avec `actor_id` + `purpose`.
 
----
+### Brique C — pg_graphql exposure (112 warnings)
+1. Audit : lister toutes les tables qui doivent vraiment être publiques (vues `_public`, certificats publics, ai_providers).
+2. `REVOKE SELECT ON ALL TABLES IN SCHEMA public FROM anon;`
+3. `GRANT SELECT` ciblé sur la liste blanche (≤ 5 objets attendus).
+4. Vérifier que ça ne casse pas les flows publics (`/certificate/:id`, `/auth`).
+5. Re-scan : 112 → ~3 warnings restants attendus, légitimes.
 
-## 7. Plan de remédiation : **Lot 6 — Hardening sécurité plateforme**
+### Brique D — Tests filet sécurité (couverture cœur)
+1. `src/hooks/usePermissions.test.tsx` : 12 rôles × 5 actions principales.
+2. `src/hooks/useUrlFilters.test.ts` + `useBulkSelection.test.ts`.
+3. `supabase/functions/_shared/realtime-isolation_test.ts` (Deno) : user A vs canal user B.
+4. `supabase/functions/trigger-email/index_test.ts` : couverture happy path + secret manquant.
+5. `supabase/functions/verify-certificate/index_test.ts` : certificat valide / révoqué / inexistant.
 
-### Pourquoi maintenant (vue PO)
-Les Lots 1-5 ont solidifié l'**administration**. Le scan révèle que la couche **données / temps réel / secrets** reste fragile — c'est la zone qui peut faire perdre un client en une heure (fuite emails, clés API exfiltrées, écoute realtime). Avant d'ajouter des features (observabilité, onboarding entreprise), on ferme ces trous.
+### Brique E — Validation edge functions email (post-Lot 6)
+1. Déployer `email-events`, `process-email-queue`, `process-email-priority-queue` et tester un envoi end-to-end.
+2. Vérifier que les corrections de typage (any cast) n'ont pas masqué un bug logique.
 
-### Brique 1 — Realtime sécurisé (S1) [PRIORITÉ ABSOLUE]
-- Ajouter RLS sur `realtime.messages` scopée par `auth.uid()` + topic.
-- Pattern recommandé : helper `is_realtime_authorized(_user_id, _topic)` SECURITY DEFINER, basé sur `is_workshop_participant` / `notification_owner` déjà existants.
-- Tests : un user A ne peut pas s'abonner aux notifications de B.
-
-### Brique 2 — Tokens email & catégories (S2, S3, warnings email)
-- `email_confirmation_tokens` : DROP de la policy SELECT publique → service_role only. Validation token via fonction RPC `validate_confirmation_token(_token)`.
-- Idem `email_unsubscribe_tokens` → RPC `validate_unsubscribe_token`.
-- `email_categories` : restreindre à `authenticated` minimum.
-- `email_templates_read_global` / `email_automations_read_global` : restreindre à SaaS team.
-
-### Brique 3 — Chiffrement des secrets (S4, S5, S6)
-- Activer **Vault Supabase** (pgsodium déjà disponible).
-- Migrer 3 colonnes :
-  - `ai_configurations.api_key` → `vault.secrets`, ne stocker que `secret_id`.
-  - `email_provider_configs.credentials` → idem.
-  - `email_webhook_secrets.secret` → idem.
-- Helper SQL `get_decrypted_secret(_secret_id)` SECURITY DEFINER avec garde rôle.
-- Patcher les 3-4 edge functions concernées (`trigger-email`, `test-email-provider`, `ai-coach`…) pour récupérer via RPC.
-- Audit log à chaque déchiffrement (`secret.accessed`).
-
-### Brique 4 — Academy access control (warnings)
-- Ajouter helper `has_academy_access(_user_id, _module_id)` qui check enrollment via `academy_progress` ou `academy_path_assignments`.
-- Remplacer `view_practices`/`view_contents`/`view_exercises`/`view_quizzes`/`view_quiz_q` par cette vérification.
-- Cas particulier `quiz_q.correct_answer` : retourner `null` côté SELECT tant que la réponse n'est pas soumise (vue dédiée ou colonne masquée).
-
-### Brique 5 — Storage hardening
-- `academy-assets` : INSERT/UPDATE limité à SaaS team (cohérent avec design : assets pédagogiques curés).
-- `ucm-exports` : ajouter DELETE pour `org_admin`, vérifier path `^{org_id}/` côté policy avec `storage.foldername()[1] = org_id::text`.
-
-### Brique 6 — Tests E2E sécurité (filet)
-Suites Vitest + Deno :
-- `realtime-isolation_test.ts` : user A ne reçoit pas les events de B.
-- `email-tokens_test.ts` : 401 sur SELECT public sans token valide.
-- `secrets-vault_test.ts` : un saas_analyst ne peut pas appeler `get_decrypted_secret` sans rôle approprié.
-- `academy-access_test.ts` : non-enrolled = 0 ligne sur 5 tables academy.
-- Ajouter test unitaire `usePermissions.test.tsx` (cœur du système).
+### Brique F — Documentation & memory
+1. Mettre à jour `mem://security/data-protection-baseline.md` :
+   - Règle Realtime renforcée (pas de Broadcast non scopé).
+   - Règle Vault (tous les secrets via `app_get_secret`).
+2. Créer `mem://technical/secrets-vault-architecture.md`.
+3. Mettre à jour `mem://index.md`.
 
 ---
 
-## 8. Hors périmètre Lot 6 (vrais Lot 7+)
+## 6. Critères d'acceptation Lot 7
+
+1. `security--run_security_scan` passe de **122 → ≤ 5 warnings**, **0 error**.
+2. `supabase--linter` : ≤ 5 warnings sur pg_graphql (au lieu de 112).
+3. `psql -c "SELECT api_key FROM ai_configurations"` retourne `NULL` partout.
+4. Realtime : un user A ne reçoit aucun event Broadcast d'un canal user B (test Deno).
+5. Suite de tests cœur (≥ 5 nouveaux fichiers) au vert.
+6. 3 edge functions email déployées et un envoi pilote validé.
+
+---
+
+## 7. Hors périmètre Lot 7 (Lot 8+)
 
 | Sujet | Pourquoi reporter |
 |---|---|
-| Rate limiting `delete-user`/`adjust_credits` | Indépendant du hardening DB ; tracked pour Lot 7. |
-| Roll-out complet Lot 5 sur 5 pages restantes | Productivité, pas sécurité. Peut s'enchaîner après Lot 6. |
-| Command Palette ⌘K | Productivité, low risk. |
-| Cohorts / observability dashboards | Lot business (Lot 8). |
-| Refacto routes en `<Route>` imbriqués | Pure DX, sans gain immédiat utilisateur. |
+| Roll-out Lot 5 sur 5 pages | Productivité, post-hardening complet |
+| Command Palette ⌘K | Productivité |
+| Rate limiting `delete-user`/`adjust_credits` | Lot 8 ops |
+| Refacto routes en `<Route>` imbriqués | DX, Lot 9 |
+| Cohorts / observability dashboards | Lot 10 business |
 
 ---
 
-## 9. Critères d'acceptation Lot 6
-
-1. `security--run_security_scan` passe de **17 → ≤ 4 warnings** (les 4 résiduels documentés et acceptés).
-2. **0 error** restant.
-3. `supabase--linter` toujours à 0 finding.
-4. Aucun token email lisible sans authentification (test `curl` direct).
-5. Un user authentifié ne reçoit aucun event Realtime concernant un workshop dont il n'est pas participant.
-6. Un saas_analyst tentant `SELECT api_key FROM ai_configurations` → policy refuse OU récupère uniquement un `secret_id` opaque.
-7. Suites de tests sécurité (5 nouvelles) au vert.
-
----
-
-## 10. Effort & risque
+## 8. Effort & risque
 
 | Brique | Complexité | Risque migration |
 |---|---|---|
-| Realtime RLS | Moyenne | Moyen (peut casser des subscribes existants → tester chaque feature realtime) |
-| Tokens email | Faible | Faible (impacte seulement auth-email-hook + unsubscribe) |
-| Vault secrets | Élevée | Moyen (3 EF à patcher, rollback testé) |
-| Academy access | Moyenne | Moyen (enrollment doit exister sur tous les chemins légitimes) |
-| Storage | Faible | Faible |
-| Tests | Moyenne | Très faible |
+| A Realtime | Moyenne | Moyen (audit code client requis) |
+| B Vault | **Élevée** | **Élevé** (4 EF à patcher, rollback testé pré-prod obligatoire) |
+| C GraphQL exposure | Faible | Faible |
+| D Tests | Moyenne | Très faible |
+| E Email EF | Faible | Moyen (pas de test fonctionnel post-fix) |
+| F Doc | Faible | Nul |
 
-**Livraison estimée** : 1 bloc, livrable sans interruption utilisateur final si on respecte l'ordre Brique 2 → 5 → 4 → 3 → 1 → 6.
+**Ordre d'exécution recommandé** : C → D (filet) → E (validation EF) → A (realtime) → B (vault, gros morceau en dernier avec rollback prêt) → F (doc finale).
 
----
-
-## 11. Ordre d'exécution proposé
-
-1. **Brique 2** (tokens email) — quick win, faible risque, ferme 2 errors publics.
-2. **Brique 5** (storage) — quick win, indépendant.
-3. **Brique 4** (academy) — moyen, borné.
-4. **Brique 3** (vault secrets) — gros morceau, on déroule avec tests à chaque étape.
-5. **Brique 1** (realtime) — sensible, en dernier pour pouvoir rollback proprement.
-6. **Brique 6** (tests) — au fil de l'eau + suite finale.
-
-Mémoire à mettre à jour : `mem://security/data-protection-baseline.md` + `mem://index.md`.
-
-Prêt à lancer dès ton OK.
+**Livraison estimée** : 1 lot, 2-3 itérations attendues sur la Brique B.
