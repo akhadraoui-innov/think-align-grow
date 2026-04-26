@@ -5140,6 +5140,44 @@ export type Database = {
       }
     }
     Views: {
+      academy_quiz_questions_safe: {
+        Row: {
+          id: string | null
+          options: Json | null
+          points: number | null
+          question: string | null
+          question_type: string | null
+          quiz_id: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          id?: string | null
+          options?: Json | null
+          points?: number | null
+          question?: string | null
+          question_type?: string | null
+          quiz_id?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          id?: string | null
+          options?: Json | null
+          points?: number | null
+          question?: string | null
+          question_type?: string | null
+          quiz_id?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "academy_quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_academy_quiz_questions_public: {
         Row: {
           explanation: string | null
@@ -5422,6 +5460,10 @@ export type Database = {
         Args: { p_mode: string; p_org_id: string; p_section_code: string }
         Returns: string
       }
+      has_academy_access: {
+        Args: { _module_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_any_role: {
         Args: {
           _roles: Database["public"]["Enums"]["app_role"][]
@@ -5539,6 +5581,8 @@ export type Database = {
         Args: { _field: string; _org_id: string; _tokens?: number }
         Returns: undefined
       }
+      validate_confirmation_token: { Args: { _token: string }; Returns: Json }
+      validate_unsubscribe_token: { Args: { _token: string }; Returns: Json }
       verify_audit_chain_integrity: { Args: never; Returns: Json }
     }
     Enums: {
