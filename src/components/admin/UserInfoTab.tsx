@@ -19,6 +19,7 @@ import {
 import type { AdminUserDetail } from "@/hooks/useAdminUserDetail";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { useDeleteUser, type DeleteMode } from "@/hooks/useDeleteUser";
+import { ImpersonateButton } from "./ImpersonateButton";
 
 interface Props {
   profile: AdminUserDetail;
@@ -237,22 +238,29 @@ export function UserInfoTab({ profile, onSave, saving }: Props) {
             <ShieldAlert className="h-4 w-4" /> Zone dangereuse
           </h3>
           <p className="text-xs text-muted-foreground">
-            La suppression d'un compte est définitive et tracée dans le journal d'audit immuable.
-            Une archive RGPD complète est téléchargée automatiquement avant la suppression.
+            Mode support : ouvrir une session lecture seule de 30 min, tracée et notifiée à l'utilisateur.<br />
+            Suppression : définitive, archive RGPD téléchargée automatiquement, log immuable.
           </p>
-          <Button
-            variant="destructive"
-            size="sm"
-            className="gap-2"
-            onClick={() => {
-              setDangerStep(1);
-              setDangerMode("anonymize");
-              setEmailConfirm("");
-              setDangerOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" /> Supprimer ce compte (RGPD)
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <ImpersonateButton
+              userId={profile.user_id}
+              userEmail={profile.email}
+              userLabel={profile.display_name}
+            />
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-2"
+              onClick={() => {
+                setDangerStep(1);
+                setDangerMode("anonymize");
+                setEmailConfirm("");
+                setDangerOpen(true);
+              }}
+            >
+              <Trash2 className="h-4 w-4" /> Supprimer ce compte (RGPD)
+            </Button>
+          </div>
         </div>
       )}
 
