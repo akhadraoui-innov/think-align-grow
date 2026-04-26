@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { z, type ZodTypeAny } from "zod";
+import { z } from "zod";
 
 /**
  * Bidirectional sync between a typed filter state and the URL search params.
@@ -17,25 +17,27 @@ import { z, type ZodTypeAny } from "zod";
  *   });
  *   const [filters, setFilters] = useUrlFilters(schema);
  */
-export function useUrlFilters<T extends Record<string, unknown>>(
-  schema: z.ZodObject<Record<keyof T, ZodTypeAny>>,
-) {
+export function useUrlFilters<S extends z.ZodObject<z.ZodRawShape>>(schema: S) {
+  type T = z.infer<S>;
   const [params, setParams] = useSearchParams();
   const lastWrittenRef = useRef<string>("");
 
-  const parsed = useMemo(() => {
+  const parsed: T = useMemo(() => {
     const raw: Record<string, string> = {};
     for (const key of Object.keys(schema.shape)) {
       const v = params.get(key);
       if (v != null) raw[key] = v;
     }
     const result = schema.safeParse(raw);
-    return result.success ? (result.data as T) : (schema.parse({}) as T);
+    return (result.success ? result.data : schema.parse({})) as T;
   }, [params, schema]);
 
   const update = useCallback(
     (patch: Partial<T> | ((current: T) => Partial<T>)) => {
-      const next = typeof patch === "function" ? (patch as (c: T) => Partial<T>)(parsed) : patch;
+      const next =
+        typeof patch === "function"
+          ? (patch as (c: T) => Partial<T>)(parsed)
+          : patch;
       const merged = { ...parsed, ...next } as T;
 
       const newParams = new URLSearchParams(params);
@@ -65,7 +67,6 @@ export function useUrlFilters<T extends Record<string, unknown>>(
     setParams(newParams, { replace: true });
   }, [params, schema, setParams]);
 
-  // Keep last-written ref in sync with externally driven changes (e.g. saved view selection)
   useEffect(() => {
     lastWrittenRef.current = params.toString();
   }, [params]);
