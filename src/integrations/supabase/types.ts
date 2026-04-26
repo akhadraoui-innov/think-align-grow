@@ -5140,6 +5140,38 @@ export type Database = {
       }
     }
     Views: {
+      academy_certificates_public: {
+        Row: {
+          certificate_summary: Json | null
+          id: string | null
+          issued_at: string | null
+          path_id: string | null
+          public_share_enabled: boolean | null
+        }
+        Insert: {
+          certificate_summary?: never
+          id?: string | null
+          issued_at?: string | null
+          path_id?: string | null
+          public_share_enabled?: boolean | null
+        }
+        Update: {
+          certificate_summary?: never
+          id?: string | null
+          issued_at?: string | null
+          path_id?: string | null
+          public_share_enabled?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_certificates_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "academy_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_quiz_questions_safe: {
         Row: {
           id: string | null
