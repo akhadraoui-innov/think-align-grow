@@ -27,7 +27,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useNavigate as _u } from "react-router-dom"; // dedupe import
+
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: "bg-red-500/10 text-red-600 border-red-500/30",
