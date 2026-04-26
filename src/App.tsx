@@ -110,6 +110,8 @@ import Invitation from "./pages/Invitation";
 import PortalEmailPreferences from "./pages/portal/PortalEmailPreferences";
 import EmailUnsubscribe from "./pages/EmailUnsubscribe";
 import EmailConfirm from "./pages/EmailConfirm";
+import AccountSecurity from "./pages/account/Security";
+import Impersonating from "./pages/Impersonating";
 
 const queryClient = new QueryClient();
 
