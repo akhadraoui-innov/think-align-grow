@@ -1,91 +1,115 @@
-# Lot 4 — Sécurité opérationnelle (vue Product Owner)
 
-## Pourquoi ce lot maintenant
+# Lot 5 — Productivité Admin
 
-Lots 1-3 ont fermé les **failles fonctionnelles** (crédits atomiques, suppression RGPD, garde-fou permissions). Lot 4 protège contre les **attaques réelles** : compte admin compromis, support qui dérape, régression silencieuse en prod.
+## Audit préalable (état réel constaté)
 
-C'est le palier qui sépare un SaaS "propre" d'un SaaS **vendable à un grand compte** (due diligence sécurité, RGPD article 32).
-
-## Note importante sur le rate limiting
-
-Le plan précédent prévoyait un rate limiting maison (table `rate_limits` + fonction). Après vérification, **la plateforme ne dispose pas encore des primitives natives** pour le faire proprement. Toute implémentation maison serait ad-hoc et créerait de la dette technique. **Décision : on retire cette brique du Lot 4.** Elle reviendra quand l'infra le supportera nativement.
-
-Reste donc 3 briques solides, livrables sans dette.
-
----
-
-## Brique 1 — 2FA obligatoire pour la SaaS Team
-
-### Le problème métier
-Aujourd'hui, le mot de passe d'`akhadraoui@asmos-consulting.com` est le **seul rempart** vers la suppression de comptes, l'ajustement de crédits, la bascule de permissions. Un mot de passe deviné = jeu terminé.
-
-### Ce qu'on met en place
-
-- Activation TOTP via Supabase Auth natif (Google Authenticator / 1Password). **Aucune dépendance externe.**
-- Page `/account/security` dans le shell Portal : QR code, vérification 6 chiffres, codes de récupération à imprimer.
-- **Garde global** `Force2FAGuard` : si un user porte un rôle SaaS Team (5 rôles : `super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) **et** n'a pas de facteur MFA actif → redirigé sur `/account/security/setup` au prochain login. Pas de bypass possible.
-- **Logs immuables** : chaque enrollment / désactivation / échec → `append_audit_log('mfa.enrolled' | 'mfa.disabled' | 'mfa.failed', …)` (chaîne SHA-256 déjà déployée Lot 2).
-
-### Réutilise
-`has_role`, `app_role`, `audit_logs_immutable`, `AuthGuard`, `useAuth`, design system Studio, `is_saas_team`.
-
-### Critère d'acceptation
-Un super_admin sans 2FA tente d'aller sur `/admin/users` → redirection forcée sur le setup. Impossible d'accéder à un écran admin sans avoir validé un TOTP.
-
----
-
-## Brique 2 — Impersonation auditée
-
-### Le problème métier
-Un client se plaint « je ne vois pas mon parcours » → aujourd'hui, le support n'a aucun moyen propre. Il demande le mot de passe (illégal RGPD) ou tâtonne. L'impersonation auditée est le **standard du marché** (Stripe, Linear, Notion).
-
-### Ce qu'on met en place
-
-- Edge Function `impersonate-user` :
-  - Super_admin uniquement, vérifié via `has_role`.
-  - Génère un **magic link signé** TTL 30 min via `supabaseAdmin.auth.admin.generateLink({ type: 'magiclink' })`.
-  - Refus si la cible est super_admin (pas d'impersonation entre admins).
-- **Ouverture dans une fenêtre dédiée** : route `/impersonating/:token` qui consume le link et active un mode spécial.
-- **Bandeau rouge sticky permanent** en haut de chaque page : « 🛡️ Mode support — Vous êtes connecté en tant que `<email>`. [Quitter] ».
-- **Override `usePermissions`** : pendant la session impersonée, retour `read-only` forcé sur tout le scope (aucune mutation possible, même si l'utilisateur impersonné est admin).
-- **Auto-déconnexion après 30 min** + bouton "Quitter" qui déclenche `signOut`.
-- **Trace immuable** :
-  - `append_audit_log('impersonation.started', 'user', target_id, …, {executed_by, expires_at})`
-  - `append_audit_log('impersonation.ended', …, {duration_seconds})` à la fin.
-- **Notification email au client impersonné** via `dispatch_email_event('user.impersonated', …)` : « Un membre du support a accédé à votre compte le … pendant X minutes ». Transparence RGPD.
-
-### Réutilise
-`audit_logs_immutable`, `usePermissions`, edge function pattern Lot 2 (`delete-user`), `dispatch_email_event` (email-platform en place), `has_role`.
-
-### Critère d'acceptation
-Depuis `UserInfoTab`, bouton "Voir comme cet utilisateur" (super_admin only). Click → nouvelle session, bandeau rouge visible, tentative de modification → bloquée. Entrée `impersonation.started` visible dans `/admin/audit`. Email reçu par l'utilisateur cible.
-
----
-
-## Brique 3 — Tests E2E des flux destructifs
-
-### Le problème métier
-Aujourd'hui, une régression dans `delete-user`, `adjust_credits` ou `spend_credits` peut passer en prod sans alerte. Pour un système qui touche au RGPD et à l'argent, c'est inacceptable. Une seule suite test (`example.test.ts`) existe — c'est un placeholder.
-
-### Ce qu'on met en place
-
-Suite Deno dans `supabase/functions/__tests__/` :
-
-| Fichier | Couvre |
+| Existant ✅ | Manquant ❌ |
 |---|---|
-| `delete-user_test.ts` | super_admin OK ; non-admin → 403 ; auto-suppression → 403 ; cible super_admin → 403 ; archive contient les bonnes clés ; profil bien anonymisé |
-| `spend-credits_test.ts` | concurrence (2 appels parallèles → solde correct, pas de double dépense) ; refus si solde insuffisant |
-| `count-users-by-role_test.ts` | retourne le bon compte ; exécutable par `authenticated` ; refusé pour anonymous |
-| `impersonate-user_test.ts` | super_admin génère un lien valide ; non-admin → 403 ; cible super_admin → 403 ; log immuable créé |
-| `permission-toggle_test.ts` | retrait d'une permission > 5 users → log `permission.revoked` créé ; chaîne hash toujours valide après opération |
+| `useInvitations` complet (send/revoke/resend) **déjà intégré** dans `OrgMembersTab` | Bulk actions sur listes (suspendre/changer rôle en masse) |
+| `toggleStatus`, `addRole`, `removeRole` mutations atomiques | Filtres + recherche persistés en URL (deep-link, partage, retour navigateur) |
+| `AdminAudit.tsx` lit `audit_logs_immutable` | Export CSV des vues admin filtrées |
+| Filtres role/status/org dans `AdminUsers` (mais state local volatile) | Command palette globale (⌘K) — navigation, actions, recherche user |
+| `DataTable` réutilisable | Saved views (« mes admins suspendus », « orgs sans owner »…) |
+| Hooks `useAdminUsers`, `useOrganizations` typés | — |
 
-Lancement via `supabase--test_edge_functions` à chaque livraison.
+**Conclusion** : la « visibilité des invitations en attente » initialement listée pour Lot 5 est **déjà livrée**. On la retire et on monte le niveau d'ambition vers les standards Linear / Stripe / Vercel.
+
+---
+
+## Pourquoi ce lot maintenant (vue PO)
+
+Les Lots 1-4 ont fait de la plateforme un système **sûr, conforme et auditable**. Le Lot 5 le rend **opérable à l'échelle** : un admin qui gère 500 utilisateurs ne peut plus cliquer ligne par ligne. Sans bulk actions, sans deep-link, sans export, on perd 30 minutes par opération récurrente. C'est la marche entre « outil interne » et « console SaaS pro ».
+
+**Bénéfice direct** : un support qui traite 10 demandes RGPD le matin le fait en 2 min au lieu de 20.
+
+---
+
+## Brique 1 — Multi-sélection + bulk actions (DataTable)
+
+### Le problème
+Suspendre 50 comptes inactifs = 50 clics + 50 confirmations. Aujourd'hui impossible sans script SQL.
+
+### Ce qu'on met en place
+- Patch `DataTable.tsx` : prop optionnelle `selectable?: boolean` + `getRowId?: (row) => string` + `onSelectionChange?: (ids: string[]) => void`.
+- Colonne checkbox à gauche (header = select-all sur la **vue filtrée**, pas tout le dataset).
+- État `selectedIds` interne + bus de notification au parent.
+- Barre flottante en bas (sticky) quand `selectedIds.length > 0` : « N sélectionné(s) » + slot `bulkActions` rendu par le parent.
+- Reset auto sur changement de filtre / refetch.
+
+### Bulk actions livrées (sur `AdminUsers`)
+| Action | Garde-fou | Audit |
+|---|---|---|
+| Suspendre / Réactiver | Refus si la sélection contient l'admin courant ou un super_admin | `bulk.status_changed` |
+| Ajouter un rôle | Réutilise `addRole` en boucle, refus si > 100 | `bulk.role_added` |
+| Retirer un rôle | Confirmation si retrait `customer_lead`/`super_admin`. Réutilise garde-fou Lot 2 (`count_users_by_role`) | `bulk.role_removed` |
+| Exporter sélection en CSV | — | `bulk.export` |
+
+Toutes les actions appellent **les mutations existantes** (`toggleStatus`, `addRole`, `removeRole`) — aucun nouveau RPC, atomicité préservée par `Promise.allSettled` + reporting d'erreurs partielles dans un toast récap (« 48 ok, 2 erreurs : voir détails »).
 
 ### Réutilise
-Convention `*_test.ts` Deno déjà en place, `example.test.ts` repéré, dotenv loader pour `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY`.
+`DataTable`, `useAdminUsers`, `Checkbox` shadcn, `audit_logs_immutable` (via `append_audit_log` côté client wrapper).
 
-### Critère d'acceptation
-`supabase--test_edge_functions` → 5 suites vertes, 0 flaky, en moins de 60s.
+---
+
+## Brique 2 — Filtres + recherche persistés en URL
+
+### Le problème
+Un admin filtre `role=customer_lead status=suspended`, partage l'URL → le destinataire arrive sur une vue vide. Refresh = filtres perdus. Impossible de bookmarker « comptes suspendus ».
+
+### Ce qu'on met en place
+- Hook `useUrlFilters<T>(defaults, schema)` : wrapper `useSearchParams` + Zod parsing.
+- Synchronisation **bi-directionnelle** : changement de Select → push URL ; navigation back → restaure les filtres.
+- Pas de re-render en boucle (debounce + dirty-check).
+- Appliqué à : `AdminUsers`, `AdminOrganizations`, `AdminAudit`, `AdminLogs`.
+- `DataTable` accepte aussi `defaultSearch` qu'il lit depuis l'URL via le hook parent.
+
+### Saved views (mini)
+- Bouton « ⭐ Sauvegarder cette vue » → écrit `{name, search_params}` dans `localStorage` (clé `admin.savedViews.{page}`).
+- Dropdown "Vues" en haut à droite de chaque page.
+- Vues par défaut pré-fournies : « Suspendus », « Sans organisation », « Inactifs > 30j », « Super admins », « Orgs sans owner ».
+
+### Réutilise
+`react-router-dom` (déjà là), `zod` (déjà là), `localStorage` pattern utilisé par `OrgSwitcher`.
+
+---
+
+## Brique 3 — Export CSV des vues admin
+
+### Le problème
+Le seul export existant est dans `AdminAcademyTracking`. Aucune autre liste admin n'est exportable. Demande récurrente du métier (compta, support, RGPD : « donne-moi la liste des users actifs au 1er du mois »).
+
+### Ce qu'on met en place
+- Utilitaire `src/lib/exportCsv.ts` : `exportRowsToCsv(rows, columns, filename)` avec :
+  - Échappement RFC 4180 (virgules, guillemets, retours ligne).
+  - BOM UTF-8 (Excel friendly).
+  - Sérialisation propre des champs nested (rôles → `"role1;role2"`).
+- Bouton "⬇ Exporter" en haut de chaque `DataTable` (prop `exportable?: boolean` + `exportFilename?: string`).
+- Exporte la **vue filtrée + triée**, pas le dataset brut.
+- Audit : `append_audit_log('admin.export', resource, count, {filters, filename})`.
+
+### Réutilise
+Pattern existant dans `AdminAcademyTracking`, `DataTable`, `audit_logs_immutable`.
+
+---
+
+## Brique 4 — Command palette globale (⌘K)
+
+### Le problème
+Naviguer depuis n'importe quelle page admin vers la fiche d'un user précis = 4 clics. Standard du marché : `Cmd+K` ouvre une palette qui fait tout.
+
+### Ce qu'on met en place
+- Composant `CommandPalette.tsx` basé sur `cmdk` (déjà installé via `Command` shadcn — vérifié dans `components/ui`).
+- Raccourci `⌘/Ctrl+K` global, monté dans `AdminShell`.
+- Sections :
+  1. **Navigation** : tous les liens du sidebar admin (statique).
+  2. **Utilisateurs** : recherche live (nom/email) sur `useAdminUsers().users` (déjà en cache react-query).
+  3. **Organisations** : recherche live sur `useOrganizations()`.
+  4. **Actions rapides** : « Créer une org », « Voir l'audit », « Mes vues sauvegardées », « Lancer un scan sécurité ».
+- Sélection user → navigate `/admin/users/:id`. Sélection action → exécute.
+- Aucun appel réseau supplémentaire (réutilise les caches existants).
+
+### Réutilise
+`cmdk` (composant `Command` shadcn déjà présent), caches react-query existants, navigation `react-router-dom`.
 
 ---
 
@@ -93,59 +117,72 @@ Convention `*_test.ts` Deno déjà en place, `example.test.ts` repéré, dotenv 
 
 | Brique | S'appuie sur | Duplication évitée |
 |---|---|---|
-| 2FA | `app_role`, `has_role`, `is_saas_team`, `auth.mfa_factors` natif, `AuthGuard`, Studio | ✅ |
-| Impersonation | `audit_logs_immutable`, `append_audit_log`, `usePermissions`, `dispatch_email_event`, magic link natif | ✅ |
-| Tests E2E | Vitest/Deno déjà configurés, `supabase--test_edge_functions` | ✅ |
+| Bulk actions | `DataTable`, mutations existantes (`toggleStatus`, `addRole`, `removeRole`), garde-fou Lot 2 | ✅ |
+| URL filters | `react-router-dom`, `zod`, pattern de `AdminPracticeStudio` | ✅ |
+| Saved views | `localStorage` (pattern `OrgSwitcher`) | ✅ |
+| Export CSV | Pattern de `AdminAcademyTracking`, audit log Lot 2 | ✅ |
+| ⌘K palette | `Command` shadcn déjà installé, caches react-query existants | ✅ |
 
-**Aucune nouvelle dépendance npm. Aucun service externe. Tout dans Supabase/Lovable Cloud.**
+**Aucune nouvelle dépendance npm. Aucun nouveau RPC. Aucun nouveau bucket.**
 
 ---
 
 ## Livrables détaillés (suivi PO)
 
-### Migrations SQL
-- Fonction `requires_2fa(_user_id uuid) RETURNS boolean` (SECURITY DEFINER) → vérifie si l'utilisateur a un rôle SaaS Team **et** aucun facteur MFA actif dans `auth.mfa_factors`.
+### Composants nouveaux
+- `src/components/admin/BulkActionBar.tsx` (barre flottante sticky).
+- `src/components/admin/SavedViewsMenu.tsx` (dropdown vues + sauvegarde).
+- `src/components/admin/CommandPalette.tsx` (⌘K).
 
-### Edge Functions
-- **Nouveau** `supabase/functions/impersonate-user/index.ts`.
+### Hooks nouveaux
+- `src/hooks/useUrlFilters.ts` (sync URL ↔ state, Zod).
+- `src/hooks/useSavedViews.ts` (CRUD localStorage par page).
+- `src/hooks/useBulkSelection.ts` (set d'IDs, helpers select-all/clear).
 
-### Hooks & UI
-- `src/hooks/use2FA.ts` : `enroll()`, `verify()`, `disable()`, `factors`, `loading`.
-- `src/pages/account/Security.tsx` : QR code, codes de secours, gestion du facteur.
-- `src/components/auth/Force2FAGuard.tsx` : redirige SaaS Team sans MFA actif vers le setup.
-- Intégration `Force2FAGuard` dans `AdminGuard` (toutes les routes `/admin/*`).
-- `src/hooks/useImpersonation.ts` : détection mode + override `usePermissions` en read-only forcé.
-- `src/components/admin/ImpersonateButton.tsx` : bouton dans `UserInfoTab` (super_admin only).
-- `src/components/layout/ImpersonationBanner.tsx` : bandeau rouge sticky global, monté dans `AppShell`.
-- `src/pages/Impersonating.tsx` : route `/impersonating/:token` qui consomme le magic link.
+### Utilitaires nouveaux
+- `src/lib/exportCsv.ts` (RFC 4180 + BOM UTF-8).
+- `src/lib/auditClient.ts` (wrapper `append_audit_log` côté client pour bulk/export).
+
+### Patches
+- `src/components/admin/DataTable.tsx` : props `selectable`, `getRowId`, `onSelectionChange`, `exportable`, `exportFilename`, `bulkActions` slot.
+- `src/components/admin/AdminShell.tsx` : monte `<CommandPalette />`.
+- `src/pages/admin/AdminUsers.tsx` : sélection + bulk actions + URL filters + export + saved views.
+- `src/pages/admin/AdminOrganizations.tsx` : URL filters + export + saved views.
+- `src/pages/admin/AdminAudit.tsx` : URL filters + export.
+- `src/pages/admin/AdminLogs.tsx` : URL filters + export.
 
 ### Tests
-5 fichiers `*_test.ts` listés en Brique 3.
+- `src/lib/exportCsv.test.ts` : RFC 4180 (virgules, guillemets, newlines, unicode).
+- `src/hooks/useUrlFilters.test.ts` : sync, restauration back-button, defaults.
+- `src/hooks/useBulkSelection.test.ts` : select-all sur vue filtrée, reset sur refetch.
+- `src/components/admin/CommandPalette.test.tsx` : raccourci ⌘K, recherche fuzzy, navigation.
 
 ### Mémoire
-- `mem://security/operational-hardening.md` : règles 2FA SaaS Team obligatoire, impersonation auditée read-only, tests E2E couverture.
+- `mem://admin/productivity-patterns.md` : règles bulk (jamais sur super_admin, recap toast erreurs partielles), URL filters obligatoires sur listes, export CSV systématique, ⌘K standard.
 - Mise à jour `mem://index.md`.
 
 ---
 
-## Hors périmètre Lot 4 (reporté explicitement)
+## Critères d'acceptation (validation PO)
 
-- **Rate limiting** → en attente des primitives plateforme natives.
-- **WebAuthn / passkeys** → Lot 5 (UX premium, après stabilisation TOTP).
-- **SSO entreprise (SAML/OIDC)** → Lot 7 quand premier deal Enterprise concret.
-- **Dashboard sécurité dédié** (`/admin/security` avec MFA adoption rate, impersonations en cours, anomalies) → Lot 6 (observabilité).
-- **Rotation automatique des codes de secours** → Lot 5.
+1. Sur `/admin/users`, sélectionner 20 users → barre flottante visible → « Suspendre » → toast « 20 ok » → tous les badges passent rouge → entrée `bulk.status_changed` dans `/admin/audit`.
+2. Tenter bulk-suspendre une sélection contenant `akhadraoui@asmos-consulting.com` → refus avec message clair, aucune action effectuée.
+3. Filtrer `role=customer_lead status=active` → URL devient `?role=customer_lead&status=active` → copier-coller dans un nouvel onglet → même vue.
+4. Sauvegarder la vue « Customer leads actifs » → apparaît dans dropdown → un clic restaure filtres + URL.
+5. Cliquer « Exporter » sur une vue de 47 utilisateurs → CSV téléchargé, ouvrable propre dans Excel/Numbers, accents OK, rôles séparés par `;`.
+6. ⌘K depuis n'importe quelle page admin → palette ouvre → taper « ammar » → résultat user → Enter → fiche utilisateur.
+7. `bun test` : 4 nouvelles suites vertes.
+8. `supabase--linter` : 0 nouveau finding.
+9. Aucune régression sur les pages déjà livrées (Lots 1-4).
 
 ---
 
-## Critères d'acceptation globaux
+## Hors périmètre Lot 5 (reporté)
 
-1. SaaS Team sans 2FA → blocage `/admin/*`, redirection setup. Validation TOTP requise.
-2. Bouton "Voir comme cet utilisateur" sur fiche user (super_admin only) → impersonation read-only, bandeau rouge, log audit, email au client.
-3. `supabase--test_edge_functions` → 5 suites vertes.
-4. `supabase--linter` → 0 nouveau finding.
-5. `security--run_security_scan` → 0 régression.
-6. Vérification chaîne audit via `verify_audit_chain_integrity()` → toujours valide après opérations Lot 4.
+- **Saved views partagées en équipe** (table `admin_saved_views`) → Lot 6 (observabilité), nécessite UI de partage + RLS dédiée.
+- **Bulk actions sur organisations** (suspendre toute une org) → Lot 6, impact métier large.
+- **Import CSV** (créer 100 users d'un coup) → Lot 7 onboarding entreprise, nécessite validation + dédup + email d'invitation atomique.
+- **Filtres avancés type query-builder** (AND/OR imbriqués) → seulement si demande utilisateur réelle, sinon over-engineering.
 
 ---
 
@@ -153,20 +190,23 @@ Convention `*_test.ts` Deno déjà en place, `example.test.ts` repéré, dotenv 
 
 | Brique | Complexité | Risque |
 |---|---|---|
-| 2FA | Moyenne (UI + guard + intégration AdminGuard) | Faible (API Supabase native) |
-| Impersonation | Moyenne (read-only override fin) | Moyen (à bien tester) |
-| Tests E2E | Moyenne (5 suites) | Faible |
+| Bulk actions + DataTable patch | Moyenne | Faible (réutilise mutations existantes) |
+| URL filters + saved views | Faible | Faible |
+| Export CSV | Faible | Très faible |
+| ⌘K palette | Moyenne | Faible (`cmdk` déjà installé) |
 
-**Livrable d'un bloc, sans régression utilisateur final.** Seule la SaaS Team voit le changement (2FA forcé). Les clients ne voient rien — sauf email RGPD lors d'une impersonation les concernant.
+**Livrable d'un bloc, sans régression.** Les pages admin existantes gagnent les fonctionnalités de manière progressive — un admin qui ne connaît pas ⌘K continue à cliquer normalement.
 
 ---
 
 ## Ordre d'exécution
 
-1. Migration SQL (`requires_2fa`).
-2. UI 2FA + `Force2FAGuard` + intégration `AdminGuard`.
-3. Edge function `impersonate-user` + `useImpersonation` + bouton + bandeau + route `/impersonating/:token`.
-4. Suite de tests E2E (5 fichiers).
-5. Mise à jour mémoire + linter + scan sécurité + vérification chaîne audit.
+1. `useUrlFilters` + `useSavedViews` + `useBulkSelection` (foundations).
+2. Patch `DataTable` (selectable, exportable, bulkActions slot).
+3. `exportCsv.ts` + `auditClient.ts` + `BulkActionBar` + `SavedViewsMenu`.
+4. `CommandPalette` + montage dans `AdminShell`.
+5. Refacto `AdminUsers` (toutes briques) — page pilote.
+6. Roll-out `AdminOrganizations`, `AdminAudit`, `AdminLogs`.
+7. Tests + mémoire + linter.
 
 Prêt à lancer dès ton OK.
