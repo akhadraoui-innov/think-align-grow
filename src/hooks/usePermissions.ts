@@ -181,18 +181,38 @@ export function usePermissions(): Permissions {
   const { data: dbMap, isLoading: dbLoading } = useRolePermissionsFromDB();
 
   const allPerms = getPermsFromMap(dbMap, roles as string[]);
-  const has = (perm: string) => allPerms.includes(perm);
-  const hasAnyFn = (...perms: string[]) => perms.some(p => allPerms.includes(p));
 
-  const isSuperAdmin = roles.includes("super_admin" as any);
-  const isSaasTeam = roles.some(r => SAAS_ROLES.includes(r as string));
+  // ── Impersonation read-only override ──
+  // When the active session is an impersonated one, force every "write"
+  // permission off. We keep view-style permissions (admin.*.view, etc.)
+  // so support can navigate freely but cannot mutate anything.
+  let impersonating = false;
+  try {
+    if (typeof sessionStorage !== "undefined") {
+      const raw = sessionStorage.getItem("heeplab.impersonation");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        impersonating = !!parsed?.active;
+      }
+    }
+  } catch { /* ignore */ }
+
+  const effectivePerms = impersonating
+    ? allPerms.filter((p) => p.endsWith(".view") || p.endsWith(".read"))
+    : allPerms;
+
+  const has = (perm: string) => effectivePerms.includes(perm);
+  const hasAnyFn = (...perms: string[]) => perms.some(p => effectivePerms.includes(p));
+
+  const isSuperAdmin = !impersonating && roles.includes("super_admin" as any);
+  const isSaasTeam = !impersonating && roles.some(r => SAAS_ROLES.includes(r as string));
 
   return {
     isSuperAdmin,
     isSaasTeam,
     canAccessAdmin: isSaasTeam,
     roles: roles as string[],
-    permissions: allPerms,
+    permissions: effectivePerms,
     has,
     hasAny: hasAnyFn,
     loading: authLoading || rolesLoading || dbLoading,

@@ -1,112 +1,172 @@
+# Lot 4 — Sécurité opérationnelle (vue Product Owner)
 
+## Pourquoi ce lot maintenant
 
-# Lot E5 → "Studio" — Refonte UI générationnelle
+Lots 1-3 ont fermé les **failles fonctionnelles** (crédits atomiques, suppression RGPD, garde-fou permissions). Lot 4 protège contre les **attaques réelles** : compte admin compromis, support qui dérape, régression silencieuse en prod.
 
-Pas un widget. Un **langage d'interface** : opinionné, signature, world-class. On dépasse la commande initiale (widget mail) pour livrer une **transformation cohérente** dont le widget Email n'est qu'une instance.
+C'est le palier qui sépare un SaaS "propre" d'un SaaS **vendable à un grand compte** (due diligence sécurité, RGPD article 32).
 
----
+## Note importante sur le rate limiting
 
-## Parti pris (non négociables)
+Le plan précédent prévoyait un rate limiting maison (table `rate_limits` + fonction). Après vérification, **la plateforme ne dispose pas encore des primitives natives** pour le faire proprement. Toute implémentation maison serait ad-hoc et créerait de la dette technique. **Décision : on retire cette brique du Lot 4.** Elle reviendra quand l'infra le supportera nativement.
 
-1. **Command Bar comme colonne vertébrale** (façon Linear/Raycast) — toute action est à 1 touche (`⌘K`), 1 geste, ou 1 raccourci sémantique (`g e` = go emails, `g h` = health, `n` = nouveau).
-2. **Header unifié "OmniBar"** — un seul rail de boutons identiques entre Admin et Portal, gauche=identité, centre=navigation, droite=signaux (Mail, Bell, Credits, Avatar). Tous les signaux suivent **le même contrat visuel** (icône 18px, badge 9px, dropdown 380px glassmorphique éditorial).
-3. **Glassmorphisme assumé, pas timide** : `backdrop-blur(40px) saturate(180%)`, fond translucide multi-couches, bord lumineux 1px hairline, ombre stratifiée (proche/lointaine).
-4. **Densité éditoriale** : typographie Space Grotesk en titrage, micro-caps (10px tracking 0.15em) pour labels, chiffres en variant tabulaire (`font-feature-settings: "tnum"`), aucune compromission sur les marges.
-5. **Mouvement signature** : transitions sur courbe `cubic-bezier(0.32, 0.72, 0, 1)` (Apple-like), durées 180ms/280ms/420ms strictes, `prefers-reduced-motion` respecté.
-6. **Couleur signal** : pillar colors deviennent le système de **statut sémantique** (innovation=info, growth=success, business=warn, thinking=danger), exit emerald/amber/rose ad hoc.
+Reste donc 3 briques solides, livrables sans dette.
 
 ---
 
-## Livrable 1 — Système de Design "Studio"
+## Brique 1 — 2FA obligatoire pour la SaaS Team
 
-`src/styles/studio.css` (importé dans `index.css`) introduit :
+### Le problème métier
+Aujourd'hui, le mot de passe d'`akhadraoui@asmos-consulting.com` est le **seul rempart** vers la suppression de comptes, l'ajustement de crédits, la bascule de permissions. Un mot de passe deviné = jeu terminé.
 
-- **Surfaces** : 4 niveaux glassmorphiques (`--surface-1` à `--surface-4`) avec saturation et blur progressifs.
-- **Hairline borders** : `--hairline: 0 0% 100% / 0.08` pour bord interne lumineux + `border` standard pour bord externe.
-- **Shadows stratifiées** : `--shadow-sticker` (carte flottante), `--shadow-pop` (dropdown), `--shadow-monolith` (modal/command bar) — chacune en double-couche (proche dure + lointaine douce).
-- **Animation tokens** : `--ease-out-quart`, `--ease-spring`, `--duration-fast/base/slow`.
-- **Easing utilities Tailwind** : `ease-studio`, `ease-spring` exposés via `tailwind.config.ts`.
-- **Keyframes** : `studio-pop-in` (scale 0.96 + opacity + blur 8px→0), `studio-shimmer` (loading), `studio-tick` (badge increment).
+### Ce qu'on met en place
 
-## Livrable 2 — `OmniHeader` partagé
+- Activation TOTP via Supabase Auth natif (Google Authenticator / 1Password). **Aucune dépendance externe.**
+- Page `/account/security` dans le shell Portal : QR code, vérification 6 chiffres, codes de récupération à imprimer.
+- **Garde global** `Force2FAGuard` : si un user porte un rôle SaaS Team (5 rôles : `super_admin`, `customer_lead`, `innovation_lead`, `performance_lead`, `product_actor`) **et** n'a pas de facteur MFA actif → redirigé sur `/account/security/setup` au prochain login. Pas de bypass possible.
+- **Logs immuables** : chaque enrollment / désactivation / échec → `append_audit_log('mfa.enrolled' | 'mfa.disabled' | 'mfa.failed', …)` (chaîne SHA-256 déjà déployée Lot 2).
 
-`src/components/shell/OmniHeader.tsx` remplace le `<header>` actuel des deux shells.
+### Réutilise
+`has_role`, `app_role`, `audit_logs_immutable`, `AuthGuard`, `useAuth`, design system Studio, `is_saas_team`.
 
-- API : `<OmniHeader variant="portal|admin" left={...} center={...} signals={[...]} />`.
-- Hauteur 56px portal / 48px admin, fond `surface-2`, bord-bas hairline.
-- Contient un slot **SignalRail** qui rend les widgets (Search trigger, Mail, Bell, Credits, Avatar) avec spacing strict 4px et règle de séparation visuelle (chip vs ghost).
-- `PortalShell.tsx` et `AdminShell.tsx` réécrits pour consommer `OmniHeader` (élimine la duplication header).
-
-## Livrable 3 — `SignalWidget` (factorise Bell/Mail)
-
-`src/components/shell/SignalWidget.tsx` — primitive qui gouverne **toutes** les cloches.
-
-- Props : `icon`, `label`, `count`, `tone` (`neutral|info|warn|danger`), `dropdown` (render-prop), `pulse` (boolean).
-- Badge animé via `studio-tick` lors d'un increment (compare prev/next via `useRef`).
-- Dropdown ancrée à droite, largeur 384px, header en micro-caps + action secondaire, footer avec lien "voir tout" + raccourci clavier visible (kbd).
-- `NotificationsDropdown` réécrit comme `<SignalWidget>` avec render-prop.
-- `EmailWidget` créé comme `<SignalWidget>` avec render-prop (cf. Livrable 4).
-
-## Livrable 4 — `EmailWidget` (Admin + Portal)
-
-Hook `useEmailWidget(variant)` :
-
-- **Admin** : `email_send_log` agrégé 24h (sent/failed/bounced/opened), `get_priority_lane_metrics`, `get_email_provider_health`, count `email_security_flags` non revus. Realtime sur `email_send_log` filtré `status in (failed,dlq)`.
-- **Portal** : 5 derniers emails reçus via `recipient_email = user.email`, flag `localStorage:email-widget-last-seen` pour les non lus.
-
-Rendu :
-
-- **Admin** — Header "EMAIL STUDIO • 24H". Grille 3 KPI tabulaires (Sent / Failed / Bounced) avec mini-sparkline 24 buckets (SVG inline). Section "Lanes" avec 3 jauges horizontales (transactional/marketing/bulk, couleur signal selon backlog). Liste 3 derniers échecs (template • destinataire tronqué • raison). Footer raccourcis : Composer (`g c`), Templates (`g t`), Logs (`g l`), Health (`g h`).
-- **Portal** — Header "VOTRE BOÎTE". Liste 5 emails (sujet bold • from • time-ago micro). Footer : Préférences (`g p`).
-
-## Livrable 5 — `CommandBar v2`
-
-Réécriture de `CommandPalette.tsx` :
-
-- Ouverture en **center-modal** (max-w-2xl, top-20%) avec `studio-pop-in` (scale + blur fade).
-- Sections : **Suggestions** (contextuelles à la route active), **Aller à** (toutes routes), **Email**, **Sécurité**, **Academy**, **Aide**.
-- **Raccourcis sémantiques** type Linear : `g e` (go emails), `g h` (health), `g a` (academy), `g w` (workshops). Affichés en kbd à droite de chaque item.
-- **Actions inline** : "Composer email…", "Replay DLQ…", "Marquer toutes notifs lues" exécutent une mutation directement (sans navigation).
-- Footer : ligne d'aide avec `↑↓ naviguer • ↵ exécuter • ⎋ fermer • ⌘K basculer`.
-- Indicateur "Pro tip" rotatif en bas (3 astuces qui tournent toutes les 8s).
-
-## Livrable 6 — Micro-interactions transversales
-
-- **Numbers ticker** : composant `<Tick value={n} />` qui anime les chiffres en roulement (CountUp custom 280ms).
-- **Skeleton shimmer Studio** : remplacement des `<Skeleton>` par variante shimmer dégradé hairline.
-- **Toast Studio** : surcharge de `sonner` via `<Toaster richColors closeButton position="bottom-right" />` avec classes `font-display` + glassmorphisme.
-- **Focus rings** : `--ring` exploité via `focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2` global → tous les boutons interactifs ont un focus signature.
-
-## Livrable 7 — Audit & docs
-
-- `docs/releases/v2.7.0-studio.md` — manifeste design avec captures avant/après.
-- `mem://style/studio-design-system.md` — règles : surfaces, easing, tokens, micro-caps, ticker.
-- Test responsive : 384×709 (mobile actuel) → OmniHeader collapse en `OmniHeaderMobile` (logo + ⌘K + cloche unifiée fusionnant Mail+Bell sous un swipe-tab).
-- Test a11y : focus-visible, `aria-label` sur tous SignalWidget, `prefers-reduced-motion` désactive `studio-pop-in`/`studio-tick`.
+### Critère d'acceptation
+Un super_admin sans 2FA tente d'aller sur `/admin/users` → redirection forcée sur le setup. Impossible d'accéder à un écran admin sans avoir validé un TOTP.
 
 ---
 
-## Détails techniques
+## Brique 2 — Impersonation auditée
 
-- **Pas de dépendance externe ajoutée** (CountUp et ticker en-house, ~30 LOC).
-- **Tokens CSS** : tout sous `--studio-*` pour éviter collisions avec tokens existants. Le `.portal` scope override les surfaces avec teinte bleu signature.
-- **Performance** : `useEmailWidget` `staleTime: 30s`, channel realtime unique par variant, cleanup propre.
-- **Backward compat** : `NotificationsDropdown` exporte toujours pareil (signature identique), implémentation interne change.
-- **Permissions** : `EmailWidget` admin gated par `email.logs.view` via `usePermissions()`.
+### Le problème métier
+Un client se plaint « je ne vois pas mon parcours » → aujourd'hui, le support n'a aucun moyen propre. Il demande le mot de passe (illégal RGPD) ou tâtonne. L'impersonation auditée est le **standard du marché** (Stripe, Linear, Notion).
 
-## Ce qu'on ne fait PAS dans ce lot
+### Ce qu'on met en place
 
-- Pas de dark mode complet (préparation tokens uniquement, switch viendra Lot E6).
-- Pas de refonte des pages admin internes (focus shell + signaux).
-- Pas de redesign sidebar (reste cohérente, juste les hairlines homogénéisées).
+- Edge Function `impersonate-user` :
+  - Super_admin uniquement, vérifié via `has_role`.
+  - Génère un **magic link signé** TTL 30 min via `supabaseAdmin.auth.admin.generateLink({ type: 'magiclink' })`.
+  - Refus si la cible est super_admin (pas d'impersonation entre admins).
+- **Ouverture dans une fenêtre dédiée** : route `/impersonating/:token` qui consume le link et active un mode spécial.
+- **Bandeau rouge sticky permanent** en haut de chaque page : « 🛡️ Mode support — Vous êtes connecté en tant que `<email>`. [Quitter] ».
+- **Override `usePermissions`** : pendant la session impersonée, retour `read-only` forcé sur tout le scope (aucune mutation possible, même si l'utilisateur impersonné est admin).
+- **Auto-déconnexion après 30 min** + bouton "Quitter" qui déclenche `signOut`.
+- **Trace immuable** :
+  - `append_audit_log('impersonation.started', 'user', target_id, …, {executed_by, expires_at})`
+  - `append_audit_log('impersonation.ended', …, {duration_seconds})` à la fin.
+- **Notification email au client impersonné** via `dispatch_email_event('user.impersonated', …)` : « Un membre du support a accédé à votre compte le … pendant X minutes ». Transparence RGPD.
 
-## Audit final
+### Réutilise
+`audit_logs_immutable`, `usePermissions`, edge function pattern Lot 2 (`delete-user`), `dispatch_email_event` (email-platform en place), `has_role`.
 
-1. ⌘K depuis n'importe où ouvre la CommandBar v2 stylée.
-2. Mail widget admin : injection d'un échec en DB → ticker badge + toast + apparition en liste dans <2s.
-3. Mail widget portail : envoi d'un email reçu → notif realtime + badge.
-4. Bell widget : continue de fonctionner sans régression (même API).
-5. Mobile 384px : OmniHeader collapse, signaux fusionnés accessibles.
-6. `prefers-reduced-motion: reduce` : animations sup­primées, transitions ramenées à 0ms.
-7. Linter Supabase 0 finding, 0 régression console.
+### Critère d'acceptation
+Depuis `UserInfoTab`, bouton "Voir comme cet utilisateur" (super_admin only). Click → nouvelle session, bandeau rouge visible, tentative de modification → bloquée. Entrée `impersonation.started` visible dans `/admin/audit`. Email reçu par l'utilisateur cible.
 
+---
+
+## Brique 3 — Tests E2E des flux destructifs
+
+### Le problème métier
+Aujourd'hui, une régression dans `delete-user`, `adjust_credits` ou `spend_credits` peut passer en prod sans alerte. Pour un système qui touche au RGPD et à l'argent, c'est inacceptable. Une seule suite test (`example.test.ts`) existe — c'est un placeholder.
+
+### Ce qu'on met en place
+
+Suite Deno dans `supabase/functions/__tests__/` :
+
+| Fichier | Couvre |
+|---|---|
+| `delete-user_test.ts` | super_admin OK ; non-admin → 403 ; auto-suppression → 403 ; cible super_admin → 403 ; archive contient les bonnes clés ; profil bien anonymisé |
+| `spend-credits_test.ts` | concurrence (2 appels parallèles → solde correct, pas de double dépense) ; refus si solde insuffisant |
+| `count-users-by-role_test.ts` | retourne le bon compte ; exécutable par `authenticated` ; refusé pour anonymous |
+| `impersonate-user_test.ts` | super_admin génère un lien valide ; non-admin → 403 ; cible super_admin → 403 ; log immuable créé |
+| `permission-toggle_test.ts` | retrait d'une permission > 5 users → log `permission.revoked` créé ; chaîne hash toujours valide après opération |
+
+Lancement via `supabase--test_edge_functions` à chaque livraison.
+
+### Réutilise
+Convention `*_test.ts` Deno déjà en place, `example.test.ts` repéré, dotenv loader pour `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY`.
+
+### Critère d'acceptation
+`supabase--test_edge_functions` → 5 suites vertes, 0 flaky, en moins de 60s.
+
+---
+
+## Architecture — cohérence avec l'existant
+
+| Brique | S'appuie sur | Duplication évitée |
+|---|---|---|
+| 2FA | `app_role`, `has_role`, `is_saas_team`, `auth.mfa_factors` natif, `AuthGuard`, Studio | ✅ |
+| Impersonation | `audit_logs_immutable`, `append_audit_log`, `usePermissions`, `dispatch_email_event`, magic link natif | ✅ |
+| Tests E2E | Vitest/Deno déjà configurés, `supabase--test_edge_functions` | ✅ |
+
+**Aucune nouvelle dépendance npm. Aucun service externe. Tout dans Supabase/Lovable Cloud.**
+
+---
+
+## Livrables détaillés (suivi PO)
+
+### Migrations SQL
+- Fonction `requires_2fa(_user_id uuid) RETURNS boolean` (SECURITY DEFINER) → vérifie si l'utilisateur a un rôle SaaS Team **et** aucun facteur MFA actif dans `auth.mfa_factors`.
+
+### Edge Functions
+- **Nouveau** `supabase/functions/impersonate-user/index.ts`.
+
+### Hooks & UI
+- `src/hooks/use2FA.ts` : `enroll()`, `verify()`, `disable()`, `factors`, `loading`.
+- `src/pages/account/Security.tsx` : QR code, codes de secours, gestion du facteur.
+- `src/components/auth/Force2FAGuard.tsx` : redirige SaaS Team sans MFA actif vers le setup.
+- Intégration `Force2FAGuard` dans `AdminGuard` (toutes les routes `/admin/*`).
+- `src/hooks/useImpersonation.ts` : détection mode + override `usePermissions` en read-only forcé.
+- `src/components/admin/ImpersonateButton.tsx` : bouton dans `UserInfoTab` (super_admin only).
+- `src/components/layout/ImpersonationBanner.tsx` : bandeau rouge sticky global, monté dans `AppShell`.
+- `src/pages/Impersonating.tsx` : route `/impersonating/:token` qui consomme le magic link.
+
+### Tests
+5 fichiers `*_test.ts` listés en Brique 3.
+
+### Mémoire
+- `mem://security/operational-hardening.md` : règles 2FA SaaS Team obligatoire, impersonation auditée read-only, tests E2E couverture.
+- Mise à jour `mem://index.md`.
+
+---
+
+## Hors périmètre Lot 4 (reporté explicitement)
+
+- **Rate limiting** → en attente des primitives plateforme natives.
+- **WebAuthn / passkeys** → Lot 5 (UX premium, après stabilisation TOTP).
+- **SSO entreprise (SAML/OIDC)** → Lot 7 quand premier deal Enterprise concret.
+- **Dashboard sécurité dédié** (`/admin/security` avec MFA adoption rate, impersonations en cours, anomalies) → Lot 6 (observabilité).
+- **Rotation automatique des codes de secours** → Lot 5.
+
+---
+
+## Critères d'acceptation globaux
+
+1. SaaS Team sans 2FA → blocage `/admin/*`, redirection setup. Validation TOTP requise.
+2. Bouton "Voir comme cet utilisateur" sur fiche user (super_admin only) → impersonation read-only, bandeau rouge, log audit, email au client.
+3. `supabase--test_edge_functions` → 5 suites vertes.
+4. `supabase--linter` → 0 nouveau finding.
+5. `security--run_security_scan` → 0 régression.
+6. Vérification chaîne audit via `verify_audit_chain_integrity()` → toujours valide après opérations Lot 4.
+
+---
+
+## Estimation effort
+
+| Brique | Complexité | Risque |
+|---|---|---|
+| 2FA | Moyenne (UI + guard + intégration AdminGuard) | Faible (API Supabase native) |
+| Impersonation | Moyenne (read-only override fin) | Moyen (à bien tester) |
+| Tests E2E | Moyenne (5 suites) | Faible |
+
+**Livrable d'un bloc, sans régression utilisateur final.** Seule la SaaS Team voit le changement (2FA forcé). Les clients ne voient rien — sauf email RGPD lors d'une impersonation les concernant.
+
+---
+
+## Ordre d'exécution
+
+1. Migration SQL (`requires_2fa`).
+2. UI 2FA + `Force2FAGuard` + intégration `AdminGuard`.
+3. Edge function `impersonate-user` + `useImpersonation` + bouton + bandeau + route `/impersonating/:token`.
+4. Suite de tests E2E (5 fichiers).
+5. Mise à jour mémoire + linter + scan sécurité + vérification chaîne audit.
+
+Prêt à lancer dès ton OK.

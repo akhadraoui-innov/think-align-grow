@@ -110,6 +110,8 @@ import Invitation from "./pages/Invitation";
 import PortalEmailPreferences from "./pages/portal/PortalEmailPreferences";
 import EmailUnsubscribe from "./pages/EmailUnsubscribe";
 import EmailConfirm from "./pages/EmailConfirm";
+import AccountSecurity from "./pages/account/Security";
+import Impersonating from "./pages/Impersonating";
 
 const queryClient = new QueryClient();
 
@@ -223,6 +225,8 @@ function AnimatedRoutes() {
           <Route path="/portal/ucm/:id/synthesis" element={<PortalUCMProject />} />
           <Route path="/portal/ucm/:id/chat" element={<PortalUCMProject />} />
           <Route path="/portal/preferences" element={<AuthGuard><PortalEmailPreferences /></AuthGuard>} />
+          <Route path="/account/security" element={<AccountSecurity />} />
+          <Route path="/impersonating" element={<Impersonating />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

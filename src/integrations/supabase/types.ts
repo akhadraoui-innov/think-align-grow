@@ -5521,6 +5521,7 @@ export type Database = {
         }[]
       }
       replay_dlq_message: { Args: { _message_id: string }; Returns: Json }
+      requires_2fa: { Args: { _user_id: string }; Returns: boolean }
       review_email_security_flag: {
         Args: { _decision: string; _flag_id: string }
         Returns: undefined

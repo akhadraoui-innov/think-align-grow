@@ -5,6 +5,7 @@ import { AppSidebar } from "./AppSidebar";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { BottomNav } from "./BottomNav";
 import { CommandPalette } from "./CommandPalette";
+import { ImpersonationBanner } from "./ImpersonationBanner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLastSeenTracker } from "@/hooks/useLastSeenTracker";
 
@@ -41,18 +42,29 @@ export function AppShell({ children }: AppShellProps) {
 
   // Landing page & auth: no shell chrome
   if (isLandingPage || isAuthPage || isWorkshopRoom || isAdminPage || isAcademyModule) {
-    return <>{children}</>;
+    return (
+      <>
+        <ImpersonationBanner />
+        {children}
+      </>
+    );
   }
 
   // Portal: dedicated shell
   if (isPortal) {
-    return <PortalShell>{children}</PortalShell>;
+    return (
+      <>
+        <ImpersonationBanner />
+        <PortalShell>{children}</PortalShell>
+      </>
+    );
   }
 
   // Mobile: keep original bottom nav layout
   if (isMobile) {
     return (
       <>
+        <ImpersonationBanner />
         <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
         <main className="min-h-screen">{children}</main>
         <BottomNav />
@@ -63,6 +75,7 @@ export function AppShell({ children }: AppShellProps) {
   // Desktop: sidebar layout
   return (
     <SidebarProvider defaultOpen={true}>
+      <ImpersonationBanner />
       <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar onCommandPalette={() => setCmdOpen(true)} />

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminRole } from "@/hooks/useAdminRole";
+import { Force2FAGuard } from "@/components/auth/Force2FAGuard";
 import { Loader2 } from "lucide-react";
 
 interface AdminGuardProps {
@@ -27,5 +28,5 @@ export function AdminGuard({ children }: AdminGuardProps) {
 
   if (!isAdmin) return null;
 
-  return <>{children}</>;
+  return <Force2FAGuard>{children}</Force2FAGuard>;
 }
