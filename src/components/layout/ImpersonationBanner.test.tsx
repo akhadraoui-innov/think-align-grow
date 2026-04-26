@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { ImpersonationBanner } from "@/components/layout/ImpersonationBanner";
 import { setImpersonationState } from "@/hooks/useImpersonation";
 
@@ -17,10 +17,10 @@ describe("ImpersonationBanner", () => {
       startedAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     });
-    render(<ImpersonationBanner />);
-    expect(screen.getByText(/Mode support/i)).toBeInTheDocument();
-    expect(screen.getByText(/client@example.com/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Quitter/i })).toBeInTheDocument();
+    const { container, getByRole } = render(<ImpersonationBanner />);
+    expect(container.textContent).toMatch(/Mode support/i);
+    expect(container.textContent).toMatch(/client@example\.com/);
+    expect(getByRole("button", { name: /Quitter/i })).toBeTruthy();
     setImpersonationState({ active: false });
   });
 });
