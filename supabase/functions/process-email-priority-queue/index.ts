@@ -121,15 +121,15 @@ Deno.serve(async (req) => {
           metadata: {
             priority,
             provider: provCfg.provider_code,
-            provider_message_id: sendRes?.providerMessageId,
+            provider_message_id: sendRes?.messageId,
           },
         });
 
         // Track provider message id on automation run if linked
-        if (payload.run_id && sendRes?.providerMessageId) {
+        if (payload.run_id && sendRes?.messageId) {
           await supabase
             .from("email_automation_runs")
-            .update({ provider_message_id: sendRes.providerMessageId, sent_at: new Date().toISOString() })
+            .update({ provider_message_id: sendRes.messageId, sent_at: new Date().toISOString() })
             .eq("id", payload.run_id);
         }
 

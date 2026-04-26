@@ -71,12 +71,13 @@ async function verifyResend(rawBody: string, headers: Headers, secret: string): 
   }
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
-    secretBytes,
+    secretBytes.buffer.slice(secretBytes.byteOffset, secretBytes.byteOffset + secretBytes.byteLength) as ArrayBuffer,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
   );
-  const sigBytes = await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(signed));
+  const signedBytes = new TextEncoder().encode(signed);
+  const sigBytes = await crypto.subtle.sign("HMAC", cryptoKey, signedBytes.buffer.slice(signedBytes.byteOffset, signedBytes.byteOffset + signedBytes.byteLength) as ArrayBuffer);
   const expectedB64 = btoa(String.fromCharCode(...new Uint8Array(sigBytes)));
   // svixSig: "v1,sig1 v1,sig2"
   const sigs = svixSig.split(" ").map((p) => p.split(",")[1]).filter(Boolean);
