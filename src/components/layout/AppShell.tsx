@@ -5,6 +5,7 @@ import { AppSidebar } from "./AppSidebar";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { BottomNav } from "./BottomNav";
 import { CommandPalette } from "./CommandPalette";
+import { ImpersonationBanner } from "./ImpersonationBanner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLastSeenTracker } from "@/hooks/useLastSeenTracker";
 
