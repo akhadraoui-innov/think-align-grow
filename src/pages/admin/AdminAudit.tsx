@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { z } from "zod";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -12,6 +14,21 @@ import { ShieldCheck, ShieldAlert, Download, RefreshCw, Loader2 } from "lucide-r
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { useSavedViews, type SavedView } from "@/hooks/useSavedViews";
+import { SavedViewsMenu } from "@/components/admin/SavedViewsMenu";
+
+const filterSchema = z.object({
+  actor: z.string().default(""),
+  action: z.string().default(""),
+  entityType: z.string().default("all"),
+  page: z.coerce.number().default(0),
+});
+
+const BUILTIN_VIEWS: SavedView[] = [
+  { id: "builtin-org-updates", name: "Mises à jour orgs", params: "action=org.update", createdAt: "2026-04-27T00:00:00Z" },
+  { id: "builtin-bulk", name: "Actions en masse", params: "action=bulk", createdAt: "2026-04-27T00:00:00Z" },
+];
 
 type AuditLog = {
   id: number;
