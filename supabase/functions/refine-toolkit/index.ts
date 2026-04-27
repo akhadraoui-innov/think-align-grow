@@ -17,6 +17,13 @@ async function resolveAIConfig() {
     .is("organization_id", null)
     .eq("is_active", true)
     .maybeSingle();
+
+  if (globalConfig && !globalConfig.api_key && globalConfig.api_key_secret_id) {
+    try {
+      const { data } = await sb.rpc("get_ai_api_key", { _config_id: globalConfig.id });
+      if (data) globalConfig.api_key = data as string;
+    } catch (e) { console.warn("[refine-toolkit] vault decrypt failed", e); }
+  }
   return globalConfig;
 }
 
