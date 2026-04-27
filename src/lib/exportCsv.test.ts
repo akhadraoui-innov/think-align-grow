@@ -36,4 +36,44 @@ describe("exportCsv — rowsToCsv (RFC 4180)", () => {
     );
     expect(csv).toContain("3");
   });
+
+  it("renders null and undefined as empty fields", () => {
+    const csv = rowsToCsv(
+      [{ a: null, b: undefined, c: 0 }],
+      [
+        { key: "a", label: "A" },
+        { key: "b", label: "B" },
+        { key: "c", label: "C" },
+      ],
+    );
+    expect(csv).toBe("A,B,C\r\n,,0");
+  });
+
+  it("serializes Date and nested objects", () => {
+    const d = new Date("2026-01-15T10:30:00.000Z");
+    const csv = rowsToCsv(
+      [{ when: d, meta: { foo: "bar" } }],
+      [
+        { key: "when", label: "When" },
+        { key: "meta", label: "Meta" },
+      ],
+    );
+    expect(csv).toContain("2026-01-15T10:30:00.000Z");
+    expect(csv).toContain('"{""foo"":""bar""}"');
+  });
+
+  it("handles arrays of objects via name/label fallback", () => {
+    const csv = rowsToCsv(
+      [{ items: [{ name: "Alpha" }, { label: "Beta" }, { other: "x" }] }],
+      [{ key: "items", label: "Items" }],
+    );
+    expect(csv).toContain("Alpha;Beta;");
+    // unknown shape is JSON-serialized
+    expect(csv).toContain("other");
+  });
+
+  it("returns header only on empty rows", () => {
+    const csv = rowsToCsv([], [{ key: "x", label: "X" }]);
+    expect(csv).toBe("X\r\n");
+  });
 });
