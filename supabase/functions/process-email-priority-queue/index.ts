@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
         if (payload.organization_id) {
           const { data: orgCfg } = await supabase
             .from("email_provider_configs")
-            .select("provider_code, credentials, from_email, from_name, reply_to")
+            .select("id, provider_code, credentials, from_email, from_name, reply_to")
             .eq("organization_id", payload.organization_id)
             .eq("is_active", true)
             .order("is_default", { ascending: false })
@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
         if (!provCfg) {
           const { data: g } = await supabase
             .from("email_provider_configs")
-            .select("provider_code, credentials, from_email, from_name, reply_to")
+            .select("id, provider_code, credentials, from_email, from_name, reply_to")
             .is("organization_id", null)
             .eq("is_active", true)
             .order("is_default", { ascending: false })
@@ -98,6 +98,19 @@ Deno.serve(async (req) => {
           provCfg = g;
         }
         if (!provCfg) throw new Error("no_active_provider");
+
+        // Resolve credentials: JSONB column first, Vault fallback
+        let credentials: Record<string, any> = (provCfg.credentials as any) || {};
+        if (!credentials || Object.keys(credentials).length === 0) {
+          try {
+            const { data: vaultCreds } = await supabase.rpc("get_email_provider_credentials", {
+              _config_id: provCfg.id,
+            });
+            if (vaultCreds) credentials = vaultCreds as Record<string, any>;
+          } catch (e) {
+            console.warn("[process-email-priority-queue] vault decrypt failed", e);
+          }
+        }
 
         const adapter = getAdapter(provCfg.provider_code);
         const sanitized = payload.html ? sanitizeEmailHtml(payload.html) : "";
@@ -111,7 +124,7 @@ Deno.serve(async (req) => {
           html: sanitized,
           text: payload.text,
           headers: payload.extra_headers || {},
-        }, provCfg.credentials || {});
+        }, credentials);
 
         await supabase.from("email_send_log").insert({
           message_id: payload.message_id || crypto.randomUUID(),
