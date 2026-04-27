@@ -168,6 +168,13 @@ export default function AdminAudit() {
                 Chaîne rompue à #{integrity.data?.broken_at}
               </Badge>
             )}
+            <SavedViewsMenu
+              views={views}
+              currentParams={currentParams}
+              onApply={applyView}
+              onSave={save}
+              onRemove={remove}
+            />
             <Button size="sm" variant="outline" onClick={() => integrity.refetch()}>
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
