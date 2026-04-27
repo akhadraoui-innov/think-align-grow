@@ -1,78 +1,69 @@
-# Plan post Lot 7 — Préparation Lot 8
+# Plan post Lot 8 — Préparation Lot 9
 
-## 1. Bilan Lot 7 — livré
+## 1. Bilan Lot 8 — livré (brique E)
 
-### Métriques sécurité
-| Indicateur | Avant Lot 7 | Après Lot 7 | Δ |
+### Brique E — Rate limiting opérations sensibles ✅
+- Table `public.rate_limits` (service_role only, RLS sans policy = lockdown).
+- RPC `check_rate_limit(_user_id, _action_key, _max, _window)` SECURITY DEFINER, **REVOKE** total → service_role only.
+- RPC `cleanup_rate_limits()` pour TTL 24h.
+- `delete-user` → 5/h. `impersonate-user` → 10/h.
+- Documentation `mem://security/rate-limiting.md`.
+
+### Métriques
+| Indicateur | Lot 7 | Lot 8 | Δ |
 |---|---|---|---|
-| Findings scan | 165 | 42 | **−75%** |
-| Errors | 4 | 0 | **−100%** |
-| Warnings linter Supabase | 155 | 41 | **−74%** |
+| Edge functions critiques rate-limitées | 0/2 | 2/2 | +100% |
+| Findings | 51 | 51 (+1 INFO volontaire) | = |
 
-### Brique livrée — Hardening EXECUTE permissions
-- **Migration de hardening** : `REVOKE EXECUTE FROM PUBLIC, anon, authenticated` sur toutes les 77 fonctions SECURITY DEFINER du schéma `public`.
-- **Liste blanche `anon`** (5 fonctions publiques légitimes) : tokens email + invitations + workshop par code.
-- **Liste blanche `authenticated`** (~36 fonctions) : helpers RLS, notifications, quotas, RGPD, métriques admin avec garde interne `is_saas_team`.
-- **Triggers internes et helpers service_role** : aucun GRANT — exécutables uniquement par owner/service_role bypass.
-
-### Findings résiduels acceptés (documentés)
-Les 41 warnings restants sont **par design** et inévitables sans casser la fonctionnalité :
-- Le scanner Supabase signale TOUTE fonction SECURITY DEFINER appelable par anon/authenticated, sans distinguer les usages légitimes.
-- Pour ces 41 fonctions, la garde de sécurité est **interne** (vérif `is_saas_team`, `auth.uid()`, paramètres validés).
-- Le warning `REALTIME_CHANNEL_UNAUTHORIZED_SUBSCRIPTION` est mitigé par la règle "Postgres Changes only" documentée dans `data-protection-baseline.md`.
-
-### Documentation mise à jour
-- `mem://security/data-protection-baseline.md` augmentée avec section "EXECUTE permissions sur SECURITY DEFINER" + règle pour toute nouvelle fonction.
+### Briques A/B/C/D du plan initial Lot 8 — non livrées
+- **A — Vault pgsodium** : reportée Lot 9 (refacto multi-EF, risque de régression élevé sans tests).
+- **B — Tests filet sécurité** : reportée Lot 9.
+- **C — Validation EF email pilote** : non bloquante, à faire avec un envoi réel.
+- **D — Productivité 5 pages restantes + ⌘K** : ⌘K **déjà global** (livré E3, vérifié `src/components/layout/CommandPalette.tsx`). Les 5 pages restantes = chantier UI dédié.
 
 ---
 
-## 2. Périmètre **Lot 8 — Vault, productivité, tests**
+## 2. Périmètre **Lot 9 — Vault, tests, finitions productivité**
 
-### Brique A — Vault pgsodium (3 secrets restants)
-Les errors Vault d'origine sont passées en `warn` après hardening RLS, mais restent des dettes :
-- `ai_configurations.api_key` (saas team only via RLS)
-- `email_provider_configs.credentials` (org admin only, déjà chiffré applicatif via `encrypt_email_credentials`)
-- `email_webhook_secrets.secret` (saas team only)
-- `academy_certificate_config.api_key_hash` (saas team only)
-
-**Approche** :
+### Brique A — Vault pgsodium (3 secrets)
 1. Activer extension `pgsodium`.
-2. Helper SQL `app_get_secret(_secret_id uuid)` SECURITY DEFINER avec garde rôle.
-3. Migrer chaque secret : ajouter colonne `*_secret_id uuid`, copier dans Vault, NULL la colonne plaintext.
-4. Patcher 3 edge functions consommatrices : `ai-coach`, `trigger-email`/`process-email-queue`, `verify-certificate`.
+2. Helper SQL `app_get_secret(_secret_id uuid)` SECURITY DEFINER avec audit log.
+3. Migrer : `ai_configurations.api_key`, `email_provider_configs.credentials`, `email_webhook_secrets.secret`.
+4. Patcher EFs consommatrices : `ai-coach`, `trigger-email`/`process-email-queue`.
 5. Audit log à chaque déchiffrement.
 
-### Brique B — Tests filet sécurité
-- `src/hooks/usePermissions.test.tsx` : 12 rôles × 5 actions principales.
-- `src/hooks/useUrlFilters.test.ts`, `src/hooks/useBulkSelection.test.ts`.
-- `supabase/functions/_shared/realtime-isolation_test.ts` (Deno).
-- `supabase/functions/trigger-email/index_test.ts` (happy path + secret manquant).
+### Brique B — Suite de tests Deno
+- `supabase/functions/_shared/rate-limit_test.ts` (allowed/blocked/reset).
+- `supabase/functions/delete-user/index_test.ts` (rejet non-admin, rate limit hit, archive RGPD).
 - `supabase/functions/verify-certificate/index_test.ts` (valide / révoqué / inexistant).
+- `src/hooks/usePermissions.test.tsx` (12 rôles × 5 actions).
 
-### Brique C — Validation edge functions email
-Déployer + tester end-to-end `email-events`, `process-email-queue`, `process-email-priority-queue` (typage corrigé Lot 6 mais jamais exécuté en pilote).
+### Brique C — adjust_credits
+- Soit migrer en edge function avec rate limit.
+- Soit trigger `BEFORE INSERT` sur `credit_transactions` qui appelle `check_rate_limit`.
 
-### Brique D — Productivité (rollout Lot 5)
-Étendre `selectable`/`exportable`/URL filters/saved views aux 5 pages restantes :
-- `AdminOrganizations`, `AdminAudit`, `AdminLogs`, `AdminBilling`, `AdminAcademyTracking`.
-- Ajouter **Command Palette ⌘K** globale.
+### Brique D — Productivité 5 pages
+Étendre `selectable`/`exportable`/URL filters/saved views à :
+`AdminOrganizations`, `AdminAudit`, `AdminLogs`, `AdminBilling`, `AdminAcademyTracking`.
 
-### Brique E — Rate limiting opérations sensibles
-- `delete-user`, `adjust_credits`, `impersonate-user` (table `rate_limits` + check côté edge).
-
----
-
-## 3. Critères d'acceptation Lot 8
-
-1. `psql -c "SELECT api_key FROM ai_configurations"` retourne `NULL` partout.
-2. ≥ 5 nouveaux fichiers de test au vert.
-3. Un envoi pilote validé sur les 3 edge functions email post-fix.
-4. Command Palette ⌘K opérationnelle, 5 pages admin équipées des features Lot 5.
-5. Rate limiting actif sur 3 ops sensibles (HTTP 429 reproduit en test).
+### Brique E — Pg_cron cleanup
+- Cron quotidien `cleanup_rate_limits()`.
+- Cron quotidien purge `rate_limits` et `audit_logs_immutable` archive S3.
 
 ---
 
-## 4. Hors périmètre Lot 8 (Lot 9+)
+## 3. Critères d'acceptation Lot 9
+
+1. `psql -c "SELECT api_key FROM ai_configurations"` retourne `NULL` partout (Vault).
+2. ≥ 4 nouveaux fichiers de test Deno au vert.
+3. `adjust_credits` rate-limité (trigger ou EF).
+4. 5 pages admin équipées de `DataTable selectable exportable` + URL filters.
+5. Pg_cron `cleanup_rate_limits` actif.
+
+---
+
+## 4. Hors périmètre Lot 9 (Lot 10+)
 - Refacto routes en `<Route>` imbriqués (DX).
 - Cohorts / observability dashboards (business).
 - Migration des 41 warnings SECURITY DEFINER vers SECURITY INVOKER (refacto majeur, ROI faible).
+- Saved views partagées en équipe (table SQL + RLS).
