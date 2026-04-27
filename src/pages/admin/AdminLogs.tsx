@@ -58,7 +58,14 @@ export default function AdminLogs() {
 
   // Sync URL filters → hook on every change
   useMemo(() => {
-    setHookFilters(filters);
+    setHookFilters({
+      search: filters.search,
+      action: filters.action,
+      entityType: filters.entityType,
+      organizationId: filters.organizationId,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+    });
     setPage(0);
   }, [filters.action, filters.entityType, filters.organizationId, filters.dateFrom, filters.dateTo, filters.search]);
 
