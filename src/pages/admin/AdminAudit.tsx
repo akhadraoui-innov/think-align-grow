@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { z } from "zod";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -12,6 +14,21 @@ import { ShieldCheck, ShieldAlert, Download, RefreshCw, Loader2 } from "lucide-r
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { useSavedViews, type SavedView } from "@/hooks/useSavedViews";
+import { SavedViewsMenu } from "@/components/admin/SavedViewsMenu";
+
+const filterSchema = z.object({
+  actor: z.string().default(""),
+  action: z.string().default(""),
+  entityType: z.string().default("all"),
+  page: z.coerce.number().default(0),
+});
+
+const BUILTIN_VIEWS: SavedView[] = [
+  { id: "builtin-org-updates", name: "Mises à jour orgs", params: "action=org.update", createdAt: "2026-04-27T00:00:00Z" },
+  { id: "builtin-bulk", name: "Actions en masse", params: "action=bulk", createdAt: "2026-04-27T00:00:00Z" },
+];
 
 type AuditLog = {
   id: number;
@@ -31,10 +48,29 @@ const PAGE_SIZE = 50;
 
 export default function AdminAudit() {
   const perms = usePermissions();
-  const [actor, setActor] = useState("");
-  const [action, setAction] = useState("");
-  const [entityType, setEntityType] = useState<string>("all");
-  const [page, setPage] = useState(0);
+  const [filters, setFilters, resetFilters] = useUrlFilters(filterSchema);
+  const [, setSearchParams] = useSearchParams();
+  const { views, save, remove } = useSavedViews("audit", BUILTIN_VIEWS);
+  const { actor, action, entityType, page } = filters;
+  const setActor = (v: string) => setFilters({ actor: v, page: 0 });
+  const setAction = (v: string) => setFilters({ action: v, page: 0 });
+  const setEntityType = (v: string) => setFilters({ entityType: v, page: 0 });
+  const setPage = (p: number | ((cur: number) => number)) => {
+    const next = typeof p === "function" ? p(page) : p;
+    setFilters({ page: next });
+  };
+
+  const currentParams = useMemo(() => {
+    const sp = new URLSearchParams();
+    if (actor) sp.set("actor", actor);
+    if (action) sp.set("action", action);
+    if (entityType !== "all") sp.set("entityType", entityType);
+    return sp.toString();
+  }, [actor, action, entityType]);
+
+  const applyView = (params: string) => {
+    setSearchParams(new URLSearchParams(params), { replace: true });
+  };
 
   const integrity = useQuery({
     queryKey: ["audit-chain-integrity"],
@@ -132,6 +168,13 @@ export default function AdminAudit() {
                 Chaîne rompue à #{integrity.data?.broken_at}
               </Badge>
             )}
+            <SavedViewsMenu
+              views={views}
+              currentParams={currentParams}
+              onApply={applyView}
+              onSave={save}
+              onRemove={remove}
+            />
             <Button size="sm" variant="outline" onClick={() => integrity.refetch()}>
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
@@ -139,10 +182,10 @@ export default function AdminAudit() {
         </header>
 
         <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <Input placeholder="Acteur (email)" value={actor} onChange={e => { setActor(e.target.value); setPage(0); }} />
-            <Input placeholder="Action (ex: org.update)" value={action} onChange={e => { setAction(e.target.value); setPage(0); }} />
-            <Select value={entityType} onValueChange={v => { setEntityType(v); setPage(0); }}>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <Input placeholder="Acteur (email)" value={actor} onChange={e => setActor(e.target.value)} />
+            <Input placeholder="Action (ex: org.update)" value={action} onChange={e => setAction(e.target.value)} />
+            <Select value={entityType} onValueChange={setEntityType}>
               <SelectTrigger><SelectValue placeholder="Type d'entité" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les entités</SelectItem>
@@ -154,6 +197,9 @@ export default function AdminAudit() {
             <Button variant="outline" onClick={exportCsv} className="gap-2">
               <Download className="h-4 w-4" /> Export CSV ({(logsQuery.data?.rows ?? []).length})
             </Button>
+            {currentParams && (
+              <Button variant="ghost" onClick={resetFilters}>Réinitialiser</Button>
+            )}
           </div>
         </Card>
 
