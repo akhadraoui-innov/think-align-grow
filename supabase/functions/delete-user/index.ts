@@ -46,6 +46,17 @@ Deno.serve(async (req) => {
     });
     if (!callerIsSuper) return json({ error: "forbidden" }, 403);
 
+    // Rate limiting : 5 suppressions / heure / super_admin
+    const { data: rl } = await admin.rpc("check_rate_limit", {
+      _user_id: caller.id,
+      _action_key: "delete-user",
+      _max_calls: 5,
+      _window_minutes: 60,
+    } as any);
+    if (rl && (rl as any).allowed === false) {
+      return json({ error: "rate_limit_exceeded", detail: rl }, 429);
+    }
+
     // Parse + validate body
     const body = await req.json().catch(() => ({}));
     const target_user_id = String(body?.user_id || "").trim();

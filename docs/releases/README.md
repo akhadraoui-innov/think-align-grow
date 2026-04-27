@@ -23,6 +23,14 @@ Historique exhaustif du développement de la plateforme, organisé **par module 
 | Version | Date | Périmètre principal | Note |
 |---|---|---|---|
 | **v2.4** | 16 avril 2026 | Practice Studio : scope blocs, autosave, alignement portail/cabinet | [📄 Lire](./v2.4-practice-studio.md) |
+| **v2.5** | — | Gouvernance : rôles, permissions, audit immuable | [📄 Lire](./v2.5-governance.md) |
+| **v2.6** | — | Email Platform : multi-provider, co-branding, IA marketing | [📄 Lire](./v2.6-email-platform.md) |
+| **v2.6.1 — E1** | — | Email Studio — fondations | [📄 Lire](./v2.6.1-lot-E1.md) |
+| **v2.6.1 — E2** | — | Email Studio — automations | [📄 Lire](./v2.6.1-lot-E2.md) |
+| **v2.6.1 — E3** | — | Email Studio — productivité (DataTable, ⌘K, saved views) | [📄 Lire](./v2.6.1-lot-E3.md) |
+| **v2.6.1 — E4** | — | Health Dashboard global & Observabilité | [📄 Lire](./v2.6.1-lot-E4.md) |
+| **v2.7 — Lot 7** | 27 avril 2026 | Hardening EXECUTE permissions sur SECURITY DEFINER (165→51 findings) | [📄 Lire](./v2.7-lot-7-hardening.md) |
+| **v2.8 — Lot 8** | 27 avril 2026 | Rate limiting opérations sensibles (delete-user, impersonate-user) | [📄 Lire](./v2.8-lot-8-rate-limiting.md) |
 
 ## 📐 Convention
 

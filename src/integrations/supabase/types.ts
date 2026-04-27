@@ -3641,6 +3641,36 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          action_key: string
+          count: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          action_key: string
+          count?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          action_key?: string
+          count?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string | null
@@ -5337,10 +5367,20 @@ export type Database = {
         Returns: boolean
       }
       check_email_quota: { Args: { _org_id: string }; Returns: boolean }
+      check_rate_limit: {
+        Args: {
+          _action_key: string
+          _max_calls?: number
+          _user_id: string
+          _window_minutes?: number
+        }
+        Returns: Json
+      }
       check_ucm_quota: {
         Args: { p_action: string; p_org_id: string }
         Returns: boolean
       }
+      cleanup_rate_limits: { Args: never; Returns: undefined }
       compute_ab_significance: {
         Args: {
           _a_opened: number
