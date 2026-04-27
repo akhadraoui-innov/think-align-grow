@@ -182,10 +182,10 @@ export default function AdminAudit() {
         </header>
 
         <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <Input placeholder="Acteur (email)" value={actor} onChange={e => { setActor(e.target.value); setPage(0); }} />
-            <Input placeholder="Action (ex: org.update)" value={action} onChange={e => { setAction(e.target.value); setPage(0); }} />
-            <Select value={entityType} onValueChange={v => { setEntityType(v); setPage(0); }}>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <Input placeholder="Acteur (email)" value={actor} onChange={e => setActor(e.target.value)} />
+            <Input placeholder="Action (ex: org.update)" value={action} onChange={e => setAction(e.target.value)} />
+            <Select value={entityType} onValueChange={setEntityType}>
               <SelectTrigger><SelectValue placeholder="Type d'entité" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les entités</SelectItem>
@@ -197,6 +197,9 @@ export default function AdminAudit() {
             <Button variant="outline" onClick={exportCsv} className="gap-2">
               <Download className="h-4 w-4" /> Export CSV ({(logsQuery.data?.rows ?? []).length})
             </Button>
+            {currentParams && (
+              <Button variant="ghost" onClick={resetFilters}>Réinitialiser</Button>
+            )}
           </div>
         </Card>
 
