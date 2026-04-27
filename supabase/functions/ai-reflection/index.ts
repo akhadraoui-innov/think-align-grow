@@ -25,6 +25,16 @@ async function resolveAIConfig(organizationId?: string) {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const sb = createClient(supabaseUrl, serviceRoleKey);
 
+  async function hydrateKey(cfg: any) {
+    if (cfg && !cfg.api_key && cfg.api_key_secret_id) {
+      try {
+        const { data } = await sb.rpc("get_ai_api_key", { _config_id: cfg.id });
+        if (data) cfg.api_key = data as string;
+      } catch (e) { console.warn("[ai-reflection] vault decrypt failed", e); }
+    }
+    return cfg;
+  }
+
   if (organizationId) {
     const { data: orgConfig } = await sb
       .from("ai_configurations")
@@ -32,7 +42,7 @@ async function resolveAIConfig(organizationId?: string) {
       .eq("organization_id", organizationId)
       .eq("is_active", true)
       .maybeSingle();
-    if (orgConfig) return orgConfig;
+    if (orgConfig) return await hydrateKey(orgConfig);
   }
 
   const { data: globalConfig } = await sb
@@ -41,7 +51,7 @@ async function resolveAIConfig(organizationId?: string) {
     .is("organization_id", null)
     .eq("is_active", true)
     .maybeSingle();
-  if (globalConfig) return globalConfig;
+  if (globalConfig) return await hydrateKey(globalConfig);
 
   return null;
 }
