@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { z } from "zod";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminLogs } from "@/hooks/useAdminLogs";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,9 @@ import { ChevronLeft, ChevronRight, Search, Filter, Eye, Download } from "lucide
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+import { useUrlFilters } from "@/hooks/useUrlFilters";
+import { useSavedViews, type SavedView } from "@/hooks/useSavedViews";
+import { SavedViewsMenu } from "@/components/admin/SavedViewsMenu";
 
 const ACTION_COLORS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   created: "default",
@@ -25,19 +30,43 @@ const ACTION_COLORS: Record<string, "default" | "secondary" | "destructive" | "o
   login: "outline",
 };
 
+const filterSchema = z.object({
+  search: z.string().default(""),
+  action: z.string().default(""),
+  entityType: z.string().default(""),
+  organizationId: z.string().default(""),
+  dateFrom: z.string().default(""),
+  dateTo: z.string().default(""),
+});
+
+const BUILTIN_VIEWS: SavedView[] = [
+  { id: "builtin-deletes", name: "Suppressions", params: "action=deleted", createdAt: "2026-04-27T00:00:00Z" },
+  { id: "builtin-logins", name: "Connexions", params: "action=login", createdAt: "2026-04-27T00:00:00Z" },
+];
+
 export default function AdminLogs() {
+  const [filters, setFilters, resetFilters] = useUrlFilters(filterSchema);
+  const [, setSearchParams] = useSearchParams();
+  const { views, save, remove } = useSavedViews("logs", BUILTIN_VIEWS);
+
+  // Bridge URL filters → existing hook (kept untouched for server-side query stability)
   const {
     logs, totalCount, logsLoading,
-    filters, setFilters, page, setPage, pageSize, totalPages, meta,
+    setFilters: setHookFilters, page, setPage, totalPages, meta,
     profileMap, exportCsv,
   } = useAdminLogs();
+
+  // Sync URL filters → hook on every change
+  useMemo(() => {
+    setHookFilters(filters);
+    setPage(0);
+  }, [filters.action, filters.entityType, filters.organizationId, filters.dateFrom, filters.dateTo, filters.search]);
 
   const [detailLog, setDetailLog] = useState<any>(null);
   const [exporting, setExporting] = useState(false);
 
-  const updateFilter = (key: string, value: string) => {
-    setFilters((f) => ({ ...f, [key]: value }));
-    setPage(0);
+  const updateFilter = (key: keyof typeof filters, value: string) => {
+    setFilters({ [key]: value } as any);
   };
 
   const handleExport = async () => {
@@ -52,6 +81,19 @@ export default function AdminLogs() {
     }
   };
 
+  // Build current URL params string for SavedViews
+  const currentParams = useMemo(() => {
+    const sp = new URLSearchParams();
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v) sp.set(k, String(v));
+    });
+    return sp.toString();
+  }, [filters]);
+
+  const applyView = (params: string) => {
+    setSearchParams(new URLSearchParams(params), { replace: true });
+  };
+
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
@@ -60,10 +102,19 @@ export default function AdminLogs() {
             <h1 className="text-2xl font-display font-bold text-foreground">Logs d'activité</h1>
             <p className="text-sm text-muted-foreground mt-1">Journal d'audit de la plateforme — {totalCount} entrée{totalCount > 1 ? "s" : ""}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
-            <Download className="h-4 w-4 mr-1" />
-            {exporting ? "Export…" : "Exporter CSV"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <SavedViewsMenu
+              views={views}
+              currentParams={currentParams}
+              onApply={applyView}
+              onSave={save}
+              onRemove={remove}
+            />
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+              <Download className="h-4 w-4 mr-1" />
+              {exporting ? "Export…" : "Exporter CSV"}
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -112,6 +163,11 @@ export default function AdminLogs() {
             onChange={(e) => updateFilter("dateTo", e.target.value)}
             placeholder="Au"
           />
+          {currentParams && (
+            <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground">
+              Réinitialiser
+            </Button>
+          )}
         </div>
 
         {/* Table */}
