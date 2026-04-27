@@ -48,10 +48,29 @@ const PAGE_SIZE = 50;
 
 export default function AdminAudit() {
   const perms = usePermissions();
-  const [actor, setActor] = useState("");
-  const [action, setAction] = useState("");
-  const [entityType, setEntityType] = useState<string>("all");
-  const [page, setPage] = useState(0);
+  const [filters, setFilters, resetFilters] = useUrlFilters(filterSchema);
+  const [, setSearchParams] = useSearchParams();
+  const { views, save, remove } = useSavedViews("audit", BUILTIN_VIEWS);
+  const { actor, action, entityType, page } = filters;
+  const setActor = (v: string) => setFilters({ actor: v, page: 0 });
+  const setAction = (v: string) => setFilters({ action: v, page: 0 });
+  const setEntityType = (v: string) => setFilters({ entityType: v, page: 0 });
+  const setPage = (p: number | ((cur: number) => number)) => {
+    const next = typeof p === "function" ? p(page) : p;
+    setFilters({ page: next });
+  };
+
+  const currentParams = useMemo(() => {
+    const sp = new URLSearchParams();
+    if (actor) sp.set("actor", actor);
+    if (action) sp.set("action", action);
+    if (entityType !== "all") sp.set("entityType", entityType);
+    return sp.toString();
+  }, [actor, action, entityType]);
+
+  const applyView = (params: string) => {
+    setSearchParams(new URLSearchParams(params), { replace: true });
+  };
 
   const integrity = useQuery({
     queryKey: ["audit-chain-integrity"],
