@@ -1230,6 +1230,7 @@ export type Database = {
       ai_configurations: {
         Row: {
           api_key: string | null
+          api_key_secret_id: string | null
           created_at: string
           id: string
           is_active: boolean
@@ -1244,6 +1245,7 @@ export type Database = {
         }
         Insert: {
           api_key?: string | null
+          api_key_secret_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -1258,6 +1260,7 @@ export type Database = {
         }
         Update: {
           api_key?: string | null
+          api_key_secret_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -2172,6 +2175,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           credentials: Json
+          credentials_secret_id: string | null
           from_email: string | null
           from_name: string | null
           id: string
@@ -2186,6 +2190,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           credentials?: Json
+          credentials_secret_id?: string | null
           from_email?: string | null
           from_name?: string | null
           id?: string
@@ -2200,6 +2205,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           credentials?: Json
+          credentials_secret_id?: string | null
           from_email?: string | null
           from_name?: string | null
           id?: string
@@ -2675,6 +2681,7 @@ export type Database = {
           organization_id: string | null
           provider_code: string
           secret: string
+          secret_secret_id: string | null
         }
         Insert: {
           created_at?: string
@@ -2685,6 +2692,7 @@ export type Database = {
           organization_id?: string | null
           provider_code: string
           secret: string
+          secret_secret_id?: string | null
         }
         Update: {
           created_at?: string
@@ -2695,6 +2703,7 @@ export type Database = {
           organization_id?: string | null
           provider_code?: string
           secret?: string
+          secret_secret_id?: string | null
         }
         Relationships: [
           {
@@ -5352,6 +5361,14 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { _token: string }; Returns: Json }
+      app_get_secret: {
+        Args: { _context?: string; _secret_id: string }
+        Returns: string
+      }
+      app_store_secret: {
+        Args: { _existing_id?: string; _name?: string; _value: string }
+        Returns: string
+      }
       append_audit_log: {
         Args: {
           _action: string
@@ -5450,6 +5467,7 @@ export type Database = {
           status: Database["public"]["Enums"]["workshop_status"]
         }[]
       }
+      get_ai_api_key: { Args: { _config_id: string }; Returns: string }
       get_edge_function_metrics: {
         Args: { _hours?: number }
         Returns: {
@@ -5472,6 +5490,10 @@ export type Database = {
           last_status: string
           schedule: string
         }[]
+      }
+      get_email_provider_credentials: {
+        Args: { _config_id: string }
+        Returns: Json
       }
       get_email_provider_health: {
         Args: { _hours?: number }
