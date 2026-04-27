@@ -31,6 +31,7 @@ Historique exhaustif du développement de la plateforme, organisé **par module 
 | **v2.6.1 — E4** | — | Health Dashboard global & Observabilité | [📄 Lire](./v2.6.1-lot-E4.md) |
 | **v2.7 — Lot 7** | 27 avril 2026 | Hardening EXECUTE permissions sur SECURITY DEFINER (165→51 findings) | [📄 Lire](./v2.7-lot-7-hardening.md) |
 | **v2.8 — Lot 8** | 27 avril 2026 | Rate limiting opérations sensibles (delete-user, impersonate-user) | [📄 Lire](./v2.8-lot-8-rate-limiting.md) |
+| **v2.9.1 — Lot 9.1** | 27 avril 2026 | Fix cron purge tokens + URL filters/Saved Views (AdminLogs, AdminAudit) + cleanup rate_limits | [📄 Lire](./v2.9.1-lot-9-fix-productivity.md) |
 
 ## 📐 Convention
 
