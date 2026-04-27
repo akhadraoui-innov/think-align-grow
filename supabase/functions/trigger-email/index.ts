@@ -262,8 +262,18 @@ Deno.serve(async (req) => {
       }, 503);
     }
 
-    // ── 6. Use credentials from JSONB column (already plaintext-safe) ─
-    const credentials: Record<string, any> = (providerConfig.credentials as any) || {};
+    // ── 6. Use credentials from JSONB column, fallback to Vault if empty ─
+    let credentials: Record<string, any> = (providerConfig.credentials as any) || {};
+    if (!credentials || Object.keys(credentials).length === 0) {
+      try {
+        const { data: vaultCreds } = await supabase.rpc("get_email_provider_credentials", {
+          _config_id: providerConfig.id,
+        });
+        if (vaultCreds) credentials = vaultCreds as Record<string, any>;
+      } catch (e) {
+        console.warn("[trigger-email] vault credentials decrypt failed", e);
+      }
+    }
 
     // ── 6bis. Subscriber preferences & suppression check ─────────────
     const category = categoryForTemplate(templateCode!);

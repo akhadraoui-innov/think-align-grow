@@ -33,6 +33,7 @@ Historique exhaustif du développement de la plateforme, organisé **par module 
 | **v2.8 — Lot 8** | 27 avril 2026 | Rate limiting opérations sensibles (delete-user, impersonate-user) | [📄 Lire](./v2.8-lot-8-rate-limiting.md) |
 | **v2.9.1 — Lot 9.1** | 27 avril 2026 | Fix cron purge tokens + URL filters/Saved Views (AdminLogs, AdminAudit) + cleanup rate_limits | [📄 Lire](./v2.9.1-lot-9-fix-productivity.md) |
 | **v2.9.2 — Lot 9.2** | 27 avril 2026 | Tests Vitest hooks critiques (usePermissions, useDeleteUser, exportCsv) — 16/16 passing | [📄 Lire](./v2.9.2-lot-9-tests.md) |
+| **v2.9.3 — Lot 9.3** | 27 avril 2026 | Vault pgsodium (3 tables sensibles, triggers auto-chiffrement, 8 EFs patchées, rétro-compat totale) + 3 suites Deno | [📄 Lire](./v2.9.3-lot-9-vault-deno.md) |
 
 ## 📐 Convention
 
