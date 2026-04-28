@@ -1,0 +1,2249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASMOS GROUP — Brochure Corporate 2024</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0D1B3E;
+    --navy-mid: #1A2D5A;
+    --blue: #1E5FD4;
+    --blue-light: #4A90D9;
+    --teal: #0EA5A0;
+    --gold: #C9A84C;
+    --gold-light: #F0D080;
+    --coral: #E85D4A;
+    --white: #FFFFFF;
+    --off-white: #F8F9FC;
+    --gray-light: #F2F4F8;
+    --gray-mid: #E2E6EE;
+    --gray-text: #6B7A99;
+    --text-dark: #0D1B3E;
+    --text-body: #2D3A5A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #D0D5E0;
+    color: var(--text-dark);
+  }
+
+  /* =================== PAGE SYSTEM =================== */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    background: white;
+    margin: 10mm auto;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 40px rgba(13,27,62,0.18);
+    page-break-after: always;
+  }
+
+  /* =================== TYPOGRAPHY =================== */
+  .display-xl { font-family: 'Inter', sans-serif; font-size: 52px; font-weight: 900; line-height: 1.05; letter-spacing: -2px; }
+  .display-lg { font-family: 'Inter', sans-serif; font-size: 40px; font-weight: 800; line-height: 1.1; letter-spacing: -1.5px; }
+  .display-md { font-family: 'Inter', sans-serif; font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -0.8px; }
+  .display-sm { font-family: 'Inter', sans-serif; font-size: 22px; font-weight: 700; line-height: 1.2; letter-spacing: -0.5px; }
+  .body-lg { font-size: 13px; font-weight: 400; line-height: 1.75; color: var(--text-body); }
+  .body-md { font-size: 11.5px; font-weight: 400; line-height: 1.7; color: var(--text-body); }
+  .body-sm { font-size: 10px; font-weight: 400; line-height: 1.6; color: var(--gray-text); }
+  .label { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .caption { font-size: 9.5px; font-weight: 500; color: var(--gray-text); }
+
+  /* =================== COLORS =================== */
+  .text-navy { color: var(--navy); }
+  .text-blue { color: var(--blue); }
+  .text-teal { color: var(--teal); }
+  .text-gold { color: var(--gold); }
+  .text-coral { color: var(--coral); }
+  .text-white { color: white; }
+  .text-gray { color: var(--gray-text); }
+  .bg-navy { background: var(--navy); }
+  .bg-navy-mid { background: var(--navy-mid); }
+  .bg-blue { background: var(--blue); }
+  .bg-teal { background: var(--teal); }
+  .bg-gold { background: var(--gold); }
+  .bg-coral { background: var(--coral); }
+  .bg-off-white { background: var(--off-white); }
+  .bg-gray-light { background: var(--gray-light); }
+
+  /* =================== LAYOUT =================== */
+  .px-12 { padding-left: 12mm; padding-right: 12mm; }
+  .py-10 { padding-top: 10mm; padding-bottom: 10mm; }
+  .px-16 { padding-left: 16mm; padding-right: 16mm; }
+  .py-12 { padding-top: 12mm; padding-bottom: 12mm; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6mm; }
+  .flex { display: flex; }
+  .flex-col { flex-direction: column; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .gap-4 { gap: 4mm; }
+  .gap-6 { gap: 6mm; }
+  .gap-8 { gap: 8mm; }
+  .mb-2 { margin-bottom: 2mm; }
+  .mb-4 { margin-bottom: 4mm; }
+  .mb-6 { margin-bottom: 6mm; }
+  .mb-8 { margin-bottom: 8mm; }
+  .mb-10 { margin-bottom: 10mm; }
+  .mt-4 { margin-top: 4mm; }
+  .mt-6 { margin-top: 6mm; }
+  .mt-8 { margin-top: 8mm; }
+
+  /* =================== COMPONENTS =================== */
+  .gold-line { height: 3px; background: linear-gradient(90deg, var(--gold), var(--gold-light), transparent); border-radius: 2px; }
+  .gold-line-full { height: 3px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
+  .navy-line { height: 2px; background: var(--navy); }
+  .divider { height: 1px; background: var(--gray-mid); }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .tag-navy { background: var(--navy); color: white; }
+  .tag-blue { background: var(--blue); color: white; }
+  .tag-teal { background: var(--teal); color: white; }
+  .tag-gold { background: var(--gold); color: white; }
+  .tag-coral { background: var(--coral); color: white; }
+  .tag-outline { border: 1px solid var(--navy); color: var(--navy); background: transparent; }
+
+  .card {
+    background: white;
+    border: 1px solid var(--gray-mid);
+    border-radius: 4px;
+    padding: 6mm;
+  }
+  .card-navy { background: var(--navy); border: none; border-radius: 4px; padding: 6mm; }
+  .card-blue { background: var(--blue); border: none; border-radius: 4px; padding: 6mm; }
+  .card-teal { background: var(--teal); border: none; border-radius: 4px; padding: 6mm; }
+  .card-gold { background: var(--gold); border: none; border-radius: 4px; padding: 6mm; }
+  .card-coral { background: var(--coral); border: none; border-radius: 4px; padding: 6mm; }
+  .card-light { background: var(--gray-light); border: none; border-radius: 4px; padding: 6mm; }
+
+  .stat-box {
+    text-align: center;
+    padding: 5mm 4mm;
+  }
+  .stat-number { font-size: 36px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
+  .stat-label { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-top: 2mm; }
+
+  .icon-circle {
+    width: 10mm;
+    height: 10mm;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .quote-block {
+    border-left: 3px solid var(--gold);
+    padding-left: 6mm;
+    font-style: italic;
+  }
+
+  .page-number {
+    position: absolute;
+    bottom: 6mm;
+    right: 12mm;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--gray-text);
+    letter-spacing: 1px;
+  }
+
+  .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5mm 12mm;
+    border-bottom: 1px solid var(--gray-mid);
+  }
+
+  .logo-text {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: var(--navy);
+  }
+  .logo-text span { color: var(--blue); }
+
+  .section-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--gray-text);
+  }
+
+  /* =================== PIXEL TEXTURE =================== */
+  .pixel-bg {
+    background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 8px 8px;
+  }
+
+  .pixel-bg-light {
+    background-image: radial-gradient(circle, rgba(13,27,62,0.04) 1px, transparent 1px);
+    background-size: 8px 8px;
+  }
+
+  /* =================== SECTION DIVIDERS =================== */
+  .section-intercalaire {
+    width: 210mm;
+    min-height: 297mm;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* =================== PRINT =================== */
+  @media print {
+    body { background: white; }
+    .page { margin: 0; box-shadow: none; }
+  }
+
+  img { max-width: 100%; height: auto; display: block; }
+  .img-cover { width: 100%; height: 100%; object-fit: cover; }
+  .img-contain { width: 100%; height: 100%; object-fit: contain; }
+
+  .rounded { border-radius: 4px; }
+  .rounded-lg { border-radius: 8px; }
+  .overflow-hidden { overflow: hidden; }
+
+  .w-full { width: 100%; }
+  .h-full { height: 100%; }
+
+  .relative { position: relative; }
+  .absolute { position: absolute; }
+
+  .border-t { border-top: 1px solid var(--gray-mid); }
+  .border-b { border-bottom: 1px solid var(--gray-mid); }
+
+  /* Product card */
+  .product-card {
+    background: var(--gray-light);
+    border-radius: 4px;
+    padding: 5mm;
+    border-left: 3px solid var(--blue);
+  }
+  .product-card.teal { border-left-color: var(--teal); }
+  .product-card.gold { border-left-color: var(--gold); }
+  .product-card.coral { border-left-color: var(--coral); }
+  .product-card.navy { border-left-color: var(--navy); }
+
+  /* Numbered list */
+  .numbered-item {
+    display: flex;
+    gap: 4mm;
+    margin-bottom: 4mm;
+    align-items: flex-start;
+  }
+  .num-badge {
+    width: 7mm;
+    height: 7mm;
+    border-radius: 50%;
+    background: var(--navy);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* Pill badge */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 2mm;
+    padding: 1.5mm 4mm;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 600;
+  }
+  .pill-navy { background: rgba(13,27,62,0.08); color: var(--navy); }
+  .pill-blue { background: rgba(30,95,212,0.1); color: var(--blue); }
+  .pill-teal { background: rgba(14,165,160,0.1); color: var(--teal); }
+  .pill-gold { background: rgba(201,168,76,0.12); color: #9A7A2A; }
+
+  /* Two-tone header */
+  .two-tone-header {
+    display: grid;
+    grid-template-columns: 60% 40%;
+    min-height: 55mm;
+  }
+  .two-tone-left { background: var(--navy); padding: 10mm 12mm; display: flex; flex-direction: column; justify-content: center; }
+  .two-tone-right { position: relative; overflow: hidden; }
+
+  /* Full bleed image */
+  .full-bleed { width: 100%; height: 60mm; object-fit: cover; }
+  .full-bleed-tall { width: 100%; height: 80mm; object-fit: cover; }
+
+  /* Highlight box */
+  .highlight-box {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+    border-radius: 4px;
+    padding: 6mm;
+    color: white;
+  }
+
+  /* Metric row */
+  .metric-row {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--gray-mid);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .metric-cell {
+    flex: 1;
+    padding: 5mm 4mm;
+    text-align: center;
+    border-right: 1px solid var(--gray-mid);
+  }
+  .metric-cell:last-child { border-right: none; }
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PAGE 1 : COUVERTURE -->
+<!-- ============================================================ -->
+<div class="page" style="background: var(--navy); min-height: 297mm;">
+  <div class="pixel-bg" style="position: absolute; inset: 0; opacity: 0.6;"></div>
+  
+  <!-- Gold accent top -->
+  <div style="height: 3px; background: linear-gradient(90deg, var(--gold), var(--gold-light), transparent); position: relative; z-index: 2;"></div>
+  
+  <!-- Header -->
+  <div style="padding: 8mm 12mm 0; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 2;">
+    <div style="font-size: 18px; font-weight: 900; color: white; letter-spacing: -0.5px;">asmos <span style="color: var(--blue-light);">GROUP</span></div>
+    <div style="font-size: 8px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.5);">Brochure Corporate 2024</div>
+  </div>
+
+  <!-- Hero image area -->
+  <div style="margin: 6mm 12mm 0; height: 110mm; border-radius: 6px; overflow: hidden; position: relative; z-index: 2;">
+    <img src="img/cover_hero.png" style="width: 100%; height: 100%; object-fit: cover;" alt="ASMOS GROUP Gamification">
+    <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(13,27,62,0.7) 0%, transparent 60%);"></div>
+  </div>
+
+  <!-- Main content -->
+  <div style="padding: 8mm 12mm 0; position: relative; z-index: 2;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 4mm;">Intelligence Collective · Co-Innovation · Transformation</div>
+    <div style="font-size: 42px; font-weight: 900; line-height: 1.0; letter-spacing: -2px; color: white; margin-bottom: 4mm;">
+      La Gamification<br>
+      <span style="color: var(--blue-light);">au Service de</span><br>
+      l'Organisation
+    </div>
+    <div style="font-size: 13px; font-weight: 400; line-height: 1.6; color: rgba(255,255,255,0.75); max-width: 140mm; margin-bottom: 8mm;">
+      Design managérial, stratégique et prospectif — nous concevons des expériences ludiques qui transforment durablement vos organisations et libèrent l'intelligence collective.
+    </div>
+    
+    <!-- Pills -->
+    <div style="display: flex; gap: 3mm; flex-wrap: wrap; margin-bottom: 10mm;">
+      <div style="padding: 2mm 5mm; border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.8);">Serious Games</div>
+      <div style="padding: 2mm 5mm; border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.8);">Toolkits & Idéation</div>
+      <div style="padding: 2mm 5mm; border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.8);">Digital & Phygital</div>
+      <div style="padding: 2mm 5mm; border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.8);">Escape Rooms</div>
+    </div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div style="position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;">
+    <div style="height: 2px; background: linear-gradient(90deg, var(--gold), var(--gold-light));"></div>
+    <div style="padding: 4mm 12mm; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3);">
+      <div style="font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.5);">Think it Different — Build it Durable</div>
+      <div style="font-size: 9px; color: rgba(255,255,255,0.4);">www.asmos.digital</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 2 : SOMMAIRE & ÉDITO -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Sommaire</div>
+  </div>
+  
+  <div style="display: grid; grid-template-columns: 55% 45%; min-height: calc(297mm - 20mm);">
+    <!-- Left: TOC -->
+    <div style="padding: 10mm 10mm 10mm 12mm; border-right: 1px solid var(--gray-mid);">
+      <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 6mm;">Sommaire</div>
+      <div style="font-size: 28px; font-weight: 900; letter-spacing: -1px; color: var(--navy); margin-bottom: 8mm; line-height: 1.1;">Au sommaire<br>de ce voyage</div>
+      
+      <!-- TOC Items -->
+      <div style="margin-bottom: 3mm;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 2.5mm 0; border-bottom: 1px solid var(--gray-mid);">
+          <div>
+            <span style="font-size: 8px; font-weight: 700; color: var(--blue); margin-right: 3mm;">01</span>
+            <span style="font-size: 11px; font-weight: 600; color: var(--navy);">Vision & Positionnement</span>
+          </div>
+          <span style="font-size: 9px; color: var(--gray-text);">3–8</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 2.5mm 0; border-bottom: 1px solid var(--gray-mid);">
+          <div>
+            <span style="font-size: 8px; font-weight: 700; color: var(--teal); margin-right: 3mm;">02</span>
+            <span style="font-size: 11px; font-weight: 600; color: var(--navy);">Serious Games & Professional Games</span>
+          </div>
+          <span style="font-size: 9px; color: var(--gray-text);">9–16</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 2.5mm 0; border-bottom: 1px solid var(--gray-mid);">
+          <div>
+            <span style="font-size: 8px; font-weight: 700; color: var(--gold); margin-right: 3mm;">03</span>
+            <span style="font-size: 11px; font-weight: 600; color: var(--navy);">Toolkits, Idéation & RSE</span>
+          </div>
+          <span style="font-size: 9px; color: var(--gray-text);">17–22</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 2.5mm 0; border-bottom: 1px solid var(--gray-mid);">
+          <div>
+            <span style="font-size: 8px; font-weight: 700; color: var(--coral); margin-right: 3mm;">04</span>
+            <span style="font-size: 11px; font-weight: 600; color: var(--navy);">Digital, Phygital & Expériences Immersives</span>
+          </div>
+          <span style="font-size: 9px; color: var(--gray-text);">23–28</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 2.5mm 0;">
+          <div>
+            <span style="font-size: 8px; font-weight: 700; color: var(--navy); margin-right: 3mm;">05</span>
+            <span style="font-size: 11px; font-weight: 600; color: var(--navy);">Passer à l'Action</span>
+          </div>
+          <span style="font-size: 9px; color: var(--gray-text);">29–32</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right: Édito -->
+    <div style="padding: 10mm 12mm 10mm 10mm; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gray-text); margin-bottom: 5mm;">Le mot du fondateur</div>
+        
+        <div style="border-left: 3px solid var(--gold); padding-left: 5mm; margin-bottom: 6mm;">
+          <div style="font-size: 15px; font-weight: 700; font-style: italic; color: var(--navy); line-height: 1.35; margin-bottom: 3mm;">"Les organisations qui gagnent demain sont celles qui apprennent autrement aujourd'hui."</div>
+        </div>
+        
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          Ce document est plus qu'une brochure. C'est une invitation à repenser la façon dont vos équipes collaborent, innovent et se transforment. Chez ASMOS GROUP, nous avons la conviction profonde que le jeu sérieux n'est pas un gadget — c'est un levier stratégique de premier ordre.
+        </p>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          Depuis notre création, nous avons conçu des centaines d'expériences ludiques pour des organisations de toutes tailles et de tous secteurs. Chaque serious game, chaque toolkit, chaque escape room que nous créons est le fruit d'une méthodologie rigoureuse au service d'un objectif unique : transformer durablement.
+        </p>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body);">
+          Bonne lecture — et surtout, bon voyage dans l'univers ASMOS.
+        </p>
+      </div>
+      
+      <div style="margin-top: 6mm;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--navy);">L'équipe ASMOS GROUP</div>
+        <div style="font-size: 10px; color: var(--gray-text); margin-top: 1mm;">Think it Different — Build it Durable</div>
+        <div style="height: 2px; background: linear-gradient(90deg, var(--gold), transparent); margin-top: 4mm; width: 30mm;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">02</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 3 : LE MANIFESTE ASMOS -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Notre Manifeste</div>
+  </div>
+  
+  <!-- Full-width dark header -->
+  <div style="background: var(--navy); padding: 10mm 12mm; position: relative; overflow: hidden;">
+    <div class="pixel-bg" style="position: absolute; inset: 0; opacity: 0.5;"></div>
+    <div style="position: relative; z-index: 1;">
+      <div style="font-size: 8px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 4mm;">Notre Manifeste</div>
+      <div style="font-size: 34px; font-weight: 900; letter-spacing: -1.5px; color: white; line-height: 1.05; margin-bottom: 4mm;">
+        Think it Different.<br><span style="color: var(--blue-light);">Build it Durable.</span>
+      </div>
+      <div style="font-size: 12px; color: rgba(255,255,255,0.7); max-width: 150mm; line-height: 1.65;">
+        Nous ne faisons pas du conseil ordinaire. Nous concevons des expériences qui changent les comportements, alignent les équipes et ancrent durablement les transformations dans la culture de votre organisation.
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 8mm 12mm;">
+    <!-- 3 pillars -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5mm; margin-bottom: 8mm;">
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 6mm; border-top: 3px solid var(--blue);">
+        <div style="font-size: 24px; margin-bottom: 3mm;">🎯</div>
+        <div style="font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Penser Autrement</div>
+        <div style="font-size: 10.5px; line-height: 1.65; color: var(--text-body);">Nous questionnons les évidences et challengeons les modèles établis pour ouvrir de nouveaux espaces de possibles.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 6mm; border-top: 3px solid var(--teal);">
+        <div style="font-size: 24px; margin-bottom: 3mm;">🤝</div>
+        <div style="font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Co-Construire</div>
+        <div style="font-size: 10.5px; line-height: 1.65; color: var(--text-body);">Chaque solution est co-créée avec vous. L'intelligence collective de vos équipes est notre matière première.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 6mm; border-top: 3px solid var(--gold);">
+        <div style="font-size: 24px; margin-bottom: 3mm;">🌱</div>
+        <div style="font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Construire Durable</div>
+        <div style="font-size: 10.5px; line-height: 1.65; color: var(--text-body);">Nos interventions laissent une empreinte durable. Nous outillons vos équipes pour qu'elles deviennent autonomes.</div>
+      </div>
+    </div>
+
+    <!-- Manifesto text -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8mm;">
+      <div>
+        <div style="font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gray-text); margin-bottom: 3mm;">Notre conviction</div>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body); margin-bottom: 3mm;">
+          Dans un monde où la complexité s'accélère, les organisations ne peuvent plus se transformer par la seule force de la volonté managériale. Il faut créer les conditions de l'engagement, de la créativité et de l'apprentissage collectif.
+        </p>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body);">
+          La gamification sérieuse est notre réponse à ce défi. Elle mobilise les leviers cognitifs et émotionnels les plus puissants — le plaisir, le défi, la collaboration, la récompense — pour ancrer durablement les nouvelles façons de travailler.
+        </p>
+      </div>
+      <div>
+        <div style="font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gray-text); margin-bottom: 3mm;">Notre promesse</div>
+        <div style="background: var(--navy); border-radius: 4px; padding: 6mm; color: white;">
+          <p style="font-size: 11px; line-height: 1.75; color: rgba(255,255,255,0.85); margin-bottom: 3mm;">
+            Nous ne vous livrons pas un produit. Nous vous accompagnons dans la conception d'une expérience transformatrice, de l'audit initial jusqu'à la mesure d'impact.
+          </p>
+          <div style="display: flex; gap: 3mm; flex-wrap: wrap; margin-top: 4mm;">
+            <div style="padding: 1.5mm 4mm; background: rgba(255,255,255,0.1); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.8);">Sur-mesure</div>
+            <div style="padding: 1.5mm 4mm; background: rgba(255,255,255,0.1); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.8);">Packagé</div>
+            <div style="padding: 1.5mm 4mm; background: rgba(255,255,255,0.1); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.8);">Hybride</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">03</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 4 : LE PARADOXE DE LA TRANSFORMATION -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Pourquoi la Gamification ?</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--blue); margin-bottom: 3mm;">Le constat</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 6mm;">Le Paradoxe de la<br>Transformation Organisationnelle</div>
+    
+    <!-- Stats row -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0; border: 1px solid var(--gray-mid); border-radius: 4px; overflow: hidden; margin-bottom: 8mm;">
+      <div style="padding: 5mm 4mm; text-align: center; border-right: 1px solid var(--gray-mid);">
+        <div style="font-size: 32px; font-weight: 900; color: var(--coral); letter-spacing: -1px; line-height: 1;">70%</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); margin-top: 2mm; letter-spacing: 0.5px;">des projets de transformation échouent</div>
+      </div>
+      <div style="padding: 5mm 4mm; text-align: center; border-right: 1px solid var(--gray-mid);">
+        <div style="font-size: 32px; font-weight: 900; color: var(--blue); letter-spacing: -1px; line-height: 1;">4×</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); margin-top: 2mm; letter-spacing: 0.5px;">plus d'engagement avec la gamification</div>
+      </div>
+      <div style="padding: 5mm 4mm; text-align: center; border-right: 1px solid var(--gray-mid);">
+        <div style="font-size: 32px; font-weight: 900; color: var(--teal); letter-spacing: -1px; line-height: 1;">+60%</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); margin-top: 2mm; letter-spacing: 0.5px;">de rétention des apprentissages</div>
+      </div>
+      <div style="padding: 5mm 4mm; text-align: center;">
+        <div style="font-size: 32px; font-weight: 900; color: var(--gold); letter-spacing: -1px; line-height: 1;">3×</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); margin-top: 2mm; letter-spacing: 0.5px;">plus rapide que la formation classique</div>
+      </div>
+    </div>
+
+    <!-- Two columns -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin-bottom: 8mm;">
+      <div>
+        <div style="background: #FEF2F2; border-radius: 4px; padding: 5mm; border-left: 3px solid var(--coral); margin-bottom: 4mm;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--coral); margin-bottom: 2mm;">Le problème des méthodes classiques</div>
+          <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">Les formations descendantes, les séminaires de cohésion et les présentations PowerPoint ne créent pas l'engagement durable nécessaire à la transformation. Ils informent, mais ne transforment pas.</p>
+        </div>
+        <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">Les neurosciences le confirment : nous retenons 10% de ce que nous lisons, 20% de ce que nous entendons, mais <strong>75% de ce que nous expérimentons</strong>. Le jeu est l'outil d'apprentissage expérientiel par excellence.</p>
+      </div>
+      <div>
+        <div style="background: #F0FDF4; border-radius: 4px; padding: 5mm; border-left: 3px solid var(--teal); margin-bottom: 4mm;">
+          <div style="font-size: 11px; font-weight: 700; color: var(--teal); margin-bottom: 2mm;">La réponse ASMOS</div>
+          <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">Nous concevons des expériences qui placent les participants en situation réelle, dans un cadre sécurisé où l'erreur est permise et l'apprentissage est immédiat. Le jeu devient un miroir de l'organisation.</p>
+        </div>
+        <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">Chaque serious game ASMOS est conçu avec une intention pédagogique précise, des mécaniques de jeu rigoureusement sélectionnées et des débriefs structurés pour maximiser le transfert vers le terrain.</p>
+      </div>
+    </div>
+
+    <!-- Quote -->
+    <div style="background: var(--navy); border-radius: 4px; padding: 6mm 8mm; color: white; display: flex; gap: 6mm; align-items: center;">
+      <div style="font-size: 40px; color: var(--gold); line-height: 1; flex-shrink: 0;">"</div>
+      <div>
+        <p style="font-size: 13px; font-style: italic; font-weight: 500; color: rgba(255,255,255,0.9); line-height: 1.5;">Le jeu sérieux n'est pas une récréation. C'est la forme la plus avancée d'apprentissage organisationnel.</p>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gold); margin-top: 3mm; letter-spacing: 1px; text-transform: uppercase;">Philosophie ASMOS GROUP</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">04</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 5 : NOTRE APPROCHE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Notre Approche</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--teal); margin-bottom: 3mm;">Méthodologie</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 2mm;">Le Design par le Jeu :<br>Notre Approche Singulière</div>
+    <p style="font-size: 11.5px; line-height: 1.7; color: var(--text-body); margin-bottom: 8mm; max-width: 160mm;">Notre approche fusionne les meilleures pratiques du design thinking, des sciences comportementales et de la conception de jeux pour créer des expériences transformatrices uniques.</p>
+
+    <!-- 5 design disciplines -->
+    <div style="margin-bottom: 8mm;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4mm;">
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; display: flex; gap: 4mm; align-items: flex-start;">
+          <div style="width: 8mm; height: 8mm; background: var(--navy); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">🎨</div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm;">Design Managérial</div>
+            <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Concevoir les conditions du leadership, de la coopération et de la performance collective à travers des mécaniques de jeu qui révèlent et renforcent les comportements managériaux.</div>
+          </div>
+        </div>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; display: flex; gap: 4mm; align-items: flex-start;">
+          <div style="width: 8mm; height: 8mm; background: var(--blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">🔭</div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm;">Design Stratégique</div>
+            <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Aligner les équipes sur la vision et la stratégie de l'entreprise en les faisant vivre, tester et co-construire les orientations stratégiques dans un cadre ludique et sécurisé.</div>
+          </div>
+        </div>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; display: flex; gap: 4mm; align-items: flex-start;">
+          <div style="width: 8mm; height: 8mm; background: var(--teal); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">🌐</div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm;">Design Prospectif</div>
+            <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Explorer les futurs possibles de votre organisation et de votre secteur à travers des simulations et des jeux de rôles qui développent la pensée systémique et l'anticipation.</div>
+          </div>
+        </div>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; display: flex; gap: 4mm; align-items: flex-start;">
+          <div style="width: 8mm; height: 8mm; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;">🔄</div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm;">Design Transformation</div>
+            <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Accompagner les grandes transformations (agile, digitale, culturelle) en créant des expériences immersives qui rendent le changement désirable et les nouvelles pratiques naturelles.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Co-innovation highlight -->
+    <div style="background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%); border-radius: 4px; padding: 6mm 8mm; color: white; display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; align-items: center;">
+      <div>
+        <div style="font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Au cœur de tout</div>
+        <div style="font-size: 18px; font-weight: 800; color: white; margin-bottom: 3mm; line-height: 1.2;">La Co-Innovation comme moteur</div>
+        <p style="font-size: 10.5px; line-height: 1.7; color: rgba(255,255,255,0.8);">Nous ne créons pas pour vous — nous créons avec vous. Chaque projet ASMOS implique vos équipes dès la phase de conception, garantissant une appropriation maximale et un impact durable.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 3mm;">
+        <div style="display: flex; gap: 3mm; align-items: center;">
+          <div style="width: 6mm; height: 6mm; background: var(--blue-light); border-radius: 50%; flex-shrink: 0;"></div>
+          <div style="font-size: 10.5px; color: rgba(255,255,255,0.85);">Ateliers de co-conception avec vos équipes</div>
+        </div>
+        <div style="display: flex; gap: 3mm; align-items: center;">
+          <div style="width: 6mm; height: 6mm; background: var(--teal); border-radius: 50%; flex-shrink: 0;"></div>
+          <div style="font-size: 10.5px; color: rgba(255,255,255,0.85);">Prototypage rapide et tests utilisateurs</div>
+        </div>
+        <div style="display: flex; gap: 3mm; align-items: center;">
+          <div style="width: 6mm; height: 6mm; background: var(--gold); border-radius: 50%; flex-shrink: 0;"></div>
+          <div style="font-size: 10.5px; color: rgba(255,255,255,0.85);">Itérations continues jusqu'à la perfection</div>
+        </div>
+        <div style="display: flex; gap: 3mm; align-items: center;">
+          <div style="width: 6mm; height: 6mm; background: var(--coral); border-radius: 50%; flex-shrink: 0;"></div>
+          <div style="font-size: 10.5px; color: rgba(255,255,255,0.85);">Transfert de compétences à vos facilitateurs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">05</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 6 : L'ÉCOSYSTÈME ASMOS -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">L'Écosystème ASMOS</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Notre Univers</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 6mm;">Un Écosystème Complet<br>au Service de votre Transformation</div>
+    
+    <!-- Ecosystem diagram -->
+    <div style="margin-bottom: 6mm; height: 70mm; overflow: hidden; border-radius: 4px;">
+      <img src="img/hero_ecosystem.png" style="width: 100%; height: 100%; object-fit: contain; background: var(--gray-light);" alt="Écosystème ASMOS">
+    </div>
+
+    <!-- Ecosystem pillars -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm;">
+      <div style="text-align: center; padding: 4mm;">
+        <div style="width: 10mm; height: 10mm; background: var(--navy); border-radius: 50%; margin: 0 auto 3mm; display: flex; align-items: center; justify-content: center; font-size: 14px;">🎲</div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Serious Games</div>
+        <div style="font-size: 9.5px; line-height: 1.6; color: var(--text-body);">Jeux de plateau, jeux de cartes et simulations packagés ou sur-mesure pour tous vos enjeux métier.</div>
+      </div>
+      <div style="text-align: center; padding: 4mm;">
+        <div style="width: 10mm; height: 10mm; background: var(--teal); border-radius: 50%; margin: 0 auto 3mm; display: flex; align-items: center; justify-content: center; font-size: 14px;">🃏</div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Toolkits & Facilitation</div>
+        <div style="font-size: 9.5px; line-height: 1.6; color: var(--text-body);">Boîtes à outils de facilitation, cartes d'idéation et méthodes de co-construction pour vos ateliers.</div>
+      </div>
+      <div style="text-align: center; padding: 4mm;">
+        <div style="width: 10mm; height: 10mm; background: var(--blue); border-radius: 50%; margin: 0 auto 3mm; display: flex; align-items: center; justify-content: center; font-size: 14px;">📱</div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Digital & Phygital</div>
+        <div style="font-size: 9.5px; line-height: 1.6; color: var(--text-body);">Applications mobiles, plateformes digitales et expériences hybrides qui prolongent le jeu dans le quotidien.</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">06</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 7 : LES 4 PILIERS -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Nos 4 Piliers</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--coral); margin-bottom: 3mm;">Méthodologie</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 6mm;">Les 4 Piliers de notre<br>Méthodologie</div>
+    
+    <!-- Pillar 1 -->
+    <div style="display: grid; grid-template-columns: 12mm 1fr; gap: 5mm; margin-bottom: 5mm; align-items: start;">
+      <div style="background: var(--navy); color: white; border-radius: 4px; padding: 3mm; text-align: center;">
+        <div style="font-size: 16px; font-weight: 900; line-height: 1;">01</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm;">
+        <div style="font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Intelligence Collective</div>
+        <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">Nous créons les conditions où la somme des intelligences individuelles dépasse chaque intelligence prise séparément. Nos dispositifs brisent les silos, libèrent la parole et font émerger des solutions que personne n'aurait trouvées seul. La diversité des perspectives devient une force, non une contrainte.</p>
+      </div>
+    </div>
+    
+    <!-- Pillar 2 -->
+    <div style="display: grid; grid-template-columns: 12mm 1fr; gap: 5mm; margin-bottom: 5mm; align-items: start;">
+      <div style="background: var(--blue); color: white; border-radius: 4px; padding: 3mm; text-align: center;">
+        <div style="font-size: 16px; font-weight: 900; line-height: 1;">02</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm;">
+        <div style="font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Co-Innovation</div>
+        <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">L'innovation ne se décrète pas, elle se cultive. Nos ateliers de co-innovation créent un espace-temps dédié à l'exploration, à l'expérimentation et à la prise de risque calculée. Nous outillons vos équipes pour qu'elles deviennent elles-mêmes des acteurs de l'innovation continue.</p>
+      </div>
+    </div>
+    
+    <!-- Pillar 3 -->
+    <div style="display: grid; grid-template-columns: 12mm 1fr; gap: 5mm; margin-bottom: 5mm; align-items: start;">
+      <div style="background: var(--teal); color: white; border-radius: 4px; padding: 3mm; text-align: center;">
+        <div style="font-size: 16px; font-weight: 900; line-height: 1;">03</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm;">
+        <div style="font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Apprentissage Expérientiel</div>
+        <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">Le jeu est le vecteur d'apprentissage le plus puissant qui soit. En plaçant vos collaborateurs en situation d'action et de réflexion simultanées, nous ancrons les apprentissages de façon durable. Le débrief structuré transforme l'expérience vécue en compétences transférables.</p>
+      </div>
+    </div>
+    
+    <!-- Pillar 4 -->
+    <div style="display: grid; grid-template-columns: 12mm 1fr; gap: 5mm; align-items: start;">
+      <div style="background: var(--gold); color: white; border-radius: 4px; padding: 3mm; text-align: center;">
+        <div style="font-size: 16px; font-weight: 900; line-height: 1;">04</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm;">
+        <div style="font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Impact Mesurable</div>
+        <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">Chaque intervention ASMOS est conçue avec des indicateurs de succès clairs et mesurables. Nous ne nous contentons pas de créer une belle expérience — nous mesurons son impact sur les comportements, les pratiques et les résultats de votre organisation.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">07</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 8 : CHIFFRES CLÉS & IMPACT -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Impact & Chiffres Clés</div>
+  </div>
+  
+  <!-- Dark header -->
+  <div style="background: var(--navy); padding: 8mm 12mm; position: relative; overflow: hidden;">
+    <div class="pixel-bg" style="position: absolute; inset: 0; opacity: 0.4;"></div>
+    <div style="position: relative; z-index: 1;">
+      <div style="font-size: 8px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Notre Impact</div>
+      <div style="font-size: 28px; font-weight: 900; letter-spacing: -1px; color: white; line-height: 1.1;">Des résultats qui parlent<br><span style="color: var(--blue-light);">d'eux-mêmes</span></div>
+    </div>
+  </div>
+
+  <div style="padding: 8mm 12mm;">
+    <!-- Big stats -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm; margin-bottom: 8mm;">
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 6mm; text-align: center; border-top: 3px solid var(--navy);">
+        <div style="font-size: 40px; font-weight: 900; color: var(--navy); letter-spacing: -2px; line-height: 1;">200+</div>
+        <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-top: 2mm;">Expériences Conçues</div>
+        <div style="font-size: 9.5px; color: var(--text-body); margin-top: 2mm;">Serious games, toolkits, escape rooms et applications digitales</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 6mm; text-align: center; border-top: 3px solid var(--blue);">
+        <div style="font-size: 40px; font-weight: 900; color: var(--blue); letter-spacing: -2px; line-height: 1;">50K+</div>
+        <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-top: 2mm;">Participants Engagés</div>
+        <div style="font-size: 9.5px; color: var(--text-body); margin-top: 2mm;">Collaborateurs transformés à travers nos expériences</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 6mm; text-align: center; border-top: 3px solid var(--teal);">
+        <div style="font-size: 40px; font-weight: 900; color: var(--teal); letter-spacing: -2px; line-height: 1;">15+</div>
+        <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-top: 2mm;">Secteurs d'Activité</div>
+        <div style="font-size: 9.5px; color: var(--text-body); margin-top: 2mm;">Banque, industrie, santé, éducation, retail, énergie...</div>
+      </div>
+    </div>
+
+    <!-- Sectors -->
+    <div style="margin-bottom: 8mm;">
+      <div style="font-size: 8px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gray-text); margin-bottom: 4mm;">Secteurs & Typologies de clients</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 2mm;">
+        <span style="padding: 2mm 5mm; background: rgba(13,27,62,0.07); border-radius: 20px; font-size: 9.5px; font-weight: 600; color: var(--navy);">Banque & Finance</span>
+        <span style="padding: 2mm 5mm; background: rgba(13,27,62,0.07); border-radius: 20px; font-size: 9.5px; font-weight: 600; color: var(--navy);">Industrie & Manufacturing</span>
+        <span style="padding: 2mm 5mm; background: rgba(13,27,62,0.07); border-radius: 20px; font-size: 9.5px; font-weight: 600; color: var(--navy);">Santé & Pharmaceutique</span>
+        <span style="padding: 2mm 5mm; background: rgba(13,27,62,0.07); border-radius: 20px; font-size: 9.5px; font-weight: 600; color: var(--navy);">Énergie & Utilities</span>
+        <span style="padding: 2mm 5mm; background: rgba(13,27,62,0.07); border-radius: 20px; font-size: 9.5px; font-weight: 600; color: var(--navy);">Retail & Distribution</span>
+        <span style="padding: 2mm 5mm; background: rgba(13,27,62,0.07); border-radius: 20px; font-size: 9.5px; font-weight: 600; color: var(--navy);">Éducation & Formation</span>
+        <span style="padding: 2mm 5mm; background: rgba(13,27,62,0.07); border-radius: 20px; font-size: 9.5px; font-weight: 600; color: var(--navy);">Collectivités Territoriales</span>
+        <span style="padding: 2mm 5mm; background: rgba(13,27,62,0.07); border-radius: 20px; font-size: 9.5px; font-weight: 600; color: var(--navy);">Tech & Startups</span>
+        <span style="padding: 2mm 5mm; background: rgba(13,27,62,0.07); border-radius: 20px; font-size: 9.5px; font-weight: 600; color: var(--navy);">Assurance</span>
+        <span style="padding: 2mm 5mm; background: rgba(13,27,62,0.07); border-radius: 20px; font-size: 9.5px; font-weight: 600; color: var(--navy);">Télécommunications</span>
+      </div>
+    </div>
+
+    <!-- Use cases grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4mm;">
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Transformation Agile</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Accélérer l'adoption des pratiques agiles et scrum à travers des simulations immersives qui font vivre les principes plutôt que les enseigner.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Onboarding & Culture</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Intégrer les nouveaux collaborateurs dans la culture d'entreprise de façon mémorable et engageante, dès les premiers jours.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Leadership & Management</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Développer les compétences managériales clés — communication, délégation, feedback — dans des mises en situation réalistes et sécurisées.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">RSE & Développement Durable</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Sensibiliser et engager vos équipes sur les enjeux RSE à travers des expériences ludiques qui rendent les défis environnementaux et sociaux concrets et actionnables.</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">08</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 9 : INTERCALAIRE SERIOUS GAMES -->
+<!-- ============================================================ -->
+<div class="page section-intercalaire" style="background: var(--navy);">
+  <div class="pixel-bg" style="position: absolute; inset: 0; opacity: 0.5;"></div>
+  <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--blue), var(--teal));"></div>
+  
+  <div style="padding: 0 12mm; position: relative; z-index: 1;">
+    <div style="font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--blue-light); margin-bottom: 4mm;">Partie 02</div>
+    <div style="font-size: 52px; font-weight: 900; letter-spacing: -2px; color: white; line-height: 1.0; margin-bottom: 6mm;">
+      Serious Games<br><span style="color: var(--blue-light);">&</span><br>Professional Games
+    </div>
+    <div style="height: 2px; background: linear-gradient(90deg, var(--gold), transparent); width: 60mm; margin-bottom: 6mm;"></div>
+    <p style="font-size: 13px; line-height: 1.7; color: rgba(255,255,255,0.75); max-width: 140mm;">
+      Des expériences ludiques rigoureusement conçues pour transformer les comportements, développer les compétences et aligner les équipes sur vos enjeux stratégiques.
+    </p>
+    
+    <div style="margin-top: 10mm; display: flex; gap: 4mm; flex-wrap: wrap;">
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">Gamme heep</div>
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">Perf'co</div>
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">engame</div>
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">BrainEngame</div>
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">Sur-mesure</div>
+    </div>
+  </div>
+  
+  <!-- Bottom image strip -->
+  <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 50mm; overflow: hidden;">
+    <img src="img/serious_games_hero.png" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.35;" alt="">
+    <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, var(--navy) 0%, transparent 60%);"></div>
+  </div>
+  
+  <div style="position: absolute; bottom: 6mm; right: 12mm; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.3); letter-spacing: 1px;">09</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 10 : LA GAMME HEEP -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Serious Games — Gamme heep</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--blue); margin-bottom: 3mm;">Gamme Packagée</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 2mm;">La Gamme heep :<br>Transformer les Métiers par le Jeu</div>
+    <p style="font-size: 11.5px; line-height: 1.7; color: var(--text-body); margin-bottom: 6mm; max-width: 160mm;">La gamme heep est notre réponse packagée aux enjeux de développement des compétences métier. Chaque jeu de la gamme cible une thématique précise et peut être déployé rapidement, avec ou sans facilitateur externe.</p>
+    
+    <!-- heep games grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm; margin-bottom: 6mm;">
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-top: 3px solid var(--blue);">
+        <div style="font-size: 14px; font-weight: 900; color: var(--blue); margin-bottom: 1mm;">AGIT</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Agilité & Scrum</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Transformez votre organisation en Agile Players. Vivez les sprints, les rétrospectives et la mêlée quotidienne dans un cadre ludique et sécurisé.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-top: 3px solid var(--teal);">
+        <div style="font-size: 14px; font-weight: 900; color: var(--teal); margin-bottom: 1mm;">COMIT</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Communication</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Développer les compétences de communication interpersonnelle, d'écoute active et de feedback constructif au sein des équipes.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-top: 3px solid var(--gold);">
+        <div style="font-size: 14px; font-weight: 900; color: var(--gold); margin-bottom: 1mm;">ORGANIT</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Organisation</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Optimiser les processus organisationnels, clarifier les rôles et responsabilités, et améliorer la coordination inter-équipes.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-top: 3px solid var(--coral);">
+        <div style="font-size: 14px; font-weight: 900; color: var(--coral); margin-bottom: 1mm;">PLANIT</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Planification</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Maîtriser les outils et méthodes de planification stratégique et opérationnelle à travers des simulations de projets complexes.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-top: 3px solid var(--navy);">
+        <div style="font-size: 14px; font-weight: 900; color: var(--navy); margin-bottom: 1mm;">QUALIT</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Qualité</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Ancrer la culture qualité dans les équipes opérationnelles à travers des mises en situation qui révèlent les enjeux de la démarche qualité.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-top: 3px solid #7C3AED;">
+        <div style="font-size: 14px; font-weight: 900; color: #7C3AED; margin-bottom: 1mm;">SECURIT</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Sécurité</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Sensibiliser aux risques et développer les réflexes de sécurité au travail de façon engageante et mémorable.</div>
+      </div>
+    </div>
+
+    <!-- More games row -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm;">
+      <div style="background: var(--navy); border-radius: 4px; padding: 4mm; text-align: center;">
+        <div style="font-size: 12px; font-weight: 900; color: white; margin-bottom: 1mm;">RISQUIT</div>
+        <div style="font-size: 9px; color: rgba(255,255,255,0.6);">Gestion des Risques</div>
+      </div>
+      <div style="background: var(--navy); border-radius: 4px; padding: 4mm; text-align: center;">
+        <div style="font-size: 12px; font-weight: 900; color: white; margin-bottom: 1mm;">MAINTIT</div>
+        <div style="font-size: 9px; color: rgba(255,255,255,0.6);">Maintenance</div>
+      </div>
+      <div style="background: var(--navy); border-radius: 4px; padding: 4mm; text-align: center;">
+        <div style="font-size: 12px; font-weight: 900; color: white; margin-bottom: 1mm;">BUSNIT & DEALIT</div>
+        <div style="font-size: 9px; color: rgba(255,255,255,0.6);">Business & Négociation</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">10</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 11 : FOCUS AGIT + COMIT -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Serious Games — Focus Produits</div>
+  </div>
+  
+  <!-- Image hero -->
+  <div style="height: 55mm; overflow: hidden; position: relative;">
+    <img src="img/serious_games_hero.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Serious Games ASMOS">
+    <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(13,27,62,0.85) 0%, rgba(13,27,62,0.3) 60%, transparent 100%);"></div>
+    <div style="position: absolute; top: 0; left: 0; bottom: 0; padding: 8mm 12mm; display: flex; flex-direction: column; justify-content: center;">
+      <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Gamme heep — Focus</div>
+      <div style="font-size: 26px; font-weight: 900; color: white; letter-spacing: -1px; line-height: 1.1;">AGIT & COMIT<br><span style="font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.7);">Agilité, Scrum & Communication</span></div>
+    </div>
+  </div>
+
+  <div style="padding: 8mm 12mm;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8mm;">
+      <!-- AGIT -->
+      <div>
+        <div style="display: flex; align-items: center; gap: 3mm; margin-bottom: 4mm;">
+          <div style="background: var(--blue); color: white; border-radius: 4px; padding: 2mm 4mm; font-size: 14px; font-weight: 900;">AGIT</div>
+          <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase;">Agile Scrum Game</div>
+        </div>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          AGIT est le serious game de référence pour accélérer la transformation agile de vos équipes. En simulant des sprints complets avec leurs rituels, leurs tensions et leurs succès, AGIT fait vivre l'agilité plutôt que de l'enseigner.
+        </p>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm;">
+          <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3mm;">Objectifs pédagogiques</div>
+          <div style="display: flex; flex-direction: column; gap: 2mm;">
+            <div style="display: flex; gap: 2mm; align-items: flex-start; font-size: 10px; color: var(--text-body);"><span style="color: var(--blue); font-weight: 700; flex-shrink: 0;">→</span> Maîtriser les rituels Scrum (Daily, Sprint Review, Rétrospective)</div>
+            <div style="display: flex; gap: 2mm; align-items: flex-start; font-size: 10px; color: var(--text-body);"><span style="color: var(--blue); font-weight: 700; flex-shrink: 0;">→</span> Développer l'état d'esprit agile et la culture de l'itération</div>
+            <div style="display: flex; gap: 2mm; align-items: flex-start; font-size: 10px; color: var(--text-body);"><span style="color: var(--blue); font-weight: 700; flex-shrink: 0;">→</span> Renforcer la cohésion et la communication d'équipe</div>
+          </div>
+        </div>
+        <div style="margin-top: 3mm; display: flex; gap: 2mm; flex-wrap: wrap;">
+          <span style="padding: 1.5mm 4mm; background: rgba(30,95,212,0.1); border-radius: 20px; font-size: 9px; font-weight: 600; color: var(--blue);">4-20 participants</span>
+          <span style="padding: 1.5mm 4mm; background: rgba(30,95,212,0.1); border-radius: 20px; font-size: 9px; font-weight: 600; color: var(--blue);">3-4 heures</span>
+          <span style="padding: 1.5mm 4mm; background: rgba(30,95,212,0.1); border-radius: 20px; font-size: 9px; font-weight: 600; color: var(--blue);">Packagé</span>
+        </div>
+      </div>
+      
+      <!-- COMIT -->
+      <div>
+        <div style="display: flex; align-items: center; gap: 3mm; margin-bottom: 4mm;">
+          <div style="background: var(--teal); color: white; border-radius: 4px; padding: 2mm 4mm; font-size: 14px; font-weight: 900;">COMIT</div>
+          <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase;">Communication Game</div>
+        </div>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          COMIT est le jeu qui transforme la façon dont vos équipes communiquent. À travers des défis de communication progressifs, les participants découvrent leurs styles de communication, leurs angles morts et leurs leviers d'amélioration.
+        </p>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm;">
+          <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3mm;">Objectifs pédagogiques</div>
+          <div style="display: flex; flex-direction: column; gap: 2mm;">
+            <div style="display: flex; gap: 2mm; align-items: flex-start; font-size: 10px; color: var(--text-body);"><span style="color: var(--teal); font-weight: 700; flex-shrink: 0;">→</span> Identifier son style de communication et ses impacts</div>
+            <div style="display: flex; gap: 2mm; align-items: flex-start; font-size: 10px; color: var(--text-body);"><span style="color: var(--teal); font-weight: 700; flex-shrink: 0;">→</span> Pratiquer l'écoute active et le feedback constructif</div>
+            <div style="display: flex; gap: 2mm; align-items: flex-start; font-size: 10px; color: var(--text-body);"><span style="color: var(--teal); font-weight: 700; flex-shrink: 0;">→</span> Gérer les situations de communication difficiles</div>
+          </div>
+        </div>
+        <div style="margin-top: 3mm; display: flex; gap: 2mm; flex-wrap: wrap;">
+          <span style="padding: 1.5mm 4mm; background: rgba(14,165,160,0.1); border-radius: 20px; font-size: 9px; font-weight: 600; color: var(--teal);">6-24 participants</span>
+          <span style="padding: 1.5mm 4mm; background: rgba(14,165,160,0.1); border-radius: 20px; font-size: 9px; font-weight: 600; color: var(--teal);">2-3 heures</span>
+          <span style="padding: 1.5mm 4mm; background: rgba(14,165,160,0.1); border-radius: 20px; font-size: 9px; font-weight: 600; color: var(--teal);">Packagé</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">11</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 12 : ORGANIT + PLANIT -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Serious Games — Gamme heep</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Gamme heep — Focus</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 6mm;">ORGANIT & PLANIT<br><span style="font-size: 16px; font-weight: 500; color: var(--gray-text);">Organisation & Planification</span></div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin-bottom: 6mm;">
+      <!-- ORGANIT -->
+      <div>
+        <div style="background: var(--gold); color: white; border-radius: 4px; padding: 5mm; margin-bottom: 4mm;">
+          <div style="font-size: 18px; font-weight: 900; margin-bottom: 1mm;">ORGANIT</div>
+          <div style="font-size: 10px; opacity: 0.85;">Organisation & Efficacité Collective</div>
+        </div>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          ORGANIT place les équipes face aux défis réels de l'organisation du travail : priorisation, coordination, gestion des interdépendances. Le jeu révèle les dysfonctionnements organisationnels et ouvre la voie à des solutions co-construites.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 2mm;">
+          <div style="display: flex; gap: 3mm; align-items: flex-start; font-size: 10.5px; color: var(--text-body);"><span style="color: var(--gold); font-weight: 700; flex-shrink: 0;">✦</span> Clarification des rôles et responsabilités</div>
+          <div style="display: flex; gap: 3mm; align-items: flex-start; font-size: 10.5px; color: var(--text-body);"><span style="color: var(--gold); font-weight: 700; flex-shrink: 0;">✦</span> Optimisation des processus de coordination</div>
+          <div style="display: flex; gap: 3mm; align-items: flex-start; font-size: 10.5px; color: var(--text-body);"><span style="color: var(--gold); font-weight: 700; flex-shrink: 0;">✦</span> Gestion des priorités et des ressources partagées</div>
+          <div style="display: flex; gap: 3mm; align-items: flex-start; font-size: 10.5px; color: var(--text-body);"><span style="color: var(--gold); font-weight: 700; flex-shrink: 0;">✦</span> Amélioration de la prise de décision collective</div>
+        </div>
+      </div>
+      
+      <!-- PLANIT -->
+      <div>
+        <div style="background: var(--coral); color: white; border-radius: 4px; padding: 5mm; margin-bottom: 4mm;">
+          <div style="font-size: 18px; font-weight: 900; margin-bottom: 1mm;">PLANIT</div>
+          <div style="font-size: 10px; opacity: 0.85;">Planification & Gestion de Projet</div>
+        </div>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          PLANIT simule la gestion d'un projet complexe avec ses contraintes de temps, de budget et de ressources. Les équipes expérimentent les tensions entre planification et réalité du terrain, et développent leur capacité d'adaptation.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 2mm;">
+          <div style="display: flex; gap: 3mm; align-items: flex-start; font-size: 10.5px; color: var(--text-body);"><span style="color: var(--coral); font-weight: 700; flex-shrink: 0;">✦</span> Maîtrise des outils de planification projet</div>
+          <div style="display: flex; gap: 3mm; align-items: flex-start; font-size: 10.5px; color: var(--text-body);"><span style="color: var(--coral); font-weight: 700; flex-shrink: 0;">✦</span> Gestion des risques et des imprévus</div>
+          <div style="display: flex; gap: 3mm; align-items: flex-start; font-size: 10.5px; color: var(--text-body);"><span style="color: var(--coral); font-weight: 700; flex-shrink: 0;">✦</span> Coordination multi-équipes et gestion des dépendances</div>
+          <div style="display: flex; gap: 3mm; align-items: flex-start; font-size: 10.5px; color: var(--text-body);"><span style="color: var(--coral); font-weight: 700; flex-shrink: 0;">✦</span> Communication de projet et reporting</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Common features -->
+    <div style="background: var(--navy); border-radius: 4px; padding: 6mm; color: white;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 4mm;">Ce qui fait la différence ASMOS</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5mm;">
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: white; margin-bottom: 2mm;">Débrief Structuré</div>
+          <div style="font-size: 10px; color: rgba(255,255,255,0.7); line-height: 1.6;">Chaque session se conclut par un débrief facilité qui transforme l'expérience vécue en apprentissages actionnables.</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: white; margin-bottom: 2mm;">Plan d'Action</div>
+          <div style="font-size: 10px; color: rgba(255,255,255,0.7); line-height: 1.6;">Les participants repartent avec un plan d'action concret et des engagements individuels et collectifs mesurables.</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: white; margin-bottom: 2mm;">Suivi & Mesure</div>
+          <div style="font-size: 10px; color: rgba(255,255,255,0.7); line-height: 1.6;">Un dispositif de suivi post-session permet de mesurer l'impact réel sur les comportements et les performances.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">12</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 13 : QUALIT, SECURIT, RISQUIT, MAINTIT -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Serious Games — Gamme heep Métier</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--teal); margin-bottom: 3mm;">Gamme heep — Métier</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 6mm;">Les Jeux Métier :<br>Qualité, Sécurité, Risque & Maintenance</div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin-bottom: 6mm;">
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-left: 4px solid var(--navy);">
+        <div style="font-size: 16px; font-weight: 900; color: var(--navy); margin-bottom: 1mm;">QUALIT</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3mm;">Culture Qualité</div>
+        <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">Ancrer durablement la culture qualité dans les équipes opérationnelles. QUALIT révèle les coûts cachés de la non-qualité et mobilise chaque collaborateur comme acteur de l'amélioration continue.</p>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-left: 4px solid #7C3AED;">
+        <div style="font-size: 16px; font-weight: 900; color: #7C3AED; margin-bottom: 1mm;">SECURIT</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3mm;">Sécurité au Travail</div>
+        <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">Développer les réflexes de sécurité et la culture de prévention des risques professionnels. SECURIT transforme la sécurité d'une contrainte réglementaire en valeur partagée et vécue.</p>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-left: 4px solid var(--coral);">
+        <div style="font-size: 16px; font-weight: 900; color: var(--coral); margin-bottom: 1mm;">RISQUIT</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3mm;">Gestion des Risques</div>
+        <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">Développer la culture du risque et les compétences d'identification, d'évaluation et de mitigation des risques opérationnels et stratégiques dans un environnement simulé.</p>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-left: 4px solid var(--teal);">
+        <div style="font-size: 16px; font-weight: 900; color: var(--teal); margin-bottom: 1mm;">MAINTIT</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3mm;">Maintenance & Fiabilité</div>
+        <p style="font-size: 10.5px; line-height: 1.7; color: var(--text-body);">Optimiser les pratiques de maintenance préventive et curative. MAINTIT simule les arbitrages complexes entre disponibilité des équipements, coûts et sécurité.</p>
+      </div>
+    </div>
+
+    <!-- Customization note -->
+    <div style="background: linear-gradient(135deg, var(--blue) 0%, var(--navy) 100%); border-radius: 4px; padding: 6mm; color: white; display: grid; grid-template-columns: 1fr 2fr; gap: 6mm; align-items: center;">
+      <div style="text-align: center;">
+        <div style="font-size: 36px; font-weight: 900; color: white; line-height: 1;">100%</div>
+        <div style="font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7); letter-spacing: 1px; text-transform: uppercase; margin-top: 1mm;">Adaptable</div>
+      </div>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: white; margin-bottom: 2mm;">Chaque jeu heep est personnalisable</div>
+        <p style="font-size: 10.5px; line-height: 1.65; color: rgba(255,255,255,0.8);">Tous les jeux de la gamme heep peuvent être adaptés à votre contexte spécifique : intégration de vos processus, de votre vocabulaire métier, de vos cas réels. La personnalisation maximise l'impact et l'appropriation par vos équipes.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">13</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 14 : BUSNIT & DEALIT -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Serious Games — Business & Négociation</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Gamme heep — Business</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 6mm;">BUSNIT & DEALIT :<br>Business Acumen & Négociation</div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin-bottom: 8mm;">
+      <div>
+        <div style="background: var(--navy); color: white; border-radius: 4px; padding: 6mm; margin-bottom: 4mm;">
+          <div style="font-size: 22px; font-weight: 900; margin-bottom: 1mm;">BUSNIT</div>
+          <div style="font-size: 10px; color: rgba(255,255,255,0.7);">Business Game & Stratégie d'Entreprise</div>
+        </div>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          BUSNIT est une simulation d'entreprise complète qui permet aux participants de piloter une organisation fictive sur plusieurs exercices. Ils prennent des décisions stratégiques, gèrent les ressources et font face aux aléas du marché.
+        </p>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm;">
+          <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3mm;">Compétences développées</div>
+          <div style="display: flex; flex-direction: column; gap: 1.5mm;">
+            <div style="font-size: 10px; color: var(--text-body);">→ Vision stratégique et pensée systémique</div>
+            <div style="font-size: 10px; color: var(--text-body);">→ Lecture des indicateurs financiers et opérationnels</div>
+            <div style="font-size: 10px; color: var(--text-body);">→ Prise de décision sous contrainte et incertitude</div>
+            <div style="font-size: 10px; color: var(--text-body);">→ Alignement stratégique et communication interne</div>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <div style="background: var(--gold); color: white; border-radius: 4px; padding: 6mm; margin-bottom: 4mm;">
+          <div style="font-size: 22px; font-weight: 900; margin-bottom: 1mm;">DEALIT</div>
+          <div style="font-size: 10px; color: rgba(255,255,255,0.85);">Master Business & Négociation Avancée</div>
+        </div>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          DEALIT est le jeu de négociation le plus avancé de notre gamme. Il simule des situations de négociation complexes — fusions-acquisitions, partenariats stratégiques, négociations commerciales — avec des enjeux réalistes et des parties prenantes multiples.
+        </p>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm;">
+          <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3mm;">Compétences développées</div>
+          <div style="display: flex; flex-direction: column; gap: 1.5mm;">
+            <div style="font-size: 10px; color: var(--text-body);">→ Techniques de négociation raisonnée (Harvard)</div>
+            <div style="font-size: 10px; color: var(--text-body);">→ Gestion des parties prenantes et des intérêts divergents</div>
+            <div style="font-size: 10px; color: var(--text-body);">→ Intelligence émotionnelle en situation de tension</div>
+            <div style="font-size: 10px; color: var(--text-body);">→ Création de valeur et recherche de solutions gagnant-gagnant</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Target audience -->
+    <div style="border: 1px solid var(--gray-mid); border-radius: 4px; padding: 5mm;">
+      <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4mm;">Publics cibles</div>
+      <div style="display: flex; gap: 3mm; flex-wrap: wrap;">
+        <span style="padding: 2mm 5mm; background: var(--navy); border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Comités de Direction</span>
+        <span style="padding: 2mm 5mm; background: var(--navy); border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Managers Senior</span>
+        <span style="padding: 2mm 5mm; background: var(--navy); border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Équipes Commerciales</span>
+        <span style="padding: 2mm 5mm; background: var(--navy); border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Hauts Potentiels</span>
+        <span style="padding: 2mm 5mm; background: var(--navy); border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Programmes MBA</span>
+        <span style="padding: 2mm 5mm; background: var(--navy); border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Écoles de Commerce</span>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">14</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 15 : PERF'CO -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Serious Games — Perf'co</div>
+  </div>
+  
+  <!-- Large image -->
+  <div style="height: 65mm; overflow: hidden; position: relative;">
+    <img src="img/serious_games_hero.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Perf'co">
+    <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(13,27,62,0.9) 0%, rgba(13,27,62,0.4) 60%, transparent 100%);"></div>
+    <div style="position: absolute; top: 0; left: 0; bottom: 0; padding: 8mm 12mm; display: flex; flex-direction: column; justify-content: center;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Flagship Product</div>
+      <div style="font-size: 38px; font-weight: 900; color: white; letter-spacing: -1.5px; line-height: 1.0; margin-bottom: 3mm;">Perf'co</div>
+      <div style="font-size: 14px; color: rgba(255,255,255,0.75);">Le Jeu de la Performance Managériale</div>
+    </div>
+  </div>
+
+  <div style="padding: 7mm 12mm;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8mm;">
+      <div>
+        <p style="font-size: 11.5px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          Perf'co est notre jeu phare pour le développement du leadership et de la performance managériale. Conçu autour d'un plateau circulaire emblématique, il plonge les managers dans des situations de management réalistes et complexes.
+        </p>
+        <p style="font-size: 11.5px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          À travers des défis progressifs, les participants explorent toutes les dimensions du management moderne : leadership situationnel, gestion des talents, conduite du changement, management à distance et performance collective.
+        </p>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm;">
+          <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3mm;">Format & Modalités</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2mm;">
+            <div style="font-size: 10px; color: var(--text-body);"><strong>Participants :</strong> 6-30</div>
+            <div style="font-size: 10px; color: var(--text-body);"><strong>Durée :</strong> 4-6 heures</div>
+            <div style="font-size: 10px; color: var(--text-body);"><strong>Format :</strong> Présentiel</div>
+            <div style="font-size: 10px; color: var(--text-body);"><strong>Niveau :</strong> Managers N+1 à N+3</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4mm;">Les 6 dimensions explorées</div>
+        <div style="display: flex; flex-direction: column; gap: 3mm;">
+          <div style="display: flex; gap: 3mm; align-items: center;">
+            <div style="width: 6mm; height: 6mm; background: var(--navy); border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);"><strong>Leadership</strong> — Styles et postures managériales</div>
+          </div>
+          <div style="display: flex; gap: 3mm; align-items: center;">
+            <div style="width: 6mm; height: 6mm; background: var(--blue); border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);"><strong>Motivation</strong> — Leviers d'engagement des équipes</div>
+          </div>
+          <div style="display: flex; gap: 3mm; align-items: center;">
+            <div style="width: 6mm; height: 6mm; background: var(--teal); border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);"><strong>Communication</strong> — Feedback et écoute active</div>
+          </div>
+          <div style="display: flex; gap: 3mm; align-items: center;">
+            <div style="width: 6mm; height: 6mm; background: var(--gold); border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);"><strong>Délégation</strong> — Confiance et autonomie</div>
+          </div>
+          <div style="display: flex; gap: 3mm; align-items: center;">
+            <div style="width: 6mm; height: 6mm; background: var(--coral); border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);"><strong>Changement</strong> — Conduite et résistances</div>
+          </div>
+          <div style="display: flex; gap: 3mm; align-items: center;">
+            <div style="width: 6mm; height: 6mm; background: #7C3AED; border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);"><strong>Performance</strong> — Objectifs et évaluation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">15</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 16 : ENGAME / BRAINENGAME -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Serious Games — engame & BrainEngame</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--blue); margin-bottom: 3mm;">Stratégie & Entrepreneuriat</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 6mm;">engame & BrainEngame :<br>Stratégie, Innovation & Entrepreneuriat</div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin-bottom: 6mm;">
+      <div>
+        <div style="background: linear-gradient(135deg, var(--blue) 0%, var(--navy) 100%); color: white; border-radius: 4px; padding: 6mm; margin-bottom: 4mm;">
+          <div style="font-size: 22px; font-weight: 900; margin-bottom: 1mm;">engame</div>
+          <div style="font-size: 10px; color: rgba(255,255,255,0.75);">Le Jeu de la Stratégie d'Entreprise</div>
+        </div>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          engame est notre simulation stratégique la plus complète. Les équipes pilotent une entreprise dans un environnement concurrentiel dynamique, prenant des décisions sur l'ensemble de la chaîne de valeur : R&D, production, marketing, finance et RH.
+        </p>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body);">
+          Le plateau circulaire iconique d'engame représente l'écosystème complet de l'entreprise, avec ses interdépendances et ses boucles de rétroaction. Un outil puissant pour développer la vision systémique et l'alignement stratégique.
+        </p>
+      </div>
+      
+      <div>
+        <div style="background: linear-gradient(135deg, #16A34A 0%, #064E3B 100%); color: white; border-radius: 4px; padding: 6mm; margin-bottom: 4mm;">
+          <div style="font-size: 22px; font-weight: 900; margin-bottom: 1mm;">BrainEngame</div>
+          <div style="font-size: 10px; color: rgba(255,255,255,0.75);">Le Jeu de l'Innovation & de l'Entrepreneuriat</div>
+        </div>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          BrainEngame est conçu pour les équipes qui souhaitent développer leur culture entrepreneuriale et leur capacité d'innovation. À travers des défis d'idéation, de prototypage et de pitch, les participants vivent l'aventure entrepreneuriale de l'intérieur.
+        </p>
+        <p style="font-size: 11px; line-height: 1.75; color: var(--text-body);">
+          Idéal pour les programmes d'intrapreneuriat, les labs d'innovation et les équipes qui souhaitent développer un état d'esprit startup au sein de grandes organisations.
+        </p>
+      </div>
+    </div>
+
+    <!-- Use cases -->
+    <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm;">
+      <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4mm;">Cas d'usage recommandés</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm;">
+        <div style="background: white; border-radius: 4px; padding: 4mm; border-top: 2px solid var(--blue);">
+          <div style="font-size: 10px; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm;">Séminaires de Direction</div>
+          <div style="font-size: 9.5px; color: var(--text-body); line-height: 1.6;">Aligner le CODIR sur la vision stratégique et les priorités de l'année.</div>
+        </div>
+        <div style="background: white; border-radius: 4px; padding: 4mm; border-top: 2px solid var(--teal);">
+          <div style="font-size: 10px; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm;">Programmes Leadership</div>
+          <div style="font-size: 9.5px; color: var(--text-body); line-height: 1.6;">Développer la vision business et les compétences stratégiques des managers à haut potentiel.</div>
+        </div>
+        <div style="background: white; border-radius: 4px; padding: 4mm; border-top: 2px solid var(--gold);">
+          <div style="font-size: 10px; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm;">Labs d'Innovation</div>
+          <div style="font-size: 9.5px; color: var(--text-body); line-height: 1.6;">Stimuler la créativité et l'esprit entrepreneurial dans vos espaces d'innovation.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">16</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 17 : INTERCALAIRE TOOLKITS -->
+<!-- ============================================================ -->
+<div class="page section-intercalaire" style="background: linear-gradient(135deg, #0A4A45 0%, #0D6B65 100%);">
+  <div class="pixel-bg" style="position: absolute; inset: 0; opacity: 0.4;"></div>
+  <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gold), var(--gold-light));"></div>
+  
+  <div style="padding: 0 12mm; position: relative; z-index: 1;">
+    <div style="font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold-light); margin-bottom: 4mm;">Partie 03</div>
+    <div style="font-size: 52px; font-weight: 900; letter-spacing: -2px; color: white; line-height: 1.0; margin-bottom: 6mm;">
+      Toolkits,<br><span style="color: rgba(255,255,255,0.6);">Idéation</span><br>& RSE
+    </div>
+    <div style="height: 2px; background: linear-gradient(90deg, var(--gold), transparent); width: 60mm; margin-bottom: 6mm;"></div>
+    <p style="font-size: 13px; line-height: 1.7; color: rgba(255,255,255,0.75); max-width: 140mm;">
+      Des outils de facilitation et d'idéation conçus pour libérer la créativité collective, structurer la co-construction et ancrer les engagements RSE dans le quotidien de vos équipes.
+    </p>
+    
+    <div style="margin-top: 10mm; display: flex; gap: 4mm; flex-wrap: wrap;">
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">Cartes d'Idéation</div>
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">Play Action</div>
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">ACTION Santé</div>
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">Tiers-Lieux</div>
+    </div>
+  </div>
+  
+  <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 55mm; overflow: hidden;">
+    <img src="img/toolkit_hero.png" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.3;" alt="">
+    <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(10,74,69,1) 0%, transparent 50%);"></div>
+  </div>
+  
+  <div style="position: absolute; bottom: 6mm; right: 12mm; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.3); letter-spacing: 1px;">17</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 18 : L'ART DE LA FACILITATION -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Toolkits & Facilitation</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--teal); margin-bottom: 3mm;">Facilitation & Co-Construction</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 2mm;">L'Art de la Facilitation :<br>Nos Toolkits sur Mesure</div>
+    <p style="font-size: 11.5px; line-height: 1.7; color: var(--text-body); margin-bottom: 6mm; max-width: 160mm;">Nos toolkits de facilitation sont conçus pour équiper vos facilitateurs internes et vos managers avec les outils nécessaires pour animer des ateliers de co-construction efficaces et engageants.</p>
+    
+    <!-- Image -->
+    <div style="height: 50mm; overflow: hidden; border-radius: 4px; margin-bottom: 6mm;">
+      <img src="img/toolkit_hero.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Toolkits ASMOS">
+    </div>
+    
+    <!-- Toolkit spectrum -->
+    <div style="margin-bottom: 6mm;">
+      <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4mm;">Du plus simple au plus structuré</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm;">
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-top: 3px solid var(--teal);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Toolkits Essentiels</div>
+          <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Decks de cartes simples pour lancer une conversation, briser la glace ou structurer un brainstorming. Prêts à l'emploi, sans formation préalable.</div>
+        </div>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-top: 3px solid var(--blue);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Toolkits Structurés</div>
+          <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Boîtes à outils complètes avec guide de facilitation, cartes thématiques et supports de restitution pour des ateliers de 2 à 4 heures.</div>
+        </div>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-top: 3px solid var(--navy);">
+          <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Toolkits Immersifs</div>
+          <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Dispositifs complets avec plateau, cartes, jetons et supports digitaux pour des journées entières de co-construction stratégique.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">18</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 19 : CARTES D'IDÉATION -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Toolkits — Cartes d'Idéation</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Idéation & Co-Construction</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 6mm;">Les Cartes d'Idéation :<br>La Pensée Collective en Action</div>
+    
+    <!-- Card types grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm; margin-bottom: 6mm;">
+      <div style="background: #FFF7ED; border-radius: 4px; padding: 5mm; border-left: 4px solid #F97316;">
+        <div style="font-size: 12px; font-weight: 900; color: #F97316; margin-bottom: 1mm;">TALK</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Cartes Conversation</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Lancez des conversations profondes et authentiques sur les enjeux qui comptent vraiment pour votre équipe.</div>
+      </div>
+      <div style="background: #EFF6FF; border-radius: 4px; padding: 5mm; border-left: 4px solid var(--blue);">
+        <div style="font-size: 12px; font-weight: 900; color: var(--blue); margin-bottom: 1mm;">USE CASE</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Cartes Cas d'Usage</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Explorez des situations réelles et des scénarios d'application pour ancrer les apprentissages dans le concret.</div>
+      </div>
+      <div style="background: #F0FDF4; border-radius: 4px; padding: 5mm; border-left: 4px solid #16A34A;">
+        <div style="font-size: 12px; font-weight: 900; color: #16A34A; margin-bottom: 1mm;">CHALLENGE</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Cartes Défi</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Stimulez la créativité et la résolution de problèmes à travers des défis progressifs adaptés à votre contexte.</div>
+      </div>
+      <div style="background: #F5F3FF; border-radius: 4px; padding: 5mm; border-left: 4px solid #7C3AED;">
+        <div style="font-size: 12px; font-weight: 900; color: #7C3AED; margin-bottom: 1mm;">PARCOURS</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Cartes Parcours</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Structurez le voyage de transformation de vos équipes avec des étapes claires et des jalons motivants.</div>
+      </div>
+      <div style="background: #FFF1F2; border-radius: 4px; padding: 5mm; border-left: 4px solid var(--coral);">
+        <div style="font-size: 12px; font-weight: 900; color: var(--coral); margin-bottom: 1mm;">BONUS</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Cartes Bonus</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Récompensez les comportements exemplaires et les contributions exceptionnelles pour maintenir l'engagement.</div>
+      </div>
+      <div style="background: #FFFBEB; border-radius: 4px; padding: 5mm; border-left: 4px solid var(--gold);">
+        <div style="font-size: 12px; font-weight: 900; color: var(--gold); margin-bottom: 1mm;">ACT</div>
+        <div style="font-size: 9px; font-weight: 600; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Cartes Action</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Transformez les idées en engagements concrets avec des plans d'action individuels et collectifs actionnables.</div>
+      </div>
+    </div>
+
+    <!-- Custom toolkit note -->
+    <div style="background: var(--navy); border-radius: 4px; padding: 6mm; color: white; display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; align-items: center;">
+      <div>
+        <div style="font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Sur mesure</div>
+        <div style="font-size: 16px; font-weight: 800; color: white; margin-bottom: 3mm; line-height: 1.2;">Votre Toolkit Personnalisé</div>
+        <p style="font-size: 10.5px; line-height: 1.65; color: rgba(255,255,255,0.8);">Nous créons des toolkits entièrement personnalisés à votre image, avec vos couleurs, votre vocabulaire et vos cas d'usage spécifiques. Un outil qui devient un actif durable pour votre organisation.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 3mm;">
+        <div style="background: rgba(255,255,255,0.08); border-radius: 4px; padding: 3mm 4mm; font-size: 10px; color: rgba(255,255,255,0.85);">✓ Design sur mesure à votre charte graphique</div>
+        <div style="background: rgba(255,255,255,0.08); border-radius: 4px; padding: 3mm 4mm; font-size: 10px; color: rgba(255,255,255,0.85);">✓ Contenu adapté à vos enjeux spécifiques</div>
+        <div style="background: rgba(255,255,255,0.08); border-radius: 4px; padding: 3mm 4mm; font-size: 10px; color: rgba(255,255,255,0.85);">✓ Formation de vos facilitateurs internes</div>
+        <div style="background: rgba(255,255,255,0.08); border-radius: 4px; padding: 3mm 4mm; font-size: 10px; color: rgba(255,255,255,0.85);">✓ Évolution continue du toolkit</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">19</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 20 : PLAY ACTION — RSE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Toolkits — Play Action & RSE</div>
+  </div>
+  
+  <!-- Image hero -->
+  <div style="height: 55mm; overflow: hidden; position: relative;">
+    <img src="img/tiers_lieux_hero.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Play Action">
+    <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(10,74,69,0.9) 0%, rgba(10,74,69,0.4) 60%, transparent 100%);"></div>
+    <div style="position: absolute; top: 0; left: 0; bottom: 0; padding: 8mm 12mm; display: flex; flex-direction: column; justify-content: center;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">RSE & Développement Durable</div>
+      <div style="font-size: 32px; font-weight: 900; color: white; letter-spacing: -1px; line-height: 1.0; margin-bottom: 2mm;">Play Action</div>
+      <div style="font-size: 13px; color: rgba(255,255,255,0.75);">La RSE en Action, Pas en Discours</div>
+    </div>
+  </div>
+
+  <div style="padding: 7mm 12mm;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8mm;">
+      <div>
+        <p style="font-size: 11.5px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          Play Action est notre toolkit phare pour engager vos équipes dans la démarche RSE et développement durable. Conçu autour d'un plateau de jeu et d'un deck de cartes colorées, il transforme les enjeux environnementaux et sociaux en défis concrets et actionnables.
+        </p>
+        <p style="font-size: 11.5px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          Les participants explorent les 17 Objectifs de Développement Durable de l'ONU à travers des mises en situation réelles, identifient les leviers d'action à leur portée et co-construisent un plan d'engagement collectif.
+        </p>
+        <div style="background: #F0FDF4; border-radius: 4px; padding: 4mm; border-left: 3px solid #16A34A;">
+          <div style="font-size: 10.5px; font-weight: 700; color: #16A34A; margin-bottom: 2mm;">Disponible en version digitale</div>
+          <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Play Action existe en version phygitale avec une application mobile complémentaire qui prolonge l'expérience dans le quotidien et permet de suivre les engagements pris.</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4mm;">Thématiques couvertes</div>
+        <div style="display: flex; flex-direction: column; gap: 2.5mm;">
+          <div style="display: flex; gap: 3mm; align-items: center; background: var(--gray-light); border-radius: 3px; padding: 3mm 4mm;">
+            <div style="width: 5mm; height: 5mm; background: #16A34A; border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);">Transition écologique & empreinte carbone</div>
+          </div>
+          <div style="display: flex; gap: 3mm; align-items: center; background: var(--gray-light); border-radius: 3px; padding: 3mm 4mm;">
+            <div style="width: 5mm; height: 5mm; background: var(--blue); border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);">Diversité, équité et inclusion</div>
+          </div>
+          <div style="display: flex; gap: 3mm; align-items: center; background: var(--gray-light); border-radius: 3px; padding: 3mm 4mm;">
+            <div style="width: 5mm; height: 5mm; background: var(--gold); border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);">Économie circulaire et achats responsables</div>
+          </div>
+          <div style="display: flex; gap: 3mm; align-items: center; background: var(--gray-light); border-radius: 3px; padding: 3mm 4mm;">
+            <div style="width: 5mm; height: 5mm; background: var(--coral); border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);">Bien-être au travail et QVT</div>
+          </div>
+          <div style="display: flex; gap: 3mm; align-items: center; background: var(--gray-light); border-radius: 3px; padding: 3mm 4mm;">
+            <div style="width: 5mm; height: 5mm; background: #7C3AED; border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);">Gouvernance et éthique des affaires</div>
+          </div>
+          <div style="display: flex; gap: 3mm; align-items: center; background: var(--gray-light); border-radius: 3px; padding: 3mm 4mm;">
+            <div style="width: 5mm; height: 5mm; background: var(--teal); border-radius: 50%; flex-shrink: 0;"></div>
+            <div style="font-size: 10.5px; color: var(--text-body);">Engagement communautaire et territoire</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">20</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 21 : ACTION — SANTÉ & BIEN-ÊTRE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Toolkits — ACTION Santé & Bien-être</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--coral); margin-bottom: 3mm;">Santé & Bien-être au Travail</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 6mm;">ACTION :<br>La Santé comme Levier de Performance</div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin-bottom: 6mm;">
+      <div>
+        <p style="font-size: 11.5px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          ACTION est notre toolkit dédié à la santé et au bien-être au travail. À travers un deck de cartes colorées et illustrées, il aborde de façon ludique et bienveillante les enjeux de santé physique et mentale des collaborateurs.
+        </p>
+        <p style="font-size: 11.5px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          Conçu avec des professionnels de santé, ACTION couvre les dimensions corporelles, émotionnelles et relationnelles du bien-être au travail. Il peut être utilisé en atelier collectif ou en accompagnement individuel.
+        </p>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm;">
+          <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3mm;">Catégories de cartes</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 2mm;">
+            <span style="padding: 1.5mm 4mm; background: #F97316; border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Impacts</span>
+            <span style="padding: 1.5mm 4mm; background: #16A34A; border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Objectifs</span>
+            <span style="padding: 1.5mm 4mm; background: var(--teal); border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Dans le Corps</span>
+            <span style="padding: 1.5mm 4mm; background: var(--navy); border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Méthodes</span>
+            <span style="padding: 1.5mm 4mm; background: var(--coral); border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Actions</span>
+            <span style="padding: 1.5mm 4mm; background: #7C3AED; border-radius: 20px; font-size: 9px; font-weight: 600; color: white;">Problèmes</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4mm;">Bénéfices mesurés</div>
+        <div style="display: flex; flex-direction: column; gap: 3mm;">
+          <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm; display: flex; gap: 4mm; align-items: center;">
+            <div style="font-size: 22px; font-weight: 900; color: var(--coral); min-width: 15mm; text-align: center;">-30%</div>
+            <div style="font-size: 10px; line-height: 1.6; color: var(--text-body);">Réduction de l'absentéisme après 6 mois de programme</div>
+          </div>
+          <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm; display: flex; gap: 4mm; align-items: center;">
+            <div style="font-size: 22px; font-weight: 900; color: var(--teal); min-width: 15mm; text-align: center;">+45%</div>
+            <div style="font-size: 10px; line-height: 1.6; color: var(--text-body);">Amélioration du score d'engagement des équipes participantes</div>
+          </div>
+          <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm; display: flex; gap: 4mm; align-items: center;">
+            <div style="font-size: 22px; font-weight: 900; color: var(--blue); min-width: 15mm; text-align: center;">92%</div>
+            <div style="font-size: 10px; line-height: 1.6; color: var(--text-body);">Des participants déclarent avoir changé au moins un comportement de santé</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QVT note -->
+    <div style="background: linear-gradient(135deg, var(--coral) 0%, #C0392B 100%); border-radius: 4px; padding: 5mm; color: white;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.8); margin-bottom: 2mm;">Intégration QVT</div>
+      <p style="font-size: 11px; line-height: 1.65; color: rgba(255,255,255,0.9);">ACTION s'intègre parfaitement dans vos programmes QVT et QVCT. Il peut être déployé en autonomie par vos managers ou animé par nos facilitateurs certifiés dans le cadre d'un programme d'accompagnement global.</p>
+    </div>
+  </div>
+  <div class="page-number">21</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 22 : TIERS-LIEUX & LABS D'INNOVATION -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Tiers-Lieux & Labs d'Innovation</div>
+  </div>
+  
+  <!-- Image -->
+  <div style="height: 55mm; overflow: hidden; position: relative;">
+    <img src="img/tiers_lieux_hero.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Tiers-Lieux">
+    <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(13,27,62,0.85) 0%, rgba(13,27,62,0.2) 70%, transparent 100%);"></div>
+    <div style="position: absolute; top: 0; left: 0; bottom: 0; padding: 8mm 12mm; display: flex; flex-direction: column; justify-content: center;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Espaces d'Innovation</div>
+      <div style="font-size: 28px; font-weight: 900; color: white; letter-spacing: -1px; line-height: 1.1;">Tiers-Lieux & Labs<br>d'Innovation</div>
+    </div>
+  </div>
+
+  <div style="padding: 7mm 12mm;">
+    <p style="font-size: 11.5px; line-height: 1.75; color: var(--text-body); margin-bottom: 6mm; max-width: 170mm;">
+      Nos outils sont conçus pour s'intégrer naturellement dans vos espaces d'innovation : labs de co-création, tiers-lieux, fab labs, espaces de coworking et centres d'innovation. Nous équipons ces espaces pour qu'ils deviennent de véritables accélérateurs d'intelligence collective.
+    </p>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm; margin-bottom: 6mm;">
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 3mm;">🏢</div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Labs Corporate</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Équipez vos labs d'innovation internes avec nos toolkits et serious games pour maximiser la productivité créative de vos équipes.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 3mm;">🌐</div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Tiers-Lieux</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Proposez à vos communautés des expériences de co-création uniques avec nos dispositifs de facilitation adaptés aux espaces ouverts.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 3mm;">🎓</div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Centres de Formation</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Transformez vos salles de formation en espaces d'apprentissage actif et expérientiel avec nos outils pédagogiques gamifiés.</div>
+      </div>
+    </div>
+
+    <!-- Offer -->
+    <div style="background: var(--navy); border-radius: 4px; padding: 5mm; color: white; display: flex; gap: 6mm; align-items: center;">
+      <div style="font-size: 36px; flex-shrink: 0;">🎯</div>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: white; margin-bottom: 2mm;">Offre Clé en Main pour vos Espaces</div>
+        <p style="font-size: 10.5px; line-height: 1.65; color: rgba(255,255,255,0.8);">Nous proposons une offre complète d'équipement et d'animation de vos espaces d'innovation : audit de l'espace, sélection des outils adaptés, formation de vos animateurs et programme d'événements sur mesure.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">22</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 23 : INTERCALAIRE DIGITAL & PHYGITAL -->
+<!-- ============================================================ -->
+<div class="page section-intercalaire" style="background: linear-gradient(135deg, #0D1B3E 0%, #1A2D5A 50%, #1E5FD4 100%);">
+  <div class="pixel-bg" style="position: absolute; inset: 0; opacity: 0.4;"></div>
+  <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--coral), var(--gold));"></div>
+  
+  <div style="padding: 0 12mm; position: relative; z-index: 1;">
+    <div style="font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 4mm;">Partie 04</div>
+    <div style="font-size: 52px; font-weight: 900; letter-spacing: -2px; color: white; line-height: 1.0; margin-bottom: 6mm;">
+      Digital,<br>Phygital &<br><span style="color: var(--blue-light);">Immersif</span>
+    </div>
+    <div style="height: 2px; background: linear-gradient(90deg, var(--coral), transparent); width: 60mm; margin-bottom: 6mm;"></div>
+    <p style="font-size: 13px; line-height: 1.7; color: rgba(255,255,255,0.75); max-width: 140mm;">
+      L'avenir de la gamification est phygital. Nous concevons des expériences qui fusionnent le meilleur du monde physique et du monde digital pour créer des parcours d'engagement sans précédent.
+    </p>
+    
+    <div style="margin-top: 10mm; display: flex; gap: 4mm; flex-wrap: wrap;">
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">Applications Mobiles</div>
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">Plateformes Web</div>
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">IA & Data</div>
+      <div style="padding: 2mm 6mm; border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.7);">Escape Rooms</div>
+    </div>
+  </div>
+  
+  <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 55mm; overflow: hidden;">
+    <img src="img/phygital_hero.png" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.25;" alt="">
+    <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(13,27,62,1) 0%, transparent 50%);"></div>
+  </div>
+  
+  <div style="position: absolute; bottom: 6mm; right: 12mm; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.3); letter-spacing: 1px;">23</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 24 : L'EXPÉRIENCE PHYGITALE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Digital & Phygital</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--blue); margin-bottom: 3mm;">Innovation Phygitale</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 2mm;">L'Expérience Phygitale :<br>Le Meilleur des Deux Mondes</div>
+    <p style="font-size: 11.5px; line-height: 1.7; color: var(--text-body); margin-bottom: 6mm; max-width: 160mm;">Le phygital n'est pas un compromis entre le physique et le digital — c'est une nouvelle forme d'expérience qui transcende les deux. Chez ASMOS, nous concevons des dispositifs où le jeu physique et la technologie se renforcent mutuellement.</p>
+    
+    <!-- Phygital image -->
+    <div style="height: 55mm; overflow: hidden; border-radius: 4px; margin-bottom: 6mm;">
+      <img src="img/phygital_hero.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Phygital ASMOS">
+    </div>
+
+    <!-- Benefits grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4mm;">
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-left: 3px solid var(--blue);">
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Engagement Augmenté</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">La combinaison du tangible et du digital crée une expérience multisensorielle qui maximise l'attention et l'engagement des participants.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-left: 3px solid var(--teal);">
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Données en Temps Réel</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Les composantes digitales capturent les données de jeu en temps réel, permettant un suivi précis de la progression et une personnalisation de l'expérience.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-left: 3px solid var(--gold);">
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Accessibilité Étendue</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Les modules digitaux permettent d'étendre l'expérience au-delà de la session présentielle, en mode asynchrone ou à distance pour les équipes hybrides.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; border-left: 3px solid var(--coral);">
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Impact Durable</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Les applications mobiles prolongent l'expérience dans le quotidien, avec des micro-apprentissages, des défis et des rappels qui ancrent les nouvelles pratiques.</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">24</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 25 : APPLICATIONS MOBILES & PLATEFORMES -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Digital — Applications & Plateformes</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--teal); margin-bottom: 3mm;">Solutions Digitales</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 6mm;">Applications Mobiles &<br>Plateformes Digitales</div>
+    
+    <!-- Digital products -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; margin-bottom: 6mm;">
+      <div style="background: var(--navy); border-radius: 4px; padding: 6mm; color: white;">
+        <div style="font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--blue-light); margin-bottom: 3mm;">Application Mobile</div>
+        <div style="font-size: 16px; font-weight: 900; color: white; margin-bottom: 3mm;">heep Digital</div>
+        <p style="font-size: 10.5px; line-height: 1.65; color: rgba(255,255,255,0.8); margin-bottom: 4mm;">La version digitale de la gamme heep permet de déployer nos serious games en mode 100% digital ou en complément de la version physique. Interface intuitive, tableau de bord facilitateur et analytics intégrés.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 2mm;">
+          <span style="padding: 1.5mm 3mm; background: rgba(255,255,255,0.1); border-radius: 3px; font-size: 9px; color: rgba(255,255,255,0.7);">iOS & Android</span>
+          <span style="padding: 1.5mm 3mm; background: rgba(255,255,255,0.1); border-radius: 3px; font-size: 9px; color: rgba(255,255,255,0.7);">Web App</span>
+          <span style="padding: 1.5mm 3mm; background: rgba(255,255,255,0.1); border-radius: 3px; font-size: 9px; color: rgba(255,255,255,0.7);">Analytics</span>
+        </div>
+      </div>
+      <div style="background: linear-gradient(135deg, #16A34A 0%, #064E3B 100%); border-radius: 4px; padding: 6mm; color: white;">
+        <div style="font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-bottom: 3mm;">Application Mobile</div>
+        <div style="font-size: 16px; font-weight: 900; color: white; margin-bottom: 3mm;">Play Action Digital</div>
+        <p style="font-size: 10.5px; line-height: 1.65; color: rgba(255,255,255,0.8); margin-bottom: 4mm;">L'application Play Action prolonge l'expérience RSE dans le quotidien des collaborateurs. Défis hebdomadaires, suivi des engagements, classements d'équipe et reporting RSE automatisé.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 2mm;">
+          <span style="padding: 1.5mm 3mm; background: rgba(255,255,255,0.1); border-radius: 3px; font-size: 9px; color: rgba(255,255,255,0.7);">iOS & Android</span>
+          <span style="padding: 1.5mm 3mm; background: rgba(255,255,255,0.1); border-radius: 3px; font-size: 9px; color: rgba(255,255,255,0.7);">Dashboard RSE</span>
+          <span style="padding: 1.5mm 3mm; background: rgba(255,255,255,0.1); border-radius: 3px; font-size: 9px; color: rgba(255,255,255,0.7);">Gamification</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platform features -->
+    <div style="border: 1px solid var(--gray-mid); border-radius: 4px; padding: 5mm; margin-bottom: 6mm;">
+      <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4mm;">Fonctionnalités Plateforme</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm;">
+        <div style="text-align: center; padding: 3mm;">
+          <div style="font-size: 20px; margin-bottom: 2mm;">📊</div>
+          <div style="font-size: 10px; font-weight: 700; color: var(--navy); margin-bottom: 1mm;">Analytics Temps Réel</div>
+          <div style="font-size: 9.5px; color: var(--text-body); line-height: 1.5;">Suivi de l'engagement, des scores et de la progression par équipe</div>
+        </div>
+        <div style="text-align: center; padding: 3mm;">
+          <div style="font-size: 20px; margin-bottom: 2mm;">🔧</div>
+          <div style="font-size: 10px; font-weight: 700; color: var(--navy); margin-bottom: 1mm;">Personnalisation</div>
+          <div style="font-size: 9.5px; color: var(--text-body); line-height: 1.5;">Interface adaptable à votre charte graphique et vos contenus</div>
+        </div>
+        <div style="text-align: center; padding: 3mm;">
+          <div style="font-size: 20px; margin-bottom: 2mm;">🔗</div>
+          <div style="font-size: 10px; font-weight: 700; color: var(--navy); margin-bottom: 1mm;">Intégrations</div>
+          <div style="font-size: 9.5px; color: var(--text-body); line-height: 1.5;">Compatible LMS, HRIS, Teams, Slack et outils de collaboration</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom dev -->
+    <div style="background: linear-gradient(135deg, var(--blue) 0%, var(--navy) 100%); border-radius: 4px; padding: 5mm; color: white;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-bottom: 2mm;">Développement Sur Mesure</div>
+      <p style="font-size: 11px; line-height: 1.65; color: rgba(255,255,255,0.9);">Notre studio de développement conçoit des applications et plateformes digitales entièrement sur mesure pour des expériences gamifiées uniques, intégrées à votre écosystème technologique existant.</p>
+    </div>
+  </div>
+  <div class="page-number">25</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 26 : IA & DATA DANS NOS PARCOURS -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Digital — IA & Data</div>
+  </div>
+  
+  <!-- Dark header -->
+  <div style="background: var(--navy); padding: 8mm 12mm; position: relative; overflow: hidden;">
+    <div class="pixel-bg" style="position: absolute; inset: 0; opacity: 0.4;"></div>
+    <div style="position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; align-items: center;">
+      <div>
+        <div style="font-size: 8px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Intelligence Artificielle</div>
+        <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: white; line-height: 1.1;">L'IA au Service<br>de l'Expérience Ludique</div>
+      </div>
+      <div>
+        <p style="font-size: 11px; line-height: 1.7; color: rgba(255,255,255,0.75);">Nous intégrons l'intelligence artificielle dans nos dispositifs pour personnaliser les parcours, analyser les comportements et générer des insights actionnables pour vos équipes RH et formation.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 8mm 12mm;">
+    <!-- AI features -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin-bottom: 6mm;">
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; display: flex; gap: 4mm; align-items: flex-start;">
+        <div style="font-size: 24px; flex-shrink: 0;">🤖</div>
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Personnalisation Adaptative</div>
+          <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">L'IA analyse le profil et les comportements de chaque participant pour adapter en temps réel la difficulté, le contenu et le rythme de l'expérience.</div>
+        </div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; display: flex; gap: 4mm; align-items: flex-start;">
+        <div style="font-size: 24px; flex-shrink: 0;">📈</div>
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Analytics Comportementaux</div>
+          <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Nos algorithmes analysent les patterns de jeu pour identifier les forces, les axes de développement et les dynamiques d'équipe de façon objective et précise.</div>
+        </div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; display: flex; gap: 4mm; align-items: flex-start;">
+        <div style="font-size: 24px; flex-shrink: 0;">💬</div>
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Chatbot Facilitateur</div>
+          <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Un assistant IA accompagne les participants entre les sessions, répond à leurs questions et les guide dans l'application des apprentissages sur le terrain.</div>
+        </div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; display: flex; gap: 4mm; align-items: flex-start;">
+        <div style="font-size: 24px; flex-shrink: 0;">🎯</div>
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Recommandations Prédictives</div>
+          <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Le système prédit les besoins de formation futurs et recommande proactivement les modules et expériences les plus pertinents pour chaque collaborateur.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data dashboard preview -->
+    <div style="background: var(--navy); border-radius: 4px; padding: 6mm; color: white;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 4mm;">Dashboard de Pilotage</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4mm;">
+        <div style="background: rgba(255,255,255,0.08); border-radius: 4px; padding: 4mm; text-align: center;">
+          <div style="font-size: 24px; font-weight: 900; color: var(--blue-light);">94%</div>
+          <div style="font-size: 8px; color: rgba(255,255,255,0.6); margin-top: 1mm;">Taux de complétion</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.08); border-radius: 4px; padding: 4mm; text-align: center;">
+          <div style="font-size: 24px; font-weight: 900; color: var(--teal);">4.7/5</div>
+          <div style="font-size: 8px; color: rgba(255,255,255,0.6); margin-top: 1mm;">Score engagement</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.08); border-radius: 4px; padding: 4mm; text-align: center;">
+          <div style="font-size: 24px; font-weight: 900; color: var(--gold);">+38%</div>
+          <div style="font-size: 8px; color: rgba(255,255,255,0.6); margin-top: 1mm;">Performance équipe</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.08); border-radius: 4px; padding: 4mm; text-align: center;">
+          <div style="font-size: 24px; font-weight: 900; color: var(--coral);">×3.2</div>
+          <div style="font-size: 8px; color: rgba(255,255,255,0.6); margin-top: 1mm;">ROI formation</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">26</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 27 : ESCAPE ROOMS CORPORATE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Expériences Immersives — Escape Rooms</div>
+  </div>
+  
+  <!-- Hero image -->
+  <div style="height: 65mm; overflow: hidden; position: relative;">
+    <img src="img/escape_room_hero.png" style="width: 100%; height: 100%; object-fit: cover;" alt="Escape Room Corporate">
+    <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(13,27,62,0.9) 0%, rgba(13,27,62,0.4) 60%, transparent 100%);"></div>
+    <div style="position: absolute; top: 0; left: 0; bottom: 0; padding: 8mm 12mm; display: flex; flex-direction: column; justify-content: center;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Expériences Immersives</div>
+      <div style="font-size: 32px; font-weight: 900; color: white; letter-spacing: -1px; line-height: 1.0; margin-bottom: 2mm;">Escape Rooms<br>Corporate</div>
+      <div style="font-size: 13px; color: rgba(255,255,255,0.75);">L'Immersion Totale au Service de la Cohésion</div>
+    </div>
+  </div>
+
+  <div style="padding: 7mm 12mm;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8mm;">
+      <div>
+        <p style="font-size: 11.5px; line-height: 1.75; color: var(--text-body); margin-bottom: 4mm;">
+          Nos escape rooms corporate ne sont pas de simples jeux d'évasion. Ce sont des expériences immersives scénarisées autour de vos enjeux organisationnels réels : onboarding, cohésion d'équipe, management de crise, conduite du changement.
+        </p>
+        <p style="font-size: 11.5px; line-height: 1.75; color: var(--text-body);">
+          Chaque escape room ASMOS est conçue sur mesure, avec un scénario ancré dans votre réalité métier, des énigmes qui révèlent les dynamiques d'équipe et un débrief structuré qui transforme l'expérience en apprentissages durables.
+        </p>
+      </div>
+      <div>
+        <div style="font-size: 9px; font-weight: 700; color: var(--gray-text); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4mm;">Formats disponibles</div>
+        <div style="display: flex; flex-direction: column; gap: 3mm;">
+          <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm; display: flex; gap: 3mm; align-items: center;">
+            <div style="width: 6mm; height: 6mm; background: var(--navy); border-radius: 50%; flex-shrink: 0;"></div>
+            <div>
+              <div style="font-size: 10px; font-weight: 700; color: var(--navy);">Escape Room Physique</div>
+              <div style="font-size: 9.5px; color: var(--text-body);">Installation dans vos locaux ou en espace dédié</div>
+            </div>
+          </div>
+          <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm; display: flex; gap: 3mm; align-items: center;">
+            <div style="width: 6mm; height: 6mm; background: var(--blue); border-radius: 50%; flex-shrink: 0;"></div>
+            <div>
+              <div style="font-size: 10px; font-weight: 700; color: var(--navy);">Escape Room Digitale</div>
+              <div style="font-size: 9.5px; color: var(--text-body);">Version 100% en ligne pour équipes distribuées</div>
+            </div>
+          </div>
+          <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm; display: flex; gap: 3mm; align-items: center;">
+            <div style="width: 6mm; height: 6mm; background: var(--teal); border-radius: 50%; flex-shrink: 0;"></div>
+            <div>
+              <div style="font-size: 10px; font-weight: 700; color: var(--navy);">Escape Room Hybride</div>
+              <div style="font-size: 9.5px; color: var(--text-body);">Mix physique/digital pour équipes hybrides</div>
+            </div>
+          </div>
+          <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm; display: flex; gap: 3mm; align-items: center;">
+            <div style="width: 6mm; height: 6mm; background: var(--gold); border-radius: 50%; flex-shrink: 0;"></div>
+            <div>
+              <div style="font-size: 10px; font-weight: 700; color: var(--navy);">Escape Room Itinérante</div>
+              <div style="font-size: 9.5px; color: var(--text-body);">Kit transportable pour déploiement multi-sites</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">27</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 28 : PROTOTYPES & SUR-MESURE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Studio de Création — Sur-Mesure</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 3mm;">Studio de Création</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 2mm;">Prototypes & Sur-Mesure :<br>De l'Idée à la Réalisation</div>
+    <p style="font-size: 11.5px; line-height: 1.7; color: var(--text-body); margin-bottom: 6mm; max-width: 160mm;">Notre studio de création est le cœur battant d'ASMOS. C'est là que naissent toutes nos créations, du premier croquis au prototype final, en passant par les tests utilisateurs et les itérations successives.</p>
+    
+    <!-- Process steps -->
+    <div style="margin-bottom: 6mm;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 0; position: relative;">
+        <!-- Connecting line -->
+        <div style="position: absolute; top: 8mm; left: 10%; right: 10%; height: 2px; background: linear-gradient(90deg, var(--navy), var(--blue), var(--teal), var(--gold), var(--coral));"></div>
+        
+        <div style="text-align: center; padding: 0 2mm; position: relative; z-index: 1;">
+          <div style="width: 10mm; height: 10mm; background: var(--navy); border-radius: 50%; margin: 0 auto 3mm; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; color: white; border: 2px solid white;">1</div>
+          <div style="font-size: 9px; font-weight: 700; color: var(--navy); margin-bottom: 1mm;">Brief</div>
+          <div style="font-size: 8.5px; color: var(--text-body); line-height: 1.5;">Compréhension des enjeux et objectifs</div>
+        </div>
+        <div style="text-align: center; padding: 0 2mm; position: relative; z-index: 1;">
+          <div style="width: 10mm; height: 10mm; background: var(--blue); border-radius: 50%; margin: 0 auto 3mm; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; color: white; border: 2px solid white;">2</div>
+          <div style="font-size: 9px; font-weight: 700; color: var(--navy); margin-bottom: 1mm;">Co-Design</div>
+          <div style="font-size: 8.5px; color: var(--text-body); line-height: 1.5;">Ateliers de conception avec vos équipes</div>
+        </div>
+        <div style="text-align: center; padding: 0 2mm; position: relative; z-index: 1;">
+          <div style="width: 10mm; height: 10mm; background: var(--teal); border-radius: 50%; margin: 0 auto 3mm; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; color: white; border: 2px solid white;">3</div>
+          <div style="font-size: 9px; font-weight: 700; color: var(--navy); margin-bottom: 1mm;">Prototype</div>
+          <div style="font-size: 8.5px; color: var(--text-body); line-height: 1.5;">Maquette rapide et tests utilisateurs</div>
+        </div>
+        <div style="text-align: center; padding: 0 2mm; position: relative; z-index: 1;">
+          <div style="width: 10mm; height: 10mm; background: var(--gold); border-radius: 50%; margin: 0 auto 3mm; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; color: white; border: 2px solid white;">4</div>
+          <div style="font-size: 9px; font-weight: 700; color: var(--navy); margin-bottom: 1mm;">Production</div>
+          <div style="font-size: 8.5px; color: var(--text-body); line-height: 1.5;">Fabrication et développement final</div>
+        </div>
+        <div style="text-align: center; padding: 0 2mm; position: relative; z-index: 1;">
+          <div style="width: 10mm; height: 10mm; background: var(--coral); border-radius: 50%; margin: 0 auto 3mm; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; color: white; border: 2px solid white;">5</div>
+          <div style="font-size: 9px; font-weight: 700; color: var(--navy); margin-bottom: 1mm;">Déploiement</div>
+          <div style="font-size: 8.5px; color: var(--text-body); line-height: 1.5;">Formation & accompagnement</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Studio capabilities -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin-bottom: 6mm;">
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Design Graphique & Édition</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Conception graphique complète de vos jeux : plateaux, cartes, boîtes, règles du jeu et supports de facilitation. Impression et fabrication en France.</div>
+      </div>
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 2mm;">Développement Digital</div>
+        <div style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Développement d'applications mobiles, de plateformes web et d'interfaces de jeu digitales sur mesure, intégrées à votre SI.</div>
+      </div>
+    </div>
+
+    <!-- Guarantee -->
+    <div style="background: var(--navy); border-radius: 4px; padding: 5mm; color: white; display: flex; gap: 5mm; align-items: center;">
+      <div style="font-size: 32px; flex-shrink: 0;">🏆</div>
+      <div>
+        <div style="font-size: 12px; font-weight: 700; color: white; margin-bottom: 1.5mm;">Notre Garantie Satisfaction</div>
+        <p style="font-size: 10.5px; line-height: 1.65; color: rgba(255,255,255,0.8);">Chaque création ASMOS est livrée avec une garantie de satisfaction. Si le jeu ne répond pas à vos objectifs lors de la première session, nous le reprenons et l'améliorons sans frais supplémentaires.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">28</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 29 : INTERCALAIRE PASSER À L'ACTION -->
+<!-- ============================================================ -->
+<div class="page section-intercalaire" style="background: linear-gradient(135deg, #0D1B3E 0%, #1A2D5A 100%);">
+  <div class="pixel-bg" style="position: absolute; inset: 0; opacity: 0.5;"></div>
+  <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gold), var(--gold-light));"></div>
+  
+  <div style="padding: 0 12mm; position: relative; z-index: 1;">
+    <div style="font-size: 9px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 4mm;">Partie 05</div>
+    <div style="font-size: 52px; font-weight: 900; letter-spacing: -2px; color: white; line-height: 1.0; margin-bottom: 6mm;">
+      Passer<br>à l'<span style="color: var(--blue-light);">Action</span>
+    </div>
+    <div style="height: 2px; background: linear-gradient(90deg, var(--gold), transparent); width: 60mm; margin-bottom: 6mm;"></div>
+    <p style="font-size: 13px; line-height: 1.7; color: rgba(255,255,255,0.75); max-width: 140mm;">
+      Vous avez exploré notre univers. Il est maintenant temps de co-construire votre prochaine expérience transformatrice. Voici comment nous travaillons ensemble.
+    </p>
+  </div>
+  
+  <div style="position: absolute; bottom: 6mm; right: 12mm; font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.3); letter-spacing: 1px;">29</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 30 : CAS D'USAGE & TÉMOIGNAGES -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Cas d'Usage & Témoignages</div>
+  </div>
+  
+  <div style="padding: 8mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--blue); margin-bottom: 3mm;">Ils nous font confiance</div>
+    <div style="font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 6mm;">Comment nos Clients<br>Transforment leur Culture</div>
+    
+    <!-- Case studies -->
+    <div style="display: flex; flex-direction: column; gap: 5mm; margin-bottom: 6mm;">
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; display: grid; grid-template-columns: 20mm 1fr; gap: 5mm; align-items: start;">
+        <div style="background: var(--navy); border-radius: 4px; padding: 3mm; text-align: center;">
+          <div style="font-size: 9px; font-weight: 700; color: var(--gold); letter-spacing: 1px; text-transform: uppercase;">Industrie</div>
+          <div style="font-size: 8px; color: rgba(255,255,255,0.6); margin-top: 1mm;">Groupe CAC 40</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm;">Transformation Agile à grande échelle</div>
+          <p style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Déploiement d'AGIT auprès de 2 000 collaborateurs sur 18 mois. Résultat : 85% des équipes ont adopté les pratiques agiles, réduction de 40% des délais de mise sur le marché.</p>
+        </div>
+      </div>
+      
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; display: grid; grid-template-columns: 20mm 1fr; gap: 5mm; align-items: start;">
+        <div style="background: var(--teal); border-radius: 4px; padding: 3mm; text-align: center;">
+          <div style="font-size: 9px; font-weight: 700; color: white; letter-spacing: 1px; text-transform: uppercase;">Banque</div>
+          <div style="font-size: 8px; color: rgba(255,255,255,0.7); margin-top: 1mm;">Top 5 France</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm;">Programme Leadership nouvelle génération</div>
+          <p style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Création d'un parcours de développement managérial sur 12 mois intégrant Perf'co, COMIT et une escape room sur mesure. +62% de satisfaction des managers participants.</p>
+        </div>
+      </div>
+      
+      <div style="background: var(--gray-light); border-radius: 4px; padding: 5mm; display: grid; grid-template-columns: 20mm 1fr; gap: 5mm; align-items: start;">
+        <div style="background: var(--gold); border-radius: 4px; padding: 3mm; text-align: center;">
+          <div style="font-size: 9px; font-weight: 700; color: white; letter-spacing: 1px; text-transform: uppercase;">Énergie</div>
+          <div style="font-size: 8px; color: rgba(255,255,255,0.7); margin-top: 1mm;">Opérateur National</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm;">Engagement RSE des collaborateurs</div>
+          <p style="font-size: 10px; line-height: 1.65; color: var(--text-body);">Déploiement de Play Action Digital auprès de 8 000 collaborateurs. 73% d'engagement actif, 1 200 actions RSE concrètes initiées dans les 3 premiers mois.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Testimonial -->
+    <div style="background: var(--navy); border-radius: 4px; padding: 6mm; color: white;">
+      <div style="font-size: 32px; color: var(--gold); line-height: 1; margin-bottom: 3mm;">"</div>
+      <p style="font-size: 12px; font-style: italic; color: rgba(255,255,255,0.9); line-height: 1.6; margin-bottom: 4mm;">ASMOS a transformé notre façon d'aborder la formation. Ce n'est plus une contrainte pour nos équipes — c'est un moment qu'ils attendent avec impatience. L'impact sur l'engagement et la rétention des apprentissages est remarquable.</p>
+      <div style="font-size: 10px; font-weight: 600; color: var(--gold);">Directeur des Ressources Humaines — Groupe Industriel International</div>
+    </div>
+  </div>
+  <div class="page-number">30</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 31 : NOTRE PROCESSUS D'ACCOMPAGNEMENT -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="header-bar">
+    <div class="logo-text">asmos <span>GROUP</span></div>
+    <div class="section-label">Notre Processus d'Accompagnement</div>
+  </div>
+  
+  <!-- Process diagram image -->
+  <div style="height: 60mm; overflow: hidden; position: relative; background: var(--gray-light);">
+    <img src="img/process_diagram.png" style="width: 100%; height: 100%; object-fit: contain;" alt="Processus ASMOS">
+  </div>
+
+  <div style="padding: 7mm 12mm;">
+    <div style="font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--navy); margin-bottom: 3mm;">Notre Méthode</div>
+    <div style="font-size: 22px; font-weight: 900; letter-spacing: -1px; color: var(--navy); line-height: 1.1; margin-bottom: 5mm;">De l'Audit au Déploiement :<br>Un Accompagnement Complet</div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin-bottom: 6mm;">
+      <div style="display: flex; flex-direction: column; gap: 3mm;">
+        <div style="display: flex; gap: 3mm; align-items: flex-start;">
+          <div style="width: 7mm; height: 7mm; background: var(--navy); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; flex-shrink: 0; margin-top: 1px;">1</div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--navy);">Audit & Diagnostic</div>
+            <div style="font-size: 10px; line-height: 1.6; color: var(--text-body);">Analyse de vos enjeux, de votre culture et de vos objectifs de transformation pour définir le dispositif le plus adapté.</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 3mm; align-items: flex-start;">
+          <div style="width: 7mm; height: 7mm; background: var(--blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; flex-shrink: 0; margin-top: 1px;">2</div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--navy);">Co-Design</div>
+            <div style="font-size: 10px; line-height: 1.6; color: var(--text-body);">Ateliers de co-conception avec vos équipes pour créer une expérience qui leur ressemble et répond précisément à leurs besoins.</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 3mm; align-items: flex-start;">
+          <div style="width: 7mm; height: 7mm; background: var(--teal); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; flex-shrink: 0; margin-top: 1px;">3</div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--navy);">Prototypage & Test</div>
+            <div style="font-size: 10px; line-height: 1.6; color: var(--text-body);">Création d'un prototype fonctionnel testé avec un groupe pilote pour valider les mécaniques et ajuster le contenu.</div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 3mm;">
+        <div style="display: flex; gap: 3mm; align-items: flex-start;">
+          <div style="width: 7mm; height: 7mm; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; flex-shrink: 0; margin-top: 1px;">4</div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--navy);">Déploiement</div>
+            <div style="font-size: 10px; line-height: 1.6; color: var(--text-body);">Déploiement à grande échelle avec formation de vos facilitateurs internes et accompagnement des premières sessions.</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 3mm; align-items: flex-start;">
+          <div style="width: 7mm; height: 7mm; background: var(--coral); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; flex-shrink: 0; margin-top: 1px;">5</div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--navy);">Mesure d'Impact</div>
+            <div style="font-size: 10px; line-height: 1.6; color: var(--text-body);">Évaluation rigoureuse de l'impact sur les comportements, les pratiques et les résultats avec reporting détaillé.</div>
+          </div>
+        </div>
+        <div style="background: var(--gray-light); border-radius: 4px; padding: 4mm; margin-top: 2mm;">
+          <div style="font-size: 10px; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm;">Délais moyens</div>
+          <div style="font-size: 9.5px; color: var(--text-body); line-height: 1.6;">Packagé : 2-4 semaines · Sur-mesure : 6-12 semaines · Programme complet : 3-6 mois</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-number">31</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 32 : QUATRIÈME DE COUVERTURE -->
+<!-- ============================================================ -->
+<div class="page" style="background: var(--navy); min-height: 297mm;">
+  <div class="pixel-bg" style="position: absolute; inset: 0; opacity: 0.5;"></div>
+  <div style="height: 3px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); position: relative; z-index: 2;"></div>
+  
+  <!-- Back cover image -->
+  <div style="height: 80mm; overflow: hidden; position: relative; z-index: 2;">
+    <img src="img/back_cover.png" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.6;" alt="">
+    <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 0%, var(--navy) 100%);"></div>
+  </div>
+
+  <div style="padding: 0 12mm; position: relative; z-index: 2;">
+    <!-- CTA -->
+    <div style="text-align: center; margin-bottom: 10mm;">
+      <div style="font-size: 8px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); margin-bottom: 4mm;">Prêt à Jouer ?</div>
+      <div style="font-size: 50px; font-weight: 900; letter-spacing: -2px; color: white; line-height: 1.0; margin-bottom: 4mm;">Ready to Play?</div>
+      <p style="font-size: 14px; color: rgba(255,255,255,0.7); max-width: 130mm; margin: 0 auto 8mm; line-height: 1.6;">Contactez-nous pour co-concevoir votre prochaine expérience transformatrice. Ensemble, construisons l'organisation apprenante de demain.</p>
+      
+      <!-- CTA Button -->
+      <div style="display: inline-block; background: var(--gold); color: var(--navy); padding: 4mm 10mm; border-radius: 4px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 10mm;">
+        Démarrons la Conversation →
+      </div>
+    </div>
+
+    <!-- Contact info -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5mm; margin-bottom: 10mm;">
+      <div style="text-align: center; padding: 5mm; background: rgba(255,255,255,0.06); border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="font-size: 20px; margin-bottom: 3mm;">🌐</div>
+        <div style="font-size: 9px; font-weight: 700; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Web</div>
+        <div style="font-size: 11px; font-weight: 600; color: white;">www.asmos.digital</div>
+      </div>
+      <div style="text-align: center; padding: 5mm; background: rgba(255,255,255,0.06); border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="font-size: 20px; margin-bottom: 3mm;">✉️</div>
+        <div style="font-size: 9px; font-weight: 700; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">Email</div>
+        <div style="font-size: 11px; font-weight: 600; color: white;">contact@asmos-consulting.com</div>
+      </div>
+      <div style="text-align: center; padding: 5mm; background: rgba(255,255,255,0.06); border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="font-size: 20px; margin-bottom: 3mm;">💼</div>
+        <div style="font-size: 9px; font-weight: 700; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2mm;">LinkedIn</div>
+        <div style="font-size: 11px; font-weight: 600; color: white;">ASMOS GROUP</div>
+      </div>
+    </div>
+
+    <!-- Tagline -->
+    <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6mm;">
+      <div style="font-size: 16px; font-weight: 800; color: white; letter-spacing: 1px; margin-bottom: 2mm;">asmos <span style="color: var(--blue-light);">GROUP</span></div>
+      <div style="font-size: 10px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.4);">Think it Different — Build it Durable</div>
+    </div>
+  </div>
+  
+  <!-- Bottom gold line -->
+  <div style="position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;">
+    <div style="height: 4px; background: linear-gradient(90deg, var(--gold), var(--gold-light));"></div>
+  </div>
+</div>
+
+</body>
+</html>
