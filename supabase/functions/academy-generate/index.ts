@@ -303,7 +303,11 @@ Tu DOIS utiliser les encadrés enrichis suivants dans chaque section :
 3. Mises en garde pratiques :
 > ⚠️ **Attention** : [erreur courante, piège à éviter, nuance importante]
 
-4. Schémas en ASCII art dans des blocs code pour illustrer les processus et architectures
+4. Diagrammes Mermaid OBLIGATOIRES pour illustrer processus, architectures, organigrammes, flux, relations
+   → INTERDIT : ASCII art (pipes, slashes, dashes pour dessiner). C'est illisible et non interactif.
+   → Utilise EXCLUSIVEMENT des blocs \`\`\`mermaid valides
+   → Types autorisés : flowchart TD/LR, sequenceDiagram, erDiagram, classDiagram, stateDiagram-v2, gantt, mindmap, timeline
+   → Règles syntaxe : pas d'accents dans les IDs (utilise des labels entre crochets : \`A[Texte avec accents]\`)
 5. Tableaux comparatifs markdown pour les frameworks et outils
 6. Listes numérotées pour les processus séquentiels
 7. Citations ou verbatims de praticiens reconnus si pertinent
@@ -332,7 +336,7 @@ Génère 3 à 5 sections de contenu en markdown riche, chacune avec un angle com
 4. Outils et méthodes (comment mettre en œuvre concrètement)
 5. Synthèse et prochaines étapes (points clés + transition)
 
-IMPORTANT : chaque section doit contenir au minimum 2 encadrés enrichis (💡, 📜, ⚠️) et 1 schéma ou tableau.`;
+IMPORTANT : chaque section doit contenir au minimum 2 encadrés enrichis (💡, 📜, ⚠️) et au moins 1 diagramme Mermaid OU 1 tableau markdown. JAMAIS d'ASCII art.`;
 
   const tools = [{
     type: "function",
@@ -348,7 +352,7 @@ IMPORTANT : chaque section doit contenir au minimum 2 encadrés enrichis (💡, 
               type: "object",
               properties: {
                 title: { type: "string" },
-                body: { type: "string", description: "Rich markdown content with 💡/📜/⚠️ callouts, tables, ASCII diagrams" },
+                body: { type: "string", description: "Rich markdown content with 💡/📜/⚠️ callouts, tables, and Mermaid diagrams (```mermaid blocks). NEVER use ASCII art." },
                 content_type: { type: "string", enum: ["markdown"] },
               },
               required: ["title", "body", "content_type"],

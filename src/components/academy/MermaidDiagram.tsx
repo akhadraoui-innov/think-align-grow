@@ -29,21 +29,44 @@ function getThemeVars(): Record<string, string> {
     return raw ? `hsl(${raw})` : undefined;
   };
   return {
-    primaryColor: hsl("--primary") || "#F97316",
-    primaryTextColor: hsl("--primary-foreground") || "#FFFFFF",
+    // Nœuds principaux : fond CLAIR, bordure orange, texte FONCÉ
+    primaryColor: hsl("--background") || "#FFFFFF",
+    primaryTextColor: hsl("--foreground") || "#111827",
     primaryBorderColor: hsl("--primary") || "#F97316",
-    lineColor: hsl("--border") || "#E5E7EB",
+    // Nœuds secondaires (decisions, états alternatifs)
     secondaryColor: hsl("--muted") || "#F3F4F6",
     secondaryTextColor: hsl("--foreground") || "#111827",
+    secondaryBorderColor: hsl("--primary") || "#F97316",
+    // Nœuds tertiaires
     tertiaryColor: hsl("--accent") || "#FEF3C7",
     tertiaryTextColor: hsl("--foreground") || "#111827",
-    background: hsl("--background") || "#FFFFFF",
-    mainBkg: hsl("--card") || "#FFFFFF",
-    nodeBorder: hsl("--primary") || "#F97316",
+    tertiaryBorderColor: hsl("--primary") || "#F97316",
+    // Liens / arêtes
+    lineColor: hsl("--muted-foreground") || "#6B7280",
+    edgeLabelBackground: hsl("--background") || "#FFFFFF",
+    // Texte général (titres, labels)
+    textColor: hsl("--foreground") || "#111827",
+    titleColor: hsl("--foreground") || "#111827",
+    // Backgrounds globaux
+    background: "transparent",
+    mainBkg: hsl("--background") || "#FFFFFF",
+    // Cluster (sub-graph)
     clusterBkg: hsl("--muted") || "#F3F4F6",
     clusterBorder: hsl("--border") || "#E5E7EB",
-    titleColor: hsl("--foreground") || "#111827",
-    edgeLabelBackground: hsl("--background") || "#FFFFFF",
+    // Notes (sequence diagrams)
+    noteBkgColor: hsl("--accent") || "#FEF3C7",
+    noteTextColor: hsl("--foreground") || "#111827",
+    noteBorderColor: hsl("--primary") || "#F97316",
+    // Acteurs (sequence)
+    actorBkg: hsl("--background") || "#FFFFFF",
+    actorBorder: hsl("--primary") || "#F97316",
+    actorTextColor: hsl("--foreground") || "#111827",
+    actorLineColor: hsl("--muted-foreground") || "#6B7280",
+    // Sequence loops/alts
+    labelBoxBkgColor: hsl("--muted") || "#F3F4F6",
+    labelBoxBorderColor: hsl("--primary") || "#F97316",
+    labelTextColor: hsl("--foreground") || "#111827",
+    loopTextColor: hsl("--foreground") || "#111827",
     fontFamily: "inherit",
   } as Record<string, string>;
 }
@@ -277,7 +300,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
         {/* Diagram */}
         <div
           ref={containerRef}
-          className="flex justify-center items-center p-6 min-h-[200px] max-h-[600px] overflow-hidden"
+          className="flex justify-center items-center p-6 min-h-[200px] max-h-[600px] overflow-hidden [&_.edgeLabel]:!bg-background [&_.edgeLabel_p]:!bg-background [&_.edgeLabel_rect]:!fill-background [&_.label]:!text-foreground [&_text]:!fill-foreground"
         >
           {loading ? (
             <div className="flex flex-col items-center gap-2 text-muted-foreground">

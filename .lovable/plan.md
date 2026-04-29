@@ -1,92 +1,89 @@
 
-## Diagnostic confirmé
+## Plan en 2 actions ciblées
 
-`EnrichedMarkdown` ne traite pas ` ```mermaid ` → blocs affichés en code source brut. Lib non installée.
+### Action 1 — Hotfix CSS Mermaid (PRIORITAIRE, sans régénération)
 
-## Plan v2 (qualité premium + interactivité)
+**Problème identifié** : Mes `themeVariables` v2.9.8 ont du texte blanc sur fond blanc (cf. capture 1). Cause = `primaryTextColor: --primary-foreground` (blanc) appliqué à des nœuds dont le fond résolu est blanc/clair.
 
-### Étape 1 — Dépendances
-```bash
-bun add mermaid svg-pan-zoom
-```
-- `mermaid` (~600kb, lazy-loadé)
-- `svg-pan-zoom` (~14kb, pour pan/zoom natif)
+**Correctif dans `src/components/academy/MermaidDiagram.tsx`** (fonction `getThemeVars`) :
 
-### Étape 2 — Composant `MermaidDiagram.tsx` (nouveau)
-
-**Localisation** : `src/components/academy/MermaidDiagram.tsx`
-
-**Architecture** :
-- **Lazy-load** : `import('mermaid')` dynamique au mount du premier diagramme (réduit le bundle initial)
-- **Theme intégré au design system** :
-  - `theme: 'base'` + `themeVariables` mappés sur les CSS vars (`--primary`, `--background`, `--border`, `--foreground`, `--muted`, `--accent`)
-  - Police héritée (`fontFamily: 'inherit'`) → Inter en body, font-display sur titres
-  - Re-render automatique sur changement light/dark via MutationObserver sur `<html class>`
-- **Validation** : `mermaid.parse(chart)` avant `render()` pour catcher syntaxe invalide proprement
-- **Cycle de vie** :
-  - `useMemo(id)` stable
-  - `useEffect` déclenché uniquement si `chart` change (hash) ou theme switch
-  - Skeleton pendant render async
-- **Accessibilité** : `role="img"` + `aria-label` dérivé du premier nœud du graphe, focus visible, raccourcis clavier
-
-**Toolbar interactive (overlay top-right, visible au hover)** :
-- Zoom + / - / Reset (icônes lucide `ZoomIn` `ZoomOut` `Maximize2`)
-- Plein écran : ouvre `Dialog` shadcn fullscreen avec re-render dans grand canvas
-- Télécharger SVG : `download="diagram.svg"` avec blob
-- Voir le code : Collapsible révélant `<pre>` du source mermaid (utile en pédagogie + debug)
-
-**Pan & Zoom** : 
-- Wrapper `svg-pan-zoom` initialisé sur le SVG après render
-- Molette = zoom, drag = pan, double-click = reset
-- Désactivé si diagramme petit (auto-fit dans le container)
-
-**Fallback erreur** :
-- Card avec icône `AlertTriangle` + message "Diagramme indisponible (syntaxe invalide)"
-- Source code repliable avec syntax highlighting basique
-- `console.warn` pour debug
-
-**Wrapper visuel** :
-```tsx
-<div className="my-6 rounded-xl border bg-muted/20 overflow-hidden group relative">
-  <div className="flex justify-center p-6 min-h-[200px]">{/* SVG */}</div>
-  <Toolbar /> {/* overlay */}
-</div>
+```ts
+return {
+  // Nœuds : fond CLAIR avec bordure primary, texte FONCÉ
+  primaryColor: hsl("--background") || "#FFFFFF",      // fond du nœud (blanc)
+  primaryTextColor: hsl("--foreground") || "#111827",  // texte du nœud (foncé)
+  primaryBorderColor: hsl("--primary") || "#F97316",   // bordure orange
+  
+  // Nœuds secondaires (decisions, etc.)
+  secondaryColor: hsl("--muted") || "#F3F4F6",
+  secondaryTextColor: hsl("--foreground") || "#111827",
+  secondaryBorderColor: hsl("--primary") || "#F97316",
+  
+  tertiaryColor: hsl("--accent") || "#FEF3C7",
+  tertiaryTextColor: hsl("--foreground") || "#111827",
+  tertiaryBorderColor: hsl("--primary") || "#F97316",
+  
+  // Liens
+  lineColor: hsl("--muted-foreground") || "#6B7280",   // arêtes plus visibles
+  
+  // Labels d'arêtes : fond opaque du background pour masquer la ligne dessous
+  edgeLabelBackground: hsl("--background") || "#FFFFFF",
+  
+  // Texte général
+  textColor: hsl("--foreground") || "#111827",
+  titleColor: hsl("--foreground") || "#111827",
+  
+  // Backgrounds globaux
+  background: "transparent",
+  mainBkg: hsl("--background") || "#FFFFFF",
+  
+  // Cluster (sub-graph)
+  clusterBkg: hsl("--muted") || "#F3F4F6",
+  clusterBorder: hsl("--border") || "#E5E7EB",
+  
+  // Notes (sequence diagrams)
+  noteBkgColor: hsl("--accent") || "#FEF3C7",
+  noteTextColor: hsl("--foreground") || "#111827",
+  noteBorderColor: hsl("--primary") || "#F97316",
+  
+  fontFamily: "inherit",
+};
 ```
 
-### Étape 3 — Patcher `EnrichedMarkdown.tsx`
+Bonus : ajouter dans le wrapper SVG un CSS `[&_.edgeLabel]:!bg-background [&_.edgeLabel_p]:!bg-background` pour forcer l'opacité des labels d'arêtes (mermaid les laisse parfois transparents).
 
-Dans le handler `code`, AVANT la branche `isBlock`, intercepter mermaid :
-```tsx
-if (className === "language-mermaid") {
-  return <MermaidDiagram chart={String(children).trim()} />;
-}
+**Effet immédiat** : tous les Mermaid existants en base s'affichent correctement, sans régénérer un seul contenu.
+
+### Action 2 — Améliorer le prompt IA (préventif pour les futurs contenus)
+
+**Problème** : L'IA produit parfois de l'ASCII-art (capture 2) au lieu de Mermaid → diagrammes inutilisables visuellement.
+
+**Patch dans `supabase/functions/academy-generate/index.ts`** : ajouter une consigne stricte dans la directive système des prompts qui génèrent du contenu pédagogique markdown :
+
+```
+DIAGRAMMES — RÈGLE STRICTE :
+Pour TOUT schéma, organigramme, flux de processus, architecture ou diagramme
+de relations, tu DOIS utiliser un bloc ```mermaid valide.
+INTERDIT : ASCII-art (pipes, slashes, dashes pour dessiner).
+INTERDIT : décrire visuellement avec du texte.
+Types autorisés : flowchart TD/LR, sequenceDiagram, erDiagram,
+classDiagram, stateDiagram-v2, gantt, mindmap, timeline.
+Mermaid valide = pas d'accents dans les IDs (utilise des labels entre crochets/guillemets).
 ```
 
-### Étape 4 — Test visuel
-- Créer un parcours de test avec 3 diagrammes : flowchart simple, sequence, gantt
-- Vérifier rendu light + dark
-- Vérifier pan/zoom + plein écran + download
-- Vérifier fallback avec un mermaid volontairement cassé
+**Effet** : les nouveaux contenus générés (et les régénérations futures) auront systématiquement de vrais diagrammes interactifs.
 
-### Étape 5 — Documentation
-- Note release dédiée : `docs/releases/v2.9.8-mermaid-rendering.md`
-- MAJ index `docs/releases/README.md`
-- Nouvelle mémoire `mem://features/academy/mermaid-rendering` :
-  > Tous les blocs ` ```mermaid ` dans EnrichedMarkdown sont rendus via MermaidDiagram (lazy-load, themed via CSS vars, pan/zoom svg-pan-zoom, plein écran, download SVG, fallback gracieux). Toolbar visible au hover.
+### Pas de régénération massive
+
+- Les contenus actuels redeviennent corrects via Action 1 (CSS fix)
+- Les contenus avec ASCII-art existants restent en ASCII (toléré pédagogiquement) sauf régénération volontaire pilotée par l'utilisateur sur les modules concernés
+
+## Documentation
+
+- Patch dans la release v2.9.8 existante (note "hotfix CSS theming + prompt IA")
+- Pas de nouvelle release dédiée
 
 ## Hors scope
 
-- Pas d'éditeur visuel mermaid (pas demandé)
-- Pas de génération de diagramme via IA dans l'admin (la prompt IA produit déjà du mermaid valide pour 95% des cas)
-- Pas de migration des fallbacks `<pre>` existants côté UCM/Simulator (ces composants utilisent leurs propres renderers)
-
-## Détails techniques
-
-| Aspect | Choix | Justification |
-|---|---|---|
-| Lib mermaid | v11 (latest) | Support flowchart/sequence/gantt/ER/state/mindmap/timeline/sankey/quadrant |
-| Lazy-load | `await import('mermaid')` | -600kb du bundle initial |
-| Theme | `base` + CSS vars | Cohérence design system, support light/dark auto |
-| Pan/Zoom | `svg-pan-zoom` 14kb | Plus léger et stable que mermaid built-in zoom |
-| Sécurité | `securityLevel: 'strict'` | Empêche injection HTML dans diagrammes IA-générés |
-| Performance | useMemo + skeleton | Évite re-render inutiles, UX fluide |
+- Pas de migration automatique ASCII → Mermaid (trop risqué sans curation humaine)
+- Pas de bouton "régénérer ce module avec diagrammes Mermaid" (à envisager comme feature séparée si besoin récurrent)
