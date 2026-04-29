@@ -141,19 +141,49 @@ export default function AdminAcademyPaths() {
         persona_id: form.persona_id || null,
         function_id: form.function_id || null,
       };
+      let savedId: string | null = null;
+      let needsCover = false;
       if (editId) {
         const { error } = await supabase.from("academy_paths").update(payload).eq("id", editId);
         if (error) throw error;
+        savedId = editId;
+        const { data: existing } = await supabase
+          .from("academy_paths")
+          .select("cover_image_url")
+          .eq("id", editId)
+          .maybeSingle();
+        needsCover = !existing?.cover_image_url;
       } else {
-        const { error } = await supabase.from("academy_paths").insert({ ...payload, created_by: user!.id, generation_mode: "manual" });
+        const { data: inserted, error } = await supabase
+          .from("academy_paths")
+          .insert({ ...payload, created_by: user!.id, generation_mode: "manual" })
+          .select("id")
+          .single();
         if (error) throw error;
+        savedId = inserted?.id ?? null;
+        needsCover = true;
       }
+      return { savedId, needsCover, wasEdit: !!editId };
     },
-    onSuccess: () => {
+    onSuccess: ({ savedId, needsCover, wasEdit }) => {
       qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
-      toast.success(editId ? "Parcours mis à jour" : "Parcours créé");
+      toast.success(wasEdit ? "Parcours mis à jour" : "Parcours créé");
       setOpen(false);
       setEditId(null);
+
+      if (savedId && needsCover) {
+        toast.info("Génération automatique de la couverture en cours…");
+        supabase.functions
+          .invoke("academy-generate", { body: { action: "generate-cover", path_id: savedId } })
+          .then(({ data, error }) => {
+            if (error || (data as any)?.error) {
+              toast.error("Couverture non générée — vous pouvez relancer manuellement");
+              return;
+            }
+            toast.success("Couverture générée");
+            qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
+          });
+      }
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -190,7 +220,22 @@ export default function AdminAcademyPaths() {
       qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
       toast.success(`Parcours généré avec ${data.module_count} modules`);
       setAiOpen(false);
-      if (data.path_id) navigate(`/admin/academy/paths/${data.path_id}`);
+
+      // Auto-trigger cover generation right after AI path creation (fire-and-forget)
+      if (data?.path_id) {
+        toast.info("Génération automatique de la couverture en cours…");
+        supabase.functions
+          .invoke("academy-generate", { body: { action: "generate-cover", path_id: data.path_id } })
+          .then(({ data: cover, error }) => {
+            if (error || (cover as any)?.error) {
+              toast.error("Couverture non générée — vous pouvez relancer manuellement");
+              return;
+            }
+            toast.success("Couverture générée");
+            qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
+          });
+        navigate(`/admin/academy/paths/${data.path_id}`);
+      }
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -198,14 +243,17 @@ export default function AdminAcademyPaths() {
   const [genCoversLoading, setGenCoversLoading] = useState(false);
   const generateAllCovers = async () => {
     setGenCoversLoading(true);
+    const tId = toast.loading("Génération des couvertures manquantes en cours…");
     try {
       const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-all-covers" } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       const successCount = (data.results || []).filter((r: any) => r.success).length;
-      toast.success(`${successCount}/${data.total} couvertures générées`);
+      toast.success(`${successCount}/${data.total} couvertures générées`, { id: tId });
       qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      toast.error(e.message, { id: tId });
+    }
     setGenCoversLoading(false);
   };
 
@@ -283,7 +331,26 @@ export default function AdminAcademyPaths() {
             ))}
           </div>
 
-          {/* Filters bar */}
+          {/* Missing covers banner */}
+          {(() => {
+            const missingCount = paths.filter((p: any) => !p.cover_image_url).length;
+            if (missingCount === 0) return null;
+            return (
+              <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/5">
+                <div className="flex items-center gap-3">
+                  <ImageIcon className="h-4 w-4 text-amber-600" />
+                  <p className="text-sm text-foreground">
+                    <span className="font-semibold">{missingCount}</span> parcours sans couverture
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={generateAllCovers} disabled={genCoversLoading}>
+                  {genCoversLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+                  Générer maintenant
+                </Button>
+              </div>
+            );
+          })()}
+
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

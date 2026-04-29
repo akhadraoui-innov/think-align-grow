@@ -1,54 +1,63 @@
-## Régression identifiée
+## Constat
 
-**Cause racine** : la migration de hardening Lot 7 (`20260423103833_bbbce425...sql`) a passé le bucket `academy-assets` en **privé** :
-```sql
-UPDATE storage.buckets SET public = false WHERE id = 'academy-assets';
-```
+Le pipeline de génération de couverture est **déjà entièrement fonctionnel** dans `supabase/functions/academy-generate/index.ts` :
+- `action: "generate-cover"` (un parcours, ligne 1283)
+- `action: "generate-all-covers"` (batch des `cover_image_url IS NULL`, ligne 1352)
+- Style mémorisé respecté : "Professional e-learning course cover, gradient 2-3 couleurs, icônes flat, **NO text**, 16:9"
+- Modèle utilisé : `google/gemini-3.1-flash-image-preview`
+- Upload `academy-assets/covers/<id>.png`, `upsert: true`
 
-**Conséquence** :
-- 9 parcours ont des URLs stockées sous la forme `https://.../storage/v1/object/public/academy-assets/covers/<id>.jpg`
-- Ces URLs renvoient maintenant 400/403 → toutes les images (admin + portal) sont cassées
-- Les 18 fichiers existent bien dans le bucket, le problème est uniquement l'accessibilité publique
-- Les 10 autres parcours n'ont jamais eu de cover générée (`cover_image_url` vide)
+Côté admin (`AdminAcademyPaths.tsx`) :
+- Bouton header **"Générer les couvertures"** (batch, ligne 255)
+- Bouton **par carte** sur survol (regen single, ligne 369)
 
-**Impact** : `AdminAcademyPaths`, `PortalAcademiePaths`, `PortalFormations` (toute card de parcours).
+**Manque** : déclenchement automatique à la création / validation d'un parcours, et génération des 10 covers manquantes encore en `NULL` après le hotfix v2.9.4.
 
-## Décision
+## Étape 1 — Auto-trigger à la validation
 
-Repasser `academy-assets` en **bucket public en lecture**, tout en gardant l'écriture restreinte à la SaaS team. C'est la posture habituelle pour des assets de présentation (covers de parcours visibles dès la page d'inscription dans certains contextes).
+Modifier `upsert.mutationFn` dans `src/pages/admin/AdminAcademyPaths.tsx` :
 
-Alternative écartée : migrer tous les composants vers `createSignedUrl` + cache. Lourd, casse les URLs déjà stockées en DB, et n'apporte aucune valeur sécurité réelle (les covers ne sont pas sensibles).
+- Récupérer l'`id` après `insert(...).select("id").single()`
+- À la création → toujours déclencher `generate-cover`
+- À l'édition → vérifier `cover_image_url`, déclencher uniquement si vide
+- Lancement **fire-and-forget** dans `onSuccess` avec toasts info / success / error
+- Invalidate la query après succès pour rafraîchir l'image
 
-## Migration prévue
+Pas d'attente bloquante : l'admin voit immédiatement le parcours créé, la cover apparaît ensuite via toast + refresh.
 
-```sql
--- Repasser le bucket en public (lecture)
-UPDATE storage.buckets SET public = true WHERE id = 'academy-assets';
+Idem pour la mutation `generateAI` (`generate-path` IA) — l'EF côté serveur ne génère pas la cover automatiquement, on ajoute le même hook après succès.
 
--- Recréer la policy SELECT publique (anon + auth) pour covers/
-DROP POLICY IF EXISTS "academy_assets_authenticated_read" ON storage.objects;
+## Étape 2 — Backfill des 10 parcours sans cover
 
-CREATE POLICY "academy_assets_public_read"
-  ON storage.objects FOR SELECT
-  TO public
-  USING (bucket_id = 'academy-assets');
+Lancer le batch existant via le bouton **"Générer les couvertures"** déjà présent dans le header de `/admin/academy/paths`. C'est le moyen le plus propre car l'EF requiert un JWT utilisateur (vérifié `Unauthorized` depuis sandbox).
 
--- Les policies INSERT/UPDATE/DELETE restent SaaS-team only (inchangées)
-```
+Si l'utilisateur préfère un backfill automatique sans clic, alternative : ajouter un useEffect au mount qui détecte `paths.filter(p => !p.cover_image_url).length > 0` et déclenche le batch (avec confirmation toast). À arbitrer — par défaut on garde le bouton manuel pour éviter une consommation crédits non voulue à chaque visite.
 
-## Vérifications post-migration
+**Décision recommandée** : garder bouton manuel + ajouter une petite **bannière contextuelle** au-dessus de la liste qui apparaît si N parcours sans cover → "10 parcours sans couverture · [Générer maintenant]" — UX explicite, action volontaire.
 
-1. Tester en preview `/portal/academie/paths` et `/admin/academy/paths` : les 9 covers existantes doivent réapparaître
-2. Confirmer que les 10 parcours sans cover affichent toujours leur fallback (gradient + initiale)
-3. Vérifier que `supabase--linter` ne génère pas de nouveau warning critique
+## Étape 3 — Améliorer le bouton "Générer les couvertures"
 
-## Documentation
+Petit gain UX : pendant le batch (10 parcours × 2 appels IA = 30-60s), passer en disabled + spinner + toast persistant. Déjà partiellement présent (`genCoversLoading`), on ajoute juste un toast `loading` qui se ferme à la fin.
 
-- Patch note `docs/releases/v2.9.4-hotfix-academy-covers.md` (régression Lot 7 corrigée)
-- Mettre à jour `.lovable/memory/security/operational-hardening.md` pour préciser que `academy-assets` est public en lecture (cas d'usage : covers visibles)
-- Index `docs/releases/README.md`
+## Étape 4 — Documentation
+
+- Patch note `docs/releases/v2.9.5-academy-cover-auto-trigger.md` :
+  - Auto-trigger cover sur création/édition
+  - Bannière "X parcours sans couverture"
+  - Backfill via bouton existant
+
+- MAJ `.lovable/memory/features/academy/path-visuals-ai.md` pour acter l'auto-trigger.
 
 ## Hors périmètre
 
-- Régénération automatique des covers manquantes (10 parcours) — à arbitrer séparément
-- Migration vers signed URLs — non justifiée pour ce bucket
+- **Pas de modification de l'edge function** : pipeline déjà robuste
+- **Pas de cron de régénération** automatique (consommation crédits IA non maîtrisée)
+- **Pas de prévisualisation** de la cover avant validation (workflow asynchrone assumé)
+- Portail apprenant (`PortalAcademiePaths.tsx`) déjà aligné, rien à modifier
+
+## Fichiers impactés
+
+- `src/pages/admin/AdminAcademyPaths.tsx` (upsert + bannière contextuelle + generateAI hook)
+- `docs/releases/v2.9.5-academy-cover-auto-trigger.md` (nouveau)
+- `docs/releases/README.md` (index)
+- `.lovable/memory/features/academy/path-visuals-ai.md` (mise à jour)
