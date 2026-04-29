@@ -1,30 +1,26 @@
-## Problème
 
-Le bouton "Régénérer la couverture" a été ajouté en v2.9.6 dans `src/pages/admin/AdminAcademyPaths.tsx`, mais le portail apprenant utilise un **fichier dupliqué** : `src/pages/portal/PortalAcademiePaths.tsx` (cf. mémoire `technical/portal-architecture-duplication`). Ce fichier a encore l'ancienne logique :
+## Action : Documentation uniquement (aucun code modifié)
 
-```tsx
-{!p.cover_image_url && (
-  <Button ... onClick={(e) => generateSingleCover(p.id, e)}>
-    <ImageIcon ... />
-  </Button>
-)}
-```
+### 1. Créer `docs/releases/v2.9.7-portal-admin-parity-audit.md`
+Contenu : verdict de l'audit du jour
+- Méthode (extraction Python sur 5 axes : edge functions, tables Supabase, toasts, navigations, boutons)
+- Résultats par paire (16 paires auditées)
+- Divergences confirmées comme volontaires (UCM quotas admin-only, Practice filtering portal, Workshops/Challenges entry pages)
+- Seul écart cosmétique restant : `missingCount` dans AcademyPaths (admin only) — non bloquant
+- Conclusion : système sain, v2.9.5 et v2.9.6 correctement répliquées
 
-→ aucun bouton regen au hover sur les cartes ayant déjà une cover (ce que l'utilisateur observe sur `/portal/academie/paths`).
+### 2. Mettre à jour `docs/releases/README.md`
+Ajout d'une ligne pour v2.9.7 dans l'index.
 
-## Plan
+### 3. Mettre à jour `mem://technical/portal-architecture-duplication`
+Ajouter une checklist obligatoire en tête du fichier :
+> **CHECKLIST DE PARITÉ (obligatoire à chaque PR touchant `src/pages/admin/*` ou `src/pages/portal/*`)**
+> 1. Identifier le pendant Admin↔Portal (mêmes suffixes : `AcademyPaths` ↔ `AcademiePaths`, etc.)
+> 2. Répliquer : CTA, appels `supabase.functions.invoke`, toasts d'état, cache-busting d'images, gestion 429/402
+> 3. Documenter tout écart volontaire (ex : tables admin-only `ucm_quota_usage`)
+> 4. Tester visuellement les deux surfaces avant merge
 
-Aligner `PortalAcademiePaths.tsx` sur `AdminAcademyPaths.tsx` (v2.9.6) :
-
-1. **Bouton regen permanent** : retirer la condition `!p.cover_image_url`, tooltip dynamique "Régénérer la couverture" / "Générer la couverture".
-2. **`generateSingleCover` enrichi** : détection regen vs first-gen, toast `loading` persistant, gestion soft du fallback 429/402.
-3. **Cache-busting `<img>`** : `?v=<updated_at>` pour forcer le rechargement après regen.
-
-## Hors périmètre
-
-- Pas de refonte de la duplication portail/admin (sujet déjà tracé en mémoire).
-- Pas de modifications côté edge function (le style premium v2.9.6 est déjà partagé).
-
-## Release notes
-
-Compléter `docs/releases/v2.9.6-academy-cover-quality-regen.md` en mentionnant que le patch couvre désormais **les deux surfaces** (admin + portail).
+### Hors scope
+- Aucun fichier `.tsx` modifié
+- Pas de port du `missingCount` (jugé légitime côté admin uniquement)
+- Pas de nouveau bouton de régénération dans ModuleDetail/PathDetail (nécessite décision produit séparée)
