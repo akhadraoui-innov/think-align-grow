@@ -134,7 +134,13 @@ export default function PortalFormations() {
   });
 
   const getCoverImage = (path: any): string | null => {
-    return (path as any).cover_image_url || STATIC_COVERS[path.id] || null;
+    const dbUrl = (path as any).cover_image_url;
+    if (dbUrl) {
+      // Cache-busting aligné avec AdminAcademyPaths/PortalAcademiePaths (v2.9.6)
+      const v = new Date(path.updated_at || path.created_at || Date.now()).getTime();
+      return `${dbUrl}?v=${v}`;
+    }
+    return STATIC_COVERS[path.id] || null;
   };
 
   return (
