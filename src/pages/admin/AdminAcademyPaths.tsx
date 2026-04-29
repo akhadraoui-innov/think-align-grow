@@ -259,14 +259,20 @@ export default function AdminAcademyPaths() {
 
   const generateSingleCover = async (pathId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    const existing = paths.find((x: any) => x.id === pathId);
+    const isRegen = !!existing?.cover_image_url;
+    const tId = toast.loading(isRegen ? "Régénération de la couverture…" : "Génération de la couverture…");
     try {
-      toast.info("Génération de la couverture...");
       const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-cover", path_id: pathId } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success("Couverture générée !");
+      if (data?.fallback) {
+        toast.warning(data.message || "Génération indisponible, réessaie plus tard.", { id: tId });
+        return;
+      }
+      toast.success(isRegen ? "Nouvelle couverture générée !" : "Couverture générée !", { id: tId });
       qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) { toast.error(err.message, { id: tId }); }
   };
 
   function openEdit(p: any) {
