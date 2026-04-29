@@ -141,19 +141,49 @@ export default function AdminAcademyPaths() {
         persona_id: form.persona_id || null,
         function_id: form.function_id || null,
       };
+      let savedId: string | null = null;
+      let needsCover = false;
       if (editId) {
         const { error } = await supabase.from("academy_paths").update(payload).eq("id", editId);
         if (error) throw error;
+        savedId = editId;
+        const { data: existing } = await supabase
+          .from("academy_paths")
+          .select("cover_image_url")
+          .eq("id", editId)
+          .maybeSingle();
+        needsCover = !existing?.cover_image_url;
       } else {
-        const { error } = await supabase.from("academy_paths").insert({ ...payload, created_by: user!.id, generation_mode: "manual" });
+        const { data: inserted, error } = await supabase
+          .from("academy_paths")
+          .insert({ ...payload, created_by: user!.id, generation_mode: "manual" })
+          .select("id")
+          .single();
         if (error) throw error;
+        savedId = inserted?.id ?? null;
+        needsCover = true;
       }
+      return { savedId, needsCover, wasEdit: !!editId };
     },
-    onSuccess: () => {
+    onSuccess: ({ savedId, needsCover, wasEdit }) => {
       qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
-      toast.success(editId ? "Parcours mis à jour" : "Parcours créé");
+      toast.success(wasEdit ? "Parcours mis à jour" : "Parcours créé");
       setOpen(false);
       setEditId(null);
+
+      if (savedId && needsCover) {
+        toast.info("Génération automatique de la couverture en cours…");
+        supabase.functions
+          .invoke("academy-generate", { body: { action: "generate-cover", path_id: savedId } })
+          .then(({ data, error }) => {
+            if (error || (data as any)?.error) {
+              toast.error("Couverture non générée — vous pouvez relancer manuellement");
+              return;
+            }
+            toast.success("Couverture générée");
+            qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
+          });
+      }
     },
     onError: (e: any) => toast.error(e.message),
   });
