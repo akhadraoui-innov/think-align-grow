@@ -1,63 +1,45 @@
-## Constat
+## Problème
 
-Le pipeline de génération de couverture est **déjà entièrement fonctionnel** dans `supabase/functions/academy-generate/index.ts` :
-- `action: "generate-cover"` (un parcours, ligne 1283)
-- `action: "generate-all-covers"` (batch des `cover_image_url IS NULL`, ligne 1352)
-- Style mémorisé respecté : "Professional e-learning course cover, gradient 2-3 couleurs, icônes flat, **NO text**, 16:9"
-- Modèle utilisé : `google/gemini-3.1-flash-image-preview`
-- Upload `academy-assets/covers/<id>.png`, `upsert: true`
+Les couvertures Academy générées récemment sont basiques (icône + gradient plat = image 2), alors que les premières étaient riches et professionnelles (rendus 3D / isométriques / illustrations éditoriales = image 1). Deux causes :
 
-Côté admin (`AdminAcademyPaths.tsx`) :
-- Bouton header **"Générer les couvertures"** (batch, ligne 255)
-- Bouton **par carte** sur survol (regen single, ligne 369)
+1. **Prompt appauvri** dans `supabase/functions/academy-generate/index.ts` (`generateCover` + `generateAllCovers`) :
+   > "Clean illustration with a single dominant color palette ... A few simple, recognizable flat icons or shapes related to the subject ... Very clean composition, no clutter."
+   → Ce style produit littéralement les visuels "icône centrée sur gradient" qu'on voit dans l'image 2.
 
-**Manque** : déclenchement automatique à la création / validation d'un parcours, et génération des 10 covers manquantes encore en `NULL` après le hotfix v2.9.4.
+2. **Bouton regen invisible si l'image existe déjà** : dans `AdminAcademyPaths.tsx` (ligne 435), le bouton `ImageIcon` (regen) est rendu sous `{!p.cover_image_url && ...}` → on ne peut PAS regénérer une image jugée moche, seulement combler une absence.
 
-## Étape 1 — Auto-trigger à la validation
+## Plan
 
-Modifier `upsert.mutationFn` dans `src/pages/admin/AdminAcademyPaths.tsx` :
+### 1. Restaurer un style "pro" cohérent avec les anciennes covers
 
-- Récupérer l'`id` après `insert(...).select("id").single()`
-- À la création → toujours déclencher `generate-cover`
-- À l'édition → vérifier `cover_image_url`, déclencher uniquement si vide
-- Lancement **fire-and-forget** dans `onSuccess` avec toasts info / success / error
-- Invalidate la query après succès pour rafraîchir l'image
+Dans `supabase/functions/academy-generate/index.ts`, remplacer le prompt `newStyle` (utilisé dans `generateCover`, `generateAllCovers`, et la version équivalente ligne 1082) par un brief riche, ex :
 
-Pas d'attente bloquante : l'admin voit immédiatement le parcours créé, la cover apparaît ensuite via toast + refresh.
+> "Premium e-learning course cover, editorial corporate illustration. Rich, detailed scene combining isometric 3D elements, modern flat-vector business icons (charts, devices, abstract data, people silhouettes) related to the topic. Cinematic lighting, depth, soft glows, vibrant but harmonious color palette (2-4 colors with one strong accent matching the topic), subtle gradients, layered composition with foreground/background. Professional Behance/Dribbble quality. 16:9 wide, no text, no letters, no watermark."
 
-Idem pour la mutation `generateAI` (`generate-path` IA) — l'EF côté serveur ne génère pas la cover automatiquement, on ajoute le même hook après succès.
+- Conserver l'instruction "no text" (mémoire `mem://style/academy-path-visuals-standard`).
+- Mémoriser ce brief dans `.lovable/memory/features/academy/path-visuals-ai.md` pour figer la cohérence.
+- Optionnel mais recommandé : passer le modèle prompt-writer de `gemini-2.5-flash-lite` à `gemini-2.5-flash` pour des prompts image plus riches.
 
-## Étape 2 — Backfill des 10 parcours sans cover
+### 2. Bouton "Regénérer la couverture" toujours accessible
 
-Lancer le batch existant via le bouton **"Générer les couvertures"** déjà présent dans le header de `/admin/academy/paths`. C'est le moyen le plus propre car l'EF requiert un JWT utilisateur (vérifié `Unauthorized` depuis sandbox).
+Dans `src/pages/admin/AdminAcademyPaths.tsx` :
+- Retirer la condition `!p.cover_image_url` autour du bouton regen ligne 435 → le bouton apparaît au hover sur **toutes** les cartes.
+- Changer son tooltip / icône en `RefreshCw` (lucide) si une cover existe déjà, sinon garder `ImageIcon`.
+- Adapter `generateSingleCover` pour afficher "Régénération…" / "Couverture régénérée !" quand une image existait déjà.
 
-Si l'utilisateur préfère un backfill automatique sans clic, alternative : ajouter un useEffect au mount qui détecte `paths.filter(p => !p.cover_image_url).length > 0` et déclenche le batch (avec confirmation toast). À arbitrer — par défaut on garde le bouton manuel pour éviter une consommation crédits non voulue à chaque visite.
+### 3. Légère amélioration UX
 
-**Décision recommandée** : garder bouton manuel + ajouter une petite **bannière contextuelle** au-dessus de la liste qui apparaît si N parcours sans cover → "10 parcours sans couverture · [Générer maintenant]" — UX explicite, action volontaire.
+- Ajouter un état "loading par carte" (`Set<string>` d'IDs en cours) pour griser uniquement la carte concernée pendant la regen, plutôt qu'un toast global.
+- Forcer le refresh visuel après regen en bustant le cache navigateur : `<img src={url + '?v=' + updated_at}>` ou recharger via `qc.invalidateQueries`.
 
-## Étape 3 — Améliorer le bouton "Générer les couvertures"
+### 4. Release notes
 
-Petit gain UX : pendant le batch (10 parcours × 2 appels IA = 30-60s), passer en disabled + spinner + toast persistant. Déjà partiellement présent (`genCoversLoading`), on ajoute juste un toast `loading` qui se ferme à la fin.
-
-## Étape 4 — Documentation
-
-- Patch note `docs/releases/v2.9.5-academy-cover-auto-trigger.md` :
-  - Auto-trigger cover sur création/édition
-  - Bannière "X parcours sans couverture"
-  - Backfill via bouton existant
-
-- MAJ `.lovable/memory/features/academy/path-visuals-ai.md` pour acter l'auto-trigger.
+Créer `docs/releases/v2.9.6-academy-cover-quality-regen.md` documentant :
+- Restauration du style premium (illustration éditoriale riche vs icône-flat).
+- Bouton regen disponible en permanence.
+- Mise à jour mémoire `path-visuals-ai`.
 
 ## Hors périmètre
 
-- **Pas de modification de l'edge function** : pipeline déjà robuste
-- **Pas de cron de régénération** automatique (consommation crédits IA non maîtrisée)
-- **Pas de prévisualisation** de la cover avant validation (workflow asynchrone assumé)
-- Portail apprenant (`PortalAcademiePaths.tsx`) déjà aligné, rien à modifier
-
-## Fichiers impactés
-
-- `src/pages/admin/AdminAcademyPaths.tsx` (upsert + bannière contextuelle + generateAI hook)
-- `docs/releases/v2.9.5-academy-cover-auto-trigger.md` (nouveau)
-- `docs/releases/README.md` (index)
-- `.lovable/memory/features/academy/path-visuals-ai.md` (mise à jour)
+- Pas de regen automatique de masse des covers existantes (consommation crédits + l'utilisateur décide cover par cover via le nouveau bouton).
+- Pas de champ "brief image custom" (toujours dans le backlog v2.9.5).
