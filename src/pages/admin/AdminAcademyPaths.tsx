@@ -220,7 +220,22 @@ export default function AdminAcademyPaths() {
       qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
       toast.success(`Parcours généré avec ${data.module_count} modules`);
       setAiOpen(false);
-      if (data.path_id) navigate(`/admin/academy/paths/${data.path_id}`);
+
+      // Auto-trigger cover generation right after AI path creation (fire-and-forget)
+      if (data?.path_id) {
+        toast.info("Génération automatique de la couverture en cours…");
+        supabase.functions
+          .invoke("academy-generate", { body: { action: "generate-cover", path_id: data.path_id } })
+          .then(({ data: cover, error }) => {
+            if (error || (cover as any)?.error) {
+              toast.error("Couverture non générée — vous pouvez relancer manuellement");
+              return;
+            }
+            toast.success("Couverture générée");
+            qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
+          });
+        navigate(`/admin/academy/paths/${data.path_id}`);
+      }
     },
     onError: (e: any) => toast.error(e.message),
   });
