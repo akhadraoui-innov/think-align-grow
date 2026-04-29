@@ -331,7 +331,26 @@ export default function AdminAcademyPaths() {
             ))}
           </div>
 
-          {/* Filters bar */}
+          {/* Missing covers banner */}
+          {(() => {
+            const missingCount = paths.filter((p: any) => !p.cover_image_url).length;
+            if (missingCount === 0) return null;
+            return (
+              <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/5">
+                <div className="flex items-center gap-3">
+                  <ImageIcon className="h-4 w-4 text-amber-600" />
+                  <p className="text-sm text-foreground">
+                    <span className="font-semibold">{missingCount}</span> parcours sans couverture
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={generateAllCovers} disabled={genCoversLoading}>
+                  {genCoversLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+                  Générer maintenant
+                </Button>
+              </div>
+            );
+          })()}
+
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
