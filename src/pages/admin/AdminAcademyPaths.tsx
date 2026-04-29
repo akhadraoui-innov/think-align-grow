@@ -243,14 +243,17 @@ export default function AdminAcademyPaths() {
   const [genCoversLoading, setGenCoversLoading] = useState(false);
   const generateAllCovers = async () => {
     setGenCoversLoading(true);
+    const tId = toast.loading("Génération des couvertures manquantes en cours…");
     try {
       const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-all-covers" } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       const successCount = (data.results || []).filter((r: any) => r.success).length;
-      toast.success(`${successCount}/${data.total} couvertures générées`);
+      toast.success(`${successCount}/${data.total} couvertures générées`, { id: tId });
       qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) {
+      toast.error(e.message, { id: tId });
+    }
     setGenCoversLoading(false);
   };
 
