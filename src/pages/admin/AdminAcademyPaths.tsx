@@ -259,14 +259,20 @@ export default function AdminAcademyPaths() {
 
   const generateSingleCover = async (pathId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    const existing = paths.find((x: any) => x.id === pathId);
+    const isRegen = !!existing?.cover_image_url;
+    const tId = toast.loading(isRegen ? "Régénération de la couverture…" : "Génération de la couverture…");
     try {
-      toast.info("Génération de la couverture...");
       const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-cover", path_id: pathId } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success("Couverture générée !");
+      if (data?.fallback) {
+        toast.warning(data.message || "Génération indisponible, réessaie plus tard.", { id: tId });
+        return;
+      }
+      toast.success(isRegen ? "Nouvelle couverture générée !" : "Couverture générée !", { id: tId });
       qc.invalidateQueries({ queryKey: ["admin-academy-paths"] });
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err: any) { toast.error(err.message, { id: tId }); }
   };
 
   function openEdit(p: any) {
@@ -421,7 +427,7 @@ export default function AdminAcademyPaths() {
                   {/* Cover Image */}
                   <div className="relative h-36 overflow-hidden flex-shrink-0">
                     {p.cover_image_url ? (
-                      <img src={p.cover_image_url} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                      <img src={`${p.cover_image_url}?v=${new Date(p.updated_at || p.created_at || Date.now()).getTime()}`} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                     ) : (
                       <div className={`w-full h-full bg-gradient-to-br ${diff.coverGradient} flex items-center justify-center`}>
                         <GraduationCap className="h-10 w-10 text-white/60" />
@@ -432,11 +438,15 @@ export default function AdminAcademyPaths() {
                       <Badge variant="outline" className={`text-[10px] backdrop-blur-sm bg-background/60 ${diff.color}`}>{diff.label}</Badge>
                     </div>
                     <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {!p.cover_image_url && (
-                        <Button variant="secondary" size="icon" className="h-7 w-7 backdrop-blur-sm" onClick={(e) => generateSingleCover(p.id, e)}>
-                          <ImageIcon className="h-3 w-3" />
-                        </Button>
-                      )}
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-7 w-7 backdrop-blur-sm"
+                        title={p.cover_image_url ? "Régénérer la couverture" : "Générer la couverture"}
+                        onClick={(e) => generateSingleCover(p.id, e)}
+                      >
+                        <ImageIcon className="h-3 w-3" />
+                      </Button>
                       <Button variant="secondary" size="icon" className="h-7 w-7 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>
                         <Pencil className="h-3 w-3" />
                       </Button>

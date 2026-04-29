@@ -1293,15 +1293,15 @@ async function generateCover(supabase: any, params: any, apiKey: string, cors: a
     .single();
   if (pathErr || !path) throw new Error("Path not found");
 
-  // Step 1: Generate a cover image prompt
-  const newStyle = `Professional e-learning course cover. Clean illustration with a single dominant color palette matching the topic. Soft gradient background transitioning between 2-3 harmonious colors. A few simple, recognizable flat icons or shapes related to the subject, well-spaced. Very clean composition, no clutter. Absolutely NO text, NO letters, NO words. Bright, optimistic, corporate feel. 16:9.`;
+  // Step 1: Generate a cover image prompt — premium editorial style
+  const premiumStyle = `Premium e-learning course cover, editorial corporate illustration of Behance/Dribbble quality. Rich, detailed scene combining isometric 3D elements and modern flat-vector business iconography (charts, devices, abstract data flows, silhouettes, tools) directly related to the topic. Cinematic lighting with soft glows and depth, layered foreground/background composition, vibrant but harmonious palette of 2-4 colors with one strong topic-driven accent, subtle gradients, polished shadows. Wide 16:9 aspect, professional and aspirational mood. Absolutely NO text, NO letters, NO words, NO watermark, NO logo.`;
   const promptResult = await callAI(
     apiKey,
-    "You create short image prompts for course covers. Style: clean gradient background with 2-3 colors, few simple flat icons, lots of space, no text. Output ONLY the prompt.",
-    `Write a concise image prompt for a professional training course cover about: "${path.name}". Description: ${(path.description || "").slice(0, 300)}. Difficulty: ${path.difficulty || "intermediate"}. Style: ${newStyle}`,
+    "You write rich, evocative image prompts for premium e-learning course covers. The covers must look like top-tier editorial illustrations (Behance/Dribbble) — detailed scenes mixing isometric 3D and flat vectors, cinematic lighting, layered composition, never a single icon on a flat gradient. Always specify NO text/letters/words. Output ONLY the prompt, 60-90 words.",
+    `Write a detailed, evocative image prompt for a PREMIUM training course cover about: "${path.name}". Description: ${(path.description || "").slice(0, 400)}. Difficulty: ${path.difficulty || "intermediate"}. Required base style (extend it with topic-specific scene details): ${premiumStyle}`,
     undefined,
     undefined,
-    "google/gemini-2.5-flash-lite"
+    "google/gemini-2.5-flash"
   );
 
   const imagePrompt = typeof promptResult === "string" ? promptResult.trim() : `Professional training course cover about ${path.name}`;
@@ -1389,15 +1389,15 @@ async function generateAllCovers(supabase: any, apiKey: string, cors: any) {
 
   for (const path of (paths || [])) {
     try {
-      // Generate prompt
-      const batchStyle = `Professional e-learning course cover. Clean illustration with a single dominant color palette matching the topic. Soft gradient background transitioning between 2-3 harmonious colors. A few simple, recognizable flat icons or shapes related to the subject, well-spaced. Very clean composition, no clutter. Absolutely NO text, NO letters, NO words. Bright, optimistic, corporate feel. 16:9.`;
+      // Generate prompt — premium editorial style
+      const batchStyle = `Premium e-learning course cover, editorial corporate illustration of Behance/Dribbble quality. Rich, detailed scene combining isometric 3D elements and modern flat-vector business iconography (charts, devices, abstract data flows, silhouettes, tools) directly related to the topic. Cinematic lighting with soft glows and depth, layered foreground/background composition, vibrant but harmonious palette of 2-4 colors with one strong topic-driven accent, subtle gradients, polished shadows. Wide 16:9 aspect, professional and aspirational mood. Absolutely NO text, NO letters, NO words, NO watermark, NO logo.`;
       const promptResult = await callAI(
         apiKey,
-        "You create short image prompts for course covers. Style: clean gradient background with 2-3 colors, few simple flat icons, lots of space, no text. Output ONLY the prompt.",
-        `Write a concise image prompt for a professional training course cover about: "${path.name}". Description: ${(path.description || "").slice(0, 300)}. Style: ${batchStyle}`,
+        "You write rich, evocative image prompts for premium e-learning course covers. The covers must look like top-tier editorial illustrations (Behance/Dribbble) — detailed scenes mixing isometric 3D and flat vectors, cinematic lighting, layered composition, never a single icon on a flat gradient. Always specify NO text/letters/words. Output ONLY the prompt, 60-90 words.",
+        `Write a detailed, evocative image prompt for a PREMIUM training course cover about: "${path.name}". Description: ${(path.description || "").slice(0, 400)}. Required base style (extend it with topic-specific scene details): ${batchStyle}`,
         undefined,
         undefined,
-        "google/gemini-2.5-flash-lite"
+        "google/gemini-2.5-flash"
       );
 
       const imagePrompt = typeof promptResult === "string" ? promptResult.trim() : `Professional training cover about ${path.name}`;
