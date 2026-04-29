@@ -1,53 +1,92 @@
 
-## Diagnostic
+## Diagnostic confirmé
 
-Les images du **catalogue Formations** (`/portal/formations`) ne correspondent pas à celles affichées dans les **parcours détail** (`/portal/path/:id` et listes Academy admin/portal).
+`EnrichedMarkdown` ne traite pas ` ```mermaid ` → blocs affichés en code source brut. Lib non installée.
 
-### Cause racine
+## Plan v2 (qualité premium + interactivité)
 
-Dans `src/pages/portal/PortalFormations.tsx`, la fonction `getCoverImage` (ligne 136) renvoie `cover_image_url` **brut** sans paramètre de cache-busting :
+### Étape 1 — Dépendances
+```bash
+bun add mermaid svg-pan-zoom
+```
+- `mermaid` (~600kb, lazy-loadé)
+- `svg-pan-zoom` (~14kb, pour pan/zoom natif)
 
-```ts
-return (path as any).cover_image_url || STATIC_COVERS[path.id] || null;
+### Étape 2 — Composant `MermaidDiagram.tsx` (nouveau)
+
+**Localisation** : `src/components/academy/MermaidDiagram.tsx`
+
+**Architecture** :
+- **Lazy-load** : `import('mermaid')` dynamique au mount du premier diagramme (réduit le bundle initial)
+- **Theme intégré au design system** :
+  - `theme: 'base'` + `themeVariables` mappés sur les CSS vars (`--primary`, `--background`, `--border`, `--foreground`, `--muted`, `--accent`)
+  - Police héritée (`fontFamily: 'inherit'`) → Inter en body, font-display sur titres
+  - Re-render automatique sur changement light/dark via MutationObserver sur `<html class>`
+- **Validation** : `mermaid.parse(chart)` avant `render()` pour catcher syntaxe invalide proprement
+- **Cycle de vie** :
+  - `useMemo(id)` stable
+  - `useEffect` déclenché uniquement si `chart` change (hash) ou theme switch
+  - Skeleton pendant render async
+- **Accessibilité** : `role="img"` + `aria-label` dérivé du premier nœud du graphe, focus visible, raccourcis clavier
+
+**Toolbar interactive (overlay top-right, visible au hover)** :
+- Zoom + / - / Reset (icônes lucide `ZoomIn` `ZoomOut` `Maximize2`)
+- Plein écran : ouvre `Dialog` shadcn fullscreen avec re-render dans grand canvas
+- Télécharger SVG : `download="diagram.svg"` avec blob
+- Voir le code : Collapsible révélant `<pre>` du source mermaid (utile en pédagogie + debug)
+
+**Pan & Zoom** : 
+- Wrapper `svg-pan-zoom` initialisé sur le SVG après render
+- Molette = zoom, drag = pan, double-click = reset
+- Désactivé si diagramme petit (auto-fit dans le container)
+
+**Fallback erreur** :
+- Card avec icône `AlertTriangle` + message "Diagramme indisponible (syntaxe invalide)"
+- Source code repliable avec syntax highlighting basique
+- `console.warn` pour debug
+
+**Wrapper visuel** :
+```tsx
+<div className="my-6 rounded-xl border bg-muted/20 overflow-hidden group relative">
+  <div className="flex justify-center p-6 min-h-[200px]">{/* SVG */}</div>
+  <Toolbar /> {/* overlay */}
+</div>
 ```
 
-Alors que toutes les autres surfaces (`AdminAcademyPaths`, `PortalAcademiePaths`) utilisent depuis v2.9.6 :
-```ts
-src={`${cover_image_url}?v=${new Date(updated_at || created_at).getTime()}`}
+### Étape 3 — Patcher `EnrichedMarkdown.tsx`
+
+Dans le handler `code`, AVANT la branche `isBlock`, intercepter mermaid :
+```tsx
+if (className === "language-mermaid") {
+  return <MermaidDiagram chart={String(children).trim()} />;
+}
 ```
 
-Conséquence : après régénération IA d'une couverture, le navigateur sert l'ancienne version mise en cache pour le catalogue, mais affiche la nouvelle dans le détail/admin → **images incohérentes**.
+### Étape 4 — Test visuel
+- Créer un parcours de test avec 3 diagrammes : flowchart simple, sequence, gantt
+- Vérifier rendu light + dark
+- Vérifier pan/zoom + plein écran + download
+- Vérifier fallback avec un mermaid volontairement cassé
 
-Vérifications faites :
-- Les 8 parcours mappés dans `STATIC_COVERS` ont tous un `cover_image_url` IA en base ✅
-- La query `select("*")` ramène bien `cover_image_url`, `updated_at`, `created_at` ✅
-- La map `STATIC_COVERS` n'agit qu'en fallback (jamais déclenchée pour ces 8 parcours)
-
-## Correction (1 seul fichier)
-
-### `src/pages/portal/PortalFormations.tsx` ligne 136-138
-
-Remplacer par :
-```ts
-const getCoverImage = (path: any): string | null => {
-  const dbUrl = (path as any).cover_image_url;
-  if (dbUrl) {
-    const v = new Date(path.updated_at || path.created_at || Date.now()).getTime();
-    return `${dbUrl}?v=${v}`;
-  }
-  return STATIC_COVERS[path.id] || null;
-};
-```
-
-C'est strictement la même formule de cache-busting que `AdminAcademyPaths` et `PortalAcademiePaths`, garantissant la cohérence visuelle entre toutes les surfaces.
-
-## Documentation associée
-
-- Mettre à jour `docs/releases/v2.9.7-portal-admin-parity-audit.md` (ajout d'une note "Hotfix cache-busting catalogue Formations")
-- Pas besoin de release dédiée : c'est un hotfix d'1 ligne du même périmètre que v2.9.6
+### Étape 5 — Documentation
+- Note release dédiée : `docs/releases/v2.9.8-mermaid-rendering.md`
+- MAJ index `docs/releases/README.md`
+- Nouvelle mémoire `mem://features/academy/mermaid-rendering` :
+  > Tous les blocs ` ```mermaid ` dans EnrichedMarkdown sont rendus via MermaidDiagram (lazy-load, themed via CSS vars, pan/zoom svg-pan-zoom, plein écran, download SVG, fallback gracieux). Toolbar visible au hover.
 
 ## Hors scope
 
-- La map `STATIC_COVERS` est conservée comme fallback de sécurité (utile si l'IA n'a jamais été générée pour un parcours)
-- Pas de changement sur l'edge function `academy-generate`
-- Pas de changement sur les autres pages (déjà conformes)
+- Pas d'éditeur visuel mermaid (pas demandé)
+- Pas de génération de diagramme via IA dans l'admin (la prompt IA produit déjà du mermaid valide pour 95% des cas)
+- Pas de migration des fallbacks `<pre>` existants côté UCM/Simulator (ces composants utilisent leurs propres renderers)
+
+## Détails techniques
+
+| Aspect | Choix | Justification |
+|---|---|---|
+| Lib mermaid | v11 (latest) | Support flowchart/sequence/gantt/ER/state/mindmap/timeline/sankey/quadrant |
+| Lazy-load | `await import('mermaid')` | -600kb du bundle initial |
+| Theme | `base` + CSS vars | Cohérence design system, support light/dark auto |
+| Pan/Zoom | `svg-pan-zoom` 14kb | Plus léger et stable que mermaid built-in zoom |
+| Sécurité | `securityLevel: 'strict'` | Empêche injection HTML dans diagrammes IA-générés |
+| Performance | useMemo + skeleton | Évite re-render inutiles, UX fluide |

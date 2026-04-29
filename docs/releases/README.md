@@ -38,6 +38,7 @@ Historique exhaustif du développement de la plateforme, organisé **par module 
 | **v2.9.5** | 29 avril 2026 | Auto-trigger génération de couverture à la création/validation d'un parcours + bannière contextuelle pour les couvertures manquantes | [📄 Lire](./v2.9.5-academy-cover-auto-trigger.md) |
 | **v2.9.6** | 29 avril 2026 | Couvertures Academy : style premium éditorial restauré (modèle prompt-writer flash, scènes riches Behance/Dribbble) + bouton regen accessible en permanence sur toutes les cartes | [📄 Lire](./v2.9.6-academy-cover-quality-regen.md) |
 | **v2.9.7** | 29 avril 2026 | Audit de parité Admin ↔ Portal (16 paires) : verdict système sain, checklist préventive ajoutée à la mémoire technique | [📄 Lire](./v2.9.7-portal-admin-parity-audit.md) |
+| **v2.9.8** | 29 avril 2026 | Rendu Mermaid premium dans EnrichedMarkdown : lazy-load, themed via CSS vars, pan/zoom + plein écran + download SVG, fallback gracieux | [📄 Lire](./v2.9.8-mermaid-rendering.md) |
 
 ## 📐 Convention
 

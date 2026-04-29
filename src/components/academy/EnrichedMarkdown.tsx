@@ -2,6 +2,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Lightbulb, ScrollText, AlertTriangle } from "lucide-react";
 import type { Components } from "react-markdown";
+import { MermaidDiagram } from "./MermaidDiagram";
 
 interface EnrichedMarkdownProps {
   content: string;
@@ -49,6 +50,10 @@ export function EnrichedMarkdown({ content }: EnrichedMarkdownProps) {
       </div>
     ),
     code: ({ children, className, ...props }) => {
+      // Mermaid diagrams
+      if (className === "language-mermaid") {
+        return <MermaidDiagram chart={String(children).trim()} />;
+      }
       const isBlock = className?.includes("language-");
       if (isBlock || String(children).includes("\n")) {
         return (
