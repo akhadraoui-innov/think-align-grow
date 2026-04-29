@@ -427,7 +427,7 @@ export default function AdminAcademyPaths() {
                   {/* Cover Image */}
                   <div className="relative h-36 overflow-hidden flex-shrink-0">
                     {p.cover_image_url ? (
-                      <img src={p.cover_image_url} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                      <img src={`${p.cover_image_url}?v=${new Date(p.updated_at || p.created_at || Date.now()).getTime()}`} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
                     ) : (
                       <div className={`w-full h-full bg-gradient-to-br ${diff.coverGradient} flex items-center justify-center`}>
                         <GraduationCap className="h-10 w-10 text-white/60" />
