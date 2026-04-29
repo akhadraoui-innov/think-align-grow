@@ -300,7 +300,7 @@ export function MermaidDiagram({ chart }: MermaidDiagramProps) {
         {/* Diagram */}
         <div
           ref={containerRef}
-          className="flex justify-center items-center p-6 min-h-[200px] max-h-[600px] overflow-hidden"
+          className="flex justify-center items-center p-6 min-h-[200px] max-h-[600px] overflow-hidden [&_.edgeLabel]:!bg-background [&_.edgeLabel_p]:!bg-background [&_.edgeLabel_rect]:!fill-background [&_.label]:!text-foreground [&_text]:!fill-foreground"
         >
           {loading ? (
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
