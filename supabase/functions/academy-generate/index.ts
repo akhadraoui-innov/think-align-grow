@@ -1306,22 +1306,51 @@ async function generateCover(supabase: any, params: any, apiKey: string, cors: a
 
   const imagePrompt = typeof promptResult === "string" ? promptResult.trim() : `Professional training course cover about ${path.name}`;
 
-  // Step 2: Generate the image
-  const imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-3.1-flash-image-preview",
-      messages: [{ role: "user", content: imagePrompt }],
-      modalities: ["image", "text"],
-    }),
-  });
+  // Step 2: Generate the image (with retry on 429)
+  let imgResp: Response | null = null;
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-3.1-flash-image-preview",
+        messages: [{ role: "user", content: imagePrompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+    lastStatus = imgResp.status;
+    if (imgResp.ok) break;
+    if (imgResp.status !== 429 && imgResp.status < 500) break;
+    await imgResp.text().catch(() => {});
+    await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+  }
 
-  if (!imgResp.ok) throw new Error(`Image generation failed: ${imgResp.status}`);
+  if (!imgResp || !imgResp.ok) {
+    // Soft fallback: don't 500. Client keeps gradient placeholder.
+    const code = lastStatus === 429 ? "RATE_LIMITED"
+      : lastStatus === 402 ? "PAYMENT_REQUIRED"
+      : `HTTP_${lastStatus}`;
+    return new Response(JSON.stringify({
+      success: false,
+      fallback: true,
+      error_code: code,
+      message: lastStatus === 429
+        ? "Génération d'image temporairement saturée (rate limit). Réessaie dans quelques minutes."
+        : lastStatus === 402
+        ? "Crédits IA épuisés sur l'espace Lovable AI."
+        : `Image generation failed (${lastStatus})`,
+    }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+  }
 
   const imgData = await imgResp.json();
   const base64Url = imgData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-  if (!base64Url) throw new Error("No image in AI response");
+  if (!base64Url) {
+    return new Response(JSON.stringify({
+      success: false, fallback: true, error_code: "NO_IMAGE",
+      message: "Aucune image renvoyée par le modèle.",
+    }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+  }
 
   // Step 3: Upload to storage
   const base64Data = base64Url.replace(/^data:image\/\w+;base64,/, "");
