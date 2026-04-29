@@ -432,11 +432,15 @@ export default function AdminAcademyPaths() {
                       <Badge variant="outline" className={`text-[10px] backdrop-blur-sm bg-background/60 ${diff.color}`}>{diff.label}</Badge>
                     </div>
                     <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {!p.cover_image_url && (
-                        <Button variant="secondary" size="icon" className="h-7 w-7 backdrop-blur-sm" onClick={(e) => generateSingleCover(p.id, e)}>
-                          <ImageIcon className="h-3 w-3" />
-                        </Button>
-                      )}
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-7 w-7 backdrop-blur-sm"
+                        title={p.cover_image_url ? "Régénérer la couverture" : "Générer la couverture"}
+                        onClick={(e) => generateSingleCover(p.id, e)}
+                      >
+                        <ImageIcon className="h-3 w-3" />
+                      </Button>
                       <Button variant="secondary" size="icon" className="h-7 w-7 backdrop-blur-sm" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>
                         <Pencil className="h-3 w-3" />
                       </Button>
