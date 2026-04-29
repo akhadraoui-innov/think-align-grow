@@ -1435,6 +1435,8 @@ async function generateAllCovers(supabase: any, apiKey: string, cors: any) {
     } catch (e) {
       results.push({ path_id: path.id, name: path.name, success: false, error: e instanceof Error ? e.message : "Unknown" });
     }
+    // Throttle to avoid 429 rate limits on the AI gateway
+    await new Promise((r) => setTimeout(r, 2000));
   }
 
   return new Response(JSON.stringify({ success: true, total: paths?.length || 0, results }), {
