@@ -1,73 +1,54 @@
-# Audit complet — État de la plateforme (post Lot 9 — clôturé)
+## Régression identifiée
 
-## ✅ Santé globale : EXCELLENTE
+**Cause racine** : la migration de hardening Lot 7 (`20260423103833_bbbce425...sql`) a passé le bucket `academy-assets` en **privé** :
+```sql
+UPDATE storage.buckets SET public = false WHERE id = 'academy-assets';
+```
 
-| Indicateur | Valeur (post Lot 9.3) |
-|---|---|
-| Tables / RLS activées / Policies | 107 / 107 / 267 |
-| Edge functions | 32 (toutes déployées) |
-| Cron jobs actifs | 5 (purge tokens fixé, cleanup_rate_limits actif) |
-| Cron 24h | 17 214 succès / 1 échec (pré-fix Lot 9.1, prochain run vert attendu) |
-| Erreurs HTTP edge (1h) | 0 |
-| Secrets en clair (Vault tables) | **0 / 0 / 0** (ai_keys / email_creds / webhook_secrets) |
-| Findings critiques | 0 |
-| Findings warn | 48 (42 baseline Lot 7 + 6 nouveaux RPCs Vault, tous service_role only) |
-| Tests Vitest | 16/16 ✅ (usePermissions, useDeleteUser, exportCsv) |
-| Tests Deno | 16 tests (email-security, vault_helpers, verify-certificate, delete-user, impersonate-user) |
-| Release notes | v2.4 → **v2.9.3** + 11 modules ✅ |
+**Conséquence** :
+- 9 parcours ont des URLs stockées sous la forme `https://.../storage/v1/object/public/academy-assets/covers/<id>.jpg`
+- Ces URLs renvoient maintenant 400/403 → toutes les images (admin + portal) sont cassées
+- Les 18 fichiers existent bien dans le bucket, le problème est uniquement l'accessibilité publique
+- Les 10 autres parcours n'ont jamais eu de cover générée (`cover_image_url` vide)
 
----
+**Impact** : `AdminAcademyPaths`, `PortalAcademiePaths`, `PortalFormations` (toute card de parcours).
 
-## 📦 Lot 9 — Périmètre livré (3 sous-lots)
+## Décision
 
-### Lot 9.1 — Fix cron + Productivité + Cleanup
-- ✅ Brique A : Fix `purge_expired_email_tokens_daily` (régression Lot 6 corrigée)
-- ✅ Brique B : URL filters + Saved Views sur AdminLogs, AdminAudit
-- ✅ Brique F : Cron `cleanup_rate_limits_daily` programmé (04:00 UTC)
+Repasser `academy-assets` en **bucket public en lecture**, tout en gardant l'écriture restreinte à la SaaS team. C'est la posture habituelle pour des assets de présentation (covers de parcours visibles dès la page d'inscription dans certains contextes).
 
-### Lot 9.2 — Tests Vitest critiques
-- ✅ Brique E (frontend) : 16/16 tests
-  - `usePermissions.test.tsx` (5)
-  - `useDeleteUser.test.tsx` (3)
-  - `exportCsv.test.ts` (5 ajouts)
+Alternative écartée : migrer tous les composants vers `createSignedUrl` + cache. Lourd, casse les URLs déjà stockées en DB, et n'apporte aucune valeur sécurité réelle (les covers ne sont pas sensibles).
 
-### Lot 9.3 — Vault pgsodium + Tests Deno
-- ✅ Brique D : Extension Vault, 5 RPCs SECURITY DEFINER, 3 colonnes `*_secret_id`, 3 triggers auto-chiffrement
-- ✅ Brique D bis : 8 EFs patchées (ai-coach, ai-deliverables, ai-reflection, analyze-challenge, generate-toolkit, refine-toolkit, trigger-email, process-email-priority-queue)
-- ✅ Brique E (Deno) : 16 tests (email-security, vault_helpers, verify-certificate)
+## Migration prévue
 
-### ❌ Hors livraison (décision validée)
-- **Brique C — Rate limiting étendu** : annulé (politique plateforme : pas de nouvelles primitives backend)
-- **Tests Vitest auth/systemHealth/orgProvider** : reportés (couverture critique déjà assurée par 9.2)
+```sql
+-- Repasser le bucket en public (lecture)
+UPDATE storage.buckets SET public = true WHERE id = 'academy-assets';
 
----
+-- Recréer la policy SELECT publique (anon + auth) pour covers/
+DROP POLICY IF EXISTS "academy_assets_authenticated_read" ON storage.objects;
 
-## 🟢 Aucune régression détectée
-- 110 routes mappées (cabinet + portal)
-- 0 TODO/FIXME/@ts-ignore dans `src/`
-- AuthGuard, OrgProvider, multi-shell, Realtime : opérationnels
-- ⌘K Command Palette : actif
-- 8 EFs IA + email redéployées et testées
+CREATE POLICY "academy_assets_public_read"
+  ON storage.objects FOR SELECT
+  TO public
+  USING (bucket_id = 'academy-assets');
 
-## 🟡 Backlog Lot 10+ (à arbitrer)
-1. **DataTable rollout finition** — 6 pages admin restantes (`AdminBilling`, `AdminAcademyPaths`, `AdminAcademyCertificates`, `AdminAcademyAssets`, `AdminUCM`, `AdminOrganizations` exportable)
-2. **Tests Vitest étendus** — `useAuth`, `useSystemHealth`, `OrgProvider` (≥ 12 tests cibles)
-3. **Tests Deno étendus** — `trigger-email`, `_shared/rate-limit` (RPC), `_shared/email-render`
-4. **Migration SECURITY DEFINER → INVOKER** des 41 fonctions baseline (refacto majeur, ROI à arbitrer)
-5. **Saved views partagées en équipe** (table + RLS)
-6. **Dashboards business observability** (cohorts, funnels)
-7. **Vault rotation** — UI admin pour rotation programmée des secrets
+-- Les policies INSERT/UPDATE/DELETE restent SaaS-team only (inchangées)
+```
 
-## 📚 Documentation produite (Lot 9)
-- `docs/releases/v2.9.1-lot-9-fix-productivity.md`
-- `docs/releases/v2.9.2-lot-9-tests.md`
-- `docs/releases/v2.9.3-lot-9-vault-deno.md`
-- `docs/releases/README.md` (index à jour)
-- `.lovable/memory/security/rate-limiting.md`
-- `.lovable/memory/technical/secrets-vault-architecture.md`
+## Vérifications post-migration
 
-## 🔐 Architecture Vault (référence rapide)
-**Tables protégées** : `ai_configurations`, `email_provider_configs`, `email_webhook_secrets`
-**Pattern d'écriture** : trigger BEFORE INSERT/UPDATE → secret chiffré, colonne legacy vidée
-**Pattern de lecture EF** : `cfg.api_key` → `cfg.api_key_secret_id` via RPC `get_ai_api_key` → fallback `LOVABLE_API_KEY`
-**Audit** : chaque appel `app_get_secret` log dans `audit_logs` avec contexte
+1. Tester en preview `/portal/academie/paths` et `/admin/academy/paths` : les 9 covers existantes doivent réapparaître
+2. Confirmer que les 10 parcours sans cover affichent toujours leur fallback (gradient + initiale)
+3. Vérifier que `supabase--linter` ne génère pas de nouveau warning critique
+
+## Documentation
+
+- Patch note `docs/releases/v2.9.4-hotfix-academy-covers.md` (régression Lot 7 corrigée)
+- Mettre à jour `.lovable/memory/security/operational-hardening.md` pour préciser que `academy-assets` est public en lecture (cas d'usage : covers visibles)
+- Index `docs/releases/README.md`
+
+## Hors périmètre
+
+- Régénération automatique des covers manquantes (10 parcours) — à arbitrer séparément
+- Migration vers signed URLs — non justifiée pour ce bucket
