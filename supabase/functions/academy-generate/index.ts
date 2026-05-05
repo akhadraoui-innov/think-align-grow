@@ -1548,37 +1548,41 @@ async function generateAllToolkitCovers(supabase: any, params: any, apiKey: stri
   if (error) throw error;
 
   const list = toolkits || [];
-  const results: { toolkit_id: string; name: string; success: boolean; error?: string }[] = [];
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const CONCURRENCY = 3;
 
-  async function process(t: any) {
-    try {
-      const prompt = await buildToolkitPrompt(apiKey, t);
-      const img = await renderImage(apiKey, prompt);
-      if (!img.ok) { results.push({ toolkit_id: t.id, name: t.name, success: false, error: `HTTP_${img.status}` }); return; }
-      const fileName = `toolkit-covers/${t.id}.png`;
-      const { error: uploadErr } = await supabase.storage
-        .from("academy-assets")
-        .upload(fileName, img.bytes!, { contentType: "image/png", upsert: true });
-      if (uploadErr) { results.push({ toolkit_id: t.id, name: t.name, success: false, error: uploadErr.message }); return; }
-      const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}`;
-      await supabase.from("toolkits").update({ cover_image_url: publicUrl, updated_at: new Date().toISOString() }).eq("id", t.id);
-      results.push({ toolkit_id: t.id, name: t.name, success: true });
-    } catch (e) {
-      results.push({ toolkit_id: t.id, name: t.name, success: false, error: e instanceof Error ? e.message : "Unknown" });
+  // Run heavy work in background to avoid CPU time limit on the request
+  const work = (async () => {
+    const CONCURRENCY = 2;
+    async function process(t: any) {
+      try {
+        const prompt = await buildToolkitPrompt(apiKey, t);
+        const img = await renderImage(apiKey, prompt);
+        if (!img.ok) return;
+        const fileName = `toolkit-covers/${t.id}.png`;
+        const { error: uploadErr } = await supabase.storage
+          .from("academy-assets")
+          .upload(fileName, img.bytes!, { contentType: "image/png", upsert: true });
+        if (uploadErr) return;
+        const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}`;
+        await supabase.from("toolkits").update({ cover_image_url: publicUrl, updated_at: new Date().toISOString() }).eq("id", t.id);
+      } catch (e) {
+        console.warn("toolkit cover failed", t.id, e instanceof Error ? e.message : e);
+      }
     }
+    for (let i = 0; i < list.length; i += CONCURRENCY) {
+      const batch = list.slice(i, i + CONCURRENCY);
+      await Promise.allSettled(batch.map(process));
+    }
+    console.log(JSON.stringify({ action: "generate-all-toolkit-covers", total: list.length, status: "background-done" }));
+  })();
+
+  // @ts-ignore EdgeRuntime is available in Supabase edge functions
+  if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(work);
   }
 
-  for (let i = 0; i < list.length; i += CONCURRENCY) {
-    const batch = list.slice(i, i + CONCURRENCY);
-    await Promise.allSettled(batch.map(process));
-    if (i + CONCURRENCY < list.length) await new Promise((r) => setTimeout(r, 250));
-  }
-
-  const ok = results.filter((r) => r.success).length;
-  console.log(JSON.stringify({ action: "generate-all-toolkit-covers", total: list.length, ok }));
-  return new Response(JSON.stringify({ success: true, total: list.length, ok, ko: list.length - ok, results }), {
+  return new Response(JSON.stringify({ success: true, queued: list.length, async: true }), {
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
