@@ -423,13 +423,28 @@ export default function Academy() {
                         )}
                         onClick={() => navigate(`/academy/path/${path.id}`)}
                       >
-                        <div className={`h-20 bg-gradient-to-br ${diff.gradient} relative p-4 flex items-end`}>
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background/80 backdrop-blur">
-                            <GraduationCap className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="absolute top-3 right-3 flex items-center gap-1">
-                            {isEnrolled && <Badge className="text-[10px]">Inscrit</Badge>}
-                          </div>
+                        <div className="relative h-20 overflow-hidden bg-muted">
+                          {path.cover_image_url ? (
+                            <>
+                              <img
+                                src={`${path.cover_image_url}?v=${new Date(path.updated_at || path.created_at || Date.now()).getTime()}`}
+                                alt={path.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                            </>
+                          ) : (
+                            <div className={cn("absolute inset-0 bg-gradient-to-br flex items-center justify-center", diff.gradient)}>
+                              <GraduationCap className="h-6 w-6 text-primary/60" />
+                            </div>
+                          )}
+                          {isEnrolled && (
+                            <div className="absolute top-2 right-2">
+                              <Badge className="text-[9px] bg-primary text-primary-foreground border-0 uppercase tracking-wider font-bold">Inscrit</Badge>
+                            </div>
+                          )}
                         </div>
                         <CardContent className="p-4 space-y-2.5">
                           <div>
