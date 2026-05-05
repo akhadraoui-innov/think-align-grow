@@ -1702,6 +1702,11 @@ async function generateCardIllustrationsBatch(supabase: any, params: any, apiKey
   const { card_ids } = params;
   if (!Array.isArray(card_ids) || card_ids.length === 0) throw new Error("Missing card_ids");
   if (card_ids.length > 20) throw new Error("Batch too large (max 20)");
+  // Hard cap to avoid 150s edge timeout (each render ~10-20s)
+  const MAX_PER_CALL = 5;
+  if (card_ids.length > MAX_PER_CALL) {
+    card_ids.length = MAX_PER_CALL;
+  }
 
   // Reset to pending so the UI sees progress
   await supabase.from("cards").update({ image_status: "pending" }).in("id", card_ids);
