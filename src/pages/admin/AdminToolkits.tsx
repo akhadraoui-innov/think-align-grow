@@ -243,6 +243,7 @@ export default function AdminToolkits() {
               totalQuiz: data.quiz,
             }));
             queryClient.invalidateQueries({ queryKey: ["admin-toolkits"] });
+            if (data.toolkit_id) triggerCover(data.toolkit_id);
           } else if (data.type === "error") {
             throw new Error(data.message);
           }
