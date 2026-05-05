@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ShieldCheck, ShieldAlert, Copy, Trash2 } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldAlert, Copy, Trash2, Smartphone, Apple, AlertCircle, Info } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +22,7 @@ function AccountSecurityInner() {
   const [code, setCode] = useState("");
   const [working, setWorking] = useState(false);
   const [requires2fa, setRequires2fa] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -50,6 +52,7 @@ function AccountSecurityInner() {
   async function handleVerify() {
     if (!enrollment || code.length !== 6) return;
     setWorking(true);
+    setVerifyError(null);
     try {
       await verify(enrollment.factorId, code);
       toast.success("Authentification à deux facteurs activée.");
@@ -59,9 +62,28 @@ function AccountSecurityInner() {
       // If user came from a forced-2FA redirect, send them back to admin
       if (isSetup) navigate("/admin", { replace: true });
     } catch (e: any) {
-      toast.error(e?.message ?? "Code incorrect. Réessayez.");
+      const msg = e?.message ?? "Code incorrect. Réessayez.";
+      setVerifyError(msg);
+      toast.error(msg);
     } finally {
       setWorking(false);
+    }
+  }
+
+  function parseOtpAuthUri(uri: string): { account: string; issuer: string } {
+    try {
+      const u = new URL(uri);
+      const label = decodeURIComponent(u.pathname.replace(/^\/+/, ""));
+      const issuerParam = u.searchParams.get("issuer") ?? "";
+      const [issuerFromLabel, account] = label.includes(":")
+        ? label.split(":")
+        : ["", label];
+      return {
+        account: account || label,
+        issuer: issuerParam || issuerFromLabel || "Heeplab",
+      };
+    } catch {
+      return { account: "", issuer: "Heeplab" };
     }
   }
 
@@ -156,50 +178,134 @@ function AccountSecurityInner() {
             </Button>
           )}
 
-          {enrollment && (
-            <div className="space-y-4">
-              <div className="rounded-lg border bg-card p-4 flex flex-col items-center gap-3">
-                <img
-                  src={enrollment.qrCode}
-                  alt="QR code 2FA"
-                  className="h-48 w-48 rounded-md border bg-white p-2"
-                />
-                <div className="text-xs text-muted-foreground text-center">
-                  Scannez ce QR code avec votre application d'authentification.
-                </div>
-                <div className="w-full">
-                  <div className="text-xs text-muted-foreground mb-1">
-                    Ou saisissez ce secret manuellement :
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 rounded-md bg-muted px-2 py-1.5 text-xs font-mono break-all">
-                      {enrollment.secret}
-                    </code>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => copy(enrollment.secret, "Secret")}
+          {enrollment && (() => {
+            const { account, issuer } = parseOtpAuthUri(enrollment.uri);
+            return (
+            <div className="space-y-5">
+              <Alert className="border-primary/30 bg-primary/5">
+                <AlertCircle className="h-4 w-4 text-primary" />
+                <AlertTitle className="text-sm font-semibold">
+                  Le QR code se scanne depuis une <u>application d'authentification</u>, pas l'appareil photo
+                </AlertTitle>
+                <AlertDescription className="text-xs space-y-2 mt-1">
+                  <p>
+                    Si vous ouvrez l'appareil photo natif de votre téléphone, vous verrez seulement
+                    une longue URL (<code className="text-[10px]">otpauth://…</code>) — c'est normal.
+                    Installez d'abord une app TOTP :
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <a
+                      href="https://apps.apple.com/app/google-authenticator/id388497605"
+                      target="_blank" rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-[11px] hover:bg-muted"
                     >
-                      <Copy className="h-3.5 w-3.5" />
-                    </Button>
+                      <Apple className="h-3 w-3" /> Google Authenticator (iOS)
+                    </a>
+                    <a
+                      href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2"
+                      target="_blank" rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-[11px] hover:bg-muted"
+                    >
+                      <Smartphone className="h-3 w-3" /> Google Authenticator (Android)
+                    </a>
+                    <a
+                      href="https://www.microsoft.com/en-us/security/mobile-authenticator-app"
+                      target="_blank" rel="noreferrer"
+                      className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-[11px] hover:bg-muted"
+                    >
+                      <Smartphone className="h-3 w-3" /> Microsoft Authenticator
+                    </a>
                   </div>
-                </div>
-              </div>
+                  <p className="text-muted-foreground">
+                    Compatibles aussi : Authy, 1Password, Bitwarden, Proton Pass.
+                  </p>
+                </AlertDescription>
+              </Alert>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Saisissez le code à 6 chiffres généré par votre application
-                </label>
-                <InputOTP maxLength={6} value={code} onChange={setCode}>
-                  <InputOTPGroup>
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <InputOTPSlot key={i} index={i} />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
+              <ol className="space-y-4 text-sm">
+                <li className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">1</span>
+                  <div>
+                    <div className="font-medium">Ouvrez votre app d'authentification</div>
+                    <div className="text-xs text-muted-foreground">
+                      Cherchez "Ajouter un compte" ou l'icône <strong>+</strong>, puis choisissez « Scanner un QR code ».
+                    </div>
+                  </div>
+                </li>
 
-              <div className="flex gap-2">
+                <li className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">2</span>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <div className="font-medium">Scannez le QR code ci-dessous</div>
+                      <div className="text-xs text-muted-foreground">
+                        Compte enregistré : <strong>{issuer}</strong>{account ? <> — {account}</> : null}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border bg-card p-4 flex flex-col items-center gap-3">
+                      <img
+                        src={enrollment.qrCode}
+                        alt="QR code 2FA"
+                        className="h-48 w-48 rounded-md border bg-white p-2"
+                      />
+                      <a
+                        href={enrollment.uri}
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline md:hidden"
+                      >
+                        <Smartphone className="h-3.5 w-3.5" />
+                        Ouvrir directement dans mon app (mobile)
+                      </a>
+                      <div className="w-full pt-2 border-t">
+                        <div className="text-xs text-muted-foreground mb-1">
+                          Impossible de scanner ? Saisissez ce secret manuellement :
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 rounded-md bg-muted px-2 py-1.5 text-xs font-mono break-all">
+                            {enrollment.secret}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => copy(enrollment.secret, "Secret")}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+
+                <li className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">3</span>
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <div className="font-medium">Saisissez le code à 6 chiffres affiché par l'app</div>
+                      <div className="text-xs text-muted-foreground">
+                        Le code change toutes les 30 secondes.
+                      </div>
+                    </div>
+                    <InputOTP maxLength={6} value={code} onChange={(v) => { setCode(v); setVerifyError(null); }}>
+                      <InputOTPGroup>
+                        {[0, 1, 2, 3, 4, 5].map((i) => (
+                          <InputOTPSlot key={i} index={i} />
+                        ))}
+                      </InputOTPGroup>
+                    </InputOTP>
+                    {verifyError && (
+                      <Alert variant="destructive" className="py-2">
+                        <Info className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          {verifyError}. Vérifiez que l'heure de votre téléphone est réglée sur
+                          « automatique » — les codes TOTP dépendent de l'horloge.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                </li>
+              </ol>
+
+              <div className="flex gap-2 pt-2 border-t">
                 <Button onClick={handleVerify} disabled={working || code.length !== 6}>
                   {working ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Vérifier et activer
@@ -209,6 +315,7 @@ function AccountSecurityInner() {
                   onClick={() => {
                     setEnrollment(null);
                     setCode("");
+                    setVerifyError(null);
                   }}
                   disabled={working}
                 >
@@ -216,7 +323,8 @@ function AccountSecurityInner() {
                 </Button>
               </div>
             </div>
-          )}
+            );
+          })()}
         </CardContent>
       </Card>
     </div>
