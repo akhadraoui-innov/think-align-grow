@@ -61,7 +61,7 @@ export default function AdminToolkitDetail() {
     setGenLoading(true);
     setGenProgress({ done: 0, total: ids.length, ok: 0, fail: 0 });
 
-    const BATCH = 10;
+    const BATCH = 5;
     let ok = 0, fail = 0, done = 0;
     try {
       for (let i = 0; i < ids.length; i += BATCH) {
