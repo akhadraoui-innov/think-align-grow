@@ -60,9 +60,15 @@ const initialGenState: GenerationState = {
 
 export default function AdminToolkits() {
   const navigate = useNavigate();
-  const { toolkits, isLoading, counts, create } = useAdminToolkits();
+  const { toolkits, isLoading, counts, create, remove } = useAdminToolkits();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Filters & view mode
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [coverLoadingId, setCoverLoadingId] = useState<string | null>(null);
 
   // Manual create dialog
   const [open, setOpen] = useState(false);
