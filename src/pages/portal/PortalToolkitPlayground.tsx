@@ -257,19 +257,50 @@ export default function PortalToolkitPlayground() {
                 );
               })}
             </div>
+            {layout === "plateau" && (
+              <>
+                <PlateauSessionDrawer
+                  sessions={sessions as any}
+                  onLoad={handleLoadSession}
+                  onDelete={(id) => {
+                    remove(id);
+                    if (id === activeSessionId) handleNewSession();
+                  }}
+                  onNew={handleNewSession}
+                  activeId={activeSessionId}
+                  accent={theme.accent}
+                />
+                <Button variant="outline" size="sm" onClick={handleSave}>
+                  <Save className="w-4 h-4 mr-1.5" />
+                  {activeSessionId ? "Mettre à jour" : "Sauver"}
+                </Button>
+              </>
+            )}
+            {layout !== "plateau" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFiltersOpen((v) => !v)}
+                className="lg:hidden"
+              >
+                <Filter className="w-4 h-4" />
+              </Button>
+            )}
             <Button
-              variant="outline"
               size="sm"
-              onClick={() => setFiltersOpen((v) => !v)}
-              className="lg:hidden"
-            >
-              <Filter className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => setPresenting(filtered)}
+              onClick={() => {
+                if (layout === "plateau" && plateauPlacements.length > 0) {
+                  const ordered = [...plateauPlacements]
+                    .sort((a, b) => a.z - b.z)
+                    .map((p) => cards.find((c) => c.id === p.card_id))
+                    .filter(Boolean) as Card[];
+                  setPresenting(ordered);
+                } else {
+                  setPresenting(filtered);
+                }
+              }}
               style={{ background: theme.accent }}
-              disabled={filtered.length === 0}
+              disabled={layout === "plateau" ? plateauPlacements.length === 0 : filtered.length === 0}
             >
               <Play className="w-4 h-4 mr-1" /> Présenter
             </Button>
@@ -278,34 +309,88 @@ export default function PortalToolkitPlayground() {
       </header>
 
       {/* Body */}
-      <div className="flex flex-1 min-h-0">
-        {filtersOpen && (
-          <PlaygroundFilters
+      {layout === "plateau" ? (
+        <div className="flex flex-col flex-1 min-h-0">
+          <PlateauCategoryBar
+            cards={cards}
             pillars={pillars}
-            filters={filters}
-            setFilters={setFilters}
-            onClose={() => setFiltersOpen(false)}
+            value={plateauCategory}
+            onChange={setPlateauCategory}
             accent={theme.accent}
-            counts={counts}
           />
-        )}
-        <main className="flex-1 overflow-y-auto relative" style={{ backgroundImage: theme.patternSvg, backgroundRepeat: "repeat" }}>
-          {cLoading ? (
-            <div className="p-8 grid grid-cols-3 gap-5">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-[392px] w-[280px]" />
-              ))}
+          <div className="flex items-center gap-3 px-6 py-2 border-b bg-card/40">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Taille des cartes
+            </span>
+            <div className="w-48">
+              <Slider
+                value={[cardScaleGlobal * 100]}
+                min={60}
+                max={140}
+                step={5}
+                onValueChange={(v) => setCardScaleGlobal(v[0] / 100)}
+              />
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-3">
-              <Sparkles className="w-10 h-10 opacity-40" />
-              <p>Aucune carte ne correspond aux filtres.</p>
+            <span className="text-xs font-mono text-muted-foreground">
+              {Math.round(cardScaleGlobal * 100)}%
+            </span>
+            <div className="ml-auto text-xs text-muted-foreground">
+              {plateauPlacements.length} carte{plateauPlacements.length > 1 ? "s" : ""} sur le plateau
+              {activeSessionId && (
+                <span className="ml-2 text-[10px] uppercase tracking-wider opacity-70">
+                  · auto-save activé
+                </span>
+              )}
             </div>
-          ) : (
-            <PlaygroundBoard layout={layout} cards={filtered} pillars={pillars} accent={theme.accent} />
+          </div>
+          <main className="flex-1 min-h-0 p-4 overflow-hidden" style={{ height: "65vh" }}>
+            <PlateauBoard
+              toolkit={toolkit}
+              theme={theme}
+              cards={cards}
+              pillars={pillars}
+              placements={plateauPlacements}
+              setPlacements={setPlateauPlacements}
+              cardScaleGlobal={cardScaleGlobal}
+            />
+          </main>
+          <PlateauHand
+            cards={plateauCards}
+            pillars={pillars}
+            placedIds={placedIds}
+            cardScaleGlobal={cardScaleGlobal}
+          />
+        </div>
+      ) : (
+        <div className="flex flex-1 min-h-0">
+          {filtersOpen && (
+            <PlaygroundFilters
+              pillars={pillars}
+              filters={filters}
+              setFilters={setFilters}
+              onClose={() => setFiltersOpen(false)}
+              accent={theme.accent}
+              counts={counts}
+            />
           )}
-        </main>
-      </div>
+          <main className="flex-1 overflow-y-auto relative" style={{ backgroundImage: theme.patternSvg, backgroundRepeat: "repeat" }}>
+            {cLoading ? (
+              <div className="p-8 grid grid-cols-3 gap-5">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-[392px] w-[280px]" />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-3">
+                <Sparkles className="w-10 h-10 opacity-40" />
+                <p>Aucune carte ne correspond aux filtres.</p>
+              </div>
+            ) : (
+              <PlaygroundBoard layout={layout as BoardLayout} cards={filtered} pillars={pillars} accent={theme.accent} />
+            )}
+          </main>
+        </div>
+      )}
 
       <PlaygroundDeck
         toolkitId={toolkit.id}
