@@ -113,8 +113,8 @@ export default function AdminToolkits() {
     try {
       const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-all-toolkit-covers" } });
       if (error) throw error;
-      toast({ title: "Couvertures générées", description: `${data?.ok || 0} / ${data?.total || 0} réussies` });
-      queryClient.invalidateQueries({ queryKey: ["admin-toolkits"] });
+      toast({ title: "Génération lancée", description: `${data?.queued || 0} couvertures en cours. Rafraîchissez dans 1-2 minutes.` });
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ["admin-toolkits"] }), 30000);
     } catch (e: any) {
       toast({ title: "Erreur batch couvertures", description: e.message, variant: "destructive" });
     } finally { setBatchLoading(false); }
