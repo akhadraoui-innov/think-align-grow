@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminToolkitDetail } from "@/hooks/useAdminToolkits";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Settings, Layers, LayoutGrid, Swords, Map, HelpCircle, Building2, Sparkles, Image as ImageIcon } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { ArrowLeft, Loader2, Settings, Layers, LayoutGrid, Swords, Map, HelpCircle, Building2, Sparkles, Image as ImageIcon, Square, Gamepad2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ToolkitInfoTab } from "@/components/admin/ToolkitInfoTab";
@@ -17,6 +18,7 @@ import { ToolkitQuizTab } from "@/components/admin/ToolkitQuizTab";
 import { ToolkitOrgsTab } from "@/components/admin/ToolkitOrgsTab";
 import { ToolkitCompletionBanner } from "@/components/admin/ToolkitCompletionBanner";
 import { ToolkitAIChatDialog } from "@/components/admin/ToolkitAIChatDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
   draft: { label: "Brouillon", className: "bg-muted text-muted-foreground border-border" },
@@ -30,27 +32,71 @@ export default function AdminToolkitDetail() {
   const detail = useAdminToolkitDetail(id);
   const { toolkit, pillars, cards, challengeTemplates, gamePlans, quizQuestions, orgToolkits, isLoading, invalidateAll } = detail;
   const [genLoading, setGenLoading] = useState(false);
+  const [genProgress, setGenProgress] = useState({ done: 0, total: 0, ok: 0, fail: 0 });
+  const [scope, setScope] = useState<string>("missing"); // missing | failed | all | pillar:<id>
+  const cancelRef = useRef(false);
 
   const cardsWithoutImage = cards.filter((c: any) => !c.image_url).length;
+  const cardsFailed = cards.filter((c: any) => c.image_status === "failed").length;
 
-  const handleGenerateAllIllustrations = async (force: boolean) => {
+  const buildTargetIds = (): string[] => {
+    if (scope === "missing") return cards.filter((c: any) => !c.image_url).map((c: any) => c.id);
+    if (scope === "failed") return cards.filter((c: any) => c.image_status === "failed").map((c: any) => c.id);
+    if (scope === "all") return cards.map((c: any) => c.id);
+    if (scope.startsWith("pillar:")) {
+      const pid = scope.slice(7);
+      return cards.filter((c: any) => c.pillar_id === pid).map((c: any) => c.id);
+    }
+    return [];
+  };
+
+  const runBatches = async () => {
     if (!toolkit) return;
+    const ids = buildTargetIds();
+    if (ids.length === 0) {
+      toast.info("Aucune carte à traiter pour ce périmètre");
+      return;
+    }
+    cancelRef.current = false;
     setGenLoading(true);
+    setGenProgress({ done: 0, total: ids.length, ok: 0, fail: 0 });
+
+    const BATCH = 10;
+    let ok = 0, fail = 0, done = 0;
     try {
-      const { data, error } = await supabase.functions.invoke("academy-generate", {
-        body: { action: "generate-all-card-illustrations", toolkit_id: toolkit.id, force },
-      });
-      if (error) throw error;
-      toast.success(`${data?.queued || 0} illustration(s) en cours`, {
-        description: "Génération en arrière-plan. Rafraîchissez dans 1-2 minutes.",
-      });
-      setTimeout(() => invalidateAll(), 30_000);
+      for (let i = 0; i < ids.length; i += BATCH) {
+        if (cancelRef.current) break;
+        const slice = ids.slice(i, i + BATCH);
+        const { data, error } = await supabase.functions.invoke("academy-generate", {
+          body: { action: "generate-card-illustrations-batch", card_ids: slice },
+        });
+        if (error) throw error;
+        ok += data?.succeeded || 0;
+        fail += data?.failed || 0;
+        done += data?.processed || 0;
+        setGenProgress({ done, total: ids.length, ok, fail });
+        if (data?.aiCredits === "exhausted") {
+          toast.error("Solde IA épuisé", {
+            description: "Rechargez dans Cloud & AI balance puis relancez.",
+            duration: 8000,
+          });
+          break;
+        }
+      }
+      if (!cancelRef.current) {
+        toast.success(`Terminé : ${ok} générées, ${fail} échec(s)`);
+      } else {
+        toast.info(`Interrompu : ${ok} générées sur ${ids.length}`);
+      }
+      invalidateAll();
     } catch (e: any) {
-      toast.error("Échec du lancement", { description: e?.message });
+      toast.error("Échec du batch", { description: e?.message });
     } finally {
       setGenLoading(false);
     }
   };
+
+  const cancelBatch = () => { cancelRef.current = true; };
 
   if (isLoading) {
     return <AdminShell><div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div></AdminShell>;
@@ -81,6 +127,14 @@ export default function AdminToolkitDetail() {
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => window.open(`/portal/workshops/toolkits/${toolkit.id}/playground`, "_blank")}
+            >
+              <Gamepad2 className="h-3.5 w-3.5" /> Terrain de jeu
+            </Button>
             <ToolkitAIChatDialog toolkit={toolkit} pillars={pillars} onUpdate={invalidateAll} />
             <Badge variant="outline" className={s.className}>{s.label}</Badge>
             <Badge className="bg-primary text-primary-foreground text-[10px]">
@@ -92,28 +146,53 @@ export default function AdminToolkitDetail() {
         <ToolkitCompletionBanner toolkit={toolkit} pillars={pillars} cards={cards} quizQuestions={quizQuestions} onUpdate={invalidateAll} />
 
         {/* Card illustrations banner */}
-        <div className="rounded-xl border bg-card p-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <ImageIcon className="h-5 w-5 text-primary" />
+        <div className="rounded-xl border bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <ImageIcon className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">Illustrations des cartes</p>
+                <p className="text-xs text-muted-foreground">
+                  {cards.length - cardsWithoutImage} / {cards.length} illustrées
+                  {cardsFailed > 0 && ` · ${cardsFailed} en échec`}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold">Illustrations des cartes</p>
-              <p className="text-xs text-muted-foreground">
-                {cards.length - cardsWithoutImage} / {cards.length} cartes illustrées
-                {cardsWithoutImage > 0 && ` · ${cardsWithoutImage} sans illustration`}
+            <div className="flex gap-2 flex-shrink-0 items-center">
+              <Select value={scope} onValueChange={setScope} disabled={genLoading}>
+                <SelectTrigger className="h-8 w-[220px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="missing">Cartes manquantes ({cardsWithoutImage})</SelectItem>
+                  <SelectItem value="failed">Cartes en échec ({cardsFailed})</SelectItem>
+                  <SelectItem value="all">Toutes les cartes ({cards.length})</SelectItem>
+                  {pillars.map((p: any) => (
+                    <SelectItem key={p.id} value={`pillar:${p.id}`}>
+                      Pilier · {p.name} ({cards.filter((c: any) => c.pillar_id === p.id).length})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {genLoading ? (
+                <Button size="sm" variant="destructive" onClick={cancelBatch}>
+                  <Square className="h-3.5 w-3.5 mr-1" /> Arrêter
+                </Button>
+              ) : (
+                <Button size="sm" onClick={runBatches}>
+                  <Sparkles className="h-3.5 w-3.5 mr-1" /> Lancer
+                </Button>
+              )}
+            </div>
+          </div>
+          {(genLoading || genProgress.done > 0) && genProgress.total > 0 && (
+            <div className="space-y-1">
+              <Progress value={(genProgress.done / genProgress.total) * 100} className="h-2" />
+              <p className="text-[11px] text-muted-foreground">
+                {genProgress.done} / {genProgress.total} traitées · {genProgress.ok} OK · {genProgress.fail} échec(s)
               </p>
             </div>
-          </div>
-          <div className="flex gap-2 flex-shrink-0">
-            <Button size="sm" variant="outline" onClick={() => handleGenerateAllIllustrations(false)} disabled={genLoading || cardsWithoutImage === 0}>
-              {genLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
-              Générer manquantes
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => handleGenerateAllIllustrations(true)} disabled={genLoading || cards.length === 0}>
-              Tout régénérer
-            </Button>
-          </div>
+          )}
         </div>
 
         <Tabs defaultValue="info" className="space-y-4">

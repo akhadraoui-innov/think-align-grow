@@ -61,6 +61,8 @@ serve(async (req) => {
       return await generateCardIllustration(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-all-card-illustrations") {
       return await generateAllCardIllustrations(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-card-illustrations-batch") {
+      return await generateCardIllustrationsBatch(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
@@ -1636,9 +1638,11 @@ async function renderCardIllustration(supabase: any, apiKey: string, card: any, 
     }).eq("id", card.id);
     return { ok: true, url: publicUrl };
   } catch (e) {
-    console.warn("card illustration failed", card.id, e instanceof Error ? e.message : e);
-    await supabase.from("cards").update({ image_status: "failed" }).eq("id", card.id);
-    return { ok: false };
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn("card illustration failed", card.id, msg);
+    const isQuota = /credits exhausted/i.test(msg);
+    await supabase.from("cards").update({ image_status: isQuota ? "pending" : "failed" }).eq("id", card.id);
+    return { ok: false, status: isQuota ? 402 : undefined };
   }
 }
 
@@ -1692,4 +1696,52 @@ async function generateAllCardIllustrations(supabase: any, params: any, apiKey: 
   return new Response(JSON.stringify({ success: true, queued: list.length, async: true }), {
     headers: { ...cors, "Content-Type": "application/json" },
   });
+}
+
+async function generateCardIllustrationsBatch(supabase: any, params: any, apiKey: string, cors: any) {
+  const { card_ids } = params;
+  if (!Array.isArray(card_ids) || card_ids.length === 0) throw new Error("Missing card_ids");
+  if (card_ids.length > 20) throw new Error("Batch too large (max 20)");
+
+  // Reset to pending so the UI sees progress
+  await supabase.from("cards").update({ image_status: "pending" }).in("id", card_ids);
+
+  const { data: cards } = await supabase
+    .from("cards")
+    .select("*, pillars!inner(*, toolkit_id, toolkits!inner(*))")
+    .in("id", card_ids);
+
+  const list = cards || [];
+  let processed = 0;
+  let succeeded = 0;
+  let consecutive402 = 0;
+  let aiCredits: "ok" | "exhausted" = "ok";
+
+  for (const c of list) {
+    const pillar = c.pillars;
+    const toolkit = pillar?.toolkits;
+    const r = await renderCardIllustration(supabase, apiKey, c, pillar, toolkit);
+    processed++;
+    if (r.ok) {
+      succeeded++;
+      consecutive402 = 0;
+    } else if (r.status === 402) {
+      consecutive402++;
+      if (consecutive402 >= 3) {
+        aiCredits = "exhausted";
+        break;
+      }
+    } else {
+      consecutive402 = 0;
+    }
+  }
+
+  return new Response(JSON.stringify({
+    success: true,
+    processed,
+    succeeded,
+    failed: processed - succeeded,
+    skipped: list.length - processed,
+    aiCredits,
+  }), { headers: { ...cors, "Content-Type": "application/json" } });
 }

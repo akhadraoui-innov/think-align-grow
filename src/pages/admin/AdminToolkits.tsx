@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Loader2, Sparkles, FileText, Eye, Package, Wand2, Users, Settings2, Brain, Check, Clock, CircleDot, PartyPopper, ArrowRight, RotateCcw, LayoutGrid, List, Pencil, Trash2, Image as ImageIcon, Layers, CreditCard, Search } from "lucide-react";
+import { Plus, Loader2, Sparkles, FileText, Eye, Package, Wand2, Users, Settings2, Brain, Check, Clock, CircleDot, PartyPopper, ArrowRight, RotateCcw, LayoutGrid, List, Pencil, Trash2, Image as ImageIcon, Layers, CreditCard, Search, Gamepad2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -710,6 +710,15 @@ export default function AdminToolkits() {
                         variant="secondary"
                         size="icon"
                         className="h-7 w-7 backdrop-blur-sm"
+                        title="Terrain de jeu"
+                        onClick={(e) => { e.stopPropagation(); window.open(`/portal/workshops/toolkits/${t.id}/playground`, "_blank"); }}
+                      >
+                        <Gamepad2 className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-7 w-7 backdrop-blur-sm"
                         title="Éditer"
                         onClick={(e) => { e.stopPropagation(); navigate(`/admin/toolkits/${t.id}`); }}
                       >
@@ -810,6 +819,15 @@ export default function AdminToolkits() {
                               onClick={(e) => { e.stopPropagation(); triggerCover(t.id); }}
                             >
                               {isCoverLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              title="Terrain de jeu"
+                              onClick={(e) => { e.stopPropagation(); window.open(`/portal/workshops/toolkits/${t.id}/playground`, "_blank"); }}
+                            >
+                              <Gamepad2 className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               variant="ghost"
