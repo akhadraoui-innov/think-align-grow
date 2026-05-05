@@ -202,6 +202,7 @@ export function PlaygroundCard({
           </div>
         </button>
       </div>
+      </div>
     </motion.div>
   );
 }
