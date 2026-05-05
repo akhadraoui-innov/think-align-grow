@@ -95,11 +95,17 @@ export default function AdminToolkits() {
   });
 
   const triggerCover = useCallback(async (toolkit_id: string) => {
+    setCoverLoadingId(toolkit_id);
     try {
       await supabase.functions.invoke("academy-generate", { body: { action: "generate-toolkit-cover", toolkit_id } });
       queryClient.invalidateQueries({ queryKey: ["admin-toolkits"] });
-    } catch (e) { console.warn("Cover generation failed", e); }
-  }, [queryClient]);
+      toast({ title: "Couverture générée" });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } finally {
+      setCoverLoadingId(null);
+    }
+  }, [queryClient, toast]);
 
   const [batchLoading, setBatchLoading] = useState(false);
   const handleBatchCovers = async () => {
