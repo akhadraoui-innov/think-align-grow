@@ -1,89 +1,57 @@
+## Diagnostic
 
-## Plan en 2 actions ciblées
+Le QR code affiché sur `/account/security` est correct : il encode une URI `otpauth://totp/...` standard (générée nativement par Supabase Auth, visible dans le secret `V6ZTCMAUG5UJ...` du screenshot). Le comportement décrit — "le QR code me renvoie un texte" — vient du fait qu'il est scanné avec **l'appareil photo natif du téléphone** (qui affiche l'URI brute) au lieu d'une **application TOTP** (Google Authenticator, Authy, 1Password, Microsoft Authenticator…).
 
-### Action 1 — Hotfix CSS Mermaid (PRIORITAIRE, sans régénération)
+Ce n'est donc pas un bug technique, mais un manque de clarté pédagogique dans l'UI. La page mentionne les apps mais ne les met pas en avant ni ne propose de raccourci direct.
 
-**Problème identifié** : Mes `themeVariables` v2.9.8 ont du texte blanc sur fond blanc (cf. capture 1). Cause = `primaryTextColor: --primary-foreground` (blanc) appliqué à des nœuds dont le fond résolu est blanc/clair.
+## Plan d'amélioration UX (page Sécurité)
 
-**Correctif dans `src/components/academy/MermaidDiagram.tsx`** (fonction `getThemeVars`) :
+Patcher uniquement `src/pages/account/Security.tsx` — aucun changement backend, aucune migration.
 
-```ts
-return {
-  // Nœuds : fond CLAIR avec bordure primary, texte FONCÉ
-  primaryColor: hsl("--background") || "#FFFFFF",      // fond du nœud (blanc)
-  primaryTextColor: hsl("--foreground") || "#111827",  // texte du nœud (foncé)
-  primaryBorderColor: hsl("--primary") || "#F97316",   // bordure orange
-  
-  // Nœuds secondaires (decisions, etc.)
-  secondaryColor: hsl("--muted") || "#F3F4F6",
-  secondaryTextColor: hsl("--foreground") || "#111827",
-  secondaryBorderColor: hsl("--primary") || "#F97316",
-  
-  tertiaryColor: hsl("--accent") || "#FEF3C7",
-  tertiaryTextColor: hsl("--foreground") || "#111827",
-  tertiaryBorderColor: hsl("--primary") || "#F97316",
-  
-  // Liens
-  lineColor: hsl("--muted-foreground") || "#6B7280",   // arêtes plus visibles
-  
-  // Labels d'arêtes : fond opaque du background pour masquer la ligne dessous
-  edgeLabelBackground: hsl("--background") || "#FFFFFF",
-  
-  // Texte général
-  textColor: hsl("--foreground") || "#111827",
-  titleColor: hsl("--foreground") || "#111827",
-  
-  // Backgrounds globaux
-  background: "transparent",
-  mainBkg: hsl("--background") || "#FFFFFF",
-  
-  // Cluster (sub-graph)
-  clusterBkg: hsl("--muted") || "#F3F4F6",
-  clusterBorder: hsl("--border") || "#E5E7EB",
-  
-  // Notes (sequence diagrams)
-  noteBkgColor: hsl("--accent") || "#FEF3C7",
-  noteTextColor: hsl("--foreground") || "#111827",
-  noteBorderColor: hsl("--primary") || "#F97316",
-  
-  fontFamily: "inherit",
-};
-```
+### 1. Bloc "Avant de scanner" (au-dessus du QR code)
 
-Bonus : ajouter dans le wrapper SVG un CSS `[&_.edgeLabel]:!bg-background [&_.edgeLabel_p]:!bg-background` pour forcer l'opacité des labels d'arêtes (mermaid les laisse parfois transparents).
-
-**Effet immédiat** : tous les Mermaid existants en base s'affichent correctement, sans régénérer un seul contenu.
-
-### Action 2 — Améliorer le prompt IA (préventif pour les futurs contenus)
-
-**Problème** : L'IA produit parfois de l'ASCII-art (capture 2) au lieu de Mermaid → diagrammes inutilisables visuellement.
-
-**Patch dans `supabase/functions/academy-generate/index.ts`** : ajouter une consigne stricte dans la directive système des prompts qui génèrent du contenu pédagogique markdown :
+Lorsque `enrollment` est actif, insérer une alerte pédagogique :
 
 ```
-DIAGRAMMES — RÈGLE STRICTE :
-Pour TOUT schéma, organigramme, flux de processus, architecture ou diagramme
-de relations, tu DOIS utiliser un bloc ```mermaid valide.
-INTERDIT : ASCII-art (pipes, slashes, dashes pour dessiner).
-INTERDIT : décrire visuellement avec du texte.
-Types autorisés : flowchart TD/LR, sequenceDiagram, erDiagram,
-classDiagram, stateDiagram-v2, gantt, mindmap, timeline.
-Mermaid valide = pas d'accents dans les IDs (utilise des labels entre crochets/guillemets).
+⚠ Le QR code doit être scanné depuis une application d'authentification
+  (pas l'appareil photo de votre téléphone).
+  
+  Apps recommandées : Google Authenticator · Microsoft Authenticator
+  · Authy · 1Password · Bitwarden
 ```
 
-**Effet** : les nouveaux contenus générés (et les régénérations futures) auront systématiquement de vrais diagrammes interactifs.
+Avec liens stores (iOS App Store + Google Play) en boutons discrets pour Google Authenticator et Microsoft Authenticator.
 
-### Pas de régénération massive
+### 2. Bouton "Ouvrir dans mon app" (mobile)
 
-- Les contenus actuels redeviennent corrects via Action 1 (CSS fix)
-- Les contenus avec ASCII-art existants restent en ASCII (toléré pédagogiquement) sauf régénération volontaire pilotée par l'utilisateur sur les modules concernés
+Ajouter sous le QR code un bouton secondaire `<a href={enrollment.uri}>` avec l'icône `Smartphone`. Sur mobile, cliquer ouvre directement l'app TOTP installée via le scheme `otpauth://`. Sur desktop, le bouton reste affiché mais l'utilisateur est invité à scanner.
 
-## Documentation
+### 3. Affichage du label de compte
 
-- Patch dans la release v2.9.8 existante (note "hotfix CSS theming + prompt IA")
-- Pas de nouvelle release dédiée
+Décoder l'URI `otpauth://` pour afficher en clair :
+- **Compte** : email de l'utilisateur
+- **Émetteur** : Heeplab
 
-## Hors scope
+Cela rassure l'utilisateur qui voit ce qui sera enregistré dans son app.
 
-- Pas de migration automatique ASCII → Mermaid (trop risqué sans curation humaine)
-- Pas de bouton "régénérer ce module avec diagrammes Mermaid" (à envisager comme feature séparée si besoin récurrent)
+### 4. Étapes numérotées explicites
+
+Remplacer l'agencement actuel par une liste 1-2-3 :
+1. Installez une app d'authentification (liens fournis)
+2. Scannez le QR depuis l'app (ou collez le secret manuellement)
+3. Entrez le code à 6 chiffres généré
+
+### 5. Gestion d'erreur "code invalide"
+
+Si `verify` échoue, afficher un hint : "Vérifiez que l'heure de votre téléphone est synchronisée automatiquement (les codes TOTP dépendent de l'horloge)."
+
+## Hors périmètre
+
+- Aucune modification de `use2FA`, `Force2FAGuard`, ni des Edge Functions.
+- Aucune régénération de secret nécessaire pour les utilisateurs déjà enrôlés.
+- Pas de mise à jour de la mémoire projet (changement purement UX).
+
+## Livrable
+
+- `src/pages/account/Security.tsx` patché.
+- Note brève dans `docs/releases/v2.9.7-portal-admin-parity-audit.md` (ou nouveau patch note `v2.9.9-2fa-ux-clarity.md`).
