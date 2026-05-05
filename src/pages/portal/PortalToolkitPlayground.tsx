@@ -4,28 +4,46 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Filter, LayoutGrid, Columns3, Sparkles, Orbit, Film, Play } from "lucide-react";
+import { ArrowLeft, Filter, LayoutGrid, Columns3, Sparkles, Orbit, Film, Play, Map as MapIcon, Save } from "lucide-react";
 import { PlaygroundBoard, type BoardLayout } from "@/components/playground/PlaygroundBoard";
 import { PlaygroundFilters, type FiltersState } from "@/components/playground/PlaygroundFilters";
 import { PlaygroundDeck } from "@/components/playground/PlaygroundDeck";
 import { PresentationMode } from "@/components/playground/PresentationMode";
+import { PlateauBoard } from "@/components/playground/PlateauBoard";
+import { PlateauHand } from "@/components/playground/PlateauHand";
+import { PlateauCategoryBar } from "@/components/playground/PlateauCategoryBar";
+import { PlateauSessionDrawer } from "@/components/playground/PlateauSessionDrawer";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { usePlaygroundSessions, useAutoSave, type Placement, type SessionCategory } from "@/hooks/usePlaygroundSessions";
 import { getToolkitTheme } from "@/lib/toolkitTheme";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Card = Tables<"cards">;
+type Layout = BoardLayout | "plateau";
 
-const LAYOUTS: { id: BoardLayout; label: string; icon: any }[] = [
+const LAYOUTS: { id: Layout; label: string; icon: any }[] = [
   { id: "atelier", label: "Atelier", icon: LayoutGrid },
   { id: "kanban", label: "Phases", icon: Columns3 },
   { id: "constellation", label: "Constellation", icon: Orbit },
   { id: "carousel", label: "Scène", icon: Film },
+  { id: "plateau", label: "Plateau", icon: MapIcon },
 ];
 
 export default function PortalToolkitPlayground() {
   const { toolkitId } = useParams<{ toolkitId: string }>();
   const navigate = useNavigate();
-  const [layout, setLayout] = useState<BoardLayout>("atelier");
+  const [layout, setLayout] = useState<Layout>("atelier");
+  // Plateau state
+  const [plateauPlacements, setPlateauPlacements] = useState<Placement[]>([]);
+  const [cardScaleGlobal, setCardScaleGlobal] = useState(1);
+  const [plateauCategory, setPlateauCategory] = useState<SessionCategory>({ type: "all", value: null });
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [deckOpen, setDeckOpen] = useState(false);
   const [presenting, setPresenting] = useState<Card[] | null>(null);
@@ -95,6 +113,76 @@ export default function PortalToolkitPlayground() {
     });
     return { byPillar, byPhase };
   }, [cards]);
+
+  // ----- Plateau : filtrage par catégorie cliquable -----
+  const plateauCards = useMemo(() => {
+    if (plateauCategory.type === "all") return cards;
+    if (plateauCategory.type === "phase")
+      return cards.filter((c) => c.phase === plateauCategory.value);
+    if (plateauCategory.type === "pillar")
+      return cards.filter((c) => c.pillar_id === plateauCategory.value);
+    return cards;
+  }, [cards, plateauCategory]);
+
+  const placedIds = useMemo(
+    () => new Set(plateauPlacements.map((p) => p.card_id)),
+    [plateauPlacements]
+  );
+
+  // ----- Sessions plateau (historique) -----
+  const { sessions, create, update, remove } = usePlaygroundSessions(toolkitId);
+  useAutoSave(
+    activeSessionId,
+    {
+      placements: plateauPlacements,
+      card_scale_global: cardScaleGlobal,
+      category: plateauCategory,
+    },
+    update
+  );
+
+  const handleSave = async () => {
+    if (activeSessionId) {
+      const ok = await update(activeSessionId, {
+        placements: plateauPlacements as any,
+        card_scale_global: cardScaleGlobal,
+        category: plateauCategory as any,
+      });
+      if (ok) toast.success("Partie mise à jour");
+      return;
+    }
+    setSaveName(`Partie du ${new Date().toLocaleDateString("fr-FR")}`);
+    setSaveDialogOpen(true);
+  };
+
+  const confirmSave = async () => {
+    const s = await create({
+      name: saveName.trim() || "Partie sans nom",
+      placements: plateauPlacements,
+      card_scale_global: cardScaleGlobal,
+      category: plateauCategory,
+    });
+    if (s) {
+      setActiveSessionId(s.id);
+      toast.success("Partie sauvegardée");
+      setSaveDialogOpen(false);
+    }
+  };
+
+  const handleNewSession = () => {
+    setActiveSessionId(null);
+    setPlateauPlacements([]);
+    setPlateauCategory({ type: "all", value: null });
+    setCardScaleGlobal(1);
+  };
+
+  const handleLoadSession = (s: any) => {
+    setActiveSessionId(s.id);
+    setPlateauPlacements((s.placements as Placement[]) || []);
+    setCardScaleGlobal(Number(s.card_scale_global) || 1);
+    setPlateauCategory((s.category as SessionCategory) || { type: "all", value: null });
+    setLayout("plateau");
+  };
 
   if (tLoading) {
     return (
@@ -169,19 +257,50 @@ export default function PortalToolkitPlayground() {
                 );
               })}
             </div>
+            {layout === "plateau" && (
+              <>
+                <PlateauSessionDrawer
+                  sessions={sessions as any}
+                  onLoad={handleLoadSession}
+                  onDelete={(id) => {
+                    remove(id);
+                    if (id === activeSessionId) handleNewSession();
+                  }}
+                  onNew={handleNewSession}
+                  activeId={activeSessionId}
+                  accent={theme.accent}
+                />
+                <Button variant="outline" size="sm" onClick={handleSave}>
+                  <Save className="w-4 h-4 mr-1.5" />
+                  {activeSessionId ? "Mettre à jour" : "Sauver"}
+                </Button>
+              </>
+            )}
+            {layout !== "plateau" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFiltersOpen((v) => !v)}
+                className="lg:hidden"
+              >
+                <Filter className="w-4 h-4" />
+              </Button>
+            )}
             <Button
-              variant="outline"
               size="sm"
-              onClick={() => setFiltersOpen((v) => !v)}
-              className="lg:hidden"
-            >
-              <Filter className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => setPresenting(filtered)}
+              onClick={() => {
+                if (layout === "plateau" && plateauPlacements.length > 0) {
+                  const ordered = [...plateauPlacements]
+                    .sort((a, b) => a.z - b.z)
+                    .map((p) => cards.find((c) => c.id === p.card_id))
+                    .filter(Boolean) as Card[];
+                  setPresenting(ordered);
+                } else {
+                  setPresenting(filtered);
+                }
+              }}
               style={{ background: theme.accent }}
-              disabled={filtered.length === 0}
+              disabled={layout === "plateau" ? plateauPlacements.length === 0 : filtered.length === 0}
             >
               <Play className="w-4 h-4 mr-1" /> Présenter
             </Button>
@@ -190,34 +309,88 @@ export default function PortalToolkitPlayground() {
       </header>
 
       {/* Body */}
-      <div className="flex flex-1 min-h-0">
-        {filtersOpen && (
-          <PlaygroundFilters
+      {layout === "plateau" ? (
+        <div className="flex flex-col flex-1 min-h-0">
+          <PlateauCategoryBar
+            cards={cards}
             pillars={pillars}
-            filters={filters}
-            setFilters={setFilters}
-            onClose={() => setFiltersOpen(false)}
+            value={plateauCategory}
+            onChange={setPlateauCategory}
             accent={theme.accent}
-            counts={counts}
           />
-        )}
-        <main className="flex-1 overflow-y-auto relative" style={{ backgroundImage: theme.patternSvg, backgroundRepeat: "repeat" }}>
-          {cLoading ? (
-            <div className="p-8 grid grid-cols-3 gap-5">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-[392px] w-[280px]" />
-              ))}
+          <div className="flex items-center gap-3 px-6 py-2 border-b bg-card/40">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Taille des cartes
+            </span>
+            <div className="w-48">
+              <Slider
+                value={[cardScaleGlobal * 100]}
+                min={60}
+                max={140}
+                step={5}
+                onValueChange={(v) => setCardScaleGlobal(v[0] / 100)}
+              />
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-3">
-              <Sparkles className="w-10 h-10 opacity-40" />
-              <p>Aucune carte ne correspond aux filtres.</p>
+            <span className="text-xs font-mono text-muted-foreground">
+              {Math.round(cardScaleGlobal * 100)}%
+            </span>
+            <div className="ml-auto text-xs text-muted-foreground">
+              {plateauPlacements.length} carte{plateauPlacements.length > 1 ? "s" : ""} sur le plateau
+              {activeSessionId && (
+                <span className="ml-2 text-[10px] uppercase tracking-wider opacity-70">
+                  · auto-save activé
+                </span>
+              )}
             </div>
-          ) : (
-            <PlaygroundBoard layout={layout} cards={filtered} pillars={pillars} accent={theme.accent} />
+          </div>
+          <main className="flex-1 min-h-0 p-4 overflow-hidden" style={{ height: "65vh" }}>
+            <PlateauBoard
+              toolkit={toolkit}
+              theme={theme}
+              cards={cards}
+              pillars={pillars}
+              placements={plateauPlacements}
+              setPlacements={setPlateauPlacements}
+              cardScaleGlobal={cardScaleGlobal}
+            />
+          </main>
+          <PlateauHand
+            cards={plateauCards}
+            pillars={pillars}
+            placedIds={placedIds}
+            cardScaleGlobal={cardScaleGlobal}
+          />
+        </div>
+      ) : (
+        <div className="flex flex-1 min-h-0">
+          {filtersOpen && (
+            <PlaygroundFilters
+              pillars={pillars}
+              filters={filters}
+              setFilters={setFilters}
+              onClose={() => setFiltersOpen(false)}
+              accent={theme.accent}
+              counts={counts}
+            />
           )}
-        </main>
-      </div>
+          <main className="flex-1 overflow-y-auto relative" style={{ backgroundImage: theme.patternSvg, backgroundRepeat: "repeat" }}>
+            {cLoading ? (
+              <div className="p-8 grid grid-cols-3 gap-5">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-[392px] w-[280px]" />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-3">
+                <Sparkles className="w-10 h-10 opacity-40" />
+                <p>Aucune carte ne correspond aux filtres.</p>
+              </div>
+            ) : (
+              <PlaygroundBoard layout={layout as BoardLayout} cards={filtered} pillars={pillars} accent={theme.accent} />
+            )}
+          </main>
+        </div>
+      )}
 
       <PlaygroundDeck
         toolkitId={toolkit.id}
@@ -236,6 +409,28 @@ export default function PortalToolkitPlayground() {
           onClose={() => setPresenting(null)}
         />
       )}
+
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sauvegarder la partie</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            placeholder="Nom de la partie"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={confirmSave} style={{ background: theme.accent }}>
+              Sauver
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
