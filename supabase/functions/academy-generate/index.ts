@@ -1590,3 +1590,106 @@ async function generateAllToolkitCovers(supabase: any, params: any, apiKey: stri
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
+
+// ─── Card Illustration Generation ───────────────────────────────────
+
+const CARD_STYLE = `Premium editorial pictogram-style illustration for a corporate strategy card game. Centered abstract symbolic composition (no people, no faces, no text). Modern flat-vector with subtle isometric depth, soft cinematic lighting, layered shapes, harmonious 2-3 color palette built around the dominant brand color, gentle shadow, elegant negative space. Square 1:1 framing, balanced and minimal — feels like a premium trading card visual. Absolutely NO text, NO letters, NO words, NO numbers, NO logo, NO watermark.`;
+
+const CARD_PROMPTER_SYS = "You write rich, evocative prompts for premium SQUARE pictogram illustrations of corporate strategy cards. Symbolic, abstract, no people, no text. Output ONLY the prompt, 50-80 words.";
+
+async function buildCardPrompt(apiKey: string, card: any, pillar: any, toolkit: any): Promise<string> {
+  const accent = pillar?.color || "deep indigo";
+  const promptResult = await callAI(
+    apiKey,
+    CARD_PROMPTER_SYS,
+    `Write a square pictogram prompt for a corporate strategy card. Toolkit: "${toolkit?.name}". Pillar: "${pillar?.name}" (accent color ${accent}). Card title: "${card.title}". Subtitle: "${card.subtitle || ""}". Action: "${(card.action || "").slice(0, 200)}". KPI: "${(card.kpi || "").slice(0, 120)}". Pick a strong central symbolic metaphor evoking the title. Style baseline (extend with a topic-specific symbol): ${CARD_STYLE}`,
+    undefined,
+    undefined,
+    "google/gemini-2.5-flash"
+  );
+  return typeof promptResult === "string" ? promptResult.trim() : `Symbolic pictogram for ${card.title}. ${CARD_STYLE}`;
+}
+
+async function renderCardIllustration(supabase: any, apiKey: string, card: any, pillar: any, toolkit: any): Promise<{ ok: boolean; url?: string; status?: number }> {
+  await supabase.from("cards").update({ image_status: "generating" }).eq("id", card.id);
+  try {
+    const prompt = await buildCardPrompt(apiKey, card, pillar, toolkit);
+    const img = await renderImage(apiKey, prompt);
+    if (!img.ok) {
+      await supabase.from("cards").update({ image_status: "failed" }).eq("id", card.id);
+      return { ok: false, status: img.status };
+    }
+    const fileName = `card-illustrations/${toolkit.id}/${card.id}.png`;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const { error: uploadErr } = await supabase.storage
+      .from("academy-assets")
+      .upload(fileName, img.bytes!, { contentType: "image/png", upsert: true });
+    if (uploadErr) {
+      await supabase.from("cards").update({ image_status: "failed" }).eq("id", card.id);
+      return { ok: false };
+    }
+    const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}`;
+    await supabase.from("cards").update({
+      image_url: publicUrl,
+      image_prompt: prompt,
+      image_status: "ready",
+    }).eq("id", card.id);
+    return { ok: true, url: publicUrl };
+  } catch (e) {
+    console.warn("card illustration failed", card.id, e instanceof Error ? e.message : e);
+    await supabase.from("cards").update({ image_status: "failed" }).eq("id", card.id);
+    return { ok: false };
+  }
+}
+
+async function generateCardIllustration(supabase: any, params: any, apiKey: string, cors: any) {
+  const { card_id } = params;
+  if (!card_id) throw new Error("Missing card_id");
+  const { data: card } = await supabase.from("cards").select("*, pillars!inner(*, toolkit_id, toolkits!inner(*))").eq("id", card_id).single();
+  if (!card) throw new Error("Card not found");
+  const pillar = card.pillars;
+  const toolkit = pillar.toolkits;
+  const result = await renderCardIllustration(supabase, apiKey, card, pillar, toolkit);
+  return new Response(JSON.stringify({ success: result.ok, image_url: result.url }), {
+    status: 200, headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+async function generateAllCardIllustrations(supabase: any, params: any, apiKey: string, cors: any) {
+  const { toolkit_id, force } = params;
+  if (!toolkit_id) throw new Error("Missing toolkit_id");
+
+  const { data: toolkit } = await supabase.from("toolkits").select("*").eq("id", toolkit_id).single();
+  if (!toolkit) throw new Error("Toolkit not found");
+
+  const { data: pillars } = await supabase.from("pillars").select("*").eq("toolkit_id", toolkit_id);
+  const pillarIds = (pillars || []).map((p: any) => p.id);
+  if (pillarIds.length === 0) {
+    return new Response(JSON.stringify({ success: true, queued: 0 }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+  const pillarMap = new Map((pillars || []).map((p: any) => [p.id, p]));
+
+  let q = supabase.from("cards").select("*").in("pillar_id", pillarIds);
+  if (!force) q = q.or("image_url.is.null,image_status.eq.failed");
+  const { data: cards } = await q;
+  const list = cards || [];
+
+  const work = (async () => {
+    const CONCURRENCY = 2;
+    for (let i = 0; i < list.length; i += CONCURRENCY) {
+      const batch = list.slice(i, i + CONCURRENCY);
+      await Promise.allSettled(batch.map((c: any) => renderCardIllustration(supabase, apiKey, c, pillarMap.get(c.pillar_id), toolkit)));
+    }
+    console.log(JSON.stringify({ action: "generate-all-card-illustrations", toolkit_id, total: list.length, status: "background-done" }));
+  })();
+
+  // @ts-ignore
+  if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(work);
+  }
+
+  return new Response(JSON.stringify({ success: true, queued: list.length, async: true }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
