@@ -4,22 +4,33 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Filter, LayoutGrid, Columns3, Sparkles, Orbit, Film, Play } from "lucide-react";
+import { ArrowLeft, Filter, LayoutGrid, Columns3, Sparkles, Orbit, Film, Play, Map as MapIcon, Save } from "lucide-react";
 import { PlaygroundBoard, type BoardLayout } from "@/components/playground/PlaygroundBoard";
 import { PlaygroundFilters, type FiltersState } from "@/components/playground/PlaygroundFilters";
 import { PlaygroundDeck } from "@/components/playground/PlaygroundDeck";
 import { PresentationMode } from "@/components/playground/PresentationMode";
+import { PlateauBoard } from "@/components/playground/PlateauBoard";
+import { PlateauHand } from "@/components/playground/PlateauHand";
+import { PlateauCategoryBar } from "@/components/playground/PlateauCategoryBar";
+import { PlateauSessionDrawer } from "@/components/playground/PlateauSessionDrawer";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { usePlaygroundSessions, useAutoSave, type Placement, type SessionCategory } from "@/hooks/usePlaygroundSessions";
 import { getToolkitTheme } from "@/lib/toolkitTheme";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Card = Tables<"cards">;
+type Layout = BoardLayout | "plateau";
 
-const LAYOUTS: { id: BoardLayout; label: string; icon: any }[] = [
+const LAYOUTS: { id: Layout; label: string; icon: any }[] = [
   { id: "atelier", label: "Atelier", icon: LayoutGrid },
   { id: "kanban", label: "Phases", icon: Columns3 },
   { id: "constellation", label: "Constellation", icon: Orbit },
   { id: "carousel", label: "Scène", icon: Film },
+  { id: "plateau", label: "Plateau", icon: MapIcon },
 ];
 
 export default function PortalToolkitPlayground() {
