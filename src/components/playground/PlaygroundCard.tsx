@@ -64,9 +64,12 @@ export function PlaygroundCard({
       transition={{ duration: 0.25, delay: Math.min(index * 0.02, 0.3) }}
       whileHover={{ y: -4 }}
       className={cn("relative [perspective:1200px]", sizeCls, className)}
-      draggable={draggable}
-      onDragStart={onDragStart}
     >
+      <div
+        draggable={draggable}
+        onDragStart={onDragStart as any}
+        className="w-full h-full"
+      >
       <div
         className={cn(
           "relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d]",
