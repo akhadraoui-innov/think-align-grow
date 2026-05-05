@@ -52,6 +52,7 @@ function AccountSecurityInner() {
   async function handleVerify() {
     if (!enrollment || code.length !== 6) return;
     setWorking(true);
+    setVerifyError(null);
     try {
       await verify(enrollment.factorId, code);
       toast.success("Authentification à deux facteurs activée.");
