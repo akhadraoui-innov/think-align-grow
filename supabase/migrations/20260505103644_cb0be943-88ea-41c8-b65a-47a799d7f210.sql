@@ -1,0 +1,4 @@
+ALTER TABLE public.cards
+  ADD COLUMN IF NOT EXISTS image_url TEXT,
+  ADD COLUMN IF NOT EXISTS image_prompt TEXT,
+  ADD COLUMN IF NOT EXISTS image_status TEXT NOT NULL DEFAULT 'pending';

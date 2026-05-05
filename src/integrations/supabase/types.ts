@@ -1442,6 +1442,9 @@ export type Database = {
           duration_minutes: number | null
           icon_name: string | null
           id: string
+          image_prompt: string | null
+          image_status: string
+          image_url: string | null
           kpi: string | null
           objective: string | null
           phase: Database["public"]["Enums"]["card_phase"]
@@ -1463,6 +1466,9 @@ export type Database = {
           duration_minutes?: number | null
           icon_name?: string | null
           id?: string
+          image_prompt?: string | null
+          image_status?: string
+          image_url?: string | null
           kpi?: string | null
           objective?: string | null
           phase?: Database["public"]["Enums"]["card_phase"]
@@ -1484,6 +1490,9 @@ export type Database = {
           duration_minutes?: number | null
           icon_name?: string | null
           id?: string
+          image_prompt?: string | null
+          image_status?: string
+          image_url?: string | null
           kpi?: string | null
           objective?: string | null
           phase?: Database["public"]["Enums"]["card_phase"]
