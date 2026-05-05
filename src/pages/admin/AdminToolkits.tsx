@@ -86,13 +86,35 @@ export default function AdminToolkits() {
     generate_quiz: true,
   });
 
+  const triggerCover = useCallback(async (toolkit_id: string) => {
+    try {
+      await supabase.functions.invoke("academy-generate", { body: { action: "generate-toolkit-cover", toolkit_id } });
+      queryClient.invalidateQueries({ queryKey: ["admin-toolkits"] });
+    } catch (e) { console.warn("Cover generation failed", e); }
+  }, [queryClient]);
+
+  const [batchLoading, setBatchLoading] = useState(false);
+  const handleBatchCovers = async () => {
+    setBatchLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-all-toolkit-covers" } });
+      if (error) throw error;
+      toast({ title: "Couvertures générées", description: `${data?.ok || 0} / ${data?.total || 0} réussies` });
+      queryClient.invalidateQueries({ queryKey: ["admin-toolkits"] });
+    } catch (e: any) {
+      toast({ title: "Erreur batch couvertures", description: e.message, variant: "destructive" });
+    } finally { setBatchLoading(false); }
+  };
+
   const handleCreate = async () => {
     if (!form.name || !form.slug) return;
     try {
-      await create.mutateAsync(form);
-      toast({ title: "Toolkit créé" });
+      const created: any = await create.mutateAsync(form);
+      const newId = created?.id || created?.data?.id;
+      toast({ title: "Toolkit créé", description: "Génération de la couverture en cours…" });
       setOpen(false);
       setForm({ name: "", slug: "", description: "", icon_emoji: "🚀", status: "draft" });
+      if (newId) triggerCover(newId);
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }
@@ -221,6 +243,7 @@ export default function AdminToolkits() {
               totalQuiz: data.quiz,
             }));
             queryClient.invalidateQueries({ queryKey: ["admin-toolkits"] });
+            if (data.toolkit_id) triggerCover(data.toolkit_id);
           } else if (data.type === "error") {
             throw new Error(data.message);
           }
@@ -528,8 +551,18 @@ export default function AdminToolkits() {
       sortable: true,
       render: (row: any) => (
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg flex items-center justify-center text-lg bg-muted shrink-0">
-            {row.icon_emoji || "🚀"}
+          <div className="h-10 w-14 rounded-lg overflow-hidden flex items-center justify-center text-lg bg-muted shrink-0 relative">
+            {row.cover_image_url ? (
+              <img
+                src={`${row.cover_image_url}?v=${new Date(row.updated_at || row.created_at).getTime()}`}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <span>{row.icon_emoji || "🚀"}</span>
+            )}
           </div>
           <div>
             <p className="font-medium text-foreground">{row.name}</p>
@@ -569,12 +602,26 @@ export default function AdminToolkits() {
     },
   ];
 
+  const missingCovers = toolkits.filter((t: any) => !t.cover_image_url).length;
+
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Toolkits</h1>
-          <p className="text-sm text-muted-foreground mt-1">Gérer les toolkits et leur contenu</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-display font-bold text-foreground">Toolkits</h1>
+            <p className="text-sm text-muted-foreground mt-1">Gérer les toolkits et leur contenu</p>
+          </div>
+          {missingCovers > 0 && (
+            <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2">
+              <Wand2 className="h-4 w-4 text-primary" />
+              <span className="text-sm text-foreground">{missingCovers} toolkit{missingCovers > 1 ? "s" : ""} sans couverture</span>
+              <Button size="sm" variant="default" className="gap-2" onClick={handleBatchCovers} disabled={batchLoading}>
+                {batchLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                Générer toutes
+              </Button>
+            </div>
+          )}
         </div>
 
         {isLoading ? (

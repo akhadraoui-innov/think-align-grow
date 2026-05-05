@@ -53,6 +53,10 @@ serve(async (req) => {
       return await generateCover(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-all-covers") {
       return await generateAllCovers(supabase, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-toolkit-cover") {
+      return await generateToolkitCover(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-all-toolkit-covers") {
+      return await generateAllToolkitCovers(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
@@ -1444,6 +1448,137 @@ async function generateAllCovers(supabase: any, apiKey: string, cors: any) {
   }
 
   return new Response(JSON.stringify({ success: true, total: paths?.length || 0, results }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+// ─── Toolkit Cover Generation ───────────────────────────────────────
+
+const TOOLKIT_STYLE = `Premium editorial illustration of a strategic ideation workshop in action. Top-down or 3/4 view of a collaborative table covered with physical ideation cards, sticky notes, sketchnotes, and a structured framework canvas, with the diverse hands of professionals collaborating around it. Symbolic objects, charts and props specific to the toolkit topic are visible on the cards and the canvas. Modern flat-vector mixed with light isometric 3D, Behance/Dribbble grade quality, cinematic soft lighting, layered composition with depth, harmonious palette of 2-4 colors with one strong topic-driven accent. Wide 16:9. Absolutely NO text, NO letters, NO words, NO logo, NO watermark.`;
+
+const TOOLKIT_PROMPTER_SYS = "You write rich, evocative image prompts for premium business toolkit cover illustrations depicting collective intelligence workshops with physical ideation cards, sticky notes and frameworks. Top-tier editorial quality (Behance/Dribbble). Always specify NO text/letters/words. Output ONLY the prompt, 60-90 words.";
+
+async function buildToolkitPrompt(apiKey: string, toolkit: any): Promise<string> {
+  const tags = Array.isArray(toolkit.tags) ? toolkit.tags.slice(0, 3).join(", ") : "";
+  const promptResult = await callAI(
+    apiKey,
+    TOOLKIT_PROMPTER_SYS,
+    `Write a detailed image prompt for a PREMIUM strategic toolkit cover about: "${toolkit.name}". Description: ${(toolkit.description || "").slice(0, 350)}. Audience: ${toolkit.target_audience || "professionals"}. Tags: ${tags}. The scene MUST clearly depict a collective intelligence workshop with physical ideation cards, sticky notes, sketchnotes and a framework canvas, with hands collaborating. Required base style (extend with topic-specific objects): ${TOOLKIT_STYLE}`,
+    undefined,
+    undefined,
+    "google/gemini-2.5-flash"
+  );
+  return typeof promptResult === "string" ? promptResult.trim() : `Collective intelligence workshop about ${toolkit.name}`;
+}
+
+async function renderImage(apiKey: string, prompt: string): Promise<{ ok: boolean; bytes?: Uint8Array; status?: number }> {
+  let imgResp: Response | null = null;
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-3.1-flash-image-preview",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+    lastStatus = imgResp.status;
+    if (imgResp.ok) break;
+    if (imgResp.status !== 429 && imgResp.status < 500) break;
+    await imgResp.text().catch(() => {});
+    await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+  }
+  if (!imgResp || !imgResp.ok) return { ok: false, status: lastStatus };
+  const data = await imgResp.json();
+  const base64Url = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+  if (!base64Url) return { ok: false, status: lastStatus };
+  const base64Data = base64Url.replace(/^data:image\/\w+;base64,/, "");
+  const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+  return { ok: true, bytes };
+}
+
+async function generateToolkitCover(supabase: any, params: any, apiKey: string, cors: any) {
+  const { toolkit_id } = params;
+  if (!toolkit_id) throw new Error("Missing toolkit_id");
+
+  const { data: toolkit, error } = await supabase
+    .from("toolkits")
+    .select("id, name, description, target_audience, nomenclature, tags")
+    .eq("id", toolkit_id)
+    .single();
+  if (error || !toolkit) throw new Error("Toolkit not found");
+
+  const prompt = await buildToolkitPrompt(apiKey, toolkit);
+  const img = await renderImage(apiKey, prompt);
+
+  if (!img.ok) {
+    const code = img.status === 429 ? "RATE_LIMITED" : img.status === 402 ? "PAYMENT_REQUIRED" : `HTTP_${img.status}`;
+    return new Response(JSON.stringify({
+      success: false, fallback: true, error_code: code,
+      message: img.status === 429
+        ? "Génération d'image temporairement saturée. Réessaie dans quelques minutes."
+        : img.status === 402
+        ? "Crédits IA épuisés."
+        : `Image generation failed (${img.status})`,
+    }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+  }
+
+  const fileName = `toolkit-covers/${toolkit_id}.png`;
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const { error: uploadErr } = await supabase.storage
+    .from("academy-assets")
+    .upload(fileName, img.bytes!, { contentType: "image/png", upsert: true });
+  if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`);
+
+  const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}`;
+  await supabase.from("toolkits").update({ cover_image_url: publicUrl, updated_at: new Date().toISOString() }).eq("id", toolkit_id);
+
+  console.log(JSON.stringify({ action: "generate-toolkit-cover", toolkit_id, status: "ok" }));
+  return new Response(JSON.stringify({ success: true, cover_url: publicUrl }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+async function generateAllToolkitCovers(supabase: any, params: any, apiKey: string, cors: any) {
+  const force = !!params?.force;
+  let q = supabase.from("toolkits").select("id, name, description, target_audience, nomenclature, tags, cover_image_url");
+  if (!force) q = q.is("cover_image_url", null);
+  const { data: toolkits, error } = await q;
+  if (error) throw error;
+
+  const list = toolkits || [];
+  const results: { toolkit_id: string; name: string; success: boolean; error?: string }[] = [];
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const CONCURRENCY = 3;
+
+  async function process(t: any) {
+    try {
+      const prompt = await buildToolkitPrompt(apiKey, t);
+      const img = await renderImage(apiKey, prompt);
+      if (!img.ok) { results.push({ toolkit_id: t.id, name: t.name, success: false, error: `HTTP_${img.status}` }); return; }
+      const fileName = `toolkit-covers/${t.id}.png`;
+      const { error: uploadErr } = await supabase.storage
+        .from("academy-assets")
+        .upload(fileName, img.bytes!, { contentType: "image/png", upsert: true });
+      if (uploadErr) { results.push({ toolkit_id: t.id, name: t.name, success: false, error: uploadErr.message }); return; }
+      const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}`;
+      await supabase.from("toolkits").update({ cover_image_url: publicUrl, updated_at: new Date().toISOString() }).eq("id", t.id);
+      results.push({ toolkit_id: t.id, name: t.name, success: true });
+    } catch (e) {
+      results.push({ toolkit_id: t.id, name: t.name, success: false, error: e instanceof Error ? e.message : "Unknown" });
+    }
+  }
+
+  for (let i = 0; i < list.length; i += CONCURRENCY) {
+    const batch = list.slice(i, i + CONCURRENCY);
+    await Promise.allSettled(batch.map(process));
+    if (i + CONCURRENCY < list.length) await new Promise((r) => setTimeout(r, 250));
+  }
+
+  const ok = results.filter((r) => r.success).length;
+  console.log(JSON.stringify({ action: "generate-all-toolkit-covers", total: list.length, ok }));
+  return new Response(JSON.stringify({ success: true, total: list.length, ok, ko: list.length - ok, results }), {
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
