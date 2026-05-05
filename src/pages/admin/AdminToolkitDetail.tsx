@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminToolkitDetail } from "@/hooks/useAdminToolkits";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Settings, Layers, LayoutGrid, Swords, Map, HelpCircle, Building2 } from "lucide-react";
+import { ArrowLeft, Loader2, Settings, Layers, LayoutGrid, Swords, Map, HelpCircle, Building2, Sparkles, Image as ImageIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { ToolkitInfoTab } from "@/components/admin/ToolkitInfoTab";
 import { ToolkitPillarsTab } from "@/components/admin/ToolkitPillarsTab";
 import { ToolkitCardsTab } from "@/components/admin/ToolkitCardsTab";
@@ -26,6 +29,28 @@ export default function AdminToolkitDetail() {
   const navigate = useNavigate();
   const detail = useAdminToolkitDetail(id);
   const { toolkit, pillars, cards, challengeTemplates, gamePlans, quizQuestions, orgToolkits, isLoading, invalidateAll } = detail;
+  const [genLoading, setGenLoading] = useState(false);
+
+  const cardsWithoutImage = cards.filter((c: any) => !c.image_url).length;
+
+  const handleGenerateAllIllustrations = async (force: boolean) => {
+    if (!toolkit) return;
+    setGenLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-all-card-illustrations", toolkit_id: toolkit.id, force },
+      });
+      if (error) throw error;
+      toast.success(`${data?.queued || 0} illustration(s) en cours`, {
+        description: "Génération en arrière-plan. Rafraîchissez dans 1-2 minutes.",
+      });
+      setTimeout(() => invalidateAll(), 30_000);
+    } catch (e: any) {
+      toast.error("Échec du lancement", { description: e?.message });
+    } finally {
+      setGenLoading(false);
+    }
+  };
 
   if (isLoading) {
     return <AdminShell><div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div></AdminShell>;
@@ -65,6 +90,31 @@ export default function AdminToolkitDetail() {
         </div>
 
         <ToolkitCompletionBanner toolkit={toolkit} pillars={pillars} cards={cards} quizQuestions={quizQuestions} onUpdate={invalidateAll} />
+
+        {/* Card illustrations banner */}
+        <div className="rounded-xl border bg-card p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <ImageIcon className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Illustrations des cartes</p>
+              <p className="text-xs text-muted-foreground">
+                {cards.length - cardsWithoutImage} / {cards.length} cartes illustrées
+                {cardsWithoutImage > 0 && ` · ${cardsWithoutImage} sans illustration`}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <Button size="sm" variant="outline" onClick={() => handleGenerateAllIllustrations(false)} disabled={genLoading || cardsWithoutImage === 0}>
+              {genLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+              Générer manquantes
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => handleGenerateAllIllustrations(true)} disabled={genLoading || cards.length === 0}>
+              Tout régénérer
+            </Button>
+          </div>
+        </div>
 
         <Tabs defaultValue="info" className="space-y-4">
           <TabsList className="bg-muted/50 flex-wrap h-auto gap-1 p-1">
