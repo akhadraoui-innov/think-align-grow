@@ -29,6 +29,28 @@ export default function AdminToolkitDetail() {
   const navigate = useNavigate();
   const detail = useAdminToolkitDetail(id);
   const { toolkit, pillars, cards, challengeTemplates, gamePlans, quizQuestions, orgToolkits, isLoading, invalidateAll } = detail;
+  const [genLoading, setGenLoading] = useState(false);
+
+  const cardsWithoutImage = cards.filter((c: any) => !c.image_url).length;
+
+  const handleGenerateAllIllustrations = async (force: boolean) => {
+    if (!toolkit) return;
+    setGenLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-all-card-illustrations", toolkit_id: toolkit.id, force },
+      });
+      if (error) throw error;
+      toast.success(`${data?.queued || 0} illustration(s) en cours`, {
+        description: "Génération en arrière-plan. Rafraîchissez dans 1-2 minutes.",
+      });
+      setTimeout(() => invalidateAll(), 30_000);
+    } catch (e: any) {
+      toast.error("Échec du lancement", { description: e?.message });
+    } finally {
+      setGenLoading(false);
+    }
+  };
 
   if (isLoading) {
     return <AdminShell><div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div></AdminShell>;
