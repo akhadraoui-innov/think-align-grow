@@ -97,10 +97,23 @@ export default function AcademyPath() {
         <Button variant="ghost" size="sm" onClick={() => navigate("/academy")}><ArrowLeft className="h-4 w-4 mr-2" /> Retour à l'Academy</Button>
 
         {/* HERO */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border">
-          <div className="p-8 space-y-5">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+          {(path as any).cover_image_url && (
+            <>
+              <img
+                src={`${(path as any).cover_image_url}?v=${new Date((path as any).updated_at || (path as any).created_at || Date.now()).getTime()}`}
+                alt={path.name}
+                loading="eager"
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/50" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/60 to-background/30" />
+            </>
+          )}
+          <div className="relative p-8 space-y-5">
             <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20 shrink-0"><GraduationCap className="h-7 w-7 text-primary" /></div>
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20 shrink-0 backdrop-blur"><GraduationCap className="h-7 w-7 text-primary" /></div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <h1 className="text-2xl md:text-3xl font-display font-bold tracking-tight">{path.name}</h1>
