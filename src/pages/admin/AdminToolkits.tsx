@@ -10,7 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Loader2, Sparkles, FileText, Eye, Package, Wand2, Users, Settings2, Brain, Check, Clock, CircleDot, PartyPopper, ArrowRight, RotateCcw } from "lucide-react";
+import { Plus, Loader2, Sparkles, FileText, Eye, Package, Wand2, Users, Settings2, Brain, Check, Clock, CircleDot, PartyPopper, ArrowRight, RotateCcw, LayoutGrid, List, Pencil, Trash2, Image as ImageIcon, Layers, CreditCard, Search } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
