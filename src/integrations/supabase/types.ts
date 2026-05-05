@@ -3846,6 +3846,7 @@ export type Database = {
         Row: {
           benefits: string | null
           content_description: string | null
+          cover_image_url: string | null
           created_at: string
           credit_cost_challenge: number
           credit_cost_workshop: number
@@ -3869,6 +3870,7 @@ export type Database = {
         Insert: {
           benefits?: string | null
           content_description?: string | null
+          cover_image_url?: string | null
           created_at?: string
           credit_cost_challenge?: number
           credit_cost_workshop?: number
@@ -3892,6 +3894,7 @@ export type Database = {
         Update: {
           benefits?: string | null
           content_description?: string | null
+          cover_image_url?: string | null
           created_at?: string
           credit_cost_challenge?: number
           credit_cost_workshop?: number
@@ -5537,6 +5540,13 @@ export type Database = {
       }
       get_or_create_email_hmac_secret: { Args: never; Returns: string }
       get_org_effective_features: { Args: { _org_id: string }; Returns: Json }
+      get_pillar_counts_per_toolkit: {
+        Args: never
+        Returns: {
+          count: number
+          toolkit_id: string
+        }[]
+      }
       get_priority_lane_metrics: {
         Args: never
         Returns: {
