@@ -306,29 +306,37 @@ export default function PortalToolkits() {
         {/* Right sidebar — always visible */}
         <aside className="w-[340px] border-l border-border/50 bg-card/50 shrink-0 overflow-hidden">
           <ScrollArea className="h-full">
-            <div className="p-6 space-y-6">
-              {/* Header */}
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center text-3xl">
-                    {selectedToolkit.icon_emoji || "🚀"}
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-foreground">{selectedToolkit.name}</p>
-                    <p className="text-xs text-muted-foreground">v{selectedToolkit.version}</p>
-                  </div>
+            {/* Hero with cover */}
+            <div className="relative h-44 w-full overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5">
+              {selectedToolkit.cover_image_url ? (
+                <img
+                  src={`${selectedToolkit.cover_image_url}?v=${new Date(selectedToolkit.updated_at || selectedToolkit.created_at).getTime()}`}
+                  alt={selectedToolkit.name}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-60">
+                  {selectedToolkit.icon_emoji || "🚀"}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  onClick={() => setSelectedToolkitId(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-3 right-3 h-8 w-8 bg-black/40 hover:bg-black/60 text-white backdrop-blur"
+                onClick={() => setSelectedToolkitId(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <div className="absolute bottom-3 left-4 right-4">
+                <p className="text-lg font-bold text-foreground drop-shadow line-clamp-2">{selectedToolkit.name}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">v{selectedToolkit.version}</p>
               </div>
+            </div>
 
-              <Separator />
+            <div className="p-6 space-y-6">
 
               {/* Description */}
               <div className="space-y-2">
