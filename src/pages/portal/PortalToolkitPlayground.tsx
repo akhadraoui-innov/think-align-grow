@@ -409,6 +409,28 @@ export default function PortalToolkitPlayground() {
           onClose={() => setPresenting(null)}
         />
       )}
+
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sauvegarder la partie</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            placeholder="Nom de la partie"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={confirmSave} style={{ background: theme.accent }}>
+              Sauver
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
