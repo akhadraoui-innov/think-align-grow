@@ -551,8 +551,18 @@ export default function AdminToolkits() {
       sortable: true,
       render: (row: any) => (
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg flex items-center justify-center text-lg bg-muted shrink-0">
-            {row.icon_emoji || "🚀"}
+          <div className="h-10 w-14 rounded-lg overflow-hidden flex items-center justify-center text-lg bg-muted shrink-0 relative">
+            {row.cover_image_url ? (
+              <img
+                src={`${row.cover_image_url}?v=${new Date(row.updated_at || row.created_at).getTime()}`}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <span>{row.icon_emoji || "🚀"}</span>
+            )}
           </div>
           <div>
             <p className="font-medium text-foreground">{row.name}</p>
