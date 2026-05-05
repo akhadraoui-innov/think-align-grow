@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminToolkitDetail } from "@/hooks/useAdminToolkits";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Settings, Layers, LayoutGrid, Swords, Map, HelpCircle, Building2, Sparkles, Image as ImageIcon } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { ArrowLeft, Loader2, Settings, Layers, LayoutGrid, Swords, Map, HelpCircle, Building2, Sparkles, Image as ImageIcon, Square, Gamepad2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ToolkitInfoTab } from "@/components/admin/ToolkitInfoTab";
@@ -17,6 +18,7 @@ import { ToolkitQuizTab } from "@/components/admin/ToolkitQuizTab";
 import { ToolkitOrgsTab } from "@/components/admin/ToolkitOrgsTab";
 import { ToolkitCompletionBanner } from "@/components/admin/ToolkitCompletionBanner";
 import { ToolkitAIChatDialog } from "@/components/admin/ToolkitAIChatDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
   draft: { label: "Brouillon", className: "bg-muted text-muted-foreground border-border" },
