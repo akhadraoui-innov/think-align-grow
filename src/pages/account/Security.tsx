@@ -22,6 +22,7 @@ function AccountSecurityInner() {
   const [code, setCode] = useState("");
   const [working, setWorking] = useState(false);
   const [requires2fa, setRequires2fa] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
