@@ -36,7 +36,14 @@ const LAYOUTS: { id: Layout; label: string; icon: any }[] = [
 export default function PortalToolkitPlayground() {
   const { toolkitId } = useParams<{ toolkitId: string }>();
   const navigate = useNavigate();
-  const [layout, setLayout] = useState<BoardLayout>("atelier");
+  const [layout, setLayout] = useState<Layout>("atelier");
+  // Plateau state
+  const [plateauPlacements, setPlateauPlacements] = useState<Placement[]>([]);
+  const [cardScaleGlobal, setCardScaleGlobal] = useState(1);
+  const [plateauCategory, setPlateauCategory] = useState<SessionCategory>({ type: "all", value: null });
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [deckOpen, setDeckOpen] = useState(false);
   const [presenting, setPresenting] = useState<Card[] | null>(null);
