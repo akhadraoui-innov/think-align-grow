@@ -57,6 +57,10 @@ serve(async (req) => {
       return await generateToolkitCover(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-all-toolkit-covers") {
       return await generateAllToolkitCovers(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-card-illustration") {
+      return await generateCardIllustration(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-all-card-illustrations") {
+      return await generateAllCardIllustrations(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
