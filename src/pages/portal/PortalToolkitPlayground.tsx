@@ -114,6 +114,76 @@ export default function PortalToolkitPlayground() {
     return { byPillar, byPhase };
   }, [cards]);
 
+  // ----- Plateau : filtrage par catégorie cliquable -----
+  const plateauCards = useMemo(() => {
+    if (plateauCategory.type === "all") return cards;
+    if (plateauCategory.type === "phase")
+      return cards.filter((c) => c.phase === plateauCategory.value);
+    if (plateauCategory.type === "pillar")
+      return cards.filter((c) => c.pillar_id === plateauCategory.value);
+    return cards;
+  }, [cards, plateauCategory]);
+
+  const placedIds = useMemo(
+    () => new Set(plateauPlacements.map((p) => p.card_id)),
+    [plateauPlacements]
+  );
+
+  // ----- Sessions plateau (historique) -----
+  const { sessions, create, update, remove } = usePlaygroundSessions(toolkitId);
+  useAutoSave(
+    activeSessionId,
+    {
+      placements: plateauPlacements,
+      card_scale_global: cardScaleGlobal,
+      category: plateauCategory,
+    },
+    update
+  );
+
+  const handleSave = async () => {
+    if (activeSessionId) {
+      const ok = await update(activeSessionId, {
+        placements: plateauPlacements as any,
+        card_scale_global: cardScaleGlobal,
+        category: plateauCategory as any,
+      });
+      if (ok) toast.success("Partie mise à jour");
+      return;
+    }
+    setSaveName(`Partie du ${new Date().toLocaleDateString("fr-FR")}`);
+    setSaveDialogOpen(true);
+  };
+
+  const confirmSave = async () => {
+    const s = await create({
+      name: saveName.trim() || "Partie sans nom",
+      placements: plateauPlacements,
+      card_scale_global: cardScaleGlobal,
+      category: plateauCategory,
+    });
+    if (s) {
+      setActiveSessionId(s.id);
+      toast.success("Partie sauvegardée");
+      setSaveDialogOpen(false);
+    }
+  };
+
+  const handleNewSession = () => {
+    setActiveSessionId(null);
+    setPlateauPlacements([]);
+    setPlateauCategory({ type: "all", value: null });
+    setCardScaleGlobal(1);
+  };
+
+  const handleLoadSession = (s: any) => {
+    setActiveSessionId(s.id);
+    setPlateauPlacements((s.placements as Placement[]) || []);
+    setCardScaleGlobal(Number(s.card_scale_global) || 1);
+    setPlateauCategory((s.category as SessionCategory) || { type: "all", value: null });
+    setLayout("plateau");
+  };
+
   if (tLoading) {
     return (
       <div className="p-8 space-y-4">
