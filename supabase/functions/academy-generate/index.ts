@@ -53,6 +53,10 @@ serve(async (req) => {
       return await generateCover(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-all-covers") {
       return await generateAllCovers(supabase, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-toolkit-cover") {
+      return await generateToolkitCover(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "generate-all-toolkit-covers") {
+      return await generateAllToolkitCovers(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
