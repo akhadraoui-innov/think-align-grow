@@ -86,13 +86,35 @@ export default function AdminToolkits() {
     generate_quiz: true,
   });
 
+  const triggerCover = useCallback(async (toolkit_id: string) => {
+    try {
+      await supabase.functions.invoke("academy-generate", { body: { action: "generate-toolkit-cover", toolkit_id } });
+      queryClient.invalidateQueries({ queryKey: ["admin-toolkits"] });
+    } catch (e) { console.warn("Cover generation failed", e); }
+  }, [queryClient]);
+
+  const [batchLoading, setBatchLoading] = useState(false);
+  const handleBatchCovers = async () => {
+    setBatchLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("academy-generate", { body: { action: "generate-all-toolkit-covers" } });
+      if (error) throw error;
+      toast({ title: "Couvertures générées", description: `${data?.ok || 0} / ${data?.total || 0} réussies` });
+      queryClient.invalidateQueries({ queryKey: ["admin-toolkits"] });
+    } catch (e: any) {
+      toast({ title: "Erreur batch couvertures", description: e.message, variant: "destructive" });
+    } finally { setBatchLoading(false); }
+  };
+
   const handleCreate = async () => {
     if (!form.name || !form.slug) return;
     try {
-      await create.mutateAsync(form);
-      toast({ title: "Toolkit créé" });
+      const created: any = await create.mutateAsync(form);
+      const newId = created?.id || created?.data?.id;
+      toast({ title: "Toolkit créé", description: "Génération de la couverture en cours…" });
       setOpen(false);
       setForm({ name: "", slug: "", description: "", icon_emoji: "🚀", status: "draft" });
+      if (newId) triggerCover(newId);
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }
