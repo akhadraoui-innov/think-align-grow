@@ -544,6 +544,17 @@ export default function PortalToolkits() {
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+                    {/* Playground CTA top-left */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/portal/workshops/toolkits/${toolkit.id}/playground`);
+                      }}
+                      className="absolute top-3 left-3 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-md bg-white text-foreground shadow-lg hover:bg-white/95 hover:scale-105 transition-all"
+                      title="Ouvrir le terrain de jeu"
+                    >
+                      <Sparkles className="h-3 w-3 text-primary" /> Terrain de jeu
+                    </button>
                     {/* Badges top-right */}
                     <div className="absolute top-3 right-3 flex flex-wrap gap-1.5 justify-end max-w-[60%]">
                       {diff && (
