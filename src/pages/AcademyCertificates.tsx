@@ -133,6 +133,21 @@ export default function AcademyCertificates() {
                   <div className={cn("h-1.5 bg-gradient-to-r", gradient)} />
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
+                      <div className="relative h-14 w-20 rounded-md overflow-hidden bg-muted shrink-0">
+                        {path?.cover_image_url ? (
+                          <img
+                            src={`${path.cover_image_url}?v=${new Date(path.updated_at || path.created_at || Date.now()).getTime()}`}
+                            alt={path.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className={cn("absolute inset-0 bg-gradient-to-br flex items-center justify-center", gradient)}>
+                            <GraduationCap className="h-6 w-6 text-white/80" />
+                          </div>
+                        )}
+                      </div>
                       <ScoreGauge score={certData.score || certData.average_score || 0} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
