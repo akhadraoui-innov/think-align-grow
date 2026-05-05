@@ -127,6 +127,14 @@ export default function AdminToolkitDetail() {
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => window.open(`/portal/workshops/toolkits/${toolkit.id}/playground`, "_blank")}
+            >
+              <Gamepad2 className="h-3.5 w-3.5" /> Terrain de jeu
+            </Button>
             <ToolkitAIChatDialog toolkit={toolkit} pillars={pillars} onUpdate={invalidateAll} />
             <Badge variant="outline" className={s.className}>{s.label}</Badge>
             <Badge className="bg-primary text-primary-foreground text-[10px]">
@@ -138,28 +146,53 @@ export default function AdminToolkitDetail() {
         <ToolkitCompletionBanner toolkit={toolkit} pillars={pillars} cards={cards} quizQuestions={quizQuestions} onUpdate={invalidateAll} />
 
         {/* Card illustrations banner */}
-        <div className="rounded-xl border bg-card p-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <ImageIcon className="h-5 w-5 text-primary" />
+        <div className="rounded-xl border bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <ImageIcon className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">Illustrations des cartes</p>
+                <p className="text-xs text-muted-foreground">
+                  {cards.length - cardsWithoutImage} / {cards.length} illustrées
+                  {cardsFailed > 0 && ` · ${cardsFailed} en échec`}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold">Illustrations des cartes</p>
-              <p className="text-xs text-muted-foreground">
-                {cards.length - cardsWithoutImage} / {cards.length} cartes illustrées
-                {cardsWithoutImage > 0 && ` · ${cardsWithoutImage} sans illustration`}
+            <div className="flex gap-2 flex-shrink-0 items-center">
+              <Select value={scope} onValueChange={setScope} disabled={genLoading}>
+                <SelectTrigger className="h-8 w-[220px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="missing">Cartes manquantes ({cardsWithoutImage})</SelectItem>
+                  <SelectItem value="failed">Cartes en échec ({cardsFailed})</SelectItem>
+                  <SelectItem value="all">Toutes les cartes ({cards.length})</SelectItem>
+                  {pillars.map((p: any) => (
+                    <SelectItem key={p.id} value={`pillar:${p.id}`}>
+                      Pilier · {p.name} ({cards.filter((c: any) => c.pillar_id === p.id).length})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {genLoading ? (
+                <Button size="sm" variant="destructive" onClick={cancelBatch}>
+                  <Square className="h-3.5 w-3.5 mr-1" /> Arrêter
+                </Button>
+              ) : (
+                <Button size="sm" onClick={runBatches}>
+                  <Sparkles className="h-3.5 w-3.5 mr-1" /> Lancer
+                </Button>
+              )}
+            </div>
+          </div>
+          {(genLoading || genProgress.done > 0) && genProgress.total > 0 && (
+            <div className="space-y-1">
+              <Progress value={(genProgress.done / genProgress.total) * 100} className="h-2" />
+              <p className="text-[11px] text-muted-foreground">
+                {genProgress.done} / {genProgress.total} traitées · {genProgress.ok} OK · {genProgress.fail} échec(s)
               </p>
             </div>
-          </div>
-          <div className="flex gap-2 flex-shrink-0">
-            <Button size="sm" variant="outline" onClick={() => handleGenerateAllIllustrations(false)} disabled={genLoading || cardsWithoutImage === 0}>
-              {genLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
-              Générer manquantes
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => handleGenerateAllIllustrations(true)} disabled={genLoading || cards.length === 0}>
-              Tout régénérer
-            </Button>
-          </div>
+          )}
         </div>
 
         <Tabs defaultValue="info" className="space-y-4">
