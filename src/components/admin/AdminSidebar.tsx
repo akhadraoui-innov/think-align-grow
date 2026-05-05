@@ -354,7 +354,7 @@ export function AdminSidebar() {
 
       <SidebarFooter className="px-3 py-3 border-t border-border/50">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/simulator")}
           className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors ${
             collapsed ? "justify-center px-2" : ""
           }`}
