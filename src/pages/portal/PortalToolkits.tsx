@@ -264,8 +264,15 @@ export default function PortalToolkits() {
                 </div>
               </div>
 
-              {/* Format selector */}
+              {/* Format selector + Playground */}
               <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => navigate(`/portal/workshops/toolkits/${selectedToolkit.id}/playground`)}
+                  className="gap-1.5"
+                >
+                  <Sparkles className="h-4 w-4" /> Lancer le terrain de jeu
+                </Button>
                 <Eye className="h-4 w-4 text-muted-foreground" />
                 <Select value={cardFormat} onValueChange={(v: CardFormat) => setCardFormat(v)}>
                   <SelectTrigger className="h-9 w-32 text-sm"><SelectValue /></SelectTrigger>
