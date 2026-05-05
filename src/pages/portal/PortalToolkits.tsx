@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import {
   Layers, Clock, Users, Star, X, ChevronRight, Puzzle, Award,
   BarChart3, FileText, LayoutGrid, List, ArrowLeft, Eye, Target, Zap,
-  Grid3X3
+  Grid3X3, Sparkles
 } from "lucide-react";
 import { GameCard } from "@/components/challenge/GameCard";
 import { getPillarCssColor, getPillarCssColorAlpha, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
