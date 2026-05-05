@@ -223,8 +223,18 @@ export default function AcademyDashboard() {
                       onClick={() => navigate(`/academy/path/${e.path_id}`)}
                     >
                       <CardContent className="p-4 flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-                          <GraduationCap className="h-6 w-6 text-primary" />
+                        <div className="relative h-12 w-16 rounded-md overflow-hidden bg-primary/10 shrink-0">
+                          {e.academy_paths?.cover_image_url ? (
+                            <img
+                              src={`${e.academy_paths.cover_image_url}?v=${new Date(e.academy_paths.updated_at || e.academy_paths.created_at || Date.now()).getTime()}`}
+                              alt={e.academy_paths.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                          ) : (
+                            <GraduationCap className="absolute inset-0 m-auto h-6 w-6 text-primary" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm group-hover:text-primary transition-colors">{e.academy_paths?.name}</p>
@@ -254,8 +264,18 @@ export default function AcademyDashboard() {
               {completedEnrollments.map((e: any) => (
                 <Card key={e.id} className="cursor-pointer hover:shadow-md transition-all" onClick={() => navigate(`/academy/path/${e.path_id}`)}>
                   <CardContent className="p-4 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 shrink-0">
-                      <Trophy className="h-5 w-5 text-amber-500" />
+                    <div className="relative h-10 w-14 rounded-md overflow-hidden bg-amber-500/10 shrink-0">
+                      {e.academy_paths?.cover_image_url ? (
+                        <img
+                          src={`${e.academy_paths.cover_image_url}?v=${new Date(e.academy_paths.updated_at || e.academy_paths.created_at || Date.now()).getTime()}`}
+                          alt={e.academy_paths.name}
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Trophy className="absolute inset-0 m-auto h-5 w-5 text-amber-500" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm">{e.academy_paths?.name}</p>

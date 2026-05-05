@@ -212,13 +212,31 @@ export default function Academy() {
                         className="overflow-hidden cursor-pointer hover:shadow-xl transition-all h-full group border-primary/20"
                         onClick={() => navigate(`/academy/path/${e.path_id}`)}
                       >
-                        <div className={`h-2 bg-gradient-to-r from-primary to-primary/60 transition-all`} style={{ width: `${pct}%` }} />
+                        <div className={`h-1.5 bg-gradient-to-r from-primary to-primary/60 transition-all`} style={{ width: `${pct}%` }} />
+                        <div className="relative h-28 overflow-hidden bg-muted">
+                          {e.academy_paths?.cover_image_url ? (
+                            <>
+                              <img
+                                src={`${e.academy_paths.cover_image_url}?v=${new Date(e.academy_paths.updated_at || e.academy_paths.created_at || Date.now()).getTime()}`}
+                                alt={e.academy_paths.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                            </>
+                          ) : (
+                            <div className={cn("absolute inset-0 bg-gradient-to-br flex items-center justify-center", diff.gradient)}>
+                              <GraduationCap className="h-8 w-8 text-primary/60" />
+                            </div>
+                          )}
+                          <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                            <Badge className="text-[9px] bg-black/80 text-white border-0 uppercase tracking-wider font-bold backdrop-blur">{diff.label}</Badge>
+                            {pct === 100 && <Badge className="text-[9px] bg-primary text-primary-foreground border-0 uppercase tracking-wider font-bold">Terminé</Badge>}
+                          </div>
+                        </div>
                         <CardContent className="p-5 space-y-3">
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge variant="outline" className={cn("text-[10px]", diff.color)}>{diff.label}</Badge>
-                              {pct === 100 && <Badge className="text-[10px] bg-emerald-500/10 text-emerald-700 border-emerald-500/20">Terminé</Badge>}
-                            </div>
                             <p className="font-semibold text-sm group-hover:text-primary transition-colors">{e.academy_paths?.name || "Parcours"}</p>
                             <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{e.academy_paths?.description}</p>
                           </div>
@@ -269,13 +287,26 @@ export default function Academy() {
                         )}
                         onClick={() => navigate(`/academy/path/${path.id}`)}
                       >
-                        <div className={`h-28 bg-gradient-to-br ${diff.gradient} relative p-5 flex flex-col justify-end`}>
-                          <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                            {isEnrolled && <Badge className="text-[10px]">Inscrit</Badge>}
-                            <Badge variant="outline" className={cn("text-[10px] bg-background/80 backdrop-blur", diff.color)}>{diff.label}</Badge>
-                          </div>
-                          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-background/80 backdrop-blur shadow-sm">
-                            <GraduationCap className="h-5 w-5 text-primary" />
+                        <div className="relative h-28 overflow-hidden bg-muted">
+                          {path.cover_image_url ? (
+                            <>
+                              <img
+                                src={`${path.cover_image_url}?v=${new Date(path.updated_at || path.created_at || Date.now()).getTime()}`}
+                                alt={path.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                            </>
+                          ) : (
+                            <div className={cn("absolute inset-0 bg-gradient-to-br flex items-center justify-center", diff.gradient)}>
+                              <GraduationCap className="h-8 w-8 text-primary/60" />
+                            </div>
+                          )}
+                          <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                            {isEnrolled && <Badge className="text-[9px] bg-primary text-primary-foreground border-0 uppercase tracking-wider font-bold">Inscrit</Badge>}
+                            <Badge className="text-[9px] bg-black/80 text-white border-0 uppercase tracking-wider font-bold backdrop-blur">{diff.label}</Badge>
                           </div>
                         </div>
                         <CardContent className="p-5 space-y-3">
@@ -392,13 +423,28 @@ export default function Academy() {
                         )}
                         onClick={() => navigate(`/academy/path/${path.id}`)}
                       >
-                        <div className={`h-20 bg-gradient-to-br ${diff.gradient} relative p-4 flex items-end`}>
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background/80 backdrop-blur">
-                            <GraduationCap className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="absolute top-3 right-3 flex items-center gap-1">
-                            {isEnrolled && <Badge className="text-[10px]">Inscrit</Badge>}
-                          </div>
+                        <div className="relative h-20 overflow-hidden bg-muted">
+                          {path.cover_image_url ? (
+                            <>
+                              <img
+                                src={`${path.cover_image_url}?v=${new Date(path.updated_at || path.created_at || Date.now()).getTime()}`}
+                                alt={path.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                            </>
+                          ) : (
+                            <div className={cn("absolute inset-0 bg-gradient-to-br flex items-center justify-center", diff.gradient)}>
+                              <GraduationCap className="h-6 w-6 text-primary/60" />
+                            </div>
+                          )}
+                          {isEnrolled && (
+                            <div className="absolute top-2 right-2">
+                              <Badge className="text-[9px] bg-primary text-primary-foreground border-0 uppercase tracking-wider font-bold">Inscrit</Badge>
+                            </div>
+                          )}
                         </div>
                         <CardContent className="p-4 space-y-2.5">
                           <div>
