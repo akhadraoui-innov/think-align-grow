@@ -119,10 +119,6 @@ export default function AdminToolkits() {
       toast({ title: "Erreur batch couvertures", description: e.message, variant: "destructive" });
     } finally { setBatchLoading(false); }
   };
-    } catch (e: any) {
-      toast({ title: "Erreur batch couvertures", description: e.message, variant: "destructive" });
-    } finally { setBatchLoading(false); }
-  };
 
   const handleCreate = async () => {
     if (!form.name || !form.slug) return;
