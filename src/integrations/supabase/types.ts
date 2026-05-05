@@ -3301,6 +3301,56 @@ export type Database = {
           },
         ]
       }
+      playground_sessions: {
+        Row: {
+          card_scale_global: number
+          category: Json | null
+          created_at: string
+          id: string
+          layout: string
+          name: string
+          org_id: string | null
+          placements: Json
+          toolkit_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          card_scale_global?: number
+          category?: Json | null
+          created_at?: string
+          id?: string
+          layout?: string
+          name?: string
+          org_id?: string | null
+          placements?: Json
+          toolkit_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          card_scale_global?: number
+          category?: Json | null
+          created_at?: string
+          id?: string
+          layout?: string
+          name?: string
+          org_id?: string | null
+          placements?: Json
+          toolkit_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playground_sessions_toolkit_id_fkey"
+            columns: ["toolkit_id"]
+            isOneToOne: false
+            referencedRelation: "toolkits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       practice_blocks: {
         Row: {
           content: Json
