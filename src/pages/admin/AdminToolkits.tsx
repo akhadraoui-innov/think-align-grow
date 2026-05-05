@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { DataTable } from "@/components/admin/DataTable";
+// DataTable replaced by editorial grid + table view
 import { useAdminToolkits } from "@/hooks/useAdminToolkits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
