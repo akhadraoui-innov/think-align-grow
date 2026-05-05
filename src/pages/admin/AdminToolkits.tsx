@@ -710,6 +710,15 @@ export default function AdminToolkits() {
                         variant="secondary"
                         size="icon"
                         className="h-7 w-7 backdrop-blur-sm"
+                        title="Terrain de jeu"
+                        onClick={(e) => { e.stopPropagation(); window.open(`/portal/workshops/toolkits/${t.id}/playground`, "_blank"); }}
+                      >
+                        <Gamepad2 className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-7 w-7 backdrop-blur-sm"
                         title="Éditer"
                         onClick={(e) => { e.stopPropagation(); navigate(`/admin/toolkits/${t.id}`); }}
                       >
