@@ -602,12 +602,26 @@ export default function AdminToolkits() {
     },
   ];
 
+  const missingCovers = toolkits.filter((t: any) => !t.cover_image_url).length;
+
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-foreground">Toolkits</h1>
-          <p className="text-sm text-muted-foreground mt-1">Gérer les toolkits et leur contenu</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-display font-bold text-foreground">Toolkits</h1>
+            <p className="text-sm text-muted-foreground mt-1">Gérer les toolkits et leur contenu</p>
+          </div>
+          {missingCovers > 0 && (
+            <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2">
+              <Wand2 className="h-4 w-4 text-primary" />
+              <span className="text-sm text-foreground">{missingCovers} toolkit{missingCovers > 1 ? "s" : ""} sans couverture</span>
+              <Button size="sm" variant="default" className="gap-2" onClick={handleBatchCovers} disabled={batchLoading}>
+                {batchLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                Générer toutes
+              </Button>
+            </div>
+          )}
         </div>
 
         {isLoading ? (
