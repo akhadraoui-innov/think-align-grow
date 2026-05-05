@@ -823,6 +823,15 @@ export default function AdminToolkits() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-7 w-7"
+                              title="Terrain de jeu"
+                              onClick={(e) => { e.stopPropagation(); window.open(`/portal/workshops/toolkits/${t.id}/playground`, "_blank"); }}
+                            >
+                              <Gamepad2 className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-7 w-7 text-destructive"
                               title="Supprimer"
                               onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.name); }}
