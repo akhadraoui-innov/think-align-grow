@@ -1638,9 +1638,11 @@ async function renderCardIllustration(supabase: any, apiKey: string, card: any, 
     }).eq("id", card.id);
     return { ok: true, url: publicUrl };
   } catch (e) {
-    console.warn("card illustration failed", card.id, e instanceof Error ? e.message : e);
-    await supabase.from("cards").update({ image_status: "failed" }).eq("id", card.id);
-    return { ok: false };
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn("card illustration failed", card.id, msg);
+    const isQuota = /credits exhausted/i.test(msg);
+    await supabase.from("cards").update({ image_status: isQuota ? "pending" : "failed" }).eq("id", card.id);
+    return { ok: false, status: isQuota ? 402 : undefined };
   }
 }
 
