@@ -558,131 +558,300 @@ export default function AdminToolkits() {
     },
   ];
 
-  const columns = [
-    {
-      key: "name",
-      label: "Nom",
-      sortable: true,
-      render: (row: any) => (
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-14 rounded-lg overflow-hidden flex items-center justify-center text-lg bg-muted shrink-0 relative">
-            {row.cover_image_url ? (
-              <img
-                src={`${row.cover_image_url}?v=${new Date(row.updated_at || row.created_at).getTime()}`}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <span>{row.icon_emoji || "🚀"}</span>
-            )}
-          </div>
-          <div>
-            <p className="font-medium text-foreground">{row.name}</p>
-            <p className="text-xs text-muted-foreground">{row.slug}</p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      label: "Statut",
-      sortable: true,
-      render: (row: any) => {
-        const s = STATUS_MAP[row.status] || STATUS_MAP.draft;
-        return <Badge variant="outline" className={`text-xs ${s.className}`}>{s.label}</Badge>;
-      },
-    },
-    {
-      key: "pillars",
-      label: "Piliers",
-      render: (row: any) => <span className="text-sm text-muted-foreground">{counts.pillarsByToolkit[row.id] || 0}</span>,
-    },
-    {
-      key: "cards",
-      label: "Cartes",
-      render: (row: any) => <span className="text-sm text-muted-foreground">{counts.cardsByToolkit[row.id] || 0}</span>,
-    },
-    {
-      key: "created_at",
-      label: "Créé le",
-      sortable: true,
-      render: (row: any) => (
-        <span className="text-sm text-muted-foreground">
-          {format(new Date(row.created_at), "dd MMM yyyy", { locale: fr })}
-        </span>
-      ),
-    },
-  ];
-
   const missingCovers = toolkits.filter((t: any) => !t.cover_image_url).length;
+
+  const filtered = toolkits.filter((t: any) => {
+    if (filterStatus !== "all" && t.status !== filterStatus) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      if (!t.name?.toLowerCase().includes(s) && !t.slug?.toLowerCase().includes(s) && !t.description?.toLowerCase().includes(s)) return false;
+    }
+    return true;
+  });
+
+  const handleDelete = (id: string, name: string) => {
+    if (!confirm(`Supprimer définitivement "${name}" ?`)) return;
+    remove.mutate(id, {
+      onSuccess: () => toast({ title: "Toolkit supprimé" }),
+      onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    });
+  };
 
   return (
     <AdminShell>
       <div className="p-6 space-y-6">
-        <div className="flex items-start justify-between gap-4">
+        {/* ═══ HEADER ═══ */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-display font-bold text-foreground">Toolkits</h1>
             <p className="text-sm text-muted-foreground mt-1">Gérer les toolkits et leur contenu</p>
           </div>
-          {missingCovers > 0 && (
-            <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2">
-              <Wand2 className="h-4 w-4 text-primary" />
-              <span className="text-sm text-foreground">{missingCovers} toolkit{missingCovers > 1 ? "s" : ""} sans couverture</span>
-              <Button size="sm" variant="default" className="gap-2" onClick={handleBatchCovers} disabled={batchLoading}>
-                {batchLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                Générer toutes
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {missingCovers > 0 && (
+              <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2">
+                <Wand2 className="h-4 w-4 text-primary" />
+                <span className="text-sm text-foreground">{missingCovers} sans couverture</span>
+                <Button size="sm" variant="default" className="gap-2" onClick={handleBatchCovers} disabled={batchLoading}>
+                  {batchLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  Générer toutes
+                </Button>
+              </div>
+            )}
+            <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Nouveau toolkit
+            </Button>
+            <Button size="sm" className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground" onClick={() => setAiOpen(true)}>
+              <Wand2 className="h-4 w-4" />
+              Générer par IA
+            </Button>
+          </div>
         </div>
 
+        {/* ═══ FILTERS ═══ */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[240px] max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher un toolkit..."
+              className="pl-9 h-9"
+            />
+          </div>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[160px] h-9"><SelectValue placeholder="Statut" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous statuts</SelectItem>
+              <SelectItem value="draft">Brouillon</SelectItem>
+              <SelectItem value="published">Publié</SelectItem>
+              <SelectItem value="archived">Archivé</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex items-center border rounded-md ml-auto">
+            <Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="icon" className="h-9 w-9 rounded-r-none" onClick={() => setViewMode("grid")}>
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="icon" className="h-9 w-9 rounded-l-none" onClick={() => setViewMode("table")}>
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* ═══ CONTENT ═══ */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <Card key={i} className="animate-pulse h-[380px]">
+                <div className="h-36 bg-muted rounded-t-2xl" />
+                <CardContent className="p-4 space-y-2">
+                  <div className="h-4 bg-muted rounded w-2/3" />
+                  <div className="h-3 bg-muted rounded w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <Card className="border-dashed border-2">
+            <CardContent className="p-12 text-center text-muted-foreground">
+              <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm font-medium">{search || filterStatus !== "all" ? "Aucun toolkit ne correspond aux filtres" : "Aucun toolkit créé"}</p>
+            </CardContent>
+          </Card>
+        ) : viewMode === "grid" ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((t: any) => {
+              const s = STATUS_MAP[t.status] || STATUS_MAP.draft;
+              const pillars = counts.pillarsByToolkit[t.id] || 0;
+              const cards = counts.cardsByToolkit[t.id] || 0;
+              const isCoverLoading = coverLoadingId === t.id;
+              return (
+                <Card
+                  key={t.id}
+                  className="group cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 rounded-2xl overflow-hidden border border-border/50 flex flex-col h-[380px]"
+                  onClick={() => navigate(`/admin/toolkits/${t.id}`)}
+                >
+                  {/* Cover hero */}
+                  <div className="relative h-36 overflow-hidden flex-shrink-0 bg-muted">
+                    {t.cover_image_url ? (
+                      <img
+                        src={`${t.cover_image_url}?v=${new Date(t.updated_at || t.created_at).getTime()}`}
+                        alt={t.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 via-accent/10 to-muted flex items-center justify-center">
+                        <span className="text-5xl opacity-70">{t.icon_emoji || "🚀"}</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute top-2 left-2 flex items-center gap-1.5">
+                      <Badge variant="outline" className={`text-[10px] backdrop-blur-sm ${s.className}`}>{s.label}</Badge>
+                      {pillars > 0 && (
+                        <Badge variant="outline" className="text-[10px] backdrop-blur-sm bg-background/70 border-border/50">
+                          <Layers className="h-2.5 w-2.5 mr-1" />{pillars}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-7 w-7 backdrop-blur-sm"
+                        title={t.cover_image_url ? "Régénérer la couverture" : "Générer la couverture"}
+                        disabled={isCoverLoading}
+                        onClick={(e) => { e.stopPropagation(); triggerCover(t.id); }}
+                      >
+                        {isCoverLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImageIcon className="h-3 w-3" />}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-7 w-7 backdrop-blur-sm"
+                        title="Éditer"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/admin/toolkits/${t.id}`); }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        className="h-7 w-7 backdrop-blur-sm text-destructive"
+                        title="Supprimer"
+                        onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.name); }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="flex flex-col flex-1 p-4 min-h-0">
+                    <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors mb-1">
+                      <span className="mr-1">{t.icon_emoji}</span>{t.name}
+                    </h3>
+                    <p className="text-[10px] font-mono text-muted-foreground/70 mb-2 truncate">{t.slug}</p>
+                    {t.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-auto">{t.description}</p>
+                    )}
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-2 border-t border-border/40 mt-2">
+                      <span className="flex items-center gap-1"><Layers className="h-3 w-3" /> {pillars} piliers</span>
+                      <span className="flex items-center gap-1"><CreditCard className="h-3 w-3" /> {cards} cartes</span>
+                      <span>{format(new Date(t.created_at), "dd MMM", { locale: fr })}</span>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         ) : (
-          <DataTable
-            data={toolkits}
-            columns={columns}
-            searchKey="name"
-            searchPlaceholder="Rechercher un toolkit..."
-            onRowClick={(row) => navigate(`/admin/toolkits/${row.id}`)}
-            actions={
-              <>
-                <Button size="sm" variant="outline" className="gap-2" onClick={() => setOpen(true)}>
-                  <Plus className="h-4 w-4" />
-                  Nouveau toolkit
-                </Button>
-                <Button size="sm" className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground" onClick={() => setAiOpen(true)}>
-                  <Wand2 className="h-4 w-4" />
-                  Générer par IA
-                </Button>
-                <StepDialog
-                  open={open}
-                  onOpenChange={setOpen}
-                  steps={steps}
-                  onComplete={handleCreate}
-                  completing={create.isPending}
-                  title="Nouveau toolkit"
-                  icon={Package}
-                  completeLabel="Créer le toolkit"
-                />
-                <StepDialog
-                  open={aiOpen}
-                  onOpenChange={setAiOpen}
-                  steps={aiSteps}
-                  onComplete={handleGenerate}
-                  completing={false}
-                  title="Générer un toolkit par IA"
-                  icon={Wand2}
-                  completeLabel="✨ Lancer la génération"
-                />
-              </>
-            }
-          />
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Toolkit</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-center">Piliers</TableHead>
+                    <TableHead className="text-center">Cartes</TableHead>
+                    <TableHead>Créé le</TableHead>
+                    <TableHead className="w-[120px]" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((t: any) => {
+                    const s = STATUS_MAP[t.status] || STATUS_MAP.draft;
+                    const isCoverLoading = coverLoadingId === t.id;
+                    return (
+                      <TableRow
+                        key={t.id}
+                        className="cursor-pointer hover:bg-muted/40"
+                        onClick={() => navigate(`/admin/toolkits/${t.id}`)}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="h-12 w-16 rounded-lg overflow-hidden bg-muted shrink-0 relative flex items-center justify-center">
+                              {t.cover_image_url ? (
+                                <img
+                                  src={`${t.cover_image_url}?v=${new Date(t.updated_at || t.created_at).getTime()}`}
+                                  alt=""
+                                  loading="lazy"
+                                  decoding="async"
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-lg">{t.icon_emoji || "🚀"}</span>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-foreground truncate">{t.name}</p>
+                              <p className="text-xs text-muted-foreground font-mono truncate">{t.slug}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`text-xs ${s.className}`}>{s.label}</Badge>
+                        </TableCell>
+                        <TableCell className="text-center text-sm text-muted-foreground">{counts.pillarsByToolkit[t.id] || 0}</TableCell>
+                        <TableCell className="text-center text-sm text-muted-foreground">{counts.cardsByToolkit[t.id] || 0}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(new Date(t.created_at), "dd MMM yyyy", { locale: fr })}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              title={t.cover_image_url ? "Régénérer la couverture" : "Générer la couverture"}
+                              disabled={isCoverLoading}
+                              onClick={(e) => { e.stopPropagation(); triggerCover(t.id); }}
+                            >
+                              {isCoverLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive"
+                              title="Supprimer"
+                              onClick={(e) => { e.stopPropagation(); handleDelete(t.id, t.name); }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         )}
+
+        {/* Step dialogs (mounted outside list) */}
+        <StepDialog
+          open={open}
+          onOpenChange={setOpen}
+          steps={steps}
+          onComplete={handleCreate}
+          completing={create.isPending}
+          title="Nouveau toolkit"
+          icon={Package}
+          completeLabel="Créer le toolkit"
+        />
+        <StepDialog
+          open={aiOpen}
+          onOpenChange={setAiOpen}
+          steps={aiSteps}
+          onComplete={handleGenerate}
+          completing={false}
+          title="Générer un toolkit par IA"
+          icon={Wand2}
+          completeLabel="✨ Lancer la génération"
+        />
 
         {/* Generation Progress Dialog */}
         <Dialog open={genDialogOpen} onOpenChange={(v) => { if (genState.phase !== "generating") setGenDialogOpen(v); }}>
