@@ -91,6 +91,31 @@ export default function AdminToolkitDetail() {
 
         <ToolkitCompletionBanner toolkit={toolkit} pillars={pillars} cards={cards} quizQuestions={quizQuestions} onUpdate={invalidateAll} />
 
+        {/* Card illustrations banner */}
+        <div className="rounded-xl border bg-card p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <ImageIcon className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Illustrations des cartes</p>
+              <p className="text-xs text-muted-foreground">
+                {cards.length - cardsWithoutImage} / {cards.length} cartes illustrées
+                {cardsWithoutImage > 0 && ` · ${cardsWithoutImage} sans illustration`}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <Button size="sm" variant="outline" onClick={() => handleGenerateAllIllustrations(false)} disabled={genLoading || cardsWithoutImage === 0}>
+              {genLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+              Générer manquantes
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => handleGenerateAllIllustrations(true)} disabled={genLoading || cards.length === 0}>
+              Tout régénérer
+            </Button>
+          </div>
+        </div>
+
         <Tabs defaultValue="info" className="space-y-4">
           <TabsList className="bg-muted/50 flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="info" className="gap-1.5 text-xs"><Settings className="h-3.5 w-3.5" /> Infos</TabsTrigger>
