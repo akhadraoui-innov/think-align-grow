@@ -52,6 +52,7 @@ export default function PortalToolkits() {
   // All published toolkits
   const { data: toolkits = [], isLoading } = useQuery({
     queryKey: ["portal-toolkits"],
+    staleTime: 5 * 60_000,
     queryFn: async () => {
       const { data } = await supabase
         .from("toolkits")
@@ -90,15 +91,14 @@ export default function PortalToolkits() {
     },
   });
 
-  // Pillar counts per toolkit (for catalogue badges)
+  // Pillar counts per toolkit (RPC for perf)
   const { data: pillarCounts = {} } = useQuery({
     queryKey: ["portal-toolkit-pillar-counts"],
+    staleTime: 5 * 60_000,
     queryFn: async () => {
-      const { data } = await supabase.from("pillars").select("id, toolkit_id");
+      const { data } = await supabase.rpc("get_pillar_counts_per_toolkit");
       const counts: Record<string, number> = {};
-      (data || []).forEach((p: any) => {
-        counts[p.toolkit_id] = (counts[p.toolkit_id] || 0) + 1;
-      });
+      (data || []).forEach((r: any) => { counts[r.toolkit_id] = r.count; });
       return counts;
     },
   });
