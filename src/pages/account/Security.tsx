@@ -60,9 +60,28 @@ function AccountSecurityInner() {
       // If user came from a forced-2FA redirect, send them back to admin
       if (isSetup) navigate("/admin", { replace: true });
     } catch (e: any) {
-      toast.error(e?.message ?? "Code incorrect. Réessayez.");
+      const msg = e?.message ?? "Code incorrect. Réessayez.";
+      setVerifyError(msg);
+      toast.error(msg);
     } finally {
       setWorking(false);
+    }
+  }
+
+  function parseOtpAuthUri(uri: string): { account: string; issuer: string } {
+    try {
+      const u = new URL(uri);
+      const label = decodeURIComponent(u.pathname.replace(/^\/+/, ""));
+      const issuerParam = u.searchParams.get("issuer") ?? "";
+      const [issuerFromLabel, account] = label.includes(":")
+        ? label.split(":")
+        : ["", label];
+      return {
+        account: account || label,
+        issuer: issuerParam || issuerFromLabel || "Heeplab",
+      };
+    } catch {
+      return { account: "", issuer: "Heeplab" };
     }
   }
 
