@@ -32,27 +32,71 @@ export default function AdminToolkitDetail() {
   const detail = useAdminToolkitDetail(id);
   const { toolkit, pillars, cards, challengeTemplates, gamePlans, quizQuestions, orgToolkits, isLoading, invalidateAll } = detail;
   const [genLoading, setGenLoading] = useState(false);
+  const [genProgress, setGenProgress] = useState({ done: 0, total: 0, ok: 0, fail: 0 });
+  const [scope, setScope] = useState<string>("missing"); // missing | failed | all | pillar:<id>
+  const cancelRef = useRef(false);
 
   const cardsWithoutImage = cards.filter((c: any) => !c.image_url).length;
+  const cardsFailed = cards.filter((c: any) => c.image_status === "failed").length;
 
-  const handleGenerateAllIllustrations = async (force: boolean) => {
+  const buildTargetIds = (): string[] => {
+    if (scope === "missing") return cards.filter((c: any) => !c.image_url).map((c: any) => c.id);
+    if (scope === "failed") return cards.filter((c: any) => c.image_status === "failed").map((c: any) => c.id);
+    if (scope === "all") return cards.map((c: any) => c.id);
+    if (scope.startsWith("pillar:")) {
+      const pid = scope.slice(7);
+      return cards.filter((c: any) => c.pillar_id === pid).map((c: any) => c.id);
+    }
+    return [];
+  };
+
+  const runBatches = async () => {
     if (!toolkit) return;
+    const ids = buildTargetIds();
+    if (ids.length === 0) {
+      toast.info("Aucune carte à traiter pour ce périmètre");
+      return;
+    }
+    cancelRef.current = false;
     setGenLoading(true);
+    setGenProgress({ done: 0, total: ids.length, ok: 0, fail: 0 });
+
+    const BATCH = 10;
+    let ok = 0, fail = 0, done = 0;
     try {
-      const { data, error } = await supabase.functions.invoke("academy-generate", {
-        body: { action: "generate-all-card-illustrations", toolkit_id: toolkit.id, force },
-      });
-      if (error) throw error;
-      toast.success(`${data?.queued || 0} illustration(s) en cours`, {
-        description: "Génération en arrière-plan. Rafraîchissez dans 1-2 minutes.",
-      });
-      setTimeout(() => invalidateAll(), 30_000);
+      for (let i = 0; i < ids.length; i += BATCH) {
+        if (cancelRef.current) break;
+        const slice = ids.slice(i, i + BATCH);
+        const { data, error } = await supabase.functions.invoke("academy-generate", {
+          body: { action: "generate-card-illustrations-batch", card_ids: slice },
+        });
+        if (error) throw error;
+        ok += data?.succeeded || 0;
+        fail += data?.failed || 0;
+        done += data?.processed || 0;
+        setGenProgress({ done, total: ids.length, ok, fail });
+        if (data?.aiCredits === "exhausted") {
+          toast.error("Solde IA épuisé", {
+            description: "Rechargez dans Cloud & AI balance puis relancez.",
+            duration: 8000,
+          });
+          break;
+        }
+      }
+      if (!cancelRef.current) {
+        toast.success(`Terminé : ${ok} générées, ${fail} échec(s)`);
+      } else {
+        toast.info(`Interrompu : ${ok} générées sur ${ids.length}`);
+      }
+      invalidateAll();
     } catch (e: any) {
-      toast.error("Échec du lancement", { description: e?.message });
+      toast.error("Échec du batch", { description: e?.message });
     } finally {
       setGenLoading(false);
     }
   };
+
+  const cancelBatch = () => { cancelRef.current = true; };
 
   if (isLoading) {
     return <AdminShell><div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div></AdminShell>;
