@@ -1748,10 +1748,49 @@ async function generateCardIllustration(supabase: any, params: any, apiKey: stri
   if (!card) throw new Error("Card not found");
   const pillar = card.pillars;
   const toolkit = pillar.toolkits;
-  const result = await renderCardIllustration(supabase, apiKey, card, pillar, toolkit);
+  const { data: pillars } = await supabase.from("pillars").select("*").eq("toolkit_id", toolkit.id);
+  const style = await buildToolkitStyleGuide(supabase, apiKey, toolkit, pillars || []);
+  const result = await renderCardIllustration(supabase, apiKey, card, pillar, toolkit, style);
   return new Response(JSON.stringify({ success: result.ok, image_url: result.url }), {
     status: 200, headers: { ...cors, "Content-Type": "application/json" },
   });
+}
+
+async function processCardsInBackground(
+  supabase: any,
+  apiKey: string,
+  list: any[],
+  pillarMap: Map<string, any>,
+  toolkit: any,
+  style: StyleGuide,
+  label: string,
+) {
+  const CONCURRENCY = 4;
+  let consecutive402Batches = 0;
+  for (let i = 0; i < list.length; i += CONCURRENCY) {
+    const batch = list.slice(i, i + CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map((c: any) => renderCardIllustration(supabase, apiKey, c, pillarMap.get(c.pillar_id), toolkit, style)),
+    );
+    let batch402 = 0;
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value.status === 402) batch402++;
+    }
+    if (batch402 === batch.length) {
+      consecutive402Batches++;
+      if (consecutive402Batches >= 2) {
+        console.warn(`${label} aborted: AI credits exhausted`);
+        const remaining = list.slice(i + CONCURRENCY).map((c: any) => c.id);
+        if (remaining.length) {
+          await supabase.from("cards").update({ image_status: "pending" }).in("id", remaining);
+        }
+        return;
+      }
+    } else {
+      consecutive402Batches = 0;
+    }
+  }
+  console.log(JSON.stringify({ action: label, toolkit_id: toolkit.id, total: list.length, status: "background-done" }));
 }
 
 async function generateAllCardIllustrations(supabase: any, params: any, apiKey: string, cors: any) {
@@ -1773,14 +1812,13 @@ async function generateAllCardIllustrations(supabase: any, params: any, apiKey: 
   const { data: cards } = await q;
   const list = cards || [];
 
-  const work = (async () => {
-    const CONCURRENCY = 2;
-    for (let i = 0; i < list.length; i += CONCURRENCY) {
-      const batch = list.slice(i, i + CONCURRENCY);
-      await Promise.allSettled(batch.map((c: any) => renderCardIllustration(supabase, apiKey, c, pillarMap.get(c.pillar_id), toolkit)));
-    }
-    console.log(JSON.stringify({ action: "generate-all-card-illustrations", toolkit_id, total: list.length, status: "background-done" }));
-  })();
+  if (list.length) {
+    await supabase.from("cards").update({ image_status: "queued" }).in("id", list.map((c: any) => c.id));
+  }
+
+  const style = await buildToolkitStyleGuide(supabase, apiKey, toolkit, pillars || []);
+
+  const work = processCardsInBackground(supabase, apiKey, list, pillarMap, toolkit, style, "generate-all-card-illustrations");
 
   // @ts-ignore
   if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
@@ -1796,15 +1834,9 @@ async function generateAllCardIllustrations(supabase: any, params: any, apiKey: 
 async function generateCardIllustrationsBatch(supabase: any, params: any, apiKey: string, cors: any) {
   const { card_ids } = params;
   if (!Array.isArray(card_ids) || card_ids.length === 0) throw new Error("Missing card_ids");
-  if (card_ids.length > 20) throw new Error("Batch too large (max 20)");
-  // Hard cap to avoid 150s edge timeout (each render ~10-20s)
-  const MAX_PER_CALL = 5;
-  if (card_ids.length > MAX_PER_CALL) {
-    card_ids.length = MAX_PER_CALL;
-  }
+  if (card_ids.length > 100) throw new Error("Batch too large (max 100)");
 
-  // Reset to pending so the UI sees progress
-  await supabase.from("cards").update({ image_status: "pending" }).in("id", card_ids);
+  await supabase.from("cards").update({ image_status: "queued" }).in("id", card_ids);
 
   const { data: cards } = await supabase
     .from("cards")
@@ -1812,36 +1844,28 @@ async function generateCardIllustrationsBatch(supabase: any, params: any, apiKey
     .in("id", card_ids);
 
   const list = cards || [];
-  let processed = 0;
-  let succeeded = 0;
-  let consecutive402 = 0;
-  let aiCredits: "ok" | "exhausted" = "ok";
+  if (list.length === 0) {
+    return new Response(JSON.stringify({ success: true, queued: 0, async: true }), {
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
 
-  for (const c of list) {
-    const pillar = c.pillars;
-    const toolkit = pillar?.toolkits;
-    const r = await renderCardIllustration(supabase, apiKey, c, pillar, toolkit);
-    processed++;
-    if (r.ok) {
-      succeeded++;
-      consecutive402 = 0;
-    } else if (r.status === 402) {
-      consecutive402++;
-      if (consecutive402 >= 3) {
-        aiCredits = "exhausted";
-        break;
-      }
-    } else {
-      consecutive402 = 0;
-    }
+  const toolkit = list[0].pillars.toolkits;
+  const { data: pillars } = await supabase.from("pillars").select("*").eq("toolkit_id", toolkit.id);
+  const pillarMap = new Map((pillars || []).map((p: any) => [p.id, p]));
+  const style = await buildToolkitStyleGuide(supabase, apiKey, toolkit, pillars || []);
+
+  const work = processCardsInBackground(supabase, apiKey, list, pillarMap, toolkit, style, "generate-card-illustrations-batch");
+
+  // @ts-ignore
+  if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(work);
   }
 
   return new Response(JSON.stringify({
     success: true,
-    processed,
-    succeeded,
-    failed: processed - succeeded,
-    skipped: list.length - processed,
-    aiCredits,
+    queued: list.length,
+    async: true,
   }), { headers: { ...cors, "Content-Type": "application/json" } });
 }
