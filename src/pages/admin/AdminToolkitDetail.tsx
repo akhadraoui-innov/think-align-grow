@@ -151,7 +151,9 @@ export default function AdminToolkitDetail() {
               <div className="min-w-0">
                 <p className="text-sm font-semibold">Illustrations des cartes</p>
                 <p className="text-xs text-muted-foreground">
-                  {cards.length - cardsWithoutImage} / {cards.length} illustrées
+                  {cardsReady} / {cards.length} prêtes
+                  {cardsQueued > 0 && ` · ${cardsQueued} en attente`}
+                  {cardsGenerating > 0 && ` · ${cardsGenerating} en cours`}
                   {cardsFailed > 0 && ` · ${cardsFailed} en échec`}
                 </p>
               </div>
@@ -170,22 +172,20 @@ export default function AdminToolkitDetail() {
                   ))}
                 </SelectContent>
               </Select>
-              {genLoading ? (
-                <Button size="sm" variant="destructive" onClick={cancelBatch}>
-                  <Square className="h-3.5 w-3.5 mr-1" /> Arrêter
-                </Button>
-              ) : (
-                <Button size="sm" onClick={runBatches}>
-                  <Sparkles className="h-3.5 w-3.5 mr-1" /> Lancer
-                </Button>
-              )}
+              <Button size="sm" variant="outline" onClick={() => invalidateAll()} disabled={genLoading}>
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="sm" onClick={launchGeneration} disabled={genLoading}>
+                {genLoading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+                Lancer
+              </Button>
             </div>
           </div>
-          {(genLoading || genProgress.done > 0) && genProgress.total > 0 && (
+          {inFlight > 0 && cards.length > 0 && (
             <div className="space-y-1">
-              <Progress value={(genProgress.done / genProgress.total) * 100} className="h-2" />
+              <Progress value={(cardsReady / cards.length) * 100} className="h-2" />
               <p className="text-[11px] text-muted-foreground">
-                {genProgress.done} / {genProgress.total} traitées · {genProgress.ok} OK · {genProgress.fail} échec(s)
+                Génération en arrière-plan · {cardsReady} prêtes · {cardsGenerating} en cours · {cardsQueued} en file · {cardsFailed} échec(s)
               </p>
             </div>
           )}
