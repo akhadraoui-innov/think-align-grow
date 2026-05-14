@@ -32,12 +32,30 @@ export default function AdminToolkitDetail() {
   const detail = useAdminToolkitDetail(id);
   const { toolkit, pillars, cards, challengeTemplates, gamePlans, quizQuestions, orgToolkits, isLoading, invalidateAll } = detail;
   const [genLoading, setGenLoading] = useState(false);
-  const [genProgress, setGenProgress] = useState({ done: 0, total: 0, ok: 0, fail: 0 });
   const [scope, setScope] = useState<string>("missing"); // missing | failed | all | pillar:<id>
-  const cancelRef = useRef(false);
 
   const cardsWithoutImage = cards.filter((c: any) => !c.image_url).length;
   const cardsFailed = cards.filter((c: any) => c.image_status === "failed").length;
+  const cardsQueued = cards.filter((c: any) => c.image_status === "queued").length;
+  const cardsGenerating = cards.filter((c: any) => c.image_status === "generating").length;
+  const cardsReady = cards.filter((c: any) => c.image_status === "ready" || (c.image_url && c.image_status !== "failed")).length;
+  const inFlight = cardsQueued + cardsGenerating;
+
+  // Realtime subscription on cards of this toolkit's pillars → live progress without polling
+  useEffect(() => {
+    if (!toolkit || pillars.length === 0) return;
+    const pillarIds = pillars.map((p: any) => p.id);
+    const channel = supabase
+      .channel(`toolkit-cards-${toolkit.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "cards", filter: `pillar_id=in.(${pillarIds.join(",")})` },
+        () => { invalidateAll(); },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toolkit?.id, pillars.length]);
 
   const buildTargetIds = (): string[] => {
     if (scope === "missing") return cards.filter((c: any) => !c.image_url).map((c: any) => c.id);
@@ -50,53 +68,31 @@ export default function AdminToolkitDetail() {
     return [];
   };
 
-  const runBatches = async () => {
+  const launchGeneration = async () => {
     if (!toolkit) return;
     const ids = buildTargetIds();
     if (ids.length === 0) {
       toast.info("Aucune carte à traiter pour ce périmètre");
       return;
     }
-    cancelRef.current = false;
     setGenLoading(true);
-    setGenProgress({ done: 0, total: ids.length, ok: 0, fail: 0 });
-
-    const BATCH = 5;
-    let ok = 0, fail = 0, done = 0;
     try {
-      for (let i = 0; i < ids.length; i += BATCH) {
-        if (cancelRef.current) break;
-        const slice = ids.slice(i, i + BATCH);
-        const { data, error } = await supabase.functions.invoke("academy-generate", {
-          body: { action: "generate-card-illustrations-batch", card_ids: slice },
-        });
-        if (error) throw error;
-        ok += data?.succeeded || 0;
-        fail += data?.failed || 0;
-        done += data?.processed || 0;
-        setGenProgress({ done, total: ids.length, ok, fail });
-        if (data?.aiCredits === "exhausted") {
-          toast.error("Solde IA épuisé", {
-            description: "Rechargez dans Cloud & AI balance puis relancez.",
-            duration: 8000,
-          });
-          break;
-        }
-      }
-      if (!cancelRef.current) {
-        toast.success(`Terminé : ${ok} générées, ${fail} échec(s)`);
-      } else {
-        toast.info(`Interrompu : ${ok} générées sur ${ids.length}`);
-      }
+      // One single fire-and-forget call (server runs in background via EdgeRuntime.waitUntil)
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-card-illustrations-batch", card_ids: ids },
+      });
+      if (error) throw error;
+      toast.success(`Génération lancée (${data?.queued ?? ids.length} cartes)`, {
+        description: "Le travail tourne en arrière-plan, vous pouvez fermer cette page. La progression s'affiche en temps réel.",
+        duration: 6000,
+      });
       invalidateAll();
     } catch (e: any) {
-      toast.error("Échec du batch", { description: e?.message });
+      toast.error("Échec du lancement", { description: e?.message });
     } finally {
       setGenLoading(false);
     }
   };
-
-  const cancelBatch = () => { cancelRef.current = true; };
 
   if (isLoading) {
     return <AdminShell><div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div></AdminShell>;
