@@ -1594,43 +1594,138 @@ async function generateAllToolkitCovers(supabase: any, params: any, apiKey: stri
 }
 
 // ─── Card Illustration Generation ───────────────────────────────────
+// Architecture:
+//  1. Toolkit-level style guide computed ONCE per batch (cached in toolkits.illustration_style)
+//     → guarantees visual coherence across all cards of a toolkit.
+//  2. Per-card prompt built deterministically (NO LLM call) from style guide + pillar color + card title
+//     → halves time + cost per card.
+//  3. PNG output from Gemini is decoded, resized to max 768px and re-encoded as JPEG q82
+//     → ~10x lighter assets (storage + portal load).
 
-const CARD_STYLE = `Premium editorial pictogram-style illustration for a corporate strategy card game. Centered abstract symbolic composition (no people, no faces, no text). Modern flat-vector with subtle isometric depth, soft cinematic lighting, layered shapes, harmonious 2-3 color palette built around the dominant brand color, gentle shadow, elegant negative space. Square 1:1 framing, balanced and minimal — feels like a premium trading card visual. Absolutely NO text, NO letters, NO words, NO numbers, NO logo, NO watermark.`;
+import { Image } from "https://deno.land/x/imagescript@1.2.17/mod.ts";
 
-const CARD_PROMPTER_SYS = "You write rich, evocative prompts for premium SQUARE pictogram illustrations of corporate strategy cards. Symbolic, abstract, no people, no text. Output ONLY the prompt, 50-80 words.";
+type StyleGuide = {
+  palette: string[]; // hex colors
+  abstraction: string; // e.g. "flat vector with subtle isometric depth"
+  motifs: string; // recurring visual elements
+  mood: string; // adjectives
+};
 
-async function buildCardPrompt(apiKey: string, card: any, pillar: any, toolkit: any): Promise<string> {
-  const accent = pillar?.color || "deep indigo";
-  const promptResult = await callAI(
-    apiKey,
-    CARD_PROMPTER_SYS,
-    `Write a square pictogram prompt for a corporate strategy card. Toolkit: "${toolkit?.name}". Pillar: "${pillar?.name}" (accent color ${accent}). Card title: "${card.title}". Subtitle: "${card.subtitle || ""}". Action: "${(card.action || "").slice(0, 200)}". KPI: "${(card.kpi || "").slice(0, 120)}". Pick a strong central symbolic metaphor evoking the title. Style baseline (extend with a topic-specific symbol): ${CARD_STYLE}`,
-    undefined,
-    undefined,
-    "google/gemini-2.5-flash"
-  );
-  return typeof promptResult === "string" ? promptResult.trim() : `Symbolic pictogram for ${card.title}. ${CARD_STYLE}`;
+const DEFAULT_STYLE: StyleGuide = {
+  palette: ["#1a1a2e", "#e94560", "#f5f5f7"],
+  abstraction: "flat vector with subtle isometric depth",
+  motifs: "geometric shapes, soft gradients, layered composition",
+  mood: "premium, editorial, calm",
+};
+
+async function buildToolkitStyleGuide(
+  supabase: any,
+  apiKey: string,
+  toolkit: any,
+  pillars: any[],
+): Promise<StyleGuide> {
+  // Reuse cached style guide if present
+  if (toolkit.illustration_style && typeof toolkit.illustration_style === "object" && Array.isArray(toolkit.illustration_style.palette)) {
+    return toolkit.illustration_style as StyleGuide;
+  }
+
+  const pillarColors = (pillars || [])
+    .map((p) => p?.color)
+    .filter((c) => typeof c === "string" && c.startsWith("#"));
+
+  const sys = "You are an art director defining a coherent illustration style guide for a card game. Output STRICT JSON only.";
+  const usr = `Toolkit: "${toolkit.name}". Theme: ${(toolkit.description || "").slice(0, 300)}. Audience: ${toolkit.target_audience || "professionals"}. Pillar colors: ${pillarColors.join(", ") || "none provided"}.
+
+Return ONLY a JSON object with this shape:
+{
+  "palette": ["#hex","#hex","#hex"],   // 3 harmonious hex colors anchoring all cards
+  "abstraction": "...",                 // 1 short sentence: art style (flat vector, soft isometric, line art, etc.)
+  "motifs": "...",                      // recurring visual elements (shapes, textures)
+  "mood": "..."                         // 3-5 adjectives
+}
+No prose, no markdown, no code fences.`;
+
+  let style: StyleGuide = DEFAULT_STYLE;
+  try {
+    const raw = await callAI(apiKey, sys, usr, undefined, undefined, "google/gemini-2.5-flash");
+    const txt = typeof raw === "string" ? raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim() : "";
+    const parsed = JSON.parse(txt);
+    if (parsed && Array.isArray(parsed.palette) && parsed.palette.length >= 2) {
+      style = {
+        palette: parsed.palette.slice(0, 4).map((c: any) => String(c)),
+        abstraction: String(parsed.abstraction || DEFAULT_STYLE.abstraction).slice(0, 200),
+        motifs: String(parsed.motifs || DEFAULT_STYLE.motifs).slice(0, 200),
+        mood: String(parsed.mood || DEFAULT_STYLE.mood).slice(0, 120),
+      };
+    }
+  } catch (e) {
+    console.warn("style guide fallback for toolkit", toolkit.id, e instanceof Error ? e.message : e);
+  }
+
+  // Persist for reuse on future card additions
+  await supabase.from("toolkits").update({ illustration_style: style }).eq("id", toolkit.id);
+  return style;
 }
 
-async function renderCardIllustration(supabase: any, apiKey: string, card: any, pillar: any, toolkit: any): Promise<{ ok: boolean; url?: string; status?: number }> {
+function buildCardPrompt(card: any, pillar: any, toolkit: any, style: StyleGuide): string {
+  const accent = pillar?.color || style.palette[1] || "#e94560";
+  const palette = style.palette.join(", ");
+  const title = String(card.title || "").slice(0, 120);
+  const subtitle = String(card.subtitle || "").slice(0, 120);
+  return [
+    `Premium SQUARE pictogram for the corporate strategy card "${title}".`,
+    subtitle ? `Concept: ${subtitle}.` : "",
+    `Toolkit theme: ${toolkit?.name}. Pillar: ${pillar?.name || "—"}.`,
+    `Style: ${style.abstraction}. Motifs: ${style.motifs}. Mood: ${style.mood}.`,
+    `Strict palette (use ONLY these colors, dominant accent ${accent}): ${palette}.`,
+    `Centered abstract symbolic composition expressing the card title. Elegant negative space, soft cinematic lighting, balanced 1:1 framing.`,
+    `ABSOLUTELY NO people, NO faces, NO text, NO letters, NO words, NO numbers, NO logo, NO watermark.`,
+  ].filter(Boolean).join(" ");
+}
+
+async function compressToJpeg(pngBytes: Uint8Array, maxSize = 768, quality = 82): Promise<Uint8Array> {
+  try {
+    const img = await Image.decode(pngBytes);
+    const longest = Math.max(img.width, img.height);
+    if (longest > maxSize) {
+      const scale = maxSize / longest;
+      img.resize(Math.round(img.width * scale), Math.round(img.height * scale));
+    }
+    return await img.encodeJPEG(quality);
+  } catch (e) {
+    console.warn("compress fallback to png", e instanceof Error ? e.message : e);
+    return pngBytes;
+  }
+}
+
+async function renderCardIllustration(
+  supabase: any,
+  apiKey: string,
+  card: any,
+  pillar: any,
+  toolkit: any,
+  style: StyleGuide,
+): Promise<{ ok: boolean; url?: string; status?: number }> {
   await supabase.from("cards").update({ image_status: "generating" }).eq("id", card.id);
   try {
-    const prompt = await buildCardPrompt(apiKey, card, pillar, toolkit);
+    const prompt = buildCardPrompt(card, pillar, toolkit, style);
     const img = await renderImage(apiKey, prompt);
     if (!img.ok) {
       await supabase.from("cards").update({ image_status: "failed" }).eq("id", card.id);
       return { ok: false, status: img.status };
     }
-    const fileName = `card-illustrations/${toolkit.id}/${card.id}.png`;
+    const compressed = await compressToJpeg(img.bytes!);
+    const fileName = `card-illustrations/${toolkit.id}/${card.id}.jpg`;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const { error: uploadErr } = await supabase.storage
       .from("academy-assets")
-      .upload(fileName, img.bytes!, { contentType: "image/png", upsert: true });
+      .upload(fileName, compressed, { contentType: "image/jpeg", upsert: true });
     if (uploadErr) {
       await supabase.from("cards").update({ image_status: "failed" }).eq("id", card.id);
       return { ok: false };
     }
-    const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}`;
+    // Cache-bust via timestamp param (URL always stable, but new upload replaces bytes)
+    const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}?v=${Date.now()}`;
     await supabase.from("cards").update({
       image_url: publicUrl,
       image_prompt: prompt,
