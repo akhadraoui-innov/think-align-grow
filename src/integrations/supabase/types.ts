@@ -3914,6 +3914,7 @@ export type Database = {
           estimated_duration: string | null
           icon_emoji: string | null
           id: string
+          illustration_style: Json | null
           name: string
           nomenclature: string | null
           price_info: Json
@@ -3938,6 +3939,7 @@ export type Database = {
           estimated_duration?: string | null
           icon_emoji?: string | null
           id?: string
+          illustration_style?: Json | null
           name: string
           nomenclature?: string | null
           price_info?: Json
@@ -3962,6 +3964,7 @@ export type Database = {
           estimated_duration?: string | null
           icon_emoji?: string | null
           id?: string
+          illustration_style?: Json | null
           name?: string
           nomenclature?: string | null
           price_info?: Json
