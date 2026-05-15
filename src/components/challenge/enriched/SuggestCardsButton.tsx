@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Sparkles, Plus, Loader2 } from "lucide-react";
+import { Sparkles, Plus, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -13,9 +13,14 @@ interface Props {
   pillars: DbPillar[];
   placedCardIds?: Set<string>;
   onAdd: (cardId: string) => void;
+  /** Compact = small button, used when slot already has content */
+  compact?: boolean;
+  /** Default open state */
+  defaultOpen?: boolean;
+  /** Max suggestions to show */
+  limit?: number;
 }
 
-// Naive but instant scoring: token overlap on title/definition/objective vs slot+subject
 function score(card: DbCard, query: string): number {
   if (!query) return 0;
   const haystack = `${card.title} ${card.subtitle ?? ""} ${card.definition ?? ""} ${card.objective ?? ""}`.toLowerCase();
@@ -29,21 +34,30 @@ function score(card: DbCard, query: string): number {
   return s;
 }
 
-export function SuggestCardsButton({ slotHint, subjectTitle, cards, pillars, placedCardIds, onAdd }: Props) {
-  const [open, setOpen] = useState(false);
+export function SuggestCardsButton({
+  slotHint, subjectTitle, cards, pillars, placedCardIds, onAdd,
+  compact = false, defaultOpen = false, limit = 3,
+}: Props) {
+  const [open, setOpen] = useState(defaultOpen);
   const [loading, setLoading] = useState(false);
+  // Bumped on refresh to re-shuffle the candidate pool
+  const [seed, setSeed] = useState(0);
 
   const suggestions = useMemo(() => {
     const q = `${subjectTitle ?? ""} ${slotHint ?? ""}`.trim();
     if (!q) return [];
-    return cards
+    // Pull a wider candidate pool, then rotate/shuffle by seed for "refresh"
+    const scored = cards
       .filter(c => !placedCardIds?.has(c.id))
       .map(c => ({ card: c, s: score(c, q) }))
       .filter(x => x.s > 0)
-      .sort((a, b) => b.s - a.s)
-      .slice(0, 3)
-      .map(x => x.card);
-  }, [cards, placedCardIds, slotHint, subjectTitle]);
+      .sort((a, b) => b.s - a.s);
+    const pool = scored.slice(0, Math.max(limit * 3, 9));
+    // Deterministic rotation based on seed
+    const offset = seed % Math.max(pool.length, 1);
+    const rotated = pool.slice(offset).concat(pool.slice(0, offset));
+    return rotated.slice(0, limit).map(x => x.card);
+  }, [cards, placedCardIds, slotHint, subjectTitle, seed, limit]);
 
   const handleClick = () => {
     if (open) { setOpen(false); return; }
@@ -51,23 +65,45 @@ export function SuggestCardsButton({ slotHint, subjectTitle, cards, pillars, pla
     setTimeout(() => { setLoading(false); setOpen(true); }, 180);
   };
 
+  const handleRefresh = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLoading(true);
+    setSeed(s => s + 1);
+    setTimeout(() => setLoading(false), 220);
+    if (!open) setOpen(true);
+  };
+
   if (suggestions.length === 0) return null;
 
   return (
-    <div className="mt-2">
-      <button
-        onClick={handleClick}
-        type="button"
-        className={cn(
-          "w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all",
-          open
-            ? "border-primary/50 bg-primary/10 text-primary"
-            : "border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/50",
-        )}
-      >
-        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-        {open ? "Masquer les suggestions" : `Suggestions IA (${suggestions.length})`}
-      </button>
+    <div className={cn(compact ? "mt-1.5" : "mt-2")}>
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={handleClick}
+          type="button"
+          className={cn(
+            "flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-dashed transition-all font-bold uppercase tracking-wider",
+            compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]",
+            open
+              ? "border-primary/50 bg-primary/10 text-primary"
+              : "border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/50",
+          )}
+        >
+          {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+          {open ? "Masquer suggestions" : `Suggestions IA (${suggestions.length})`}
+        </button>
+        <button
+          type="button"
+          onClick={handleRefresh}
+          title="Relancer les suggestions"
+          className={cn(
+            "shrink-0 inline-flex items-center justify-center rounded-md border border-dashed border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/50 transition-all",
+            compact ? "h-[22px] w-[22px]" : "h-[26px] w-[26px]",
+          )}
+        >
+          <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
+        </button>
+      </div>
 
       <AnimatePresence>
         {open && (
