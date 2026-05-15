@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map } from "lucide-react";
+import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
@@ -15,6 +15,7 @@ import { PlateauBoard } from "./PlateauBoard";
 import { PresenceBar } from "./presence/PresenceBar";
 import { CopilotBubble } from "./copilot/CopilotBubble";
 import { cn } from "@/lib/utils";
+import { SessionTimeline } from "./innovations/SessionTimeline";
 import type { ChallengeTemplate } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 
@@ -34,6 +35,20 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
   const { peers, update: updatePresence } = useChallengePresence(session?.id);
   const [selected, setSelected] = useState<ChallengeArtifact | null>(null);
   const [view, setView] = useState<"cards" | "plateau">("cards");
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [timeCutoff, setTimeCutoff] = useState<string | null>(null);
+
+  // Time-filtered artifacts (Innovation #5)
+  const visibleArtifacts = useMemo(() => {
+    if (!timeCutoff) return artifacts;
+    const t = +new Date(timeCutoff);
+    return artifacts.filter(a => +new Date(a.created_at) <= t);
+  }, [artifacts, timeCutoff]);
+
+  const timelineEvents = useMemo(
+    () => artifacts.map(a => ({ id: a.id, created_at: a.created_at, kind: a.kind })),
+    [artifacts],
+  );
 
   // Broadcast which subject/artifact the user is currently viewing
   useEffect(() => {
