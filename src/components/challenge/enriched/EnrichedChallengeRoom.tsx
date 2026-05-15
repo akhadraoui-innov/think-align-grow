@@ -129,6 +129,15 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
               <Clock className="h-3 w-3" /> Timeline
             </button>
           )}
+          {showBoard && (
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="h-7 px-2 rounded-md border border-border text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 text-muted-foreground hover:bg-muted transition-colors"
+              title="Recherche sémantique (RAG)"
+            >
+              <Search className="h-3 w-3" /> Recherche
+            </button>
+          )}
           {isHost && session.status === "running" && (
             <Button size="sm" variant="outline" onClick={() => setStatus("briefing")}>
               <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Briefing
