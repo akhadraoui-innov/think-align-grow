@@ -39,11 +39,18 @@ const TABS: { id: ArtifactKind; label: string; icon: any }[] = [
   { id: "postit", label: "Post-its", icon: StickyNote },
   { id: "voice", label: "Vocaux", icon: Mic },
   { id: "question", label: "Questions", icon: HelpCircle },
+  { id: "image", label: "Images", icon: ImageIcon },
 ];
 
 export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artifacts, enabled, canEdit, selectedId, reactionsByArtifact, votesByArtifact, me, onSelect, onCreate, onUpdate, onDelete, onToggleReaction, onToggleVote }: Props) {
-  const allowedTabs = TABS.filter(t => (t.id === "postit" && enabled.postits) || (t.id === "voice" && enabled.voice) || (t.id === "question" && enabled.questions));
+  const allowedTabs = TABS.filter(t =>
+    (t.id === "postit" && enabled.postits) ||
+    (t.id === "voice" && enabled.voice) ||
+    (t.id === "question" && enabled.questions) ||
+    (t.id === "image" && (enabled.images ?? true))
+  );
   const [tab, setTab] = useState<ArtifactKind>(allowedTabs[0]?.id ?? "postit");
+  const [imageOpen, setImageOpen] = useState(false);
   const [filterCrit, setFilterCrit] = useState<Criticality | "all">("all");
   const [scope, setScope] = useState<"current" | "all">(currentSubjectId ? "current" : "all");
   const [includeResolved, setIncludeResolved] = useState(false);
