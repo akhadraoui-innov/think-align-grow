@@ -3,12 +3,26 @@ import { cn } from "@/lib/utils";
 import type { ChallengeSlot, ChallengeResponse } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import { getPillarCssColor, getPillarCssColorAlpha, PHASE_LABELS } from "@/hooks/useToolkitData";
-import { X, GripVertical } from "lucide-react";
+import { X, GripVertical, StickyNote, Mic, HelpCircle, Image as ImageIcon, Layers } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MaturitySelector } from "./MaturitySelector";
 import { FormatSelector, type CardFormat } from "./FormatSelector";
 import { SlotArtifactChip } from "@/components/challenge/enriched/SlotArtifactChip";
 import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
+
+const SLOT_TYPE_BADGE: Record<string, { label: string; cls: string }> = {
+  ranked: { label: "Ordre", cls: "bg-violet-100 text-violet-800 dark:bg-violet-950/40 dark:text-violet-200" },
+  single: { label: "1 carte", cls: "bg-primary/15 text-primary" },
+  multi: { label: "Multi", cls: "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200" },
+};
+
+const KIND_DROP_META: Record<string, { icon: any; label: string }> = {
+  postit: { icon: StickyNote, label: "Post-it" },
+  voice: { icon: Mic, label: "Vocal" },
+  question: { icon: HelpCircle, label: "Question" },
+  image: { icon: ImageIcon, label: "Image" },
+  card: { icon: Layers, label: "Carte" },
+};
 
 interface DropSlotProps {
   slot: ChallengeSlot;
