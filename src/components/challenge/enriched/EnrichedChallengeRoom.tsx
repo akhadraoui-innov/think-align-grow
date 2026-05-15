@@ -131,6 +131,8 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
             onDelete={remove}
             onToggleReaction={toggleReaction}
             onToggleVote={toggleVote}
+            cards={cards}
+            pillars={pillars}
           />
         )}
 
