@@ -77,11 +77,19 @@ export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artif
         </div>
       </div>
 
+      {currentSubjectId && (
+        <div className="px-3 py-1.5 border-b border-border flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider">
+          <button onClick={() => setScope("current")} className={cn("flex-1 py-1 rounded", scope === "current" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}>Sujet courant</button>
+          <button onClick={() => setScope("all")} className={cn("flex-1 py-1 rounded", scope === "all" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}>Tous sujets</button>
+          <button onClick={() => setIncludeResolved(v => !v)} className={cn("py-1 px-2 rounded", includeResolved ? "bg-emerald-500/10 text-emerald-600" : "text-muted-foreground hover:bg-muted")} title="Inclure résolus">✓</button>
+        </div>
+      )}
+
       {canEdit && (
         <div className="p-3 border-b border-border space-y-2">
-          {tab === "postit" && <PostitComposer onCreate={onCreate} />}
-          {tab === "voice" && <VoiceRecorder sessionId={sessionId} onCreate={onCreate} />}
-          {tab === "question" && <QuestionComposer onCreate={onCreate} sessionId={sessionId} />}
+          {tab === "postit" && <PostitComposer onCreate={onCreate} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
+          {tab === "voice" && <VoiceRecorder sessionId={sessionId} onCreate={onCreate} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
+          {tab === "question" && <QuestionComposer onCreate={onCreate} sessionId={sessionId} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
         </div>
       )}
 
