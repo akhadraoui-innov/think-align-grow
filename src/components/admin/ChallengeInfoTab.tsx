@@ -222,6 +222,62 @@ export function ChallengeInfoTab({ template, toolkits, pillars, onUpdate }: Prop
         </div>
       </div>
 
+      {/* Mode d'expérience */}
+      <div className="rounded-xl border border-border/40 bg-card overflow-hidden shadow-sm">
+        <div className="px-5 py-3.5 bg-muted/20 border-b border-border/30 flex items-center gap-2.5">
+          <Settings className="h-4 w-4 text-primary" />
+          <div>
+            <h3 className="font-semibold text-sm text-foreground tracking-tight">Mode d'expérience</h3>
+            <p className="text-[11px] text-muted-foreground/60">Classique = drag-and-drop de cartes. Enrichi = post-its, vocaux, IA Q&A, votes…</p>
+          </div>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => set("experience_mode", "classic")}
+              className={`rounded-lg border p-4 text-left transition-all ${form.experience_mode === "classic" ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "border-border/40 hover:border-border"}`}
+            >
+              <div className="font-bold text-sm">Classique</div>
+              <div className="text-xs text-muted-foreground mt-1">Cartes uniquement (mode actuel).</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => set("experience_mode", "enriched")}
+              className={`rounded-lg border p-4 text-left transition-all ${form.experience_mode === "enriched" ? "border-primary bg-primary/5 ring-2 ring-primary/30" : "border-border/40 hover:border-border"}`}
+            >
+              <div className="font-bold text-sm">Enrichi</div>
+              <div className="text-xs text-muted-foreground mt-1">Post-its, vocaux, questions IA, votes, RAG.</div>
+            </button>
+          </div>
+          {form.experience_mode === "enriched" && (
+            <div className="space-y-2 pt-2 border-t border-border/30">
+              <Label className="text-xs text-muted-foreground">Capacités activées</Label>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {[
+                  ["postits", "Post-its"],
+                  ["voice", "Mémos vocaux"],
+                  ["questions", "Cartes-questions"],
+                  ["reactions", "Réactions"],
+                  ["votes", "Votes pondérés"],
+                  ["timer", "Timer"],
+                  ["rag", "Assistant IA (RAG)"],
+                  ["anonymous", "Mode anonyme"],
+                ].map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2 rounded border border-border/40 px-2 py-1.5 cursor-pointer hover:bg-muted/30">
+                    <Checkbox
+                      checked={form.enriched_config?.[key] !== false}
+                      onCheckedChange={(v) => set("enriched_config", { ...form.enriched_config, [key]: !!v })}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="sticky bottom-0 z-10 -mx-1 px-1 py-3 bg-background/80 backdrop-blur-sm border-t border-border/20">
         <div className="flex justify-end">
           <Button onClick={handleSave} disabled={saving} size="sm" className="gap-2 shadow-sm">
