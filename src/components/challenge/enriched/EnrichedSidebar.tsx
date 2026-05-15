@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { StickyNote, Mic, HelpCircle, Filter, Image as ImageIcon, Plus } from "lucide-react";
+import { StickyNote, Mic, HelpCircle, Filter, Image as ImageIcon, Plus, Layers } from "lucide-react";
 import { PostitComposer } from "./postits/PostitComposer";
 import { PostitCard } from "./postits/PostitCard";
 import { VoiceRecorder } from "./voice/VoiceRecorder";
@@ -9,19 +9,23 @@ import { VoicePlayer } from "./voice/VoicePlayer";
 import { QuestionComposer } from "./questions/QuestionComposer";
 import { ImageLibrary } from "./images/ImageLibrary";
 import { ImageTile } from "./images/ImageTile";
+import { CardsTab } from "./sidebar/CardsTab";
 import { CRITICALITY_META } from "./constants";
 import { cn } from "@/lib/utils";
 import type { ChallengeArtifact, ArtifactKind, CreateArtifactInput, Criticality } from "@/hooks/useChallengeArtifacts";
 import type { ChallengeReaction, ChallengeVote } from "@/hooks/useChallengeReactions";
+import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import { ReactionBar } from "./ReactionBar";
 import { VotePill } from "./VotePill";
+
+type SidebarTab = ArtifactKind | "card";
 
 interface Props {
   sessionId: string;
   workshopId: string;
   currentSubjectId?: string | null;
   artifacts: ChallengeArtifact[];
-  enabled: { postits: boolean; voice: boolean; questions: boolean; images?: boolean };
+  enabled: { postits: boolean; voice: boolean; questions: boolean; images?: boolean; cards?: boolean };
   canEdit: boolean;
   selectedId: string | null;
   reactionsByArtifact: Record<string, ChallengeReaction[]>;
@@ -33,23 +37,35 @@ interface Props {
   onDelete: (id: string) => Promise<void>;
   onToggleReaction: (artifactId: string, emoji: string) => void;
   onToggleVote: (artifactId: string) => void;
+  // Cards (toolkit)
+  cards?: DbCard[];
+  pillars?: DbPillar[];
+  placedCardIds?: Set<string>;
+  onAddCardToStaging?: (cardId: string) => void;
 }
 
-const TABS: { id: ArtifactKind; label: string; icon: any }[] = [
+const TABS: { id: SidebarTab; label: string; icon: any }[] = [
+  { id: "card", label: "Cartes", icon: Layers },
   { id: "postit", label: "Post-its", icon: StickyNote },
   { id: "voice", label: "Vocaux", icon: Mic },
   { id: "question", label: "Questions", icon: HelpCircle },
   { id: "image", label: "Images", icon: ImageIcon },
 ];
 
-export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artifacts, enabled, canEdit, selectedId, reactionsByArtifact, votesByArtifact, me, onSelect, onCreate, onUpdate, onDelete, onToggleReaction, onToggleVote }: Props) {
+export function EnrichedSidebar({
+  sessionId, workshopId, currentSubjectId, artifacts, enabled, canEdit, selectedId,
+  reactionsByArtifact, votesByArtifact, me,
+  onSelect, onCreate, onUpdate, onDelete, onToggleReaction, onToggleVote,
+  cards = [], pillars = [], placedCardIds, onAddCardToStaging,
+}: Props) {
   const allowedTabs = TABS.filter(t =>
+    (t.id === "card" && (enabled.cards ?? true) && cards.length > 0) ||
     (t.id === "postit" && enabled.postits) ||
     (t.id === "voice" && enabled.voice) ||
     (t.id === "question" && enabled.questions) ||
     (t.id === "image" && (enabled.images ?? true))
   );
-  const [tab, setTab] = useState<ArtifactKind>(allowedTabs[0]?.id ?? "postit");
+  const [tab, setTab] = useState<SidebarTab>(allowedTabs[0]?.id ?? "postit");
   const [imageOpen, setImageOpen] = useState(false);
   const [filterCrit, setFilterCrit] = useState<Criticality | "all">("all");
   const [scope, setScope] = useState<"current" | "all">(currentSubjectId ? "current" : "all");
