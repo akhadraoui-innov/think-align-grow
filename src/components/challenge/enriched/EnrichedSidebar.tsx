@@ -72,6 +72,7 @@ export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artif
     postit: baseList.filter(a => a.kind === "postit").length,
     voice: baseList.filter(a => a.kind === "voice").length,
     question: baseList.filter(a => a.kind === "question").length,
+    image: baseList.filter(a => a.kind === "image").length,
   }), [baseList]);
 
   return (
