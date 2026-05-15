@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, useEffect } from "react";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Maximize2, Camera } from "lucide-react";
 import type { ChallengeSubject, ChallengeSlot, ChallengeResponse } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
@@ -7,6 +7,10 @@ import { DropSlot } from "./DropSlot";
 import { StagingZone, type StagingItem } from "./StagingZone";
 import { cn } from "@/lib/utils";
 import type { CardFormat } from "./FormatSelector";
+import { FocusSubjectMode } from "./enriched/innovations/FocusSubjectMode";
+import { captureSubjectSnapshot } from "./enriched/innovations/SubjectSnapshot";
+import { ActivityHeat, useSlotActivityCounts } from "./enriched/innovations/ActivityHeatmap";
+import { toast } from "sonner";
 
 interface SubjectCanvasProps {
   subject: ChallengeSubject;
@@ -57,8 +61,14 @@ export function SubjectCanvas({
   const requiredFilled = subjectSlots.filter(s => s.required && subjectResponses.some(r => r.slot_id === s.id)).length;
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const focusGridRef = useRef<HTMLDivElement>(null);
   const [canScrollUp, setCanScrollUp] = useState(false);
   const [canScrollDown, setCanScrollDown] = useState(false);
+  const [focusOpen, setFocusOpen] = useState(false);
+
+  const subjectArtifacts = artifacts.filter(a => a.subject_id === subject.id);
+  const slotActivityCounts = useSlotActivityCounts(subjectArtifacts);
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
