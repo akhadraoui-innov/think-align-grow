@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Search, X, Plus, Sparkles, Check, Filter, Layers, Workflow, Star, Wand2, Maximize2 } from "lucide-react";
+import { Search, X, Plus, Sparkles, Check, Filter, Layers, Workflow, Star, Wand2, Maximize2, MessageCircle } from "lucide-react";
+import { DeckChat } from "./DeckChat";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,15 +22,16 @@ interface Props {
   customCards: ChallengeArtifact[]; // kind=card, is_custom_card=true
   placedCardIds?: Set<string>;
   currentSubjectId?: string | null;
+  sessionId?: string;
   onAddToStaging?: (cardId: string) => void;
   onCreateCustomCard?: (input: CreateArtifactInput) => Promise<any>;
 }
 
-type Tab = "library" | "mine";
+type Tab = "library" | "mine" | "chat";
 
 export function CardExplorer({
   open, onOpenChange,
-  cards, pillars, customCards, placedCardIds, currentSubjectId,
+  cards, pillars, customCards, placedCardIds, currentSubjectId, sessionId,
   onAddToStaging, onCreateCustomCard,
 }: Props) {
   const [tab, setTab] = useState<Tab>("library");
