@@ -86,7 +86,7 @@ function renderBody(markdown: string): string {
     const btn = line.match(/^\{\{\s*button:([^|]+)\|([^}]+)\s*\}\}$/);
     if (btn) {
       closeList(); closeQuote();
-      out.push(`<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0"><tr><td align="center" bgcolor="${BRAND_PRIMARY}" style="border-radius:10px"><a href="${btn[2].trim()}" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px">${escapeHtml(btn[1].trim())}</a></td></tr></table>`);
+      out.push(`<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0"><tr><td align="center" bgcolor="${BRAND_PRIMARY}" style="border-radius:10px"><a href="${safeUrl(btn[2].trim())}" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px">${escapeHtml(btn[1].trim())}</a></td></tr></table>`);
       continue;
     }
 
