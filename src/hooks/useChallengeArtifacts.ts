@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export type ArtifactKind = "card" | "postit" | "voice" | "question" | "sticker" | "link_note" | "vote_summary";
+export type ArtifactKind = "card" | "postit" | "voice" | "question" | "image" | "sticker" | "link_note" | "vote_summary";
 export type Criticality = "low" | "medium" | "high" | "critical";
 
 export interface ChallengeArtifact {
