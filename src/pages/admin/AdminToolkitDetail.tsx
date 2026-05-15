@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Loader2, Settings, Layers, LayoutGrid, Swords, Map, HelpCircle, Building2, Sparkles, Image as ImageIcon, Gamepad2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { appendAuditLog } from "@/lib/auditClient";
 import { ToolkitInfoTab } from "@/components/admin/ToolkitInfoTab";
 import { ToolkitPillarsTab } from "@/components/admin/ToolkitPillarsTab";
 import { ToolkitCardsTab } from "@/components/admin/ToolkitCardsTab";
