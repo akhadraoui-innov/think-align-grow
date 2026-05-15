@@ -226,10 +226,10 @@ function ShowcaseCard({
     <motion.div
       whileHover={{ y: -3 }}
       draggable
-      onDragStart={(e) => {
+      onDragStart={((e: React.DragEvent) => {
         e.dataTransfer.setData("card-id", card.id);
         e.dataTransfer.effectAllowed = "move";
-      }}
+      }) as any}
       onClick={onToggle}
       className={cn(
         "group relative rounded-xl overflow-hidden cursor-grab active:cursor-grabbing border-2 transition-all bg-card flex flex-col h-[340px]",
