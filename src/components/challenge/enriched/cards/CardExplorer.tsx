@@ -88,6 +88,9 @@ export function CardExplorer({
               <Star className="h-3 w-3" /> Mes cartes
               {customCards.length > 0 && <span className="ml-0.5 inline-flex items-center justify-center h-3.5 min-w-[14px] px-1 rounded-full text-[9px] tabular-nums bg-background/30">{customCards.length}</span>}
             </button>
+            <button onClick={() => setTab("chat")} className={cn("px-3 h-7 rounded text-[11px] font-bold uppercase tracking-wider flex items-center gap-1", tab === "chat" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
+              <MessageCircle className="h-3 w-3" /> Copilote
+            </button>
           </div>
           <Button size="sm" variant="ghost" onClick={() => onOpenChange(false)} className="ml-1"><X className="h-4 w-4" /></Button>
         </div>
@@ -186,6 +189,43 @@ export function CardExplorer({
             currentSubjectId={currentSubjectId}
             onCreate={onCreateCustomCard}
           />
+        )}
+
+        {tab === "chat" && sessionId && (
+          <DeckChat
+            sessionId={sessionId}
+            cards={cards}
+            pillars={pillars}
+            onPickCard={(cardId) => { onAddToStaging?.(cardId); toast.success("Carte ajoutée en zone d'attente"); }}
+            onCreateCustomFromDraft={async (draft) => {
+              if (!onCreateCustomCard || !currentSubjectId) {
+                toast.error("Sélectionnez un sujet pour créer une carte privée");
+                return;
+              }
+              const phaseKey = (draft.phase && Object.keys(PHASE_LABELS).find(k => PHASE_LABELS[k].toLowerCase() === draft.phase!.toLowerCase())) || draft.phase || "foundations";
+              await onCreateCustomCard({
+                kind: "card",
+                content: draft.title,
+                subject_id: currentSubjectId,
+                scope: "subject",
+                visibility_subject_id: currentSubjectId,
+                is_custom_card: true,
+                card_payload: {
+                  title: draft.title,
+                  definition: draft.definition || null,
+                  pillar_id: draft.pillar_id || null,
+                  phase: phaseKey,
+                  custom: true,
+                },
+                ai_meta: { created_via: "deck_chat_draft" },
+              });
+              toast.success("Carte personnalisée créée depuis le copilote");
+              setTab("mine");
+            }}
+          />
+        )}
+        {tab === "chat" && !sessionId && (
+          <div className="flex-1 grid place-items-center text-sm text-muted-foreground">Session indisponible.</div>
         )}
       </DialogContent>
     </Dialog>
