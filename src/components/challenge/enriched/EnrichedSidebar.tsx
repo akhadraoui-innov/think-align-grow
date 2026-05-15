@@ -171,7 +171,23 @@ export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artif
             </button>
           );
         })}
+        {tab === "image" && filtered.map(a => (
+          <button key={a.id} onClick={() => onSelect(a)} className={cn("w-full text-left rounded-lg border border-border p-2 space-y-1.5 hover:bg-muted/40 transition-colors overflow-hidden", selectedId === a.id && "ring-2 ring-primary")}>
+            <ImageTile artifact={a} compact />
+            {(a.ai_meta?.alt || a.content) && (
+              <p className="text-[10px] text-muted-foreground line-clamp-1 px-1">{a.ai_meta?.alt || a.content}</p>
+            )}
+          </button>
+        ))}
       </div>
+
+      <ImageLibrary
+        open={imageOpen}
+        onOpenChange={setImageOpen}
+        sessionId={sessionId}
+        defaultSubjectId={scope === "current" ? currentSubjectId : null}
+        onCreate={onCreate}
+      />
     </aside>
   );
 }
