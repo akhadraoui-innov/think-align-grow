@@ -1740,6 +1740,7 @@ export type Database = {
           audio_url: string | null
           author_id: string
           card_id: string | null
+          card_payload: Json | null
           category: string | null
           color: string | null
           content: string | null
@@ -1752,18 +1753,23 @@ export type Database = {
           format: string
           id: string
           is_anonymous: boolean
+          is_custom_card: boolean
           kind: Database["public"]["Enums"]["challenge_artifact_kind"]
           parent_artifact_id: string | null
           position: Json | null
           resolved_at: string | null
           resolved_by: string | null
+          scope: string
           session_id: string
           slot_id: string | null
           status: string
           subject_id: string | null
           tags: string[]
+          thread_order: number
+          thread_root_id: string | null
           transcription: string | null
           updated_at: string
+          visibility_subject_id: string | null
           workshop_id: string
           z_index: number
         }
@@ -1773,6 +1779,7 @@ export type Database = {
           audio_url?: string | null
           author_id: string
           card_id?: string | null
+          card_payload?: Json | null
           category?: string | null
           color?: string | null
           content?: string | null
@@ -1785,18 +1792,23 @@ export type Database = {
           format?: string
           id?: string
           is_anonymous?: boolean
+          is_custom_card?: boolean
           kind: Database["public"]["Enums"]["challenge_artifact_kind"]
           parent_artifact_id?: string | null
           position?: Json | null
           resolved_at?: string | null
           resolved_by?: string | null
+          scope?: string
           session_id: string
           slot_id?: string | null
           status?: string
           subject_id?: string | null
           tags?: string[]
+          thread_order?: number
+          thread_root_id?: string | null
           transcription?: string | null
           updated_at?: string
+          visibility_subject_id?: string | null
           workshop_id: string
           z_index?: number
         }
@@ -1806,6 +1818,7 @@ export type Database = {
           audio_url?: string | null
           author_id?: string
           card_id?: string | null
+          card_payload?: Json | null
           category?: string | null
           color?: string | null
           content?: string | null
@@ -1818,18 +1831,23 @@ export type Database = {
           format?: string
           id?: string
           is_anonymous?: boolean
+          is_custom_card?: boolean
           kind?: Database["public"]["Enums"]["challenge_artifact_kind"]
           parent_artifact_id?: string | null
           position?: Json | null
           resolved_at?: string | null
           resolved_by?: string | null
+          scope?: string
           session_id?: string
           slot_id?: string | null
           status?: string
           subject_id?: string | null
           tags?: string[]
+          thread_order?: number
+          thread_root_id?: string | null
           transcription?: string | null
           updated_at?: string
+          visibility_subject_id?: string | null
           workshop_id?: string
           z_index?: number
         }
@@ -1902,6 +1920,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "challenge_copilot_threads_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_embeddings: {
+        Row: {
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          metadata: Json
+          session_id: string
+          source_id: string
+          source_type: string
+          updated_at: string
+          workshop_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json
+          session_id: string
+          source_id: string
+          source_type: string
+          updated_at?: string
+          workshop_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json
+          session_id?: string
+          source_id?: string
+          source_type?: string
+          updated_at?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_embeddings_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "challenge_sessions"
@@ -2189,7 +2254,9 @@ export type Database = {
           ended_at: string | null
           facilitator_notes: string | null
           id: string
+          invite_code: string | null
           organization_id: string | null
+          slug: string | null
           started_at: string | null
           status: string
           template_id: string
@@ -2204,7 +2271,9 @@ export type Database = {
           ended_at?: string | null
           facilitator_notes?: string | null
           id?: string
+          invite_code?: string | null
           organization_id?: string | null
+          slug?: string | null
           started_at?: string | null
           status?: string
           template_id: string
@@ -2219,7 +2288,9 @@ export type Database = {
           ended_at?: string | null
           facilitator_notes?: string | null
           id?: string
+          invite_code?: string | null
           organization_id?: string | null
+          slug?: string | null
           started_at?: string | null
           status?: string
           template_id?: string
@@ -6430,6 +6501,22 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["challenge_artifact_kind"]
           similarity: number
+        }[]
+      }
+      match_challenge_context: {
+        Args: {
+          p_match_count?: number
+          p_query_embedding: string
+          p_session_id: string
+          p_source_types?: string[]
+        }
+        Returns: {
+          content: string
+          id: string
+          metadata: Json
+          similarity: number
+          source_id: string
+          source_type: string
         }[]
       }
       move_to_dlq: {
