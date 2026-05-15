@@ -8,6 +8,7 @@ import { useCards, usePillars } from "@/hooks/useToolkitData";
 import { useChallengeTemplate } from "@/hooks/useChallengeData";
 import { useAuth } from "@/hooks/useAuth";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
+import { EnrichedChallengeRoom } from "@/components/challenge/enriched/EnrichedChallengeRoom";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
