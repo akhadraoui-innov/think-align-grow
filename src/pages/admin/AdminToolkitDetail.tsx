@@ -108,6 +108,12 @@ export default function AdminToolkitDetail() {
         description: "Le travail tourne en arrière-plan, vous pouvez fermer cette page. Reprise automatique en cas de coupure.",
         duration: 6000,
       });
+      appendAuditLog({
+        action: "toolkit.illustrations.bulk_generate",
+        entityType: "toolkit",
+        entityId: toolkit.id,
+        payload: { scope, requested: ids.length, queued },
+      });
       invalidateAll();
     } catch (e: any) {
       toast.error("Échec du lancement", { description: e?.message });
