@@ -92,37 +92,54 @@ export function EnrichedSidebar({
     image: baseList.filter(a => a.kind === "image").length,
   }), [baseList, cards.length]);
 
-  // Drag-start props for any artifact tile
+  // Drag-start props for any artifact tile (uses native ghost from the tile itself)
   const dragProps = (a: ChallengeArtifact) => ({
     draggable: canEdit,
-    onDragStart: (e: React.DragEvent) => {
+    onDragStart: (e: React.DragEvent<HTMLElement>) => {
       e.dataTransfer.setData("artifact-id", a.id);
       e.dataTransfer.setData("artifact-kind", a.kind);
       e.dataTransfer.effectAllowed = "move";
+      // Use the tile node itself as drag image, offset to the cursor
+      const node = e.currentTarget as HTMLElement;
+      const rect = node.getBoundingClientRect();
+      try { e.dataTransfer.setDragImage(node, Math.min(40, rect.width / 2), Math.min(20, rect.height / 2)); } catch {}
     },
   });
 
   return (
-    <aside className="w-[300px] min-w-[260px] max-w-[320px] shrink-0 border-r border-border bg-background/60 flex flex-col h-full">
-      <div className="px-2 pt-2 pb-1.5 border-b border-border">
-        <div className="flex gap-0.5">
-          {allowedTabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={cn(
-                "flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors",
-                tab === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
-              )}
-              title={t.label}
-            >
-              <t.icon className="h-3.5 w-3.5" />
-              <span className="flex items-center gap-1">
-                {t.label}
-                <span className="text-[9px] opacity-70 tabular-nums">{counts[t.id as keyof typeof counts] ?? 0}</span>
-              </span>
-            </button>
-          ))}
+    <aside className="w-[280px] min-w-[260px] max-w-[300px] shrink-0 border-r border-border bg-background/60 flex flex-col h-full">
+      <div className="px-1.5 pt-2 border-b border-border">
+        <div className="flex">
+          {allowedTabs.map(t => {
+            const active = tab === t.id;
+            const count = counts[t.id as keyof typeof counts] ?? 0;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "relative flex-1 flex flex-col items-center justify-end gap-0.5 pt-1.5 pb-2 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap",
+                  active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+                title={`${t.label} (${count})`}
+              >
+                <t.icon className={cn("h-4 w-4 transition-colors", active && "text-primary")} />
+                <span className="flex items-center gap-1 leading-none">
+                  <span>{t.label}</span>
+                  {count > 0 && (
+                    <span className={cn(
+                      "inline-flex items-center justify-center h-3.5 min-w-[14px] px-1 rounded-full text-[9px] tabular-nums",
+                      active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    )}>{count}</span>
+                  )}
+                </span>
+                <span className={cn(
+                  "absolute left-1/2 -translate-x-1/2 bottom-0 h-[2px] rounded-full transition-all",
+                  active ? "w-8 bg-primary" : "w-0 bg-transparent"
+                )} />
+              </button>
+            );
+          })}
         </div>
       </div>
 
