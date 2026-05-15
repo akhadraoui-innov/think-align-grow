@@ -7,6 +7,8 @@ import { X, GripVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MaturitySelector } from "./MaturitySelector";
 import { FormatSelector, type CardFormat } from "./FormatSelector";
+import { SlotArtifactChip } from "@/components/challenge/enriched/SlotArtifactChip";
+import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
 
 interface DropSlotProps {
   slot: ChallengeSlot;
@@ -18,10 +20,18 @@ interface DropSlotProps {
   onMoveToSlot?: (responseId: string, newSlotId: string, cardId: string) => void;
   onUpdateResponse?: (responseId: string, updates: { format?: string; maturity?: number; rank?: number }) => void;
   readOnly?: boolean;
+  attachedArtifacts?: ChallengeArtifact[];
+  onAttachArtifact?: (artifactId: string) => void;
+  onDetachArtifact?: (artifactId: string) => void;
+  onSelectArtifact?: (a: ChallengeArtifact) => void;
 }
 
-export function DropSlot({ slot, responses, cards, pillars, onDrop, onRemove, onMoveToSlot, onUpdateResponse, readOnly }: DropSlotProps) {
+export function DropSlot({
+  slot, responses, cards, pillars, onDrop, onRemove, onMoveToSlot, onUpdateResponse, readOnly,
+  attachedArtifacts = [], onAttachArtifact, onDetachArtifact, onSelectArtifact,
+}: DropSlotProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [dragKind, setDragKind] = useState<string | null>(null);
   const [reorderDropIdx, setReorderDropIdx] = useState<number | null>(null);
 
   const slotResponses = responses
