@@ -47,16 +47,6 @@ export function BriefingForm({ context, readOnly, onSave, onStart, canStart }: B
     }
   };
 
-  const Field = ({ icon: Icon, label, children }: any) => (
-    <div className="rounded-xl border border-border/40 bg-card overflow-hidden">
-      <div className="px-4 py-2.5 bg-muted/20 border-b border-border/30 flex items-center gap-2">
-        <Icon className="h-4 w-4 text-primary" />
-        <h3 className="font-bold text-sm">{label}</h3>
-      </div>
-      <div className="p-4">{children}</div>
-    </div>
-  );
-
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-4">
       <div>
