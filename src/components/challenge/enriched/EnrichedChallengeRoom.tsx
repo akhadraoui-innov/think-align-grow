@@ -87,6 +87,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
           <EnrichedSidebar
             sessionId={session.id}
             workshopId={workshopId}
+            currentSubjectId={session.current_subject_id}
             artifacts={artifacts}
             enabled={enabled}
             canEdit={canEdit}
