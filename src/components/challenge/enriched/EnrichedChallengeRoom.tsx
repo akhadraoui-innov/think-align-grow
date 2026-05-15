@@ -155,6 +155,11 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
               pillars={pillars}
               isHost={isHost}
               readOnly={readOnly}
+              hideSidebar
+              artifacts={artifacts}
+              onAttachArtifact={(slotId, artifactId, subjectId) => update(artifactId, { slot_id: slotId, subject_id: subjectId } as any)}
+              onDetachArtifact={(artifactId) => update(artifactId, { slot_id: null } as any)}
+              onSelectArtifact={(a) => setSelected(a)}
             />
           )}
 
