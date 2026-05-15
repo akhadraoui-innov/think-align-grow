@@ -39,19 +39,34 @@ export function InspectorPanel({
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(artifact.content || "");
   const [askingAi, setAskingAi] = useState(false);
+  const [aiAction, setAiAction] = useState<string | null>(null);
 
   const meta = artifact.criticality ? CRITICALITY_META[artifact.criticality] : null;
   const aiMeta = artifact.ai_meta || {};
-  const aiResponse = aiMeta.response as string | undefined;
+  const aiResponse = (aiMeta.response || aiMeta.summary || aiMeta.description) as string | undefined;
   const aiStatus = aiMeta.status as string | undefined;
 
-  const askAi = async () => {
+  // Soft lock while editing
+  const lock = useArtifactLock(artifact.id, editing && canEdit);
+  const lockedByOther = !lock.acquired && !!lock.owner;
+
+  const callAgent = async (mode: string, action?: string) => {
     setAskingAi(true);
+    if (action) setAiAction(action);
     await supabase.functions.invoke("challenge-agent", {
-      body: { artifact_id: artifact.id, session_id: sessionId, mode: "qa" },
+      body: { artifact_id: artifact.id, session_id: sessionId, mode, action },
     });
     setAskingAi(false);
+    setAiAction(null);
   };
+
+  const askAi = () => callAgent("qa");
+
+  const kindLabel = artifact.kind === "postit" ? "Post-it"
+    : artifact.kind === "voice" ? "Mémo vocal"
+    : artifact.kind === "question" ? "Question"
+    : artifact.kind === "image" ? "Image"
+    : artifact.kind;
 
   return (
     <aside className="w-[400px] shrink-0 border-l border-border bg-background/95 backdrop-blur-sm flex flex-col h-full">
