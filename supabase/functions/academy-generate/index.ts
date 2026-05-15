@@ -1819,12 +1819,16 @@ async function processCardsInBackground(
   label: string,
 ) {
   const CONCURRENCY = 4;
+  const CHUNK_LIMIT = 12; // hard cap per invocation to stay within edge CPU/wallclock
   let consecutive402Batches = 0;
+  let processed = 0;
+
   for (let i = 0; i < list.length; i += CONCURRENCY) {
     const batch = list.slice(i, i + CONCURRENCY);
     const results = await Promise.allSettled(
       batch.map((c: any) => renderCardIllustration(supabase, apiKey, c, pillarMap.get(c.pillar_id), toolkit, style)),
     );
+    processed += batch.length;
     let batch402 = 0;
     for (const r of results) {
       if (r.status === "fulfilled" && r.value.status === 402) batch402++;
@@ -1842,8 +1846,40 @@ async function processCardsInBackground(
     } else {
       consecutive402Batches = 0;
     }
+
+    // Hand off remaining work to a fresh invocation to avoid edge runtime CPU/wallclock cap
+    if (processed >= CHUNK_LIMIT && i + CONCURRENCY < list.length) {
+      const remainingIds = list.slice(i + CONCURRENCY).map((c: any) => c.id);
+      console.log(JSON.stringify({ action: label, toolkit_id: toolkit.id, status: "handoff", remaining: remainingIds.length }));
+      await selfInvokeResume(remainingIds);
+      return;
+    }
   }
   console.log(JSON.stringify({ action: label, toolkit_id: toolkit.id, total: list.length, status: "background-done" }));
+}
+
+async function selfInvokeResume(card_ids: string[]) {
+  if (!card_ids.length) return;
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    // Fire-and-forget: do not await full response; we just need the request to land.
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const resp = await fetch(`${supabaseUrl}/functions/v1/academy-generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-key": serviceRoleKey,
+      },
+      body: JSON.stringify({ action: "resume-card-illustrations", card_ids }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    await resp.text().catch(() => {});
+  } catch (e) {
+    console.warn("self-invoke resume failed", e instanceof Error ? e.message : e);
+  }
 }
 
 async function generateAllCardIllustrations(supabase: any, params: any, apiKey: string, cors: any) {
