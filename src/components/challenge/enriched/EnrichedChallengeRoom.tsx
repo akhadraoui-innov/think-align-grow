@@ -38,6 +38,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
   const [view, setView] = useState<"cards" | "plateau">("cards");
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [timeCutoff, setTimeCutoff] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Time-filtered artifacts (Innovation #5)
   const visibleArtifacts = useMemo(() => {
