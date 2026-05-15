@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, Loader2, Save, Trash2, X, Tag, Settings2, FileText, Layers, LayoutGrid, List } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { ToolkitCardsBrowser } from "./ToolkitCardsBrowser";
+import { CardThumb } from "@/components/cards/CardThumb";
 
 const PHASE_LABELS: Record<string, string> = {
   foundations: "Fondations", model: "Modèle", growth: "Croissance", execution: "Exécution",
