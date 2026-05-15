@@ -141,13 +141,18 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
         </div>
       </div>
 
+      {showBoard && timelineOpen && timelineEvents.length > 1 && (
+        <div className="px-4 py-2 border-b border-border bg-muted/30 shrink-0">
+          <SessionTimeline events={timelineEvents} onScrub={setTimeCutoff} />
+        </div>
+      )}
       <div className="flex-1 min-h-0 flex overflow-hidden">
         {showBoard && (enabled.postits || enabled.voice || enabled.questions) && (
           <EnrichedSidebar
             sessionId={session.id}
             workshopId={workshopId}
             currentSubjectId={session.current_subject_id}
-            artifacts={artifacts}
+            artifacts={visibleArtifacts}
             enabled={enabled}
             canEdit={canEdit}
             selectedId={selectedSync?.id ?? null}
