@@ -71,10 +71,9 @@ export function InspectorPanel({
   return (
     <aside className="w-[400px] shrink-0 border-l border-border bg-background/95 backdrop-blur-sm flex flex-col h-full">
       <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-        <span className="text-base">{artifact.emoji || "📌"}</span>
-        <h3 className="font-bold text-sm uppercase tracking-wider flex-1">
-          {artifact.kind === "postit" ? "Post-it" : artifact.kind === "voice" ? "Mémo vocal" : artifact.kind === "question" ? "Question" : artifact.kind}
-        </h3>
+        <span className="text-base">{artifact.emoji || (artifact.kind === "image" ? "🖼️" : "📌")}</span>
+        <h3 className="font-bold text-sm uppercase tracking-wider flex-1">{kindLabel}</h3>
+        {lockedByOther && <LockBadge name="Verrouillé" />}
         <VotePill artifactId={artifact.id} votes={votes} me={me} onToggle={onToggleVote} />
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onClose}><X className="h-4 w-4" /></Button>
       </div>
