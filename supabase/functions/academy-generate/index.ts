@@ -1958,3 +1958,103 @@ async function generateCardIllustrationsBatch(supabase: any, params: any, apiKey
     async: true,
   }), { headers: { ...cors, "Content-Type": "application/json" } });
 }
+
+// ─── Resume after self-invocation handoff ────────────────────────────
+async function resumeCardIllustrations(supabase: any, params: any, apiKey: string, cors: any) {
+  const { card_ids } = params;
+  if (!Array.isArray(card_ids) || card_ids.length === 0) {
+    return new Response(JSON.stringify({ success: true, resumed: 0 }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+  const { data: cards } = await supabase
+    .from("cards")
+    .select("*, pillars!inner(*, toolkit_id, toolkits!inner(*))")
+    .in("id", card_ids);
+  const list = cards || [];
+  if (list.length === 0) {
+    return new Response(JSON.stringify({ success: true, resumed: 0 }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+  const toolkit = list[0].pillars.toolkits;
+  const { data: pillars } = await supabase.from("pillars").select("*").eq("toolkit_id", toolkit.id);
+  const pillarMap = new Map((pillars || []).map((p: any) => [p.id, p]));
+  const style = await buildToolkitStyleGuide(supabase, apiKey, toolkit, pillars || []);
+
+  const work = processCardsInBackground(supabase, apiKey, list, pillarMap, toolkit, style, "resume-card-illustrations");
+  // @ts-ignore
+  if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(work);
+  }
+
+  return new Response(JSON.stringify({ success: true, resumed: list.length, async: true }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+// ─── Sweep stale "queued" / "generating" cards ───────────────────────
+// Reanimates any card stuck in queued/generating without recent heartbeat,
+// then relaunches the pipeline. Safe to call from UI when client detects
+// no realtime activity for >60s.
+async function sweepStaleCardIllustrations(supabase: any, params: any, apiKey: string, cors: any) {
+  const { toolkit_id } = params;
+  if (!toolkit_id) throw new Error("Missing toolkit_id");
+
+  const { data: pillars } = await supabase.from("pillars").select("id").eq("toolkit_id", toolkit_id);
+  const pillarIds = (pillars || []).map((p: any) => p.id);
+  if (pillarIds.length === 0) {
+    return new Response(JSON.stringify({ success: true, swept: 0 }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+
+  const generatingCutoff = new Date(Date.now() - 90_000).toISOString();   // 90s
+  const queuedCutoff = new Date(Date.now() - 5 * 60_000).toISOString();   // 5min
+
+  // 1. "generating" stuck > 90s
+  const { data: stuckGenerating } = await supabase
+    .from("cards")
+    .select("id")
+    .in("pillar_id", pillarIds)
+    .eq("image_status", "generating")
+    .or(`image_last_attempt_at.is.null,image_last_attempt_at.lt.${generatingCutoff}`);
+
+  // 2. "queued" without heartbeat for >5min
+  const { data: stuckQueued } = await supabase
+    .from("cards")
+    .select("id")
+    .in("pillar_id", pillarIds)
+    .eq("image_status", "queued")
+    .or(`image_last_attempt_at.is.null,image_last_attempt_at.lt.${queuedCutoff}`);
+
+  const staleIds = [
+    ...(stuckGenerating || []).map((c: any) => c.id),
+    ...(stuckQueued || []).map((c: any) => c.id),
+  ];
+
+  if (staleIds.length === 0) {
+    return new Response(JSON.stringify({ success: true, swept: 0 }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+
+  // Reset to queued and relaunch (do NOT bump attempts — these never completed an attempt cycle)
+  await supabase.from("cards").update({ image_status: "queued" }).in("id", staleIds);
+
+  const { data: cards } = await supabase
+    .from("cards")
+    .select("*, pillars!inner(*, toolkit_id, toolkits!inner(*))")
+    .in("id", staleIds);
+  const list = cards || [];
+  if (list.length === 0) {
+    return new Response(JSON.stringify({ success: true, swept: 0 }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+  const toolkit = list[0].pillars.toolkits;
+  const pillarMap = new Map((pillars || []).map((p: any) => [p.id, p]));
+  const style = await buildToolkitStyleGuide(supabase, apiKey, toolkit, pillars || []);
+
+  const work = processCardsInBackground(supabase, apiKey, list, pillarMap, toolkit, style, "sweep-stale-card-illustrations");
+  // @ts-ignore
+  if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(work);
+  }
+
+  return new Response(JSON.stringify({ success: true, swept: staleIds.length, async: true }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
