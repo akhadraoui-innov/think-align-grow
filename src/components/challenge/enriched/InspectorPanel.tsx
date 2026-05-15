@@ -239,6 +239,7 @@ export function InspectorPanel({
           {artifact.category && <p className="flex items-center gap-1.5"><MessageCircle className="h-3 w-3" /> {artifact.category}</p>}
         </div>
       </div>
-    </aside>
+      </motion.aside>
+    </>
   );
 }
