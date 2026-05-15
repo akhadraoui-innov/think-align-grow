@@ -29,7 +29,8 @@
 - ✅ Onglet "Mes cartes" : formulaire création (kind=card, is_custom_card=true, scope=subject, visibility_subject_id=currentSubjectId), persistance via onCreate
 - ✅ Bouton "Explorer plein écran" dans CardsTab (badge ⭐ avec compteur custom)
 - ✅ Types ChallengeArtifact/CreateArtifactInput étendus (scope, visibility_subject_id, is_custom_card, card_payload, thread_root_id, thread_order)
-- ⏳ `CardChatDrawer.tsx` (deck_assistant + tool generate_card via challenge-agent)
+- ✅ `DeckChat.tsx` (mode `deck_assistant` dans challenge-agent, citations cartes + extraction brouillon → carte personnalisée)
+- ✅ Suggestions IA toujours disponibles dans les slots (sauf single rempli) avec bouton refresh
 
 ### Phase B — Threads post-it ✅
 - ✅ `ThreadPanel` refonte cascade visuelle : papier coloré par criticité, rotation stable, indentation + ligne de connexion (`CornerDownRight`), tri via `thread_order`/`thread_root_id` (fallback BFS), composer riche (criticité + anonyme + ⌘+Entrée)
