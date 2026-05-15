@@ -10,6 +10,9 @@ import { QuestionComposer } from "./questions/QuestionComposer";
 import { CRITICALITY_META } from "./constants";
 import { cn } from "@/lib/utils";
 import type { ChallengeArtifact, ArtifactKind, CreateArtifactInput, Criticality } from "@/hooks/useChallengeArtifacts";
+import type { ChallengeReaction, ChallengeVote } from "@/hooks/useChallengeReactions";
+import { ReactionBar } from "./ReactionBar";
+import { VotePill } from "./VotePill";
 
 interface Props {
   sessionId: string;
@@ -19,10 +22,15 @@ interface Props {
   enabled: { postits: boolean; voice: boolean; questions: boolean };
   canEdit: boolean;
   selectedId: string | null;
+  reactionsByArtifact: Record<string, ChallengeReaction[]>;
+  votesByArtifact: Record<string, ChallengeVote[]>;
+  me: string | null;
   onSelect: (a: ChallengeArtifact | null) => void;
   onCreate: (input: CreateArtifactInput) => Promise<any>;
   onUpdate: (id: string, patch: Partial<ChallengeArtifact>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onToggleReaction: (artifactId: string, emoji: string) => void;
+  onToggleVote: (artifactId: string) => void;
 }
 
 const TABS: { id: ArtifactKind; label: string; icon: any }[] = [
@@ -31,7 +39,7 @@ const TABS: { id: ArtifactKind; label: string; icon: any }[] = [
   { id: "question", label: "Questions", icon: HelpCircle },
 ];
 
-export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artifacts, enabled, canEdit, selectedId, onSelect, onCreate, onUpdate, onDelete }: Props) {
+export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artifacts, enabled, canEdit, selectedId, reactionsByArtifact, votesByArtifact, me, onSelect, onCreate, onUpdate, onDelete, onToggleReaction, onToggleVote }: Props) {
   const allowedTabs = TABS.filter(t => (t.id === "postit" && enabled.postits) || (t.id === "voice" && enabled.voice) || (t.id === "question" && enabled.questions));
   const [tab, setTab] = useState<ArtifactKind>(allowedTabs[0]?.id ?? "postit");
   const [filterCrit, setFilterCrit] = useState<Criticality | "all">("all");
@@ -110,15 +118,20 @@ export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artif
           <p className="text-xs text-muted-foreground text-center py-8">Aucun élément.</p>
         )}
         {tab === "postit" && filtered.map(a => (
-          <PostitCard
-            key={a.id}
-            artifact={a}
-            canEdit={canEdit}
-            selected={selectedId === a.id}
-            onClick={() => onSelect(a)}
-            onDelete={() => onDelete(a.id)}
-            onResolve={() => onUpdate(a.id, { status: "resolved" })}
-          />
+          <div key={a.id} className="space-y-1">
+            <PostitCard
+              artifact={a}
+              canEdit={canEdit}
+              selected={selectedId === a.id}
+              onClick={() => onSelect(a)}
+              onDelete={() => onDelete(a.id)}
+              onResolve={() => onUpdate(a.id, { status: "resolved" })}
+            />
+            <div className="flex items-center justify-between gap-1 px-1">
+              <ReactionBar artifactId={a.id} reactions={reactionsByArtifact[a.id] ?? []} me={me} onToggle={onToggleReaction} compact />
+              <VotePill artifactId={a.id} votes={votesByArtifact[a.id] ?? []} me={me} onToggle={onToggleVote} />
+            </div>
+          </div>
         ))}
         {tab === "voice" && filtered.map(a => (
           <button key={a.id} onClick={() => onSelect(a)} className={cn("w-full text-left rounded-lg border border-border p-2 space-y-1 hover:bg-muted/40 transition-colors", selectedId === a.id && "ring-2 ring-primary")}>

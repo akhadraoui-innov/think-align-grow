@@ -8,6 +8,8 @@ import { EnrichedSidebar } from "./EnrichedSidebar";
 import { InspectorPanel } from "./InspectorPanel";
 import { useChallengeSession } from "@/hooks/useChallengeSession";
 import { useChallengeArtifacts, type ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
+import { useChallengeReactions } from "@/hooks/useChallengeReactions";
+import { SynthesisPanel } from "./SynthesisPanel";
 import type { ChallengeTemplate } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 
@@ -23,6 +25,7 @@ interface Props {
 export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, isHost, readOnly }: Props) {
   const { session, context, loading, setStatus, upsertContext } = useChallengeSession(workshopId, template.id, isHost);
   const { artifacts, create, update, remove } = useChallengeArtifacts(session?.id, workshopId);
+  const { reactionsByArtifact, votesByArtifact, me, toggleReaction, toggleVote } = useChallengeReactions(session?.id);
   const [selected, setSelected] = useState<ChallengeArtifact | null>(null);
 
   const enabled = useMemo(() => {
@@ -92,10 +95,15 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
             enabled={enabled}
             canEdit={canEdit}
             selectedId={selectedSync?.id ?? null}
+            reactionsByArtifact={reactionsByArtifact}
+            votesByArtifact={votesByArtifact}
+            me={me}
             onSelect={(a) => setSelected(a)}
             onCreate={create}
             onUpdate={update}
             onDelete={remove}
+            onToggleReaction={toggleReaction}
+            onToggleVote={toggleVote}
           />
         )}
 
@@ -122,15 +130,11 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
           )}
 
           {session.status === "synthesis" && (
-            <div className="max-w-2xl mx-auto p-10 text-center">
-              <h3 className="font-display text-xl font-black uppercase tracking-tight">Synthèse multi-agents</h3>
-              <p className="text-sm text-muted-foreground mt-2">
-                Cette étape sera assurée par <code>challenge-synthesize</code> (L9).
-              </p>
-              {isHost && (
-                <Button className="mt-6" onClick={() => setStatus("closed")}>Clôturer définitivement</Button>
-              )}
-            </div>
+            <SynthesisPanel
+              sessionId={session.id}
+              isHost={isHost}
+              onClose={() => setStatus("closed")}
+            />
           )}
 
           {(session.status === "closed" || session.status === "archived" || session.status === "draft") && (
@@ -141,10 +145,17 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
         {selectedSync && showBoard && (
           <InspectorPanel
             artifact={selectedSync}
+            artifacts={artifacts}
             sessionId={session.id}
             canEdit={canEdit}
+            reactions={reactionsByArtifact[selectedSync.id] ?? []}
+            votes={votesByArtifact[selectedSync.id] ?? []}
+            me={me}
             onClose={() => setSelected(null)}
             onUpdate={update}
+            onCreate={create}
+            onToggleReaction={toggleReaction}
+            onToggleVote={toggleVote}
           />
         )}
       </div>

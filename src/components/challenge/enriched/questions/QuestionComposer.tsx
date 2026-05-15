@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, HelpCircle, Bot } from "lucide-react";
+import { Plus, Loader2, HelpCircle, Bot, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import type { CreateArtifactInput } from "@/hooks/useChallengeArtifacts";
@@ -24,6 +24,7 @@ export function QuestionComposer({ onCreate, defaultSubjectId, sessionId }: Prop
   const [recipient, setRecipient] = useState<typeof RECIPIENTS[number]["id"]>("ai");
   const [urgency, setUrgency] = useState<"low" | "medium" | "high">("medium");
   const [busy, setBusy] = useState(false);
+  const [anon, setAnon] = useState(false);
 
   const submit = async () => {
     if (!content.trim()) return;
@@ -34,6 +35,7 @@ export function QuestionComposer({ onCreate, defaultSubjectId, sessionId }: Prop
       emoji: "❓",
       criticality: urgency === "high" ? "high" : urgency === "low" ? "low" : "medium",
       subject_id: defaultSubjectId ?? null,
+      is_anonymous: anon,
       ai_meta: { recipient, status: recipient === "ai" ? "pending_ai" : "open" },
     });
     if (created && recipient === "ai") {
@@ -97,12 +99,21 @@ export function QuestionComposer({ onCreate, defaultSubjectId, sessionId }: Prop
           ))}
         </div>
       </div>
-      <div className="flex justify-between gap-2">
-        <Button variant="ghost" size="sm" onClick={() => { setOpen(false); setContent(""); }}>Annuler</Button>
-        <Button size="sm" onClick={submit} disabled={busy || !content.trim()} className="font-bold">
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-          Envoyer
-        </Button>
+      <div className="flex justify-between gap-2 items-center">
+        <button
+          type="button"
+          onClick={() => setAnon(v => !v)}
+          className={cn("flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded", anon ? "bg-amber-500/15 text-amber-700" : "text-muted-foreground hover:bg-muted")}
+        >
+          <EyeOff className="h-3 w-3" /> {anon ? "Anonyme" : "Public"}
+        </button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={() => { setOpen(false); setContent(""); }}>Annuler</Button>
+          <Button size="sm" onClick={submit} disabled={busy || !content.trim()} className="font-bold">
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+            Envoyer
+          </Button>
+        </div>
       </div>
     </div>
   );
