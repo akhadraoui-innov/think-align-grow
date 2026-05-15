@@ -140,15 +140,19 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
             >
               <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold opacity-80 mb-1">
                 <Icon className="h-3 w-3" />
-                {a.kind === "postit" ? "Post-it" : a.kind === "voice" ? "Vocal" : "Question"}
+                {a.kind === "postit" ? "Post-it" : a.kind === "voice" ? "Vocal" : a.kind === "question" ? "Question" : a.kind === "image" ? "Image" : a.kind}
                 <span className={cn("ml-auto h-1.5 w-1.5 rounded-full", meta.dot)} />
               </div>
-              <div className="flex items-start gap-1.5">
-                {a.emoji && <span className="text-base leading-none">{a.emoji}</span>}
-                <p className="text-xs font-medium whitespace-pre-wrap break-words flex-1 line-clamp-5">
-                  {a.kind === "voice" ? (a.transcription || "(transcription…)") : (a.content || <em className="opacity-60">(vide)</em>)}
-                </p>
-              </div>
+              {a.kind === "image" ? (
+                <ImageTile artifact={a} compact />
+              ) : (
+                <div className="flex items-start gap-1.5">
+                  {a.emoji && <span className="text-base leading-none">{a.emoji}</span>}
+                  <p className="text-xs font-medium whitespace-pre-wrap break-words flex-1 line-clamp-5">
+                    {a.kind === "voice" ? (a.transcription || "(transcription…)") : (a.content || <em className="opacity-60">(vide)</em>)}
+                  </p>
+                </div>
+              )}
             </div>
           );
         })}
@@ -156,8 +160,17 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
 
       {top.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-sm text-muted-foreground italic">Le plateau est vide. Ajoute un post-it depuis la barre latérale.</p>
+          <p className="text-sm text-muted-foreground italic">Le plateau est vide. Ajoute un post-it ou une image.</p>
         </div>
+      )}
+
+      {sessionId && onCreate && (
+        <ImageLibrary
+          open={imageOpen}
+          onOpenChange={setImageOpen}
+          sessionId={sessionId}
+          onCreate={onCreate}
+        />
       )}
     </div>
   );
