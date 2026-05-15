@@ -277,13 +277,32 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
         <div className="flex items-center gap-1.5">
           <Eye className="h-3.5 w-3.5 text-muted-foreground" />
           <Select value={format} onValueChange={(v: CardFormat) => setFormat(v)}>
-            <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="game">Game</SelectItem>
               <SelectItem value="section">Section</SelectItem>
               <SelectItem value="preview">Preview</SelectItem>
               <SelectItem value="full">Full</SelectItem>
               <SelectItem value="gamified">Gamifié</SelectItem>
+              <SelectItem value="plateau">Plateau</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {format === "plateau" && (
+          <div className="flex items-center gap-1.5">
+            <LayoutDashboard className="h-3.5 w-3.5 text-muted-foreground" />
+            <Select value={boardLayout} onValueChange={(v: BoardLayout) => setBoardLayout(v)}>
+              <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="atelier">Atelier</SelectItem>
+                <SelectItem value="kanban">Kanban</SelectItem>
+                <SelectItem value="constellation">Constellation</SelectItem>
+                <SelectItem value="carousel">Carrousel</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
             </SelectContent>
           </Select>
         </div>
