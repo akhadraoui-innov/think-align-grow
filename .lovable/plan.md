@@ -1,67 +1,47 @@
-# Audit du pipeline d'illustrations + branchement du preview
+## Contexte
 
-## 1. État actuel
+Sur l'onglet **Cartes → Visuel** (`ToolkitCardsBrowser`), 5 formats existent (Game / Section / Preview / Full / Gamifié) mais :
+1. Le **"Preview"** dans le sélecteur de format est un *layout statique* — il n'y a pas de bouton pour ouvrir la carte en grand (preview plein écran avec son illustration réelle).
+2. Aucune vue **"Plateau"** ne permet de voir les cartes disposées comme dans le Terrain de jeu (kanban / atelier).
 
-### Ce qui marche
-- Edge function `academy-generate` : timeout 45 s sur `renderImage`, retry interne (×2 sur 429/5xx), retry par carte (`MAX_IMAGE_ATTEMPTS=3`), heartbeat (`image_last_attempt_at`), chunking auto-resume (12 cartes / invocation), action `sweep-stale-card-illustrations`.
-- Migration colonnes `image_attempts`, `image_last_attempt_at`, `image_error` + index partiel.
-- Admin `AdminToolkitDetail` : bandeau progression strict (`ready` only), détecteur de stalle 75 s, bouton "Reprendre", chunk client BATCH 100.
-- Compress safe : fallback PNG aligne `contentType` + extension.
-- Realtime sur `cards` → progression live.
+Le bouton "Terrain de jeu" existe en haut à droite, mais il ouvre un nouvel onglet — l'utilisateur veut un **preview inline**.
 
-### Trous identifiés (l'audit révèle ce qui manque)
+## Changements (frontend uniquement)
 
-| # | Trou | Impact |
-|---|------|--------|
-| **T1** | **`CardThumb` n'est branché NULLE PART**. Plan A→D livré, sauf D. Donc le preview léger annoncé n'existe pas dans l'UI. | Pendant la génération l'admin voit toujours une colonne "Cartes" sans miniature, le portail (`PlaygroundCard`) montre un sparkles statique et un texte "Génération…" hors design system. |
-| **T2** | `ToolkitCardsTab` (table d'admin) **n'affiche aucune image**, donc impossible de voir d'un coup d'œil quelles cartes sont prêtes / ratées. | Pas de feedback visuel par ligne, on doit aller sur le terrain de jeu pour vérifier. |
-| **T3** | `selfInvokeResume` envoie `x-internal-key` mais **aucun `Authorization`**. Si `verify_jwt=true` un jour, le handoff casse en silence. À sécuriser maintenant. | Risque futur, et pas d'audit log sur les handoffs. |
-| **T4** | Aucun log structuré côté client lors des gros lancements (50–200 cartes), pas d'`appendAuditLog` sur l'action bulk. | Pas de trace dans `audit_logs_immutable` pour les générations massives. |
-| **T5** | `PlaygroundCard` (portail joueur) n'a pas de retour visuel `failed`/`queued`/`pending` distinct, et pas de skeleton shimmer durant `generating`. | UX dégradée pendant un job en cours côté joueur. |
+### 1. Nouveau format "Plateau" dans `ToolkitCardsBrowser.tsx`
 
-## 2. Plan d'implémentation
+Ajouter `"plateau"` au type `CardFormat` et une entrée dans le `<Select>` (icône `LayoutDashboard`).
+Quand sélectionné, rendre `<PlaygroundBoard>` (déjà existant dans `src/components/playground/`) avec :
+- sous-sélecteur de layout : **Atelier / Kanban / Constellation / Carrousel** (state local)
+- `cards` filtrées + `pillars` + `accent` du toolkit (couleur primaire par défaut)
+- mode lecture seule (drag-and-drop désactivé : on ignore `onDragStart` côté preview)
 
-### A. Brancher `CardThumb` (frontend uniquement)
+Le `groupBy` est masqué quand `format === "plateau"` (le plateau gère son propre groupement).
 
-1. **`PlaygroundCard.tsx`** — remplacer le bloc `card.image_url ? <img/> : <fallback/>` (lignes ~104–133) par `<CardThumb imageUrl imageStatus title={card.title} pillarColor={accent} />`. Conserver le badge phase et l'overlay gradient en superposition absolue.
-2. **`ToolkitCardsTab.tsx`** — ajouter en mode `table` une colonne "Visuel" (60×60) avant le titre, et en mode `visual` une mini-thumb dans chaque cellule, alimentées par `CardThumb` avec `showAdminBadges` (compteur tentatives, retry au clic).
-3. **`PlateauHand.tsx` / `PlateauBoard.tsx`** — repérer les rendus de carte miniature et substituer par `CardThumb` (sans casser les drag handlers existants : wrapper le composant, pas remplacer les props pointer).
-4. **`PortalToolkitPlayground.tsx`** — vérifier que la grille de cartes utilise déjà `PlaygroundCard` (donc bénéficie automatiquement du fix A.1) ; sinon idem A.1.
+### 2. Bouton **"Aperçu"** par carte (dans tous les formats sauf plateau)
 
-Aucun changement de logique métier. CardThumb existe déjà, semantic tokens, lazy-loading, zéro charge réseau hors `ready`.
+Sur chaque carte rendue par `renderCard`, ajouter un bouton flottant (top-right, opacity-0 group-hover:opacity-100, icône `Eye`) qui ouvre un `<Dialog>` plein écran montrant :
+- l'illustration via `<CardThumb imageUrl imageStatus title pillarColor />` en grand format (aspect 4/3, max-w-2xl)
+- titre, sous-titre, pilier, phase, objective, definition, action, KPI (réutiliser le rendu "Full" existant)
+- badge de statut illustration (ready / generating / failed) + bouton "Relancer" si failed (réutilise `generate-card-illustration`)
 
-### B. Action retry one-click depuis l'admin (UI only)
+State : `const [previewCard, setPreviewCard] = useState<Tables<"cards"> | null>(null)`
 
-Dans `ToolkitCardsTab`, si `image_status === "failed"` → le clic sur la mini-thumb appelle `supabase.functions.invoke("academy-generate", { body: { action: "generate-card-illustration", card_id }})`. Toast + invalidation. Compteur `n/3` visible.
+### 3. Rendre le bouton existant plus discoverable
 
-### C. Sécuriser le handoff edge (`academy-generate/index.ts`)
+Dans `AdminToolkitDetail.tsx` ligne 184-191, renommer **"Terrain de jeu"** → **"Aperçu Playground"** avec icône `Eye` au lieu de `Gamepad2`, et le déplacer juste à côté du sélecteur de vue dans `ToolkitCardsTab` (en plus du header), pour qu'il soit visible quand on est sur l'onglet Cartes.
 
-1. Dans `selfInvokeResume`, ajouter `Authorization: Bearer ${serviceRoleKey}` en plus de `x-internal-key`. Inoffensif aujourd'hui, robuste si `verify_jwt` repasse à true.
-2. Ajouter un log structuré JSON `action: "self-invoke-resume", remaining, status` au succès/échec pour traçabilité dans `function_edge_logs`.
+## Fichiers touchés
 
-### D. Audit log côté client
+- `src/components/admin/ToolkitCardsBrowser.tsx` — ajout format "plateau", bouton Aperçu par carte, dialog preview
+- `src/components/admin/ToolkitCardsTab.tsx` — bouton "Aperçu Playground" supplémentaire à côté du toggle Tableau/Visuel
+- `src/pages/admin/AdminToolkitDetail.tsx` — renommer/réicôner le bouton existant (cosmétique)
 
-Dans `AdminToolkitDetail.launchGeneration`, après la boucle de chunks, appeler `appendAuditLog({ action: "toolkit.illustrations.bulk_generate", entityType: "toolkit", entityId: toolkit.id, payload: { scope, total: ids.length, queued } })`. Idem pour `resumeStuck` avec action `toolkit.illustrations.sweep`.
+Aucun changement DB, edge function, types Supabase, ou logique de génération.
 
-### E. Sweep auto au lancement (anti double-clic, anti-fantôme)
+## Détails techniques
 
-Dans `generateCardIllustrationsBatch` (edge), avant de lancer, exécuter en passant un mini sweep sur les cartes du toolkit dont `image_last_attempt_at < now() - 90s` ET `image_status in ('queued','generating')`. Évite de relancer un job qui est déjà en cours, et libère les zombies.
-
-## 3. Détails techniques
-
-```text
-Fichiers touchés :
-  src/components/playground/PlaygroundCard.tsx        (CardThumb)
-  src/components/playground/PlateauHand.tsx           (CardThumb)
-  src/components/playground/PlateauBoard.tsx          (CardThumb)
-  src/components/admin/ToolkitCardsTab.tsx            (colonne visuel + retry)
-  src/pages/admin/AdminToolkitDetail.tsx              (appendAuditLog)
-  supabase/functions/academy-generate/index.ts        (Auth header handoff + sweep auto)
-```
-
-Aucune migration DB. Aucun nouveau secret. Pas de changement de schéma.
-
-## 4. Hors scope
-- Refonte du style guide image
-- Réécriture de `compressToJpeg` (déjà safe)
-- Génération vidéo, A/B prompt
+- `PlaygroundBoard` accepte déjà `cards`, `pillars`, `accent`, `layout` — réutilisation directe.
+- Pour désactiver le drag en mode preview, on peut envelopper dans une div avec `onDragStart={(e) => e.preventDefault()}` au niveau du conteneur, ou passer un flag `readOnly` (mineur — sinon on laisse le drag inerte puisqu'aucun drop target n'existe dans le browser).
+- Le bouton Aperçu par carte utilise `e.stopPropagation()` pour ne pas déclencher d'autres handlers (drag).
+- Le preview dialog est responsive : `max-w-3xl max-h-[85vh] overflow-y-auto`.

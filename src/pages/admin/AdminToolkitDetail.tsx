@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Loader2, Settings, Layers, LayoutGrid, Swords, Map, HelpCircle, Building2, Sparkles, Image as ImageIcon, Gamepad2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Loader2, Settings, Layers, LayoutGrid, Swords, Map, HelpCircle, Building2, Sparkles, Image as ImageIcon, Eye, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { appendAuditLog } from "@/lib/auditClient";
@@ -187,7 +187,7 @@ export default function AdminToolkitDetail() {
               className="gap-1.5"
               onClick={() => window.open(`/portal/workshops/toolkits/${toolkit.id}/playground`, "_blank")}
             >
-              <Gamepad2 className="h-3.5 w-3.5" /> Terrain de jeu
+              <Eye className="h-3.5 w-3.5" /> Aperçu Playground
             </Button>
             <ToolkitAIChatDialog toolkit={toolkit} pillars={pillars} onUpdate={invalidateAll} />
             <Badge variant="outline" className={s.className}>{s.label}</Badge>

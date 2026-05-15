@@ -1,13 +1,17 @@
 import { useState, useMemo, lazy, Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GameCard } from "@/components/challenge/GameCard";
-import { LayoutGrid, Grid3X3, Layers, Eye, BarChart3, Zap, Target } from "lucide-react";
+import { LayoutGrid, Grid3X3, Layers, Eye, BarChart3, Zap, Target, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 import { getPillarCssColor, getPillarCssColorAlpha, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
 import dynamicIconImports from "lucide-react/dynamicIconImports";
+import { CardThumb } from "@/components/cards/CardThumb";
+import { PlaygroundBoard, type BoardLayout } from "@/components/playground/PlaygroundBoard";
 
 const iconCache = new Map<string, React.LazyExoticComponent<React.ComponentType<{ className?: string }>>>();
 
@@ -26,7 +30,7 @@ function DynamicIcon({ name, className }: { name: string; className?: string }) 
   );
 }
 
-type CardFormat = "game" | "section" | "preview" | "full" | "gamified";
+type CardFormat = "game" | "section" | "preview" | "full" | "gamified" | "plateau";
 type GroupBy = "all" | "pillar" | "phase";
 
 interface Props {
@@ -40,6 +44,9 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
   const [columns, setColumns] = useState(4);
   const [filterPillar, setFilterPillar] = useState("all");
   const [filterPhase, setFilterPhase] = useState("all");
+  const [boardLayout, setBoardLayout] = useState<BoardLayout>("atelier");
+  const [previewCard, setPreviewCard] = useState<Tables<"cards"> | null>(null);
+
 
   const filtered = useMemo(() => {
     let result = cards;
@@ -247,6 +254,22 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
     );
   };
 
+  const renderCardWithPreview = (card: Tables<"cards">) => (
+    <div key={card.id} className="relative group">
+      {renderCard(card)}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setPreviewCard(card); }}
+        className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-background/90 backdrop-blur rounded-full p-1.5 shadow-lg border border-border/50 hover:bg-background"
+        title="Aperçu"
+      >
+        <Eye className="h-3.5 w-3.5 text-foreground" />
+      </button>
+    </div>
+  );
+
+  const previewPillar = previewCard ? pillarMap.get(previewCard.pillar_id) : null;
+  const previewAny = previewCard as any;
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -254,16 +277,32 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
         <div className="flex items-center gap-1.5">
           <Eye className="h-3.5 w-3.5 text-muted-foreground" />
           <Select value={format} onValueChange={(v: CardFormat) => setFormat(v)}>
-            <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="game">Game</SelectItem>
               <SelectItem value="section">Section</SelectItem>
               <SelectItem value="preview">Preview</SelectItem>
               <SelectItem value="full">Full</SelectItem>
               <SelectItem value="gamified">Gamifié</SelectItem>
+              <SelectItem value="plateau">Plateau</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
+        {format === "plateau" && (
+          <div className="flex items-center gap-1.5">
+            <LayoutDashboard className="h-3.5 w-3.5 text-muted-foreground" />
+            <Select value={boardLayout} onValueChange={(v: BoardLayout) => setBoardLayout(v)}>
+              <SelectTrigger className="h-8 w-32 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="atelier">Atelier</SelectItem>
+                <SelectItem value="kanban">Kanban</SelectItem>
+                <SelectItem value="constellation">Constellation</SelectItem>
+                <SelectItem value="carousel">Carrousel</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="flex items-center gap-1.5">
           <Layers className="h-3.5 w-3.5 text-muted-foreground" />
@@ -317,25 +356,86 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
         <Badge variant="secondary" className="text-xs">{filtered.length} carte{filtered.length > 1 ? "s" : ""}</Badge>
       </div>
 
-      {/* Cards */}
-      {groups.map(g => (
-        <div key={g.key} className="space-y-3">
-          {groupBy !== "all" && (
-            <div className="flex items-center gap-2">
-              {"color" in g && g.color && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: g.color as string }} />}
-              <h3 className="text-sm font-semibold text-foreground">{g.label}</h3>
-              <Badge variant="outline" className="text-[10px]">{g.items.length}</Badge>
-            </div>
-          )}
-          <div className={format === "game" || format === "gamified" ? "flex flex-wrap gap-4" : gridClass}>
-            {g.items.map(renderCard)}
-          </div>
+      {/* Plateau view (live playground board) */}
+      {format === "plateau" ? (
+        <div className="rounded-xl border border-border/40 bg-muted/10 overflow-hidden">
+          <PlaygroundBoard
+            layout={boardLayout}
+            cards={filtered}
+            pillars={pillars}
+            accent="hsl(var(--primary))"
+          />
         </div>
-      ))}
-
-      {filtered.length === 0 && (
-        <div className="text-center text-sm text-muted-foreground py-12">Aucune carte trouvée.</div>
+      ) : (
+        <>
+          {groups.map(g => (
+            <div key={g.key} className="space-y-3">
+              {groupBy !== "all" && (
+                <div className="flex items-center gap-2">
+                  {"color" in g && g.color && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: g.color as string }} />}
+                  <h3 className="text-sm font-semibold text-foreground">{g.label}</h3>
+                  <Badge variant="outline" className="text-[10px]">{g.items.length}</Badge>
+                </div>
+              )}
+              <div className={format === "game" || format === "gamified" ? "flex flex-wrap gap-4" : gridClass}>
+                {g.items.map(renderCardWithPreview)}
+              </div>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div className="text-center text-sm text-muted-foreground py-12">Aucune carte trouvée.</div>
+          )}
+        </>
       )}
+
+      {/* Card preview dialog */}
+      <Dialog open={!!previewCard} onOpenChange={(o) => !o && setPreviewCard(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          {previewCard && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-display text-xl">{previewCard.title}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="aspect-[4/3] w-full rounded-xl overflow-hidden border border-border/40 bg-muted/30">
+                  <CardThumb
+                    imageUrl={previewAny?.image_url}
+                    imageStatus={previewAny?.image_status}
+                    imageAttempts={previewAny?.image_attempts ?? undefined}
+                    imageError={previewAny?.image_error}
+                    title={previewCard.title}
+                    pillarColor={previewPillar?.color}
+                    showAdminBadges
+                    className="w-full h-full"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  {previewPillar && (
+                    <Badge style={{ background: previewPillar.color || undefined, color: "white" }}>{previewPillar.name}</Badge>
+                  )}
+                  <Badge variant="outline">{PHASE_LABELS[previewCard.phase] || previewCard.phase}</Badge>
+                  {previewAny?.image_status && (
+                    <Badge variant="secondary">illustration · {previewAny.image_status}</Badge>
+                  )}
+                </div>
+                {previewCard.subtitle && <p className="text-sm italic text-muted-foreground">{previewCard.subtitle}</p>}
+                {previewCard.objective && (
+                  <div><div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Objectif</div><p className="text-sm leading-relaxed">{previewCard.objective}</p></div>
+                )}
+                {previewCard.definition && (
+                  <div><div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Définition</div><p className="text-sm leading-relaxed">{previewCard.definition}</p></div>
+                )}
+                {previewCard.action && (
+                  <div><div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Action</div><p className="text-sm leading-relaxed">{previewCard.action}</p></div>
+                )}
+                {previewCard.kpi && (
+                  <div><div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Indicateurs</div><p className="text-sm leading-relaxed whitespace-pre-line">{previewCard.kpi}</p></div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
