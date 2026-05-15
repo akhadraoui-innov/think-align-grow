@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { StickyNote, Mic, HelpCircle, Filter } from "lucide-react";
+import { StickyNote, Mic, HelpCircle, Filter, Image as ImageIcon, Plus } from "lucide-react";
 import { PostitComposer } from "./postits/PostitComposer";
 import { PostitCard } from "./postits/PostitCard";
 import { VoiceRecorder } from "./voice/VoiceRecorder";
 import { VoicePlayer } from "./voice/VoicePlayer";
 import { QuestionComposer } from "./questions/QuestionComposer";
+import { ImageLibrary } from "./images/ImageLibrary";
+import { ImageTile } from "./images/ImageTile";
 import { CRITICALITY_META } from "./constants";
 import { cn } from "@/lib/utils";
 import type { ChallengeArtifact, ArtifactKind, CreateArtifactInput, Criticality } from "@/hooks/useChallengeArtifacts";
