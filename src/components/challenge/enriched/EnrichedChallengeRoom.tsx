@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map, Clock } from "lucide-react";
+import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map, Clock, Search } from "lucide-react";
+import { SemanticSearchPanel } from "./innovations/SemanticSearchPanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
@@ -37,6 +38,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
   const [view, setView] = useState<"cards" | "plateau">("cards");
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [timeCutoff, setTimeCutoff] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Time-filtered artifacts (Innovation #5)
   const visibleArtifacts = useMemo(() => {
@@ -125,6 +127,15 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
               title="Frise chronologique"
             >
               <Clock className="h-3 w-3" /> Timeline
+            </button>
+          )}
+          {showBoard && (
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="h-7 px-2 rounded-md border border-border text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 text-muted-foreground hover:bg-muted transition-colors"
+              title="Recherche sémantique (RAG)"
+            >
+              <Search className="h-3 w-3" /> Recherche
             </button>
           )}
           {isHost && session.status === "running" && (
@@ -249,6 +260,19 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
           workshopId={workshopId}
           currentSubjectId={session.current_subject_id}
           selectedArtifact={selectedSync}
+        />
+      )}
+      {showBoard && (
+        <SemanticSearchPanel
+          open={searchOpen}
+          onOpenChange={setSearchOpen}
+          sessionId={session.id}
+          onJump={(m) => {
+            if (m.source_type === "artifact" || m.source_type === "thread") {
+              const a = artifacts.find(x => x.id === m.source_id);
+              if (a) { setSelected(a); setSearchOpen(false); }
+            }
+          }}
         />
       )}
     </div>
