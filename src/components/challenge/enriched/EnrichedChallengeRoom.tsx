@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +9,11 @@ import { InspectorPanel } from "./InspectorPanel";
 import { useChallengeSession } from "@/hooks/useChallengeSession";
 import { useChallengeArtifacts, type ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
 import { useChallengeReactions } from "@/hooks/useChallengeReactions";
+import { useChallengePresence } from "@/hooks/useChallengePresence";
 import { SynthesisPanel } from "./SynthesisPanel";
 import { PlateauBoard } from "./PlateauBoard";
+import { PresenceBar } from "./presence/PresenceBar";
+import { CopilotBubble } from "./copilot/CopilotBubble";
 import { cn } from "@/lib/utils";
 import type { ChallengeTemplate } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
@@ -28,8 +31,17 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
   const { session, context, loading, setStatus, upsertContext } = useChallengeSession(workshopId, template.id, isHost);
   const { artifacts, create, update, remove } = useChallengeArtifacts(session?.id, workshopId);
   const { reactionsByArtifact, votesByArtifact, me, toggleReaction, toggleVote } = useChallengeReactions(session?.id);
+  const { peers, update: updatePresence } = useChallengePresence(session?.id);
   const [selected, setSelected] = useState<ChallengeArtifact | null>(null);
   const [view, setView] = useState<"cards" | "plateau">("cards");
+
+  // Broadcast which subject/artifact the user is currently viewing
+  useEffect(() => {
+    updatePresence({
+      viewing_subject_id: session?.current_subject_id ?? null,
+      editing_artifact_id: selected?.id ?? null,
+    });
+  }, [session?.current_subject_id, selected?.id, updatePresence]);
 
   const enabled = useMemo(() => {
     const cfg = (template as any).enriched_config || {};
@@ -37,6 +49,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
       postits: cfg.postits !== false,
       voice: cfg.voice !== false,
       questions: cfg.questions !== false,
+      images: cfg.images !== false,
       ai: cfg.ai !== false,
     };
   }, [template]);
@@ -73,6 +86,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
         <Sparkles className="h-4 w-4 text-primary" />
         <h2 className="font-display font-bold text-sm uppercase tracking-widest">Challenge enrichi</h2>
         <Badge className={statusBadge} variant="outline">{session.status}</Badge>
+        {showBoard && <div className="hidden md:block"><PresenceBar peers={peers} /></div>}
         <div className="ml-auto flex items-center gap-2">
           {showBoard && (
             <div className="flex items-center rounded-md border border-border p-0.5">
@@ -150,6 +164,8 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
                 selectedId={selectedSync?.id ?? null}
                 onSelect={(a) => setSelected(a)}
                 onUpdate={update}
+                sessionId={session.id}
+                onCreate={create}
               />
             </div>
           )}
@@ -184,6 +200,15 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
           />
         )}
       </div>
+
+      {showBoard && enabled.ai && (
+        <CopilotBubble
+          sessionId={session.id}
+          workshopId={workshopId}
+          currentSubjectId={session.current_subject_id}
+          selectedArtifact={selectedSync}
+        />
+      )}
     </div>
   );
 }

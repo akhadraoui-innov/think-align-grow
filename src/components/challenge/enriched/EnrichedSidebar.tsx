@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { StickyNote, Mic, HelpCircle, Filter } from "lucide-react";
+import { StickyNote, Mic, HelpCircle, Filter, Image as ImageIcon, Plus } from "lucide-react";
 import { PostitComposer } from "./postits/PostitComposer";
 import { PostitCard } from "./postits/PostitCard";
 import { VoiceRecorder } from "./voice/VoiceRecorder";
 import { VoicePlayer } from "./voice/VoicePlayer";
 import { QuestionComposer } from "./questions/QuestionComposer";
+import { ImageLibrary } from "./images/ImageLibrary";
+import { ImageTile } from "./images/ImageTile";
 import { CRITICALITY_META } from "./constants";
 import { cn } from "@/lib/utils";
 import type { ChallengeArtifact, ArtifactKind, CreateArtifactInput, Criticality } from "@/hooks/useChallengeArtifacts";
@@ -19,7 +21,7 @@ interface Props {
   workshopId: string;
   currentSubjectId?: string | null;
   artifacts: ChallengeArtifact[];
-  enabled: { postits: boolean; voice: boolean; questions: boolean };
+  enabled: { postits: boolean; voice: boolean; questions: boolean; images?: boolean };
   canEdit: boolean;
   selectedId: string | null;
   reactionsByArtifact: Record<string, ChallengeReaction[]>;
@@ -37,11 +39,18 @@ const TABS: { id: ArtifactKind; label: string; icon: any }[] = [
   { id: "postit", label: "Post-its", icon: StickyNote },
   { id: "voice", label: "Vocaux", icon: Mic },
   { id: "question", label: "Questions", icon: HelpCircle },
+  { id: "image", label: "Images", icon: ImageIcon },
 ];
 
 export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artifacts, enabled, canEdit, selectedId, reactionsByArtifact, votesByArtifact, me, onSelect, onCreate, onUpdate, onDelete, onToggleReaction, onToggleVote }: Props) {
-  const allowedTabs = TABS.filter(t => (t.id === "postit" && enabled.postits) || (t.id === "voice" && enabled.voice) || (t.id === "question" && enabled.questions));
+  const allowedTabs = TABS.filter(t =>
+    (t.id === "postit" && enabled.postits) ||
+    (t.id === "voice" && enabled.voice) ||
+    (t.id === "question" && enabled.questions) ||
+    (t.id === "image" && (enabled.images ?? true))
+  );
   const [tab, setTab] = useState<ArtifactKind>(allowedTabs[0]?.id ?? "postit");
+  const [imageOpen, setImageOpen] = useState(false);
   const [filterCrit, setFilterCrit] = useState<Criticality | "all">("all");
   const [scope, setScope] = useState<"current" | "all">(currentSubjectId ? "current" : "all");
   const [includeResolved, setIncludeResolved] = useState(false);
@@ -63,6 +72,7 @@ export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artif
     postit: baseList.filter(a => a.kind === "postit").length,
     voice: baseList.filter(a => a.kind === "voice").length,
     question: baseList.filter(a => a.kind === "question").length,
+    image: baseList.filter(a => a.kind === "image").length,
   }), [baseList]);
 
   return (
@@ -98,6 +108,11 @@ export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artif
           {tab === "postit" && <PostitComposer onCreate={onCreate} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
           {tab === "voice" && <VoiceRecorder sessionId={sessionId} onCreate={onCreate} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
           {tab === "question" && <QuestionComposer onCreate={onCreate} sessionId={sessionId} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
+          {tab === "image" && (
+            <Button onClick={() => setImageOpen(true)} variant="outline" className="w-full justify-start font-bold">
+              <Plus className="h-4 w-4 mr-2" /> Ajouter une image
+            </Button>
+          )}
         </div>
       )}
 
@@ -156,7 +171,23 @@ export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artif
             </button>
           );
         })}
+        {tab === "image" && filtered.map(a => (
+          <button key={a.id} onClick={() => onSelect(a)} className={cn("w-full text-left rounded-lg border border-border p-2 space-y-1.5 hover:bg-muted/40 transition-colors overflow-hidden", selectedId === a.id && "ring-2 ring-primary")}>
+            <ImageTile artifact={a} compact />
+            {(a.ai_meta?.alt || a.content) && (
+              <p className="text-[10px] text-muted-foreground line-clamp-1 px-1">{a.ai_meta?.alt || a.content}</p>
+            )}
+          </button>
+        ))}
       </div>
+
+      <ImageLibrary
+        open={imageOpen}
+        onOpenChange={setImageOpen}
+        sessionId={sessionId}
+        defaultSubjectId={scope === "current" ? currentSubjectId : null}
+        onCreate={onCreate}
+      />
     </aside>
   );
 }

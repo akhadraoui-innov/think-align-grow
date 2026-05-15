@@ -2,8 +2,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { CRITICALITY_META } from "./constants";
 import { cn } from "@/lib/utils";
 import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
-import { Mic, HelpCircle, StickyNote, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { Mic, HelpCircle, StickyNote, Image as ImageIcon, ZoomIn, ZoomOut, Maximize2, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ImageLibrary } from "./images/ImageLibrary";
+import { ImageTile } from "./images/ImageTile";
 
 interface Props {
   artifacts: ChallengeArtifact[];
@@ -11,10 +13,12 @@ interface Props {
   selectedId: string | null;
   onSelect: (a: ChallengeArtifact) => void;
   onUpdate: (id: string, patch: Partial<ChallengeArtifact>) => Promise<void>;
+  sessionId?: string;
+  onCreate?: (input: any) => Promise<any>;
 }
 
 const CARD_W = 220;
-const KIND_ICON = { postit: StickyNote, voice: Mic, question: HelpCircle } as const;
+const KIND_ICON = { postit: StickyNote, voice: Mic, question: HelpCircle, image: ImageIcon } as const;
 
 function defaultPos(idx: number) {
   // grid fallback for artifacts without position
@@ -22,7 +26,8 @@ function defaultPos(idx: number) {
   return { x: 40 + (idx % cols) * (CARD_W + 24), y: 40 + Math.floor(idx / cols) * 180 };
 }
 
-export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdate }: Props) {
+export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdate, sessionId, onCreate }: Props) {
+  const [imageOpen, setImageOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -94,6 +99,14 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
       data-bg="1"
     >
       <div className="absolute top-3 right-3 z-10 flex gap-1 bg-background/90 backdrop-blur rounded-md border border-border p-1 shadow-sm">
+        {canEdit && sessionId && onCreate && (
+          <>
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] font-bold uppercase tracking-wider gap-1" onClick={() => setImageOpen(true)}>
+              <ImagePlus className="h-3.5 w-3.5" /> Image
+            </Button>
+            <div className="w-px bg-border mx-0.5 my-1" />
+          </>
+        )}
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setZoom(z => Math.max(0.4, z - 0.1))}><ZoomOut className="h-3.5 w-3.5" /></Button>
         <span className="text-[10px] font-bold tabular-nums w-10 text-center self-center">{Math.round(zoom * 100)}%</span>
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setZoom(z => Math.min(2, z + 0.1))}><ZoomIn className="h-3.5 w-3.5" /></Button>
@@ -127,15 +140,19 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
             >
               <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold opacity-80 mb-1">
                 <Icon className="h-3 w-3" />
-                {a.kind === "postit" ? "Post-it" : a.kind === "voice" ? "Vocal" : "Question"}
+                {a.kind === "postit" ? "Post-it" : a.kind === "voice" ? "Vocal" : a.kind === "question" ? "Question" : a.kind === "image" ? "Image" : a.kind}
                 <span className={cn("ml-auto h-1.5 w-1.5 rounded-full", meta.dot)} />
               </div>
-              <div className="flex items-start gap-1.5">
-                {a.emoji && <span className="text-base leading-none">{a.emoji}</span>}
-                <p className="text-xs font-medium whitespace-pre-wrap break-words flex-1 line-clamp-5">
-                  {a.kind === "voice" ? (a.transcription || "(transcription…)") : (a.content || <em className="opacity-60">(vide)</em>)}
-                </p>
-              </div>
+              {a.kind === "image" ? (
+                <ImageTile artifact={a} compact />
+              ) : (
+                <div className="flex items-start gap-1.5">
+                  {a.emoji && <span className="text-base leading-none">{a.emoji}</span>}
+                  <p className="text-xs font-medium whitespace-pre-wrap break-words flex-1 line-clamp-5">
+                    {a.kind === "voice" ? (a.transcription || "(transcription…)") : (a.content || <em className="opacity-60">(vide)</em>)}
+                  </p>
+                </div>
+              )}
             </div>
           );
         })}
@@ -143,8 +160,17 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
 
       {top.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-sm text-muted-foreground italic">Le plateau est vide. Ajoute un post-it depuis la barre latérale.</p>
+          <p className="text-sm text-muted-foreground italic">Le plateau est vide. Ajoute un post-it ou une image.</p>
         </div>
+      )}
+
+      {sessionId && onCreate && (
+        <ImageLibrary
+          open={imageOpen}
+          onOpenChange={setImageOpen}
+          sessionId={sessionId}
+          onCreate={onCreate}
+        />
       )}
     </div>
   );
