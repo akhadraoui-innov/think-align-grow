@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { Search, X, ChevronRight, Plus, List, Layers, Workflow } from "lucide-react";
+import { Search, X, ChevronRight, Plus, List, Layers, Workflow, Maximize2, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
@@ -13,9 +14,11 @@ interface Props {
   pillars: DbPillar[];
   placedCardIds?: Set<string>;
   onAdd?: (cardId: string) => void;
+  onOpenExplorer?: () => void;
+  customCardCount?: number;
 }
 
-export function CardsTab({ cards, pillars, placedCardIds, onAdd }: Props) {
+export function CardsTab({ cards, pillars, placedCardIds, onAdd, onOpenExplorer, customCardCount = 0 }: Props) {
   const [mode, setMode] = useState<Mode>("pillars");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
