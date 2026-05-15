@@ -190,10 +190,15 @@ export function DropSlot({
       )}
 
       {isDragOver && (
-        <div className="flex items-center justify-center h-16 text-primary">
-          <span className="text-xs font-bold animate-pulse">
-            Déposer ici{dragKind === "artifact" ? " · note" : dragKind === "card" ? " · carte" : ""}
-          </span>
+        <div className="flex items-center justify-center gap-1.5 h-14 text-primary border-2 border-dashed border-primary/50 rounded-xl bg-primary/5 mt-2 animate-pulse">
+          {(() => {
+            const Icon = (dragKind === "card" ? KIND_DROP_META.card : KIND_DROP_META.postit).icon;
+            const label = dragKind === "card" ? "une carte" : "un élément";
+            return (<>
+              <Icon className="h-4 w-4" />
+              <span className="text-xs font-bold uppercase tracking-wider">Déposer {label}</span>
+            </>);
+          })()}
         </div>
       )}
     </div>
