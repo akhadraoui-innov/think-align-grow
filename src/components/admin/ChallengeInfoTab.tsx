@@ -33,6 +33,8 @@ export function ChallengeInfoTab({ template, toolkits, pillars, onUpdate }: Prop
     difficulty: template.difficulty || "intermediate",
     toolkit_id: template.toolkit_id,
     pillar_id: template.pillar_id || "",
+    experience_mode: ((template as any).experience_mode || "classic") as "classic" | "enriched",
+    enriched_config: ((template as any).enriched_config || {}) as Record<string, any>,
   });
 
   // Fetch linked toolkits from junction table
