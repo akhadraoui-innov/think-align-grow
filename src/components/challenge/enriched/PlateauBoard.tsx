@@ -2,8 +2,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { CRITICALITY_META } from "./constants";
 import { cn } from "@/lib/utils";
 import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
-import { Mic, HelpCircle, StickyNote, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { Mic, HelpCircle, StickyNote, Image as ImageIcon, ZoomIn, ZoomOut, Maximize2, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ImageLibrary } from "./images/ImageLibrary";
+import { ImageTile } from "./images/ImageTile";
 
 interface Props {
   artifacts: ChallengeArtifact[];
@@ -11,10 +13,12 @@ interface Props {
   selectedId: string | null;
   onSelect: (a: ChallengeArtifact) => void;
   onUpdate: (id: string, patch: Partial<ChallengeArtifact>) => Promise<void>;
+  sessionId?: string;
+  onCreate?: (input: any) => Promise<any>;
 }
 
 const CARD_W = 220;
-const KIND_ICON = { postit: StickyNote, voice: Mic, question: HelpCircle } as const;
+const KIND_ICON = { postit: StickyNote, voice: Mic, question: HelpCircle, image: ImageIcon } as const;
 
 function defaultPos(idx: number) {
   // grid fallback for artifacts without position
