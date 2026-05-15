@@ -111,6 +111,19 @@ export function ToolkitCardsTab({ cards, pillars, toolkitId, onUpdate }: Props) 
     if (t && !form.tags.includes(t)) { set("tags", [...form.tags, t]); setTagInput(""); }
   };
 
+  const retryCardImage = async (cardId: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-card-illustration", card_id: cardId },
+      });
+      if (error) throw error;
+      toast({ title: "Génération relancée" });
+      onUpdate();
+    } catch (e: any) {
+      toast({ title: "Échec", description: e?.message, variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
