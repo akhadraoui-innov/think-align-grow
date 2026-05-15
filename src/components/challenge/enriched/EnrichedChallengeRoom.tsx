@@ -167,7 +167,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
             onToggleVote={toggleVote}
             cards={cards}
             pillars={pillars}
-            customCards={artifacts.filter(a => a.kind === "card" && a.is_custom_card)}
+            customCards={visibleArtifacts.filter(a => a.kind === "card" && a.is_custom_card)}
           />
         )}
 
@@ -191,7 +191,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
               isHost={isHost}
               readOnly={readOnly}
               hideSidebar
-              artifacts={artifacts}
+              artifacts={visibleArtifacts}
               onAttachArtifact={(slotId, artifactId, subjectId) => update(artifactId, { slot_id: slotId, subject_id: subjectId } as any)}
               onDetachArtifact={(artifactId) => update(artifactId, { slot_id: null } as any)}
               onSelectArtifact={(a) => setSelected(a)}
@@ -201,7 +201,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
           {showBoard && view === "plateau" && (
             <div className="h-full">
               <PlateauBoard
-                artifacts={artifacts}
+                artifacts={visibleArtifacts}
                 canEdit={canEdit}
                 selectedId={selectedSync?.id ?? null}
                 onSelect={(a) => setSelected(a)}
