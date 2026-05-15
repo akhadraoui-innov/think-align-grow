@@ -1,12 +1,18 @@
 import { motion } from "framer-motion";
-import { Sparkles, Target, Zap, Clock, Award } from "lucide-react";
+import { Target, Zap, Clock, Award } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { CardThumb } from "@/components/cards/CardThumb";
 import { PHASE_LABELS } from "@/hooks/useToolkitData";
 import type { Tables } from "@/integrations/supabase/types";
 
-type Card = Tables<"cards"> & { image_url?: string | null; image_status?: string | null };
+type Card = Tables<"cards"> & {
+  image_url?: string | null;
+  image_status?: string | null;
+  image_attempts?: number | null;
+  image_error?: string | null;
+};
 type Pillar = Tables<"pillars">;
 
 export type PlaygroundCardProps = {
