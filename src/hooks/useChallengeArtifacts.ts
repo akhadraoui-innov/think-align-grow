@@ -125,6 +125,11 @@ export function useChallengeArtifacts(sessionId: string | undefined, workshopId:
       console.error(error);
       return null;
     }
+    // Fire-and-forget embedding (skipped for voice; transcribe will trigger embed itself)
+    if (data?.id && (data.content || "").trim() && data.kind !== "voice") {
+      supabase.functions.invoke("challenge-embed", { body: { target: "artifact", id: data.id } })
+        .catch((e) => console.warn("embed dispatch", e));
+    }
     return data as ChallengeArtifact;
   }, [sessionId, workshopId]);
 
@@ -133,7 +138,11 @@ export function useChallengeArtifacts(sessionId: string | undefined, workshopId:
       .from("challenge_artifacts")
       .update(patch)
       .eq("id", id);
-    if (error) { toast.error("Mise à jour impossible"); console.error(error); }
+    if (error) { toast.error("Mise à jour impossible"); console.error(error); return; }
+    if (typeof patch.content === "string" && patch.content.trim()) {
+      supabase.functions.invoke("challenge-embed", { body: { target: "artifact", id } })
+        .catch((e) => console.warn("embed dispatch", e));
+    }
   }, []);
 
   const remove = useCallback(async (id: string) => {
