@@ -274,6 +274,7 @@ export function EnrichedSidebar({
         customCards={subjectCustomCards}
         placedCardIds={placedCardIds}
         currentSubjectId={currentSubjectId ?? null}
+        sessionId={sessionId}
         onAddToStaging={onAddCardToStaging}
         onCreateCustomCard={onCreate}
       />
