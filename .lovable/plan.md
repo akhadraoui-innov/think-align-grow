@@ -24,11 +24,12 @@
 
 ## ⏳ Reste à livrer (priorisé)
 
-### Phase A — Cartes (le plus demandé)
-- `CardExplorer.tsx` : Dialog plein écran avec recherche, filtres (pilier/phase/audience), grille gamifiée 320×420, multi-sélection
-- Onglet "Créer ma carte" → `kind=card, is_custom_card=true, scope='subject'`, visible auteur uniquement sur le sujet courant
-- `CardChatDrawer.tsx` : useChat AI SDK + mode `deck_assistant` dans `challenge-agent` (citations RAG, tool `generate_card`)
-- `GameCard` variants : `gamified` (étoiles, dégradé, KPI mis en avant), `showcase` (320×420 pour Explorer)
+### Phase A — Cartes ✅ partiel
+- ✅ `CardExplorer.tsx` plein écran : recherche + filtres pilier/phase + grille gamifiée 240×340 + multi-sélection + "Ajouter en zone d'attente"
+- ✅ Onglet "Mes cartes" : formulaire création (kind=card, is_custom_card=true, scope=subject, visibility_subject_id=currentSubjectId), persistance via onCreate
+- ✅ Bouton "Explorer plein écran" dans CardsTab (badge ⭐ avec compteur custom)
+- ✅ Types ChallengeArtifact/CreateArtifactInput étendus (scope, visibility_subject_id, is_custom_card, card_payload, thread_root_id, thread_order)
+- ⏳ `CardChatDrawer.tsx` (deck_assistant + tool generate_card via challenge-agent)
 
 ### Phase B — Threads post-it
 - `PostitThread.tsx` dans `InspectorPanel` (rendu cascade indentée auteur/timestamp)
