@@ -200,6 +200,15 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
           />
         )}
       </div>
+
+      {showBoard && enabled.ai && (
+        <CopilotBubble
+          sessionId={session.id}
+          workshopId={workshopId}
+          currentSubjectId={session.current_subject_id}
+          selectedArtifact={selectedSync}
+        />
+      )}
     </div>
   );
 }
