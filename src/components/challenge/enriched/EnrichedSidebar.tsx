@@ -152,7 +152,14 @@ export function EnrichedSidebar({
       </div>
 
       {tab === "card" ? (
-        <CardsTab cards={cards} pillars={pillars} placedCardIds={placedCardIds} onAdd={onAddCardToStaging} />
+        <CardsTab
+          cards={cards}
+          pillars={pillars}
+          placedCardIds={placedCardIds}
+          onAdd={onAddCardToStaging}
+          onOpenExplorer={() => setExplorerOpen(true)}
+          customCardCount={subjectCustomCards.length}
+        />
       ) : (
         <>
           {currentSubjectId && (
