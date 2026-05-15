@@ -138,6 +138,12 @@ export default function AdminToolkitDetail() {
       }
       setLastChangeAt(Date.now());
       setStale(false);
+      appendAuditLog({
+        action: "toolkit.illustrations.sweep",
+        entityType: "toolkit",
+        entityId: toolkit.id,
+        payload: { swept },
+      });
       invalidateAll();
     } catch (e: any) {
       toast.error("Échec de la reprise", { description: e?.message });
