@@ -1442,6 +1442,9 @@ export type Database = {
           duration_minutes: number | null
           icon_name: string | null
           id: string
+          image_attempts: number
+          image_error: string | null
+          image_last_attempt_at: string | null
           image_prompt: string | null
           image_status: string
           image_url: string | null
@@ -1466,6 +1469,9 @@ export type Database = {
           duration_minutes?: number | null
           icon_name?: string | null
           id?: string
+          image_attempts?: number
+          image_error?: string | null
+          image_last_attempt_at?: string | null
           image_prompt?: string | null
           image_status?: string
           image_url?: string | null
@@ -1490,6 +1496,9 @@ export type Database = {
           duration_minutes?: number | null
           icon_name?: string | null
           id?: string
+          image_attempts?: number
+          image_error?: string | null
+          image_last_attempt_at?: string | null
           image_prompt?: string | null
           image_status?: string
           image_url?: string | null

@@ -10,20 +10,29 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization");
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authErr } = await anonClient.auth.getUser();
-    if (authErr || !user) throw new Error("Unauthorized");
+
+    // Internal self-invocation bypass (used for resume / sweep)
+    const internalKey = req.headers.get("x-internal-key");
+    const isInternal = internalKey && internalKey === serviceRoleKey;
+
+    if (!isInternal) {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) throw new Error("Missing authorization");
+      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user }, error: authErr } = await anonClient.auth.getUser();
+      if (authErr || !user) throw new Error("Unauthorized");
+      // expose to action handlers via closure below if needed
+      (req as any)._user = user;
+    }
+    const user = (req as any)._user || { id: "system" };
 
     const { action, ...params } = await req.json();
 
@@ -63,6 +72,10 @@ serve(async (req) => {
       return await generateAllCardIllustrations(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-card-illustrations-batch") {
       return await generateCardIllustrationsBatch(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "resume-card-illustrations") {
+      return await resumeCardIllustrations(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "sweep-stale-card-illustrations") {
+      return await sweepStaleCardIllustrations(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
@@ -1476,29 +1489,44 @@ async function buildToolkitPrompt(apiKey: string, toolkit: any): Promise<string>
   return typeof promptResult === "string" ? promptResult.trim() : `Collective intelligence workshop about ${toolkit.name}`;
 }
 
-async function renderImage(apiKey: string, prompt: string): Promise<{ ok: boolean; bytes?: Uint8Array; status?: number }> {
+async function renderImage(apiKey: string, prompt: string, timeoutMs = 45000): Promise<{ ok: boolean; bytes?: Uint8Array; status?: number; error?: string }> {
   let imgResp: Response | null = null;
   let lastStatus = 0;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image-preview",
-        messages: [{ role: "user", content: prompt }],
-        modalities: ["image", "text"],
-      }),
-    });
-    lastStatus = imgResp.status;
-    if (imgResp.ok) break;
-    if (imgResp.status !== 429 && imgResp.status < 500) break;
-    await imgResp.text().catch(() => {});
-    await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+  let lastErr = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3.1-flash-image-preview",
+          messages: [{ role: "user", content: prompt }],
+          modalities: ["image", "text"],
+        }),
+        signal: ctrl.signal,
+      });
+    } catch (e) {
+      lastErr = e instanceof Error ? e.message : String(e);
+      lastStatus = 0; // network/timeout
+    } finally {
+      clearTimeout(t);
+    }
+    if (imgResp) {
+      lastStatus = imgResp.status;
+      if (imgResp.ok) break;
+      // non-retriable: stop
+      if (imgResp.status !== 429 && imgResp.status < 500) break;
+      await imgResp.text().catch(() => {});
+      imgResp = null;
+    }
+    if (attempt === 0) await new Promise((r) => setTimeout(r, 1500));
   }
-  if (!imgResp || !imgResp.ok) return { ok: false, status: lastStatus };
+  if (!imgResp || !imgResp.ok) return { ok: false, status: lastStatus, error: lastErr || (lastStatus ? `HTTP ${lastStatus}` : "request failed") };
   const data = await imgResp.json();
   const base64Url = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-  if (!base64Url) return { ok: false, status: lastStatus };
+  if (!base64Url) return { ok: false, status: lastStatus, error: "empty image payload" };
   const base64Data = base64Url.replace(/^data:image\/\w+;base64,/, "");
   const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
   return { ok: true, bytes };
@@ -1683,7 +1711,7 @@ function buildCardPrompt(card: any, pillar: any, toolkit: any, style: StyleGuide
   ].filter(Boolean).join(" ");
 }
 
-async function compressToJpeg(pngBytes: Uint8Array, maxSize = 768, quality = 82): Promise<Uint8Array> {
+async function compressToJpeg(pngBytes: Uint8Array, maxSize = 768, quality = 82): Promise<{ bytes: Uint8Array; ext: "jpg" | "png"; mime: string }> {
   try {
     const img = await Image.decode(pngBytes);
     const longest = Math.max(img.width, img.height);
@@ -1691,12 +1719,16 @@ async function compressToJpeg(pngBytes: Uint8Array, maxSize = 768, quality = 82)
       const scale = maxSize / longest;
       img.resize(Math.round(img.width * scale), Math.round(img.height * scale));
     }
-    return await img.encodeJPEG(quality);
+    const out = await img.encodeJPEG(quality);
+    return { bytes: out, ext: "jpg", mime: "image/jpeg" };
   } catch (e) {
     console.warn("compress fallback to png", e instanceof Error ? e.message : e);
-    return pngBytes;
+    // fallback: keep PNG, mime aligned to avoid corrupted file
+    return { bytes: pngBytes, ext: "png", mime: "image/png" };
   }
 }
+
+const MAX_IMAGE_ATTEMPTS = 3;
 
 async function renderCardIllustration(
   supabase: any,
@@ -1705,39 +1737,60 @@ async function renderCardIllustration(
   pillar: any,
   toolkit: any,
   style: StyleGuide,
-): Promise<{ ok: boolean; url?: string; status?: number }> {
-  await supabase.from("cards").update({ image_status: "generating" }).eq("id", card.id);
+): Promise<{ ok: boolean; url?: string; status?: number; transient?: boolean }> {
+  const nowIso = new Date().toISOString();
+  const currentAttempts = Number(card.image_attempts || 0);
+  await supabase.from("cards").update({
+    image_status: "generating",
+    image_last_attempt_at: nowIso,
+    image_attempts: currentAttempts + 1,
+  }).eq("id", card.id);
   try {
     const prompt = buildCardPrompt(card, pillar, toolkit, style);
     const img = await renderImage(apiKey, prompt);
     if (!img.ok) {
-      await supabase.from("cards").update({ image_status: "failed" }).eq("id", card.id);
-      return { ok: false, status: img.status };
+      const isQuota = img.status === 402;
+      const isTransient = img.status === 429 || img.status === 503 || img.status === 0; // 0 = network/timeout
+      const exhausted = currentAttempts + 1 >= MAX_IMAGE_ATTEMPTS;
+      const finalStatus = isQuota ? "pending" : (isTransient && !exhausted ? "queued" : "failed");
+      await supabase.from("cards").update({
+        image_status: finalStatus,
+        image_error: (img.error || `image error ${img.status}`).slice(0, 500),
+      }).eq("id", card.id);
+      return { ok: false, status: img.status, transient: isTransient && !exhausted };
     }
     const compressed = await compressToJpeg(img.bytes!);
-    const fileName = `card-illustrations/${toolkit.id}/${card.id}.jpg`;
+    const fileName = `card-illustrations/${toolkit.id}/${card.id}.${compressed.ext}`;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const { error: uploadErr } = await supabase.storage
       .from("academy-assets")
-      .upload(fileName, compressed, { contentType: "image/jpeg", upsert: true });
+      .upload(fileName, compressed.bytes, { contentType: compressed.mime, upsert: true });
     if (uploadErr) {
-      await supabase.from("cards").update({ image_status: "failed" }).eq("id", card.id);
-      return { ok: false };
+      const exhausted = currentAttempts + 1 >= MAX_IMAGE_ATTEMPTS;
+      await supabase.from("cards").update({
+        image_status: exhausted ? "failed" : "queued",
+        image_error: `upload: ${uploadErr.message}`.slice(0, 500),
+      }).eq("id", card.id);
+      return { ok: false, transient: !exhausted };
     }
-    // Cache-bust via timestamp param (URL always stable, but new upload replaces bytes)
     const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}?v=${Date.now()}`;
     await supabase.from("cards").update({
       image_url: publicUrl,
       image_prompt: prompt,
       image_status: "ready",
+      image_error: null,
     }).eq("id", card.id);
     return { ok: true, url: publicUrl };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.warn("card illustration failed", card.id, msg);
     const isQuota = /credits exhausted/i.test(msg);
-    await supabase.from("cards").update({ image_status: isQuota ? "pending" : "failed" }).eq("id", card.id);
-    return { ok: false, status: isQuota ? 402 : undefined };
+    const exhausted = currentAttempts + 1 >= MAX_IMAGE_ATTEMPTS;
+    await supabase.from("cards").update({
+      image_status: isQuota ? "pending" : (exhausted ? "failed" : "queued"),
+      image_error: msg.slice(0, 500),
+    }).eq("id", card.id);
+    return { ok: false, status: isQuota ? 402 : undefined, transient: !exhausted && !isQuota };
   }
 }
 
@@ -1766,12 +1819,16 @@ async function processCardsInBackground(
   label: string,
 ) {
   const CONCURRENCY = 4;
+  const CHUNK_LIMIT = 12; // hard cap per invocation to stay within edge CPU/wallclock
   let consecutive402Batches = 0;
+  let processed = 0;
+
   for (let i = 0; i < list.length; i += CONCURRENCY) {
     const batch = list.slice(i, i + CONCURRENCY);
     const results = await Promise.allSettled(
       batch.map((c: any) => renderCardIllustration(supabase, apiKey, c, pillarMap.get(c.pillar_id), toolkit, style)),
     );
+    processed += batch.length;
     let batch402 = 0;
     for (const r of results) {
       if (r.status === "fulfilled" && r.value.status === 402) batch402++;
@@ -1789,8 +1846,40 @@ async function processCardsInBackground(
     } else {
       consecutive402Batches = 0;
     }
+
+    // Hand off remaining work to a fresh invocation to avoid edge runtime CPU/wallclock cap
+    if (processed >= CHUNK_LIMIT && i + CONCURRENCY < list.length) {
+      const remainingIds = list.slice(i + CONCURRENCY).map((c: any) => c.id);
+      console.log(JSON.stringify({ action: label, toolkit_id: toolkit.id, status: "handoff", remaining: remainingIds.length }));
+      await selfInvokeResume(remainingIds);
+      return;
+    }
   }
   console.log(JSON.stringify({ action: label, toolkit_id: toolkit.id, total: list.length, status: "background-done" }));
+}
+
+async function selfInvokeResume(card_ids: string[]) {
+  if (!card_ids.length) return;
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    // Fire-and-forget: do not await full response; we just need the request to land.
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const resp = await fetch(`${supabaseUrl}/functions/v1/academy-generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-key": serviceRoleKey,
+      },
+      body: JSON.stringify({ action: "resume-card-illustrations", card_ids }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    await resp.text().catch(() => {});
+  } catch (e) {
+    console.warn("self-invoke resume failed", e instanceof Error ? e.message : e);
+  }
 }
 
 async function generateAllCardIllustrations(supabase: any, params: any, apiKey: string, cors: any) {
@@ -1868,4 +1957,104 @@ async function generateCardIllustrationsBatch(supabase: any, params: any, apiKey
     queued: list.length,
     async: true,
   }), { headers: { ...cors, "Content-Type": "application/json" } });
+}
+
+// ─── Resume after self-invocation handoff ────────────────────────────
+async function resumeCardIllustrations(supabase: any, params: any, apiKey: string, cors: any) {
+  const { card_ids } = params;
+  if (!Array.isArray(card_ids) || card_ids.length === 0) {
+    return new Response(JSON.stringify({ success: true, resumed: 0 }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+  const { data: cards } = await supabase
+    .from("cards")
+    .select("*, pillars!inner(*, toolkit_id, toolkits!inner(*))")
+    .in("id", card_ids);
+  const list = cards || [];
+  if (list.length === 0) {
+    return new Response(JSON.stringify({ success: true, resumed: 0 }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+  const toolkit = list[0].pillars.toolkits;
+  const { data: pillars } = await supabase.from("pillars").select("*").eq("toolkit_id", toolkit.id);
+  const pillarMap = new Map((pillars || []).map((p: any) => [p.id, p]));
+  const style = await buildToolkitStyleGuide(supabase, apiKey, toolkit, pillars || []);
+
+  const work = processCardsInBackground(supabase, apiKey, list, pillarMap, toolkit, style, "resume-card-illustrations");
+  // @ts-ignore
+  if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(work);
+  }
+
+  return new Response(JSON.stringify({ success: true, resumed: list.length, async: true }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+// ─── Sweep stale "queued" / "generating" cards ───────────────────────
+// Reanimates any card stuck in queued/generating without recent heartbeat,
+// then relaunches the pipeline. Safe to call from UI when client detects
+// no realtime activity for >60s.
+async function sweepStaleCardIllustrations(supabase: any, params: any, apiKey: string, cors: any) {
+  const { toolkit_id } = params;
+  if (!toolkit_id) throw new Error("Missing toolkit_id");
+
+  const { data: pillars } = await supabase.from("pillars").select("id").eq("toolkit_id", toolkit_id);
+  const pillarIds = (pillars || []).map((p: any) => p.id);
+  if (pillarIds.length === 0) {
+    return new Response(JSON.stringify({ success: true, swept: 0 }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+
+  const generatingCutoff = new Date(Date.now() - 90_000).toISOString();   // 90s
+  const queuedCutoff = new Date(Date.now() - 5 * 60_000).toISOString();   // 5min
+
+  // 1. "generating" stuck > 90s
+  const { data: stuckGenerating } = await supabase
+    .from("cards")
+    .select("id")
+    .in("pillar_id", pillarIds)
+    .eq("image_status", "generating")
+    .or(`image_last_attempt_at.is.null,image_last_attempt_at.lt.${generatingCutoff}`);
+
+  // 2. "queued" without heartbeat for >5min
+  const { data: stuckQueued } = await supabase
+    .from("cards")
+    .select("id")
+    .in("pillar_id", pillarIds)
+    .eq("image_status", "queued")
+    .or(`image_last_attempt_at.is.null,image_last_attempt_at.lt.${queuedCutoff}`);
+
+  const staleIds = [
+    ...(stuckGenerating || []).map((c: any) => c.id),
+    ...(stuckQueued || []).map((c: any) => c.id),
+  ];
+
+  if (staleIds.length === 0) {
+    return new Response(JSON.stringify({ success: true, swept: 0 }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+
+  // Reset to queued and relaunch (do NOT bump attempts — these never completed an attempt cycle)
+  await supabase.from("cards").update({ image_status: "queued" }).in("id", staleIds);
+
+  const { data: cards } = await supabase
+    .from("cards")
+    .select("*, pillars!inner(*, toolkit_id, toolkits!inner(*))")
+    .in("id", staleIds);
+  const list = cards || [];
+  if (list.length === 0) {
+    return new Response(JSON.stringify({ success: true, swept: 0 }), { headers: { ...cors, "Content-Type": "application/json" } });
+  }
+  const toolkit = list[0].pillars.toolkits;
+  const pillarMap = new Map((pillars || []).map((p: any) => [p.id, p]));
+  const style = await buildToolkitStyleGuide(supabase, apiKey, toolkit, pillars || []);
+
+  const work = processCardsInBackground(supabase, apiKey, list, pillarMap, toolkit, style, "sweep-stale-card-illustrations");
+  // @ts-ignore
+  if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(work);
+  }
+
+  return new Response(JSON.stringify({ success: true, swept: staleIds.length, async: true }), {
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
 }
