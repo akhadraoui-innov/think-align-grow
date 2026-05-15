@@ -14,6 +14,7 @@ import type { ChallengeArtifact, ArtifactKind, CreateArtifactInput, Criticality 
 interface Props {
   sessionId: string;
   workshopId: string;
+  currentSubjectId?: string | null;
   artifacts: ChallengeArtifact[];
   enabled: { postits: boolean; voice: boolean; questions: boolean };
   canEdit: boolean;
@@ -30,22 +31,31 @@ const TABS: { id: ArtifactKind; label: string; icon: any }[] = [
   { id: "question", label: "Questions", icon: HelpCircle },
 ];
 
-export function EnrichedSidebar({ sessionId, workshopId, artifacts, enabled, canEdit, selectedId, onSelect, onCreate, onUpdate, onDelete }: Props) {
+export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artifacts, enabled, canEdit, selectedId, onSelect, onCreate, onUpdate, onDelete }: Props) {
   const allowedTabs = TABS.filter(t => (t.id === "postit" && enabled.postits) || (t.id === "voice" && enabled.voice) || (t.id === "question" && enabled.questions));
   const [tab, setTab] = useState<ArtifactKind>(allowedTabs[0]?.id ?? "postit");
   const [filterCrit, setFilterCrit] = useState<Criticality | "all">("all");
+  const [scope, setScope] = useState<"current" | "all">(currentSubjectId ? "current" : "all");
+  const [includeResolved, setIncludeResolved] = useState(false);
+
+  // Only show top-level artifacts in the list (children appear in inspector thread)
+  const baseList = useMemo(
+    () => artifacts.filter(a => !a.parent_artifact_id && (includeResolved || a.status !== "resolved")),
+    [artifacts, includeResolved],
+  );
 
   const filtered = useMemo(() => {
-    let list = artifacts.filter(a => a.kind === tab);
+    let list = baseList.filter(a => a.kind === tab);
+    if (scope === "current" && currentSubjectId) list = list.filter(a => a.subject_id === currentSubjectId);
     if (filterCrit !== "all" && tab === "postit") list = list.filter(a => a.criticality === filterCrit);
     return list.slice().reverse();
-  }, [artifacts, tab, filterCrit]);
+  }, [baseList, tab, filterCrit, scope, currentSubjectId]);
 
   const counts = useMemo(() => ({
-    postit: artifacts.filter(a => a.kind === "postit").length,
-    voice: artifacts.filter(a => a.kind === "voice").length,
-    question: artifacts.filter(a => a.kind === "question").length,
-  }), [artifacts]);
+    postit: baseList.filter(a => a.kind === "postit").length,
+    voice: baseList.filter(a => a.kind === "voice").length,
+    question: baseList.filter(a => a.kind === "question").length,
+  }), [baseList]);
 
   return (
     <aside className="w-[340px] shrink-0 border-r border-border bg-background/60 flex flex-col h-full">
@@ -67,11 +77,19 @@ export function EnrichedSidebar({ sessionId, workshopId, artifacts, enabled, can
         </div>
       </div>
 
+      {currentSubjectId && (
+        <div className="px-3 py-1.5 border-b border-border flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider">
+          <button onClick={() => setScope("current")} className={cn("flex-1 py-1 rounded", scope === "current" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}>Sujet courant</button>
+          <button onClick={() => setScope("all")} className={cn("flex-1 py-1 rounded", scope === "all" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted")}>Tous sujets</button>
+          <button onClick={() => setIncludeResolved(v => !v)} className={cn("py-1 px-2 rounded", includeResolved ? "bg-emerald-500/10 text-emerald-600" : "text-muted-foreground hover:bg-muted")} title="Inclure résolus">✓</button>
+        </div>
+      )}
+
       {canEdit && (
         <div className="p-3 border-b border-border space-y-2">
-          {tab === "postit" && <PostitComposer onCreate={onCreate} />}
-          {tab === "voice" && <VoiceRecorder sessionId={sessionId} onCreate={onCreate} />}
-          {tab === "question" && <QuestionComposer onCreate={onCreate} sessionId={sessionId} />}
+          {tab === "postit" && <PostitComposer onCreate={onCreate} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
+          {tab === "voice" && <VoiceRecorder sessionId={sessionId} onCreate={onCreate} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
+          {tab === "question" && <QuestionComposer onCreate={onCreate} sessionId={sessionId} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
         </div>
       )}
 

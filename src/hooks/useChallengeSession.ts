@@ -118,15 +118,31 @@ export function useChallengeSession(workshopId: string | undefined, templateId: 
 
   const upsertContext = useCallback(async (patch: Partial<ChallengeSessionContextRow>) => {
     if (!session) return;
-    const payload = { session_id: session.id, ...context, ...patch };
-    delete (payload as any).id;
-    delete (payload as any).updated_at;
-    const { error } = await (supabase as any)
+    // Whitelist explicite : ne JAMAIS renvoyer embedding/embedding_input/id/updated_at
+    const safe: any = {
+      session_id: session.id,
+      scope: patch.scope ?? context?.scope ?? null,
+      goals: patch.goals ?? context?.goals ?? null,
+      hypotheses: patch.hypotheses ?? context?.hypotheses ?? null,
+      constraints: patch.constraints ?? context?.constraints ?? null,
+      stakeholders: patch.stakeholders ?? context?.stakeholders ?? [],
+      context_data: patch.context_data ?? context?.context_data ?? {},
+      attachments: patch.attachments ?? context?.attachments ?? [],
+    };
+    const { data, error } = await (supabase as any)
       .from("challenge_session_context")
-      .upsert(payload, { onConflict: "session_id" });
+      .upsert(safe, { onConflict: "session_id" })
+      .select()
+      .single();
     if (error) {
       toast.error("Sauvegarde du contexte impossible");
       console.error(error);
+      return;
+    }
+    // Re-embed asynchrone
+    if (data?.id) {
+      supabase.functions.invoke("challenge-embed", { body: { target: "context", id: data.id } })
+        .catch((e) => console.warn("embed ctx", e));
     }
   }, [session, context]);
 
