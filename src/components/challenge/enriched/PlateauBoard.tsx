@@ -100,7 +100,8 @@ function PlateauBoardImpl({ artifacts, canEdit, selectedId, onSelect, onUpdate, 
       rafRef.current = null;
       const node = document.querySelector<HTMLElement>(`[data-art-id="${d.id}"]`);
       if (node) {
-        node.style.transform = `translate3d(${d.lastX - (parseFloat(node.dataset.baseX || "0"))}px, ${d.lastY - (parseFloat(node.dataset.baseY || "0"))}px, 0)`;
+        node.style.left = `${d.lastX}px`;
+        node.style.top = `${d.lastY}px`;
       }
     });
   }, [zoom]);
