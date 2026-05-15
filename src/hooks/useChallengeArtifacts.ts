@@ -61,6 +61,10 @@ export interface CreateArtifactInput {
   color?: string | null;
   is_anonymous?: boolean;
   ai_meta?: Record<string, any>;
+  scope?: "private" | "subject" | "session" | "workshop";
+  visibility_subject_id?: string | null;
+  is_custom_card?: boolean;
+  card_payload?: Record<string, any>;
 }
 
 export function useChallengeArtifacts(sessionId: string | undefined, workshopId: string | undefined) {
