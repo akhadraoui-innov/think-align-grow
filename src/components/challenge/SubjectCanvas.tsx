@@ -47,6 +47,7 @@ export function SubjectCanvas({
   onDrop, onRemove, onMoveToSlot, onUpdateResponse,
   stagingItems = [], onStage, onUnstage, onStagingFormatChange, onReorderStaging,
   readOnly,
+  artifacts = [], onAttachArtifact, onDetachArtifact, onSelectArtifact,
 }: SubjectCanvasProps) {
   const subjectSlots = slots.filter(s => s.subject_id === subject.id);
   const subjectResponses = responses.filter(r => r.subject_id === subject.id);
