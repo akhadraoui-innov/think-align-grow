@@ -6282,6 +6282,22 @@ export type Database = {
       }
       mark_all_notifications_read: { Args: never; Returns: number }
       mark_notifications_read: { Args: { _ids: string[] }; Returns: number }
+      match_challenge_artifacts: {
+        Args: {
+          _exclude?: string
+          _k?: number
+          _query: string
+          _session: string
+        }
+        Returns: {
+          content: string
+          criticality: string
+          emoji: string
+          id: string
+          kind: Database["public"]["Enums"]["challenge_artifact_kind"]
+          similarity: number
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
