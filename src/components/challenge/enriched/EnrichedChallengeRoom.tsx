@@ -164,6 +164,8 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
                 selectedId={selectedSync?.id ?? null}
                 onSelect={(a) => setSelected(a)}
                 onUpdate={update}
+                sessionId={session.id}
+                onCreate={create}
               />
             </div>
           )}
