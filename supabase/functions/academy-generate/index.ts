@@ -10,20 +10,29 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization");
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authErr } = await anonClient.auth.getUser();
-    if (authErr || !user) throw new Error("Unauthorized");
+
+    // Internal self-invocation bypass (used for resume / sweep)
+    const internalKey = req.headers.get("x-internal-key");
+    const isInternal = internalKey && internalKey === serviceRoleKey;
+
+    if (!isInternal) {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) throw new Error("Missing authorization");
+      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user }, error: authErr } = await anonClient.auth.getUser();
+      if (authErr || !user) throw new Error("Unauthorized");
+      // expose to action handlers via closure below if needed
+      (req as any)._user = user;
+    }
+    const user = (req as any)._user || { id: "system" };
 
     const { action, ...params } = await req.json();
 
