@@ -126,6 +126,10 @@ export function SubjectCanvas({
               onMoveToSlot={onMoveToSlot}
               onUpdateResponse={onUpdateResponse}
               readOnly={readOnly}
+              attachedArtifacts={artifacts.filter(a => a.slot_id === slot.id && a.kind !== "card")}
+              onAttachArtifact={onAttachArtifact ? (artifactId) => onAttachArtifact(slot.id, artifactId, subject.id) : undefined}
+              onDetachArtifact={onDetachArtifact}
+              onSelectArtifact={onSelectArtifact}
             />
           ))}
         </div>
