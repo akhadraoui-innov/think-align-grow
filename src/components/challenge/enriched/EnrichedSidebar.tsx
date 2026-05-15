@@ -265,6 +265,18 @@ export function EnrichedSidebar({
         defaultSubjectId={scope === "current" ? currentSubjectId : null}
         onCreate={onCreate}
       />
+
+      <CardExplorer
+        open={explorerOpen}
+        onOpenChange={setExplorerOpen}
+        cards={cards}
+        pillars={pillars}
+        customCards={subjectCustomCards}
+        placedCardIds={placedCardIds}
+        currentSubjectId={currentSubjectId ?? null}
+        onAddToStaging={onAddCardToStaging}
+        onCreateCustomCard={onCreate}
+      />
     </aside>
   );
 }
