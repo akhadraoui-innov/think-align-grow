@@ -33,6 +33,12 @@ export interface ChallengeArtifact {
   status: "draft" | "active" | "resolved" | "archived";
   resolved_by: string | null;
   resolved_at: string | null;
+  scope?: "private" | "subject" | "session" | "workshop" | null;
+  visibility_subject_id?: string | null;
+  is_custom_card?: boolean | null;
+  card_payload?: Record<string, any> | null;
+  thread_root_id?: string | null;
+  thread_order?: number | null;
   created_at: string;
   updated_at: string;
 }
