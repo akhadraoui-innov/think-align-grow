@@ -12,6 +12,9 @@ export interface ChallengeTemplate {
   toolkit_id: string;
   difficulty: string | null;
   created_at: string;
+  experience_mode?: "classic" | "enriched";
+  enriched_config?: Record<string, any>;
+  context_schema?: Record<string, any>;
 }
 
 export interface ChallengeSubject {

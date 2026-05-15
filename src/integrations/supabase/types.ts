@@ -1525,6 +1525,75 @@ export type Database = {
           },
         ]
       }
+      challenge_ai_threads: {
+        Row: {
+          agent: string
+          artifact_id: string | null
+          created_at: string
+          error: string | null
+          id: string
+          model: string | null
+          prompt: string
+          rag_context: Json | null
+          response: string | null
+          session_id: string
+          status: string
+          tokens_in: number | null
+          tokens_out: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          agent: string
+          artifact_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          model?: string | null
+          prompt: string
+          rag_context?: Json | null
+          response?: string | null
+          session_id: string
+          status?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          agent?: string
+          artifact_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          model?: string | null
+          prompt?: string
+          rag_context?: Json | null
+          response?: string | null
+          session_id?: string
+          status?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_ai_threads_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_ai_threads_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_analyses: {
         Row: {
           analysis: Json
@@ -1560,6 +1629,298 @@ export type Database = {
             columns: ["workshop_id"]
             isOneToOne: false
             referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_artifact_links: {
+        Row: {
+          created_at: string
+          created_by: string
+          from_id: string
+          id: string
+          kind: Database["public"]["Enums"]["challenge_link_kind"]
+          rationale: string | null
+          session_id: string
+          to_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          from_id: string
+          id?: string
+          kind: Database["public"]["Enums"]["challenge_link_kind"]
+          rationale?: string | null
+          session_id: string
+          to_id: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          from_id?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["challenge_link_kind"]
+          rationale?: string | null
+          session_id?: string
+          to_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_artifact_links_from_id_fkey"
+            columns: ["from_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_artifact_links_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_artifact_links_to_id_fkey"
+            columns: ["to_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_artifacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_artifacts: {
+        Row: {
+          ai_meta: Json
+          audio_duration_ms: number | null
+          audio_url: string | null
+          author_id: string
+          card_id: string | null
+          category: string | null
+          color: string | null
+          content: string | null
+          content_rich: Json | null
+          created_at: string
+          criticality: string | null
+          embedding: string | null
+          embedding_input: string | null
+          emoji: string | null
+          format: string
+          id: string
+          is_anonymous: boolean
+          kind: Database["public"]["Enums"]["challenge_artifact_kind"]
+          parent_artifact_id: string | null
+          position: Json | null
+          resolved_at: string | null
+          resolved_by: string | null
+          session_id: string
+          slot_id: string | null
+          status: string
+          subject_id: string | null
+          tags: string[]
+          transcription: string | null
+          updated_at: string
+          workshop_id: string
+          z_index: number
+        }
+        Insert: {
+          ai_meta?: Json
+          audio_duration_ms?: number | null
+          audio_url?: string | null
+          author_id: string
+          card_id?: string | null
+          category?: string | null
+          color?: string | null
+          content?: string | null
+          content_rich?: Json | null
+          created_at?: string
+          criticality?: string | null
+          embedding?: string | null
+          embedding_input?: string | null
+          emoji?: string | null
+          format?: string
+          id?: string
+          is_anonymous?: boolean
+          kind: Database["public"]["Enums"]["challenge_artifact_kind"]
+          parent_artifact_id?: string | null
+          position?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_id: string
+          slot_id?: string | null
+          status?: string
+          subject_id?: string | null
+          tags?: string[]
+          transcription?: string | null
+          updated_at?: string
+          workshop_id: string
+          z_index?: number
+        }
+        Update: {
+          ai_meta?: Json
+          audio_duration_ms?: number | null
+          audio_url?: string | null
+          author_id?: string
+          card_id?: string | null
+          category?: string | null
+          color?: string | null
+          content?: string | null
+          content_rich?: Json | null
+          created_at?: string
+          criticality?: string | null
+          embedding?: string | null
+          embedding_input?: string | null
+          emoji?: string | null
+          format?: string
+          id?: string
+          is_anonymous?: boolean
+          kind?: Database["public"]["Enums"]["challenge_artifact_kind"]
+          parent_artifact_id?: string | null
+          position?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          session_id?: string
+          slot_id?: string | null
+          status?: string
+          subject_id?: string | null
+          tags?: string[]
+          transcription?: string | null
+          updated_at?: string
+          workshop_id?: string
+          z_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_artifacts_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_artifacts_parent_artifact_id_fkey"
+            columns: ["parent_artifact_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_artifacts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_artifacts_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_artifacts_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          id: number
+          kind: Database["public"]["Enums"]["challenge_event_kind"]
+          payload: Json
+          session_id: string
+          target_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          id?: number
+          kind: Database["public"]["Enums"]["challenge_event_kind"]
+          payload?: Json
+          session_id: string
+          target_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["challenge_event_kind"]
+          payload?: Json
+          session_id?: string
+          target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_presence_snapshots: {
+        Row: {
+          session_id: string
+          snapshot: Json
+          updated_at: string
+        }
+        Insert: {
+          session_id: string
+          snapshot?: Json
+          updated_at?: string
+        }
+        Update: {
+          session_id?: string
+          snapshot?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_presence_snapshots_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_reactions: {
+        Row: {
+          artifact_id: string
+          created_at: string
+          emoji: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          artifact_id: string
+          created_at?: string
+          emoji: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          artifact_id?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_reactions_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_artifacts"
             referencedColumns: ["id"]
           },
         ]
@@ -1627,6 +1988,129 @@ export type Database = {
             foreignKeyName: "challenge_responses_workshop_id_fkey"
             columns: ["workshop_id"]
             isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_session_context: {
+        Row: {
+          attachments: Json
+          constraints: string | null
+          context_data: Json
+          embedding: string | null
+          embedding_input: string | null
+          goals: string | null
+          hypotheses: string | null
+          id: string
+          scope: string | null
+          session_id: string
+          stakeholders: Json | null
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json
+          constraints?: string | null
+          context_data?: Json
+          embedding?: string | null
+          embedding_input?: string | null
+          goals?: string | null
+          hypotheses?: string | null
+          id?: string
+          scope?: string | null
+          session_id: string
+          stakeholders?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json
+          constraints?: string | null
+          context_data?: Json
+          embedding?: string | null
+          embedding_input?: string | null
+          goals?: string | null
+          hypotheses?: string | null
+          id?: string
+          scope?: string | null
+          session_id?: string
+          stakeholders?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_session_context_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_sessions: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string
+          current_subject_id: string | null
+          ended_at: string | null
+          facilitator_notes: string | null
+          id: string
+          organization_id: string | null
+          started_at: string | null
+          status: string
+          template_id: string
+          updated_at: string
+          workshop_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by: string
+          current_subject_id?: string | null
+          ended_at?: string | null
+          facilitator_notes?: string | null
+          id?: string
+          organization_id?: string | null
+          started_at?: string | null
+          status?: string
+          template_id: string
+          updated_at?: string
+          workshop_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string
+          current_subject_id?: string | null
+          ended_at?: string | null
+          facilitator_notes?: string | null
+          id?: string
+          organization_id?: string | null
+          started_at?: string | null
+          status?: string
+          template_id?: string
+          updated_at?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_sessions_current_subject_id_fkey"
+            columns: ["current_subject_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_sessions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_sessions_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: true
             referencedRelation: "workshops"
             referencedColumns: ["id"]
           },
@@ -1760,6 +2244,53 @@ export type Database = {
           },
         ]
       }
+      challenge_syntheses: {
+        Row: {
+          agent: string
+          content: Json
+          embedding: string | null
+          generated_at: string
+          generated_by: string | null
+          id: string
+          rag_sources: Json | null
+          scores: Json | null
+          session_id: string
+          version: number
+        }
+        Insert: {
+          agent: string
+          content: Json
+          embedding?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          rag_sources?: Json | null
+          scores?: Json | null
+          session_id: string
+          version?: number
+        }
+        Update: {
+          agent?: string
+          content?: Json
+          embedding?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          rag_sources?: Json | null
+          scores?: Json | null
+          session_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_syntheses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_template_toolkits: {
         Row: {
           created_at: string
@@ -1798,27 +2329,36 @@ export type Database = {
       }
       challenge_templates: {
         Row: {
+          context_schema: Json
           created_at: string
           description: string | null
           difficulty: string | null
+          enriched_config: Json
+          experience_mode: string
           id: string
           name: string
           pillar_id: string | null
           toolkit_id: string
         }
         Insert: {
+          context_schema?: Json
           created_at?: string
           description?: string | null
           difficulty?: string | null
+          enriched_config?: Json
+          experience_mode?: string
           id?: string
           name: string
           pillar_id?: string | null
           toolkit_id: string
         }
         Update: {
+          context_schema?: Json
           created_at?: string
           description?: string | null
           difficulty?: string | null
+          enriched_config?: Json
+          experience_mode?: string
           id?: string
           name?: string
           pillar_id?: string | null
@@ -1837,6 +2377,51 @@ export type Database = {
             columns: ["toolkit_id"]
             isOneToOne: false
             referencedRelation: "toolkits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_votes: {
+        Row: {
+          artifact_id: string
+          created_at: string
+          id: string
+          session_id: string
+          user_id: string
+          vote_round: string
+          weight: number
+        }
+        Insert: {
+          artifact_id: string
+          created_at?: string
+          id?: string
+          session_id: string
+          user_id: string
+          vote_round?: string
+          weight?: number
+        }
+        Update: {
+          artifact_id?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+          user_id?: string
+          vote_round?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_votes_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_votes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -5776,6 +6361,42 @@ export type Database = {
         | "guest"
       canvas_item_type: "card" | "sticky" | "group" | "arrow" | "icon" | "text"
       card_phase: "foundations" | "model" | "growth" | "execution"
+      challenge_artifact_kind:
+        | "card"
+        | "postit"
+        | "voice"
+        | "question"
+        | "sticker"
+        | "link_note"
+        | "vote_summary"
+      challenge_event_kind:
+        | "session.start"
+        | "session.phase"
+        | "session.end"
+        | "artifact.created"
+        | "artifact.updated"
+        | "artifact.moved"
+        | "artifact.resolved"
+        | "artifact.deleted"
+        | "link.created"
+        | "link.deleted"
+        | "reaction.added"
+        | "reaction.removed"
+        | "vote.cast"
+        | "vote.round.opened"
+        | "vote.round.closed"
+        | "ai.requested"
+        | "ai.responded"
+        | "timer.started"
+        | "timer.stopped"
+        | "focus.changed"
+      challenge_link_kind:
+        | "supports"
+        | "contradicts"
+        | "depends_on"
+        | "derived_from"
+        | "answers"
+        | "references"
       challenge_slot_type: "single" | "multi" | "ranked"
       challenge_subject_type: "question" | "challenge" | "context"
       deliverable_type: "swot" | "bmc" | "pitch_deck" | "action_plan"
@@ -5924,6 +6545,45 @@ export const Constants = {
       ],
       canvas_item_type: ["card", "sticky", "group", "arrow", "icon", "text"],
       card_phase: ["foundations", "model", "growth", "execution"],
+      challenge_artifact_kind: [
+        "card",
+        "postit",
+        "voice",
+        "question",
+        "sticker",
+        "link_note",
+        "vote_summary",
+      ],
+      challenge_event_kind: [
+        "session.start",
+        "session.phase",
+        "session.end",
+        "artifact.created",
+        "artifact.updated",
+        "artifact.moved",
+        "artifact.resolved",
+        "artifact.deleted",
+        "link.created",
+        "link.deleted",
+        "reaction.added",
+        "reaction.removed",
+        "vote.cast",
+        "vote.round.opened",
+        "vote.round.closed",
+        "ai.requested",
+        "ai.responded",
+        "timer.started",
+        "timer.stopped",
+        "focus.changed",
+      ],
+      challenge_link_kind: [
+        "supports",
+        "contradicts",
+        "depends_on",
+        "derived_from",
+        "answers",
+        "references",
+      ],
       challenge_slot_type: ["single", "multi", "ranked"],
       challenge_subject_type: ["question", "challenge", "context"],
       deliverable_type: ["swot", "bmc", "pitch_deck", "action_plan"],

@@ -8,6 +8,7 @@ import { useCards, usePillars } from "@/hooks/useToolkitData";
 import { useChallengeTemplate } from "@/hooks/useChallengeData";
 import { useAuth } from "@/hooks/useAuth";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
+import { EnrichedChallengeRoom } from "@/components/challenge/enriched/EnrichedChallengeRoom";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -203,14 +204,25 @@ export default function ChallengeRoom() {
       {/* Challenge content */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {template ? (
-          <ChallengeView
-            template={template}
-            workshopId={id!}
-            cards={allCards || []}
-            pillars={pillars || []}
-            isHost={isHost}
-            readOnly={isReadOnly}
-          />
+          (template as any).experience_mode === "enriched" ? (
+            <EnrichedChallengeRoom
+              template={template}
+              workshopId={id!}
+              cards={allCards || []}
+              pillars={pillars || []}
+              isHost={isHost}
+              readOnly={isReadOnly}
+            />
+          ) : (
+            <ChallengeView
+              template={template}
+              workshopId={id!}
+              cards={allCards || []}
+              pillars={pillars || []}
+              isHost={isHost}
+              readOnly={isReadOnly}
+            />
+          )
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             Aucun template de challenge disponible.
