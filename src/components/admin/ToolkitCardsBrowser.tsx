@@ -254,6 +254,22 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
     );
   };
 
+  const renderCardWithPreview = (card: Tables<"cards">) => (
+    <div key={card.id} className="relative group">
+      {renderCard(card)}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setPreviewCard(card); }}
+        className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-background/90 backdrop-blur rounded-full p-1.5 shadow-lg border border-border/50 hover:bg-background"
+        title="Aperçu"
+      >
+        <Eye className="h-3.5 w-3.5 text-foreground" />
+      </button>
+    </div>
+  );
+
+  const previewPillar = previewCard ? pillarMap.get(previewCard.pillar_id) : null;
+  const previewAny = previewCard as any;
   return (
     <div className="space-y-4">
       {/* Toolbar */}
