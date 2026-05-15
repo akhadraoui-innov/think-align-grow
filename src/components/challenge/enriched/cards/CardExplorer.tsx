@@ -67,7 +67,6 @@ export function CardExplorer({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        showCloseButton={false}
         className="!fixed !inset-2 !top-2 !left-2 !right-2 !bottom-2 !translate-x-0 !translate-y-0 max-w-none w-auto h-auto p-0 gap-0 grid-rows-[auto_1fr] flex flex-col overflow-hidden rounded-xl"
       >
         {/* HEADER */}
