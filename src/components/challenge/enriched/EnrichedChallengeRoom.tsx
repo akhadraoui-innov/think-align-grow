@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map } from "lucide-react";
+import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
@@ -15,6 +15,7 @@ import { PlateauBoard } from "./PlateauBoard";
 import { PresenceBar } from "./presence/PresenceBar";
 import { CopilotBubble } from "./copilot/CopilotBubble";
 import { cn } from "@/lib/utils";
+import { SessionTimeline } from "./innovations/SessionTimeline";
 import type { ChallengeTemplate } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 
@@ -34,6 +35,20 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
   const { peers, update: updatePresence } = useChallengePresence(session?.id);
   const [selected, setSelected] = useState<ChallengeArtifact | null>(null);
   const [view, setView] = useState<"cards" | "plateau">("cards");
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [timeCutoff, setTimeCutoff] = useState<string | null>(null);
+
+  // Time-filtered artifacts (Innovation #5)
+  const visibleArtifacts = useMemo(() => {
+    if (!timeCutoff) return artifacts;
+    const t = +new Date(timeCutoff);
+    return artifacts.filter(a => +new Date(a.created_at) <= t);
+  }, [artifacts, timeCutoff]);
+
+  const timelineEvents = useMemo(
+    () => artifacts.map(a => ({ id: a.id, created_at: a.created_at, kind: a.kind })),
+    [artifacts],
+  );
 
   // Broadcast which subject/artifact the user is currently viewing
   useEffect(() => {
@@ -98,6 +113,20 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
               </button>
             </div>
           )}
+          {showBoard && timelineEvents.length > 1 && (
+            <button
+              onClick={() => { setTimelineOpen(o => !o); if (timelineOpen) setTimeCutoff(null); }}
+              className={cn(
+                "h-7 px-2 rounded-md border text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors",
+                timelineOpen || timeCutoff
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:bg-muted",
+              )}
+              title="Frise chronologique"
+            >
+              <Clock className="h-3 w-3" /> Timeline
+            </button>
+          )}
           {isHost && session.status === "running" && (
             <Button size="sm" variant="outline" onClick={() => setStatus("briefing")}>
               <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Briefing
@@ -112,13 +141,18 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
         </div>
       </div>
 
+      {showBoard && timelineOpen && timelineEvents.length > 1 && (
+        <div className="px-4 py-2 border-b border-border bg-muted/30 shrink-0">
+          <SessionTimeline events={timelineEvents} onScrub={setTimeCutoff} />
+        </div>
+      )}
       <div className="flex-1 min-h-0 flex overflow-hidden">
         {showBoard && (enabled.postits || enabled.voice || enabled.questions) && (
           <EnrichedSidebar
             sessionId={session.id}
             workshopId={workshopId}
             currentSubjectId={session.current_subject_id}
-            artifacts={artifacts}
+            artifacts={visibleArtifacts}
             enabled={enabled}
             canEdit={canEdit}
             selectedId={selectedSync?.id ?? null}
@@ -133,7 +167,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
             onToggleVote={toggleVote}
             cards={cards}
             pillars={pillars}
-            customCards={artifacts.filter(a => a.kind === "card" && a.is_custom_card)}
+            customCards={visibleArtifacts.filter(a => a.kind === "card" && a.is_custom_card)}
           />
         )}
 
@@ -157,7 +191,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
               isHost={isHost}
               readOnly={readOnly}
               hideSidebar
-              artifacts={artifacts}
+              artifacts={visibleArtifacts}
               onAttachArtifact={(slotId, artifactId, subjectId) => update(artifactId, { slot_id: slotId, subject_id: subjectId } as any)}
               onDetachArtifact={(artifactId) => update(artifactId, { slot_id: null } as any)}
               onSelectArtifact={(a) => setSelected(a)}
@@ -167,7 +201,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
           {showBoard && view === "plateau" && (
             <div className="h-full">
               <PlateauBoard
-                artifacts={artifacts}
+                artifacts={visibleArtifacts}
                 canEdit={canEdit}
                 selectedId={selectedSync?.id ?? null}
                 onSelect={(a) => setSelected(a)}

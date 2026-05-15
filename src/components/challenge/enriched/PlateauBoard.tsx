@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, memo } from "react";
 import { CRITICALITY_META } from "./constants";
 import { cn } from "@/lib/utils";
 import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
@@ -6,6 +6,9 @@ import { Mic, HelpCircle, StickyNote, Image as ImageIcon, ZoomIn, ZoomOut, Maxim
 import { Button } from "@/components/ui/button";
 import { ImageLibrary } from "./images/ImageLibrary";
 import { ImageTile } from "./images/ImageTile";
+import { StickerPalette, StickerToggle, StickerChip } from "./innovations/StickerLayer";
+import { PlateauMiniMap } from "./innovations/PlateauMiniMap";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   artifacts: ChallengeArtifact[];
@@ -18,36 +21,61 @@ interface Props {
 }
 
 const CARD_W = 220;
+const WORLD_W = 8000;
+const WORLD_H = 6000;
 const KIND_ICON = { postit: StickyNote, voice: Mic, question: HelpCircle, image: ImageIcon } as const;
 
 function defaultPos(idx: number) {
-  // grid fallback for artifacts without position
   const cols = 5;
   return { x: 40 + (idx % cols) * (CARD_W + 24), y: 40 + Math.floor(idx / cols) * 180 };
 }
 
-export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdate, sessionId, onCreate }: Props) {
+function PlateauBoardImpl({ artifacts, canEdit, selectedId, onSelect, onUpdate, sessionId, onCreate }: Props) {
+  const { user } = useAuth();
   const [imageOpen, setImageOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [pendingSticker, setPendingSticker] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const dragRef = useRef<{ id: string; offsetX: number; offsetY: number; moved: boolean } | null>(null);
+  const [viewport, setViewport] = useState({ w: 800, h: 600 });
+
+  const dragRef = useRef<{ id: string; offsetX: number; offsetY: number; moved: boolean; lastX: number; lastY: number } | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const saveTimers = useRef<Map<string, number>>(new Map());
   const panRef = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
   const [tick, setTick] = useState(0);
 
-  const top = artifacts.filter(a => !a.parent_artifact_id && a.status !== "archived");
+  const cards = artifacts.filter(a => !a.parent_artifact_id && a.status !== "archived" && a.kind !== "sticker");
+  const stickers = artifacts.filter(a => a.kind === "sticker" && a.status !== "archived");
+
+  // Track viewport size for minimap
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const r = el.getBoundingClientRect();
+      setViewport({ w: r.width, h: r.height });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // (debounced save reserved for future bulk-move feature)
 
   const onPointerDownCard = (e: React.PointerEvent, a: ChallengeArtifact) => {
     if (!canEdit) return;
     e.stopPropagation();
     (e.target as Element).setPointerCapture(e.pointerId);
-    const idx = top.indexOf(a);
+    const idx = cards.indexOf(a);
     const pos = (a.position as any) || defaultPos(idx);
     dragRef.current = {
       id: a.id,
       offsetX: e.clientX / zoom - pos.x,
       offsetY: e.clientY / zoom - pos.y,
       moved: false,
+      lastX: pos.x,
+      lastY: pos.y,
     };
   };
 
@@ -57,12 +85,16 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
     d.moved = true;
     const x = e.clientX / zoom - d.offsetX;
     const y = e.clientY / zoom - d.offsetY;
-    // optimistic mutation in-memory via dataset position + force render
-    const node = document.querySelector<HTMLElement>(`[data-art-id="${d.id}"]`);
-    if (node) {
-      node.style.left = `${x}px`;
-      node.style.top = `${y}px`;
-    }
+    d.lastX = x; d.lastY = y;
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const node = document.querySelector<HTMLElement>(`[data-art-id="${d.id}"]`);
+      if (node) {
+        node.style.left = `${d.lastX}px`;
+        node.style.top = `${d.lastY}px`;
+      }
+    });
   }, [zoom]);
 
   const onPointerUpCard = useCallback((e: React.PointerEvent, a: ChallengeArtifact) => {
@@ -70,16 +102,27 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
     dragRef.current = null;
     if (!d) return;
     if (!d.moved) { onSelect(a); return; }
-    const node = document.querySelector<HTMLElement>(`[data-art-id="${d.id}"]`);
-    if (!node) return;
-    const x = parseFloat(node.style.left);
-    const y = parseFloat(node.style.top);
-    onUpdate(a.id, { position: { x: Math.round(x), y: Math.round(y) } as any });
+    onUpdate(a.id, { position: { x: Math.round(d.lastX), y: Math.round(d.lastY) } as any });
   }, [onSelect, onUpdate]);
 
-  // Background pan
+  // Background pan or sticker drop
   const onPointerDownBg = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).dataset.bg !== "1") return;
+    if (pendingSticker && canEdit && sessionId && onCreate && user) {
+      // Compute world coords from click
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const wx = (e.clientX - rect.left - pan.x) / zoom;
+      const wy = (e.clientY - rect.top - pan.y) / zoom;
+      onCreate({
+        kind: "sticker",
+        emoji: pendingSticker,
+        content: pendingSticker,
+        position: { x: Math.round(wx), y: Math.round(wy) },
+      } as any);
+      setPendingSticker(null);
+      return;
+    }
     panRef.current = { startX: e.clientX, startY: e.clientY, ox: pan.x, oy: pan.y };
   };
   const onPointerMoveBg = (e: React.PointerEvent) => {
@@ -87,6 +130,25 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
     setPan({ x: panRef.current.ox + (e.clientX - panRef.current.startX), y: panRef.current.oy + (e.clientY - panRef.current.startY) });
   };
   const onPointerUpBg = () => { panRef.current = null; };
+
+  const onPointerDownSticker = (e: React.PointerEvent, a: ChallengeArtifact) => {
+    if (!canEdit) return;
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture(e.pointerId);
+    const pos = (a.position as any) || { x: 100, y: 100 };
+    dragRef.current = {
+      id: a.id,
+      offsetX: e.clientX / zoom - pos.x,
+      offsetY: e.clientY / zoom - pos.y,
+      moved: false,
+      lastX: pos.x,
+      lastY: pos.y,
+    };
+  };
+
+  const handleJump = (wx: number, wy: number) => {
+    setPan({ x: -wx * zoom + viewport.w / 2, y: -wy * zoom + viewport.h / 2 });
+  };
 
   useEffect(() => { setTick(t => t + 1); }, [artifacts.length]);
 
@@ -104,6 +166,14 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
             <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] font-bold uppercase tracking-wider gap-1" onClick={() => setImageOpen(true)}>
               <ImagePlus className="h-3.5 w-3.5" /> Image
             </Button>
+            <StickerToggle
+              open={paletteOpen}
+              pendingEmoji={pendingSticker}
+              onToggle={() => {
+                if (pendingSticker) { setPendingSticker(null); return; }
+                setPaletteOpen(o => !o);
+              }}
+            />
             <div className="w-px bg-border mx-0.5 my-1" />
           </>
         )}
@@ -113,12 +183,18 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}><Maximize2 className="h-3.5 w-3.5" /></Button>
       </div>
 
+      <StickerPalette
+        open={paletteOpen}
+        onPick={(e) => { setPendingSticker(e); setPaletteOpen(false); }}
+        onClose={() => setPaletteOpen(false)}
+      />
+
       <div
         className="absolute origin-top-left will-change-transform"
-        style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, width: 8000, height: 6000 }}
+        style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, width: WORLD_W, height: WORLD_H }}
         data-bg="1"
       >
-        {top.map((a, idx) => {
+        {cards.map((a, idx) => {
           const pos = (a.position as any) || defaultPos(idx);
           const meta = a.criticality ? CRITICALITY_META[a.criticality] : CRITICALITY_META.low;
           const Icon = (KIND_ICON as any)[a.kind] ?? StickyNote;
@@ -127,6 +203,8 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
             <div
               key={a.id + ":" + tick}
               data-art-id={a.id}
+              data-base-x={pos.x}
+              data-base-y={pos.y}
               onPointerDown={(e) => onPointerDownCard(e, a)}
               onPointerMove={onPointerMoveCard}
               onPointerUp={(e) => onPointerUpCard(e, a)}
@@ -156,13 +234,37 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
             </div>
           );
         })}
+
+        {/* Stickers layer (Innovation #7) */}
+        {stickers.map(s => (
+          <StickerChip
+            key={s.id + ":" + tick}
+            artifact={s}
+            selected={selectedId === s.id}
+            onSelect={() => onSelect(s)}
+            onPointerDown={(e) => onPointerDownSticker(e, s)}
+            onPointerMove={onPointerMoveCard}
+            onPointerUp={(e) => onPointerUpCard(e, s)}
+          />
+        ))}
       </div>
 
-      {top.length === 0 && (
+      {cards.length === 0 && stickers.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-sm text-muted-foreground italic">Le plateau est vide. Ajoute un post-it ou une image.</p>
+          <p className="text-sm text-muted-foreground italic">Le plateau est vide. Ajoute un post-it, une image ou un autocollant.</p>
         </div>
       )}
+
+      <PlateauMiniMap
+        artifacts={artifacts}
+        worldW={WORLD_W}
+        worldH={WORLD_H}
+        pan={pan}
+        zoom={zoom}
+        viewportW={viewport.w}
+        viewportH={viewport.h}
+        onJump={handleJump}
+      />
 
       {sessionId && onCreate && (
         <ImageLibrary
@@ -175,3 +277,5 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
     </div>
   );
 }
+
+export const PlateauBoard = memo(PlateauBoardImpl);

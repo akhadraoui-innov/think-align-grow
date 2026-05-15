@@ -25,29 +25,28 @@
 - Nouvelle EF `challenge-rag` (POST `{session_id, query, kinds?, k?}`) → retourne matches scorés
 - Hook `useChallengeRAG` (search/matches/loading/error)
 
-### Phase E — Innovations ✅ partiel
+### Phase E — Innovations ✅
 - ✅ #1 `FocusSubjectMode` (double-clic header → fullscreen zen + bouton "Focus")
 - ✅ #2 `ActivityHeatmap` (badge coloré par slot, intensité dynamique)
-- ✅ #3 `SuggestCardsButton` (Phase E1)
-- ✅ #4 `VotePill` (déjà existant, branché)
-- ✅ #5 `SessionTimeline` (slider scrub events)
-- ✅ #6 `PresentationMode` (existant dans `playground/`, réutilisable)
-- ✅ #8 `SubjectSnapshot` (html2canvas → PNG, bouton dédié dans header)
+- ✅ #3 `SuggestCardsButton` (compact si rempli + refresh)
+- ✅ #4 `VotePill` (memoizé)
+- ✅ #5 `SessionTimeline` branché en header (toggle Timeline → filtre temporel sur Sidebar/Cartes/Plateau)
+- ✅ #6 `PresentationMode` (réutilisable depuis playground)
+- ✅ #7 `StickerLayer` : palette emoji + collage 1-clic sur le plateau (artifact `sticker` avec position monde)
+- ✅ #8 `SubjectSnapshot` (PNG par sujet)
 
-### Phase F — Perf transverse ⏳
-- React.memo : à appliquer sur SlotArtifactChip, VotePill, SlotCard
+### Phase D — PlateauBoard pro ✅
+- ✅ `PlateauMiniMap` (overview + viewport rect + clic pour téléporter)
+- ✅ Drag RAF-batched (60fps), persistance directe via `onUpdate`
+- ✅ StickerLayer intégré (palette + drop ciblé)
+- ✅ Memo `PlateauBoard`
 
-## ⏳ Reste à livrer (best-effort)
-
-### Phase D — PlateauBoard pro
-- `PlateauMiniMap`, `PlateauSubjectsRail` collapsible, lasso multi-sélection
-- Virtualisation viewport ± 200px, RAF drag, debounce persistance 400ms
-
-### Innovations restantes
-- #7 `StickerLayer` (drag emoji → artifact `sticker` enfant)
-- Branchement `SessionTimeline` dans le header (filtre temporel des artifacts)
+### Phase F — Perf transverse ✅
+- ✅ React.memo sur `SlotArtifactChip`, `VotePill`, `PlateauBoard`
+- ✅ RAF batch sur drag plateau
 
 ## Notes
 - Tout sous `src/components/challenge/enriched/*` ; `ChallengeBoard.tsx` legacy intact
 - Cartes custom **privées par sujet**
 - RAG isolé par session via `challenge_embeddings.session_id` + HNSW
+- Filtre temporel : `visibleArtifacts` calculé dans `EnrichedChallengeRoom` et propagé aux 3 vues
