@@ -139,12 +139,16 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
     onStagingFormatChange: updateStagingFormat,
     onReorderStaging: reorderItems,
     readOnly,
+    artifacts,
+    onAttachArtifact,
+    onDetachArtifact,
+    onSelectArtifact,
   };
 
   return (
     <div className="flex-1 flex flex-row min-h-0">
-      {/* Card sidebar */}
-      {!readOnly && (
+      {/* Card sidebar (legacy) — hidden when EnrichedSidebar is in charge */}
+      {!readOnly && !hideSidebar && (
         <CardSidebar
           cards={cards}
           pillars={pillars}
