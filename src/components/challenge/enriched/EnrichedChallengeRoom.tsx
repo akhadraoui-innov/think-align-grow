@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Loader2, Sparkles, ArrowLeft } from "lucide-react";
+import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
@@ -10,6 +10,8 @@ import { useChallengeSession } from "@/hooks/useChallengeSession";
 import { useChallengeArtifacts, type ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
 import { useChallengeReactions } from "@/hooks/useChallengeReactions";
 import { SynthesisPanel } from "./SynthesisPanel";
+import { PlateauBoard } from "./PlateauBoard";
+import { cn } from "@/lib/utils";
 import type { ChallengeTemplate } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 
@@ -27,6 +29,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
   const { artifacts, create, update, remove } = useChallengeArtifacts(session?.id, workshopId);
   const { reactionsByArtifact, votesByArtifact, me, toggleReaction, toggleVote } = useChallengeReactions(session?.id);
   const [selected, setSelected] = useState<ChallengeArtifact | null>(null);
+  const [view, setView] = useState<"cards" | "plateau">("cards");
 
   const enabled = useMemo(() => {
     const cfg = (template as any).enriched_config || {};
@@ -71,6 +74,16 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
         <h2 className="font-display font-bold text-sm uppercase tracking-widest">Challenge enrichi</h2>
         <Badge className={statusBadge} variant="outline">{session.status}</Badge>
         <div className="ml-auto flex items-center gap-2">
+          {showBoard && (
+            <div className="flex items-center rounded-md border border-border p-0.5">
+              <button onClick={() => setView("cards")} className={cn("h-7 px-2 rounded text-[11px] font-bold uppercase tracking-wider flex items-center gap-1", view === "cards" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
+                <LayoutGrid className="h-3 w-3" /> Cartes
+              </button>
+              <button onClick={() => setView("plateau")} className={cn("h-7 px-2 rounded text-[11px] font-bold uppercase tracking-wider flex items-center gap-1", view === "plateau" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
+                <Map className="h-3 w-3" /> Plateau
+              </button>
+            </div>
+          )}
           {isHost && session.status === "running" && (
             <Button size="sm" variant="outline" onClick={() => setStatus("briefing")}>
               <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Briefing
@@ -118,7 +131,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
             />
           )}
 
-          {showBoard && (
+          {showBoard && view === "cards" && (
             <ChallengeView
               template={template}
               workshopId={workshopId}
@@ -127,6 +140,18 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
               isHost={isHost}
               readOnly={readOnly}
             />
+          )}
+
+          {showBoard && view === "plateau" && (
+            <div className="h-full">
+              <PlateauBoard
+                artifacts={artifacts}
+                canEdit={canEdit}
+                selectedId={selectedSync?.id ?? null}
+                onSelect={(a) => setSelected(a)}
+                onUpdate={update}
+              />
+            </div>
           )}
 
           {session.status === "synthesis" && (
