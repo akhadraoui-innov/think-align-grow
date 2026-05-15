@@ -99,6 +99,14 @@ export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdat
       data-bg="1"
     >
       <div className="absolute top-3 right-3 z-10 flex gap-1 bg-background/90 backdrop-blur rounded-md border border-border p-1 shadow-sm">
+        {canEdit && sessionId && onCreate && (
+          <>
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] font-bold uppercase tracking-wider gap-1" onClick={() => setImageOpen(true)}>
+              <ImagePlus className="h-3.5 w-3.5" /> Image
+            </Button>
+            <div className="w-px bg-border mx-0.5 my-1" />
+          </>
+        )}
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setZoom(z => Math.max(0.4, z - 0.1))}><ZoomOut className="h-3.5 w-3.5" /></Button>
         <span className="text-[10px] font-bold tabular-nums w-10 text-center self-center">{Math.round(zoom * 100)}%</span>
         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setZoom(z => Math.min(2, z + 0.1))}><ZoomIn className="h-3.5 w-3.5" /></Button>
