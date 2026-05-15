@@ -44,9 +44,19 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function safeUrl(u: string): string {
+  try {
+    const parsed = new URL(u, "https://example.com");
+    if (["https:", "http:", "mailto:"].includes(parsed.protocol)) return escapeHtml(u);
+    return "#";
+  } catch {
+    return "#";
+  }
+}
+
 function inlineMd(s: string): string {
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, t, u) =>
-    `<a href="${u}" style="color:${BRAND_PRIMARY};text-decoration:underline">${escapeHtml(t)}</a>`,
+    `<a href="${safeUrl(u)}" style="color:${BRAND_PRIMARY};text-decoration:underline">${escapeHtml(t)}</a>`,
   );
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   s = s.replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
