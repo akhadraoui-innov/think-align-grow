@@ -63,6 +63,13 @@ export function InspectorPanel({
 
   const askAi = () => callAgent("qa");
 
+  // Esc to close
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const kindLabel = artifact.kind === "postit" ? "Post-it"
     : artifact.kind === "voice" ? "Mémo vocal"
     : artifact.kind === "question" ? "Question"
@@ -70,7 +77,19 @@ export function InspectorPanel({
     : artifact.kind;
 
   return (
-    <aside className="w-[400px] shrink-0 border-l border-border bg-background/95 backdrop-blur-sm flex flex-col h-full">
+    <>
+      {/* Backdrop (sm/md only — sur lg+ on garde le centre visible) */}
+      <div
+        className="fixed inset-0 z-30 bg-background/40 backdrop-blur-[2px] lg:hidden"
+        onClick={onClose}
+      />
+      <motion.aside
+        initial={{ x: 420, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: 420, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 320, damping: 32 }}
+        className="fixed right-0 top-0 bottom-0 z-40 w-full sm:w-[400px] border-l border-border bg-background shadow-2xl flex flex-col"
+      >
       <div className="px-4 py-3 border-b border-border flex items-center gap-2">
         <span className="text-base">{artifact.emoji || (artifact.kind === "image" ? "🖼️" : "📌")}</span>
         <h3 className="font-bold text-sm uppercase tracking-wider flex-1">{kindLabel}</h3>
