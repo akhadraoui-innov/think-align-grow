@@ -56,7 +56,10 @@ export function DropSlot({
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     const types = e.dataTransfer.types;
-    if (types.includes("artifact-id")) setDragKind("artifact");
+    if (types.includes("artifact-kind")) {
+      // Chrome only exposes types here, value comes on drop. Fallback "artifact".
+      setDragKind("artifact");
+    } else if (types.includes("artifact-id")) setDragKind("artifact");
     else if (types.includes("card-id")) setDragKind("card");
     setIsDragOver(true);
   }, []);
