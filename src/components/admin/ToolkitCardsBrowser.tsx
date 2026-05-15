@@ -1,13 +1,17 @@
 import { useState, useMemo, lazy, Suspense } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GameCard } from "@/components/challenge/GameCard";
-import { LayoutGrid, Grid3X3, Layers, Eye, BarChart3, Zap, Target } from "lucide-react";
+import { LayoutGrid, Grid3X3, Layers, Eye, BarChart3, Zap, Target, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 import { getPillarCssColor, getPillarCssColorAlpha, getPillarIconName, PHASE_LABELS } from "@/hooks/useToolkitData";
 import dynamicIconImports from "lucide-react/dynamicIconImports";
+import { CardThumb } from "@/components/cards/CardThumb";
+import { PlaygroundBoard, type BoardLayout } from "@/components/playground/PlaygroundBoard";
 
 const iconCache = new Map<string, React.LazyExoticComponent<React.ComponentType<{ className?: string }>>>();
 
