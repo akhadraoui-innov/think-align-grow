@@ -37,9 +37,9 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  question: "bg-accent/10 text-accent",
-  challenge: "bg-destructive/10 text-destructive",
-  context: "bg-primary/10 text-primary",
+  question: "bg-primary/10 text-primary ring-1 ring-primary/20",
+  challenge: "bg-foreground/10 text-foreground ring-1 ring-foreground/15",
+  context: "bg-muted text-muted-foreground ring-1 ring-border",
 };
 
 export function SubjectCanvas({

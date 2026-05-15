@@ -3,12 +3,26 @@ import { cn } from "@/lib/utils";
 import type { ChallengeSlot, ChallengeResponse } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import { getPillarCssColor, getPillarCssColorAlpha, PHASE_LABELS } from "@/hooks/useToolkitData";
-import { X, GripVertical } from "lucide-react";
+import { X, GripVertical, StickyNote, Mic, HelpCircle, Image as ImageIcon, Layers } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MaturitySelector } from "./MaturitySelector";
 import { FormatSelector, type CardFormat } from "./FormatSelector";
 import { SlotArtifactChip } from "@/components/challenge/enriched/SlotArtifactChip";
 import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
+
+const SLOT_TYPE_BADGE: Record<string, { label: string; cls: string }> = {
+  ranked: { label: "Ordre", cls: "bg-violet-100 text-violet-800 dark:bg-violet-950/40 dark:text-violet-200" },
+  single: { label: "1 carte", cls: "bg-primary/15 text-primary" },
+  multi: { label: "Multi", cls: "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200" },
+};
+
+const KIND_DROP_META: Record<string, { icon: any; label: string }> = {
+  postit: { icon: StickyNote, label: "Post-it" },
+  voice: { icon: Mic, label: "Vocal" },
+  question: { icon: HelpCircle, label: "Question" },
+  image: { icon: ImageIcon, label: "Image" },
+  card: { icon: Layers, label: "Carte" },
+};
 
 interface DropSlotProps {
   slot: ChallengeSlot;
@@ -42,7 +56,10 @@ export function DropSlot({
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     const types = e.dataTransfer.types;
-    if (types.includes("artifact-id")) setDragKind("artifact");
+    if (types.includes("artifact-kind")) {
+      // Chrome only exposes types here, value comes on drop. Fallback "artifact".
+      setDragKind("artifact");
+    } else if (types.includes("artifact-id")) setDragKind("artifact");
     else if (types.includes("card-id")) setDragKind("card");
     setIsDragOver(true);
   }, []);
@@ -113,10 +130,15 @@ export function DropSlot({
         <span className="font-display font-bold text-sm uppercase tracking-wider text-foreground">
           {slot.label}
         </span>
-        {slot.required && <span className="text-destructive text-xs">*</span>}
-        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
-          {slot.slot_type === "ranked" ? "ordre" : slot.slot_type === "single" ? "1 carte" : "multi"}
-        </span>
+        {slot.required && <span className="text-destructive text-xs font-bold" title="Obligatoire">*</span>}
+        {(() => {
+          const b = SLOT_TYPE_BADGE[slot.slot_type] || SLOT_TYPE_BADGE.single;
+          return (
+            <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded", b.cls)}>
+              {b.label}
+            </span>
+          );
+        })()}
         <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
           {slotResponses.length} carte{slotResponses.length > 1 ? "s" : ""}
           {attachedArtifacts.length > 0 && ` · ${attachedArtifacts.length} note${attachedArtifacts.length > 1 ? "s" : ""}`}
@@ -147,7 +169,7 @@ export function DropSlot({
       </AnimatePresence>
 
       {attachedArtifacts.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-dashed border-border/60">
+        <div className="flex flex-wrap items-start gap-2 mt-2 pt-2 border-t border-dashed border-border/60">
           {attachedArtifacts.map(a => (
             <SlotArtifactChip
               key={a.id}
@@ -168,10 +190,15 @@ export function DropSlot({
       )}
 
       {isDragOver && (
-        <div className="flex items-center justify-center h-16 text-primary">
-          <span className="text-xs font-bold animate-pulse">
-            Déposer ici{dragKind === "artifact" ? " · note" : dragKind === "card" ? " · carte" : ""}
-          </span>
+        <div className="flex items-center justify-center gap-1.5 h-14 text-primary border-2 border-dashed border-primary/50 rounded-xl bg-primary/5 mt-2 animate-pulse">
+          {(() => {
+            const Icon = (dragKind === "card" ? KIND_DROP_META.card : KIND_DROP_META.postit).icon;
+            const label = dragKind === "card" ? "une carte" : "un élément";
+            return (<>
+              <Icon className="h-4 w-4" />
+              <span className="text-xs font-bold uppercase tracking-wider">Déposer {label}</span>
+            </>);
+          })()}
         </div>
       )}
     </div>
