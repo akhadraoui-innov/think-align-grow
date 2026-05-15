@@ -1,4 +1,4 @@
-import { X, Bot, Tag, Calendar, User, MessageCircle, Loader2 } from "lucide-react";
+import { X, Bot, Tag, Calendar, User, MessageCircle, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,9 @@ import { VoicePlayer } from "./voice/VoicePlayer";
 import { ReactionBar } from "./ReactionBar";
 import { VotePill } from "./VotePill";
 import { ThreadPanel } from "./ThreadPanel";
+import { ImageTile } from "./images/ImageTile";
+import { LockBadge } from "./locks/LockBadge";
+import { useArtifactLock } from "@/hooks/useArtifactLock";
 import type { ChallengeArtifact, CreateArtifactInput } from "@/hooks/useChallengeArtifacts";
 import type { ChallengeReaction, ChallengeVote } from "@/hooks/useChallengeReactions";
 import { cn } from "@/lib/utils";
