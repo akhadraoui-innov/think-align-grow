@@ -133,6 +133,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
             onToggleVote={toggleVote}
             cards={cards}
             pillars={pillars}
+            customCards={artifacts.filter(a => a.kind === "card" && a.is_custom_card)}
           />
         )}
 

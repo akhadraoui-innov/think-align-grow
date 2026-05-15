@@ -10,6 +10,7 @@ import { QuestionComposer } from "./questions/QuestionComposer";
 import { ImageLibrary } from "./images/ImageLibrary";
 import { ImageTile } from "./images/ImageTile";
 import { CardsTab } from "./sidebar/CardsTab";
+import { CardExplorer } from "./cards/CardExplorer";
 import { CRITICALITY_META } from "./constants";
 import { cn } from "@/lib/utils";
 import type { ChallengeArtifact, ArtifactKind, CreateArtifactInput, Criticality } from "@/hooks/useChallengeArtifacts";
@@ -42,6 +43,7 @@ interface Props {
   pillars?: DbPillar[];
   placedCardIds?: Set<string>;
   onAddCardToStaging?: (cardId: string) => void;
+  customCards?: ChallengeArtifact[];
 }
 
 const TABS: { id: SidebarTab; label: string; icon: any }[] = [
@@ -56,7 +58,7 @@ export function EnrichedSidebar({
   sessionId, workshopId, currentSubjectId, artifacts, enabled, canEdit, selectedId,
   reactionsByArtifact, votesByArtifact, me,
   onSelect, onCreate, onUpdate, onDelete, onToggleReaction, onToggleVote,
-  cards = [], pillars = [], placedCardIds, onAddCardToStaging,
+  cards = [], pillars = [], placedCardIds, onAddCardToStaging, customCards = [],
 }: Props) {
   const allowedTabs = TABS.filter(t =>
     (t.id === "card" && (enabled.cards ?? true) && cards.length > 0) ||
@@ -70,6 +72,12 @@ export function EnrichedSidebar({
   const [filterCrit, setFilterCrit] = useState<Criticality | "all">("all");
   const [scope, setScope] = useState<"current" | "all">(currentSubjectId ? "current" : "all");
   const [includeResolved, setIncludeResolved] = useState(false);
+  const [explorerOpen, setExplorerOpen] = useState(false);
+
+  const subjectCustomCards = useMemo(
+    () => customCards.filter(c => !currentSubjectId || c.visibility_subject_id === currentSubjectId || c.subject_id === currentSubjectId),
+    [customCards, currentSubjectId],
+  );
 
   // Only show top-level artifacts in the list (children appear in inspector thread)
   const baseList = useMemo(
@@ -144,7 +152,14 @@ export function EnrichedSidebar({
       </div>
 
       {tab === "card" ? (
-        <CardsTab cards={cards} pillars={pillars} placedCardIds={placedCardIds} onAdd={onAddCardToStaging} />
+        <CardsTab
+          cards={cards}
+          pillars={pillars}
+          placedCardIds={placedCardIds}
+          onAdd={onAddCardToStaging}
+          onOpenExplorer={() => setExplorerOpen(true)}
+          customCardCount={subjectCustomCards.length}
+        />
       ) : (
         <>
           {currentSubjectId && (
@@ -249,6 +264,18 @@ export function EnrichedSidebar({
         sessionId={sessionId}
         defaultSubjectId={scope === "current" ? currentSubjectId : null}
         onCreate={onCreate}
+      />
+
+      <CardExplorer
+        open={explorerOpen}
+        onOpenChange={setExplorerOpen}
+        cards={cards}
+        pillars={pillars}
+        customCards={subjectCustomCards}
+        placedCardIds={placedCardIds}
+        currentSubjectId={currentSubjectId ?? null}
+        onAddToStaging={onAddCardToStaging}
+        onCreateCustomCard={onCreate}
       />
     </aside>
   );
