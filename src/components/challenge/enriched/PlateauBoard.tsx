@@ -26,7 +26,8 @@ function defaultPos(idx: number) {
   return { x: 40 + (idx % cols) * (CARD_W + 24), y: 40 + Math.floor(idx / cols) * 180 };
 }
 
-export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdate }: Props) {
+export function PlateauBoard({ artifacts, canEdit, selectedId, onSelect, onUpdate, sessionId, onCreate }: Props) {
+  const [imageOpen, setImageOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
