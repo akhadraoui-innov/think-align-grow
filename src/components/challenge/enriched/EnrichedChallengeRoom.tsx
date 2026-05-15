@@ -31,8 +31,17 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
   const { session, context, loading, setStatus, upsertContext } = useChallengeSession(workshopId, template.id, isHost);
   const { artifacts, create, update, remove } = useChallengeArtifacts(session?.id, workshopId);
   const { reactionsByArtifact, votesByArtifact, me, toggleReaction, toggleVote } = useChallengeReactions(session?.id);
+  const { peers, update: updatePresence } = useChallengePresence(session?.id);
   const [selected, setSelected] = useState<ChallengeArtifact | null>(null);
   const [view, setView] = useState<"cards" | "plateau">("cards");
+
+  // Broadcast which subject/artifact the user is currently viewing
+  useEffect(() => {
+    updatePresence({
+      viewing_subject_id: session?.current_subject_id ?? null,
+      editing_artifact_id: selected?.id ?? null,
+    });
+  }, [session?.current_subject_id, selected?.id, updatePresence]);
 
   const enabled = useMemo(() => {
     const cfg = (template as any).enriched_config || {};
@@ -40,6 +49,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
       postits: cfg.postits !== false,
       voice: cfg.voice !== false,
       questions: cfg.questions !== false,
+      images: cfg.images !== false,
       ai: cfg.ai !== false,
     };
   }, [template]);
