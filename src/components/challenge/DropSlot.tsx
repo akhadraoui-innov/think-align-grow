@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MaturitySelector } from "./MaturitySelector";
 import { FormatSelector, type CardFormat } from "./FormatSelector";
 import { SlotArtifactChip } from "@/components/challenge/enriched/SlotArtifactChip";
+import { SuggestCardsButton } from "@/components/challenge/enriched/SuggestCardsButton";
 import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
 
 const SLOT_TYPE_BADGE: Record<string, { label: string; cls: string }> = {
