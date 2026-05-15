@@ -72,6 +72,10 @@ serve(async (req) => {
       return await generateAllCardIllustrations(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else if (action === "generate-card-illustrations-batch") {
       return await generateCardIllustrationsBatch(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "resume-card-illustrations") {
+      return await resumeCardIllustrations(supabase, params, LOVABLE_API_KEY, corsHeaders);
+    } else if (action === "sweep-stale-card-illustrations") {
+      return await sweepStaleCardIllustrations(supabase, params, LOVABLE_API_KEY, corsHeaders);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
