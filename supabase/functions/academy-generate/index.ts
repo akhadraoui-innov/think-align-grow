@@ -1870,6 +1870,8 @@ async function selfInvokeResume(card_ids: string[]) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // Robust to verify_jwt=true: pass service-role both as bearer + internal key
+        "Authorization": `Bearer ${serviceRoleKey}`,
         "x-internal-key": serviceRoleKey,
       },
       body: JSON.stringify({ action: "resume-card-illustrations", card_ids }),
@@ -1877,8 +1879,9 @@ async function selfInvokeResume(card_ids: string[]) {
     });
     clearTimeout(t);
     await resp.text().catch(() => {});
+    console.log(JSON.stringify({ action: "self-invoke-resume", remaining: card_ids.length, status: resp.status }));
   } catch (e) {
-    console.warn("self-invoke resume failed", e instanceof Error ? e.message : e);
+    console.warn(JSON.stringify({ action: "self-invoke-resume", remaining: card_ids.length, status: "error", error: e instanceof Error ? e.message : String(e) }));
   }
 }
 
