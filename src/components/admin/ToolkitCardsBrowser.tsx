@@ -30,13 +30,22 @@ function DynamicIcon({ name, className }: { name: string; className?: string }) 
   );
 }
 
-type CardFormat = "game" | "section" | "preview" | "full" | "gamified";
+type CardFormat = "game" | "section" | "preview" | "full" | "gamified" | "plateau";
 type GroupBy = "all" | "pillar" | "phase";
 
 interface Props {
   cards: Tables<"cards">[];
   pillars: Tables<"pillars">[];
 }
+
+export function ToolkitCardsBrowser({ cards, pillars }: Props) {
+  const [format, setFormat] = useState<CardFormat>("game");
+  const [groupBy, setGroupBy] = useState<GroupBy>("pillar");
+  const [columns, setColumns] = useState(4);
+  const [filterPillar, setFilterPillar] = useState("all");
+  const [filterPhase, setFilterPhase] = useState("all");
+  const [boardLayout, setBoardLayout] = useState<BoardLayout>("atelier");
+  const [previewCard, setPreviewCard] = useState<Tables<"cards"> | null>(null);
 
 export function ToolkitCardsBrowser({ cards, pillars }: Props) {
   const [format, setFormat] = useState<CardFormat>("game");
