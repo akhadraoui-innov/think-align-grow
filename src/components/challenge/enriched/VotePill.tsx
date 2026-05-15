@@ -28,3 +28,6 @@ function VotePillImpl({ artifactId, votes, me, onToggle }: Props) {
     </button>
   );
 }
+
+export const VotePill = memo(VotePillImpl);
+

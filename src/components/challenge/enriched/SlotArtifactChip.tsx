@@ -211,3 +211,6 @@ function SlotArtifactChipImpl({ artifact, onClick, onDetach, onContinue, readOnl
     </div>
   );
 }
+
+export const SlotArtifactChip = memo(SlotArtifactChipImpl);
+
