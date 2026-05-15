@@ -26,6 +26,7 @@ const KIND_DROP_META: Record<string, { icon: any; label: string }> = {
 
 interface DropSlotProps {
   slot: ChallengeSlot;
+  subjectTitle?: string;
   responses: ChallengeResponse[];
   cards: DbCard[];
   pillars: DbPillar[];
@@ -34,15 +35,18 @@ interface DropSlotProps {
   onMoveToSlot?: (responseId: string, newSlotId: string, cardId: string) => void;
   onUpdateResponse?: (responseId: string, updates: { format?: string; maturity?: number; rank?: number }) => void;
   readOnly?: boolean;
+  minHeightClass?: string;
   attachedArtifacts?: ChallengeArtifact[];
+  allArtifacts?: ChallengeArtifact[];
   onAttachArtifact?: (artifactId: string) => void;
   onDetachArtifact?: (artifactId: string) => void;
   onSelectArtifact?: (a: ChallengeArtifact) => void;
 }
 
 export function DropSlot({
-  slot, responses, cards, pillars, onDrop, onRemove, onMoveToSlot, onUpdateResponse, readOnly,
-  attachedArtifacts = [], onAttachArtifact, onDetachArtifact, onSelectArtifact,
+  slot, subjectTitle, responses, cards, pillars, onDrop, onRemove, onMoveToSlot, onUpdateResponse, readOnly,
+  minHeightClass = "min-h-[120px]",
+  attachedArtifacts = [], allArtifacts = [], onAttachArtifact, onDetachArtifact, onSelectArtifact,
 }: DropSlotProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragKind, setDragKind] = useState<string | null>(null);
@@ -117,7 +121,8 @@ export function DropSlot({
   return (
     <div
       className={cn(
-        "relative rounded-2xl border-2 border-dashed p-4 min-h-[120px] transition-all duration-200",
+        "relative rounded-2xl border-2 border-dashed p-4 transition-all duration-200 flex flex-col",
+        minHeightClass,
         isDragOver && "border-primary bg-primary/5 ring-2 ring-primary/30",
         hasContent ? "border-solid border-border bg-card" : "border-muted-foreground/30 bg-secondary/20",
         slot.required && !hasContent && "border-destructive/40",
@@ -126,81 +131,99 @@ export function DropSlot({
       onDragLeave={readOnly ? undefined : handleDragLeave}
       onDrop={readOnly ? undefined : handleDrop}
     >
-      <div className="mb-2 flex items-center gap-2 flex-wrap">
-        <span className="font-display font-bold text-sm uppercase tracking-wider text-foreground">
-          {slot.label}
-        </span>
-        {slot.required && <span className="text-destructive text-xs font-bold" title="Obligatoire">*</span>}
-        {(() => {
-          const b = SLOT_TYPE_BADGE[slot.slot_type] || SLOT_TYPE_BADGE.single;
-          return (
-            <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded", b.cls)}>
-              {b.label}
-            </span>
-          );
-        })()}
-        <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
-          {slotResponses.length} carte{slotResponses.length > 1 ? "s" : ""}
-          {attachedArtifacts.length > 0 && ` · ${attachedArtifacts.length} note${attachedArtifacts.length > 1 ? "s" : ""}`}
-        </span>
+      {/* Header */}
+      <div className="mb-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-display font-bold text-sm uppercase tracking-wider text-foreground">
+            {slot.label}
+          </span>
+          {slot.required && <span className="text-destructive text-xs font-bold" title="Obligatoire">*</span>}
+          {(() => {
+            const b = SLOT_TYPE_BADGE[slot.slot_type] || SLOT_TYPE_BADGE.single;
+            return (
+              <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded", b.cls)}>
+                {b.label}
+              </span>
+            );
+          })()}
+          <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+            {slotResponses.length} carte{slotResponses.length > 1 ? "s" : ""}
+            {attachedArtifacts.length > 0 && ` · ${attachedArtifacts.length} note${attachedArtifacts.length > 1 ? "s" : ""}`}
+          </span>
+        </div>
+        {/* Directive (always visible) */}
+        {(slot.hint || subjectTitle) && (
+          <div className="mt-1.5 rounded-md bg-muted/30 border border-dashed border-border/60 px-2 py-1.5">
+            {subjectTitle && (
+              <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground/80 truncate">
+                {subjectTitle}
+              </p>
+            )}
+            {slot.hint && (
+              <p className="text-[11px] text-foreground/80 leading-snug mt-0.5">
+                {slot.hint}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
-      {slot.hint && !hasContent && (
-        <p className="text-xs text-muted-foreground italic mb-2">{slot.hint}</p>
-      )}
-
-      <AnimatePresence mode="popLayout">
-        {slotResponses.map((resp, idx) => (
-          <SlotCard
-            key={resp.id}
-            resp={resp}
-            idx={idx}
-            slot={slot}
-            cards={cards}
-            pillars={pillars}
-            onRemove={onRemove}
-            onUpdateResponse={onUpdateResponse}
-            onReorder={handleReorder}
-            isReorderTarget={reorderDropIdx === idx}
-            onReorderHover={(targetIdx) => setReorderDropIdx(targetIdx)}
-            readOnly={readOnly}
-          />
-        ))}
-      </AnimatePresence>
-
-      {attachedArtifacts.length > 0 && (
-        <div className="flex flex-wrap items-start gap-2 mt-2 pt-2 border-t border-dashed border-border/60">
-          {attachedArtifacts.map(a => (
-            <SlotArtifactChip
-              key={a.id}
-              artifact={a}
-              onClick={() => onSelectArtifact?.(a)}
-              onDetach={onDetachArtifact ? () => onDetachArtifact(a.id) : undefined}
+      <div className="flex-1 min-h-0">
+        <AnimatePresence mode="popLayout">
+          {slotResponses.map((resp, idx) => (
+            <SlotCard
+              key={resp.id}
+              resp={resp}
+              idx={idx}
+              slot={slot}
+              cards={cards}
+              pillars={pillars}
+              onRemove={onRemove}
+              onUpdateResponse={onUpdateResponse}
+              onReorder={handleReorder}
+              isReorderTarget={reorderDropIdx === idx}
+              onReorderHover={(targetIdx) => setReorderDropIdx(targetIdx)}
               readOnly={readOnly}
             />
           ))}
-        </div>
-      )}
+        </AnimatePresence>
 
-      {!hasContent && !isDragOver && (
-        <div className="flex items-center justify-center h-16 text-muted-foreground/40">
-          <GripVertical className="h-5 w-5 mr-1" />
-          <span className="text-xs">Glissez une carte, un post-it, vocal, question ou image</span>
-        </div>
-      )}
+        {attachedArtifacts.length > 0 && (
+          <div className="flex flex-wrap items-start gap-2 mt-2 pt-2 border-t border-dashed border-border/60">
+            {attachedArtifacts.map(a => (
+              <SlotArtifactChip
+                key={a.id}
+                artifact={a}
+                onClick={() => onSelectArtifact?.(a)}
+                onContinue={() => onSelectArtifact?.(a)}
+                onDetach={onDetachArtifact ? () => onDetachArtifact(a.id) : undefined}
+                readOnly={readOnly}
+                childrenArtifacts={allArtifacts.filter(c => c.parent_artifact_id === a.id)}
+              />
+            ))}
+          </div>
+        )}
 
-      {isDragOver && (
-        <div className="flex items-center justify-center gap-1.5 h-14 text-primary border-2 border-dashed border-primary/50 rounded-xl bg-primary/5 mt-2 animate-pulse">
-          {(() => {
-            const Icon = (dragKind === "card" ? KIND_DROP_META.card : KIND_DROP_META.postit).icon;
-            const label = dragKind === "card" ? "une carte" : "un élément";
-            return (<>
-              <Icon className="h-4 w-4" />
-              <span className="text-xs font-bold uppercase tracking-wider">Déposer {label}</span>
-            </>);
-          })()}
-        </div>
-      )}
+        {!hasContent && !isDragOver && (
+          <div className="flex items-center justify-center h-16 text-muted-foreground/40">
+            <GripVertical className="h-5 w-5 mr-1" />
+            <span className="text-xs">Glissez une carte, un post-it, vocal, question ou image</span>
+          </div>
+        )}
+
+        {isDragOver && (
+          <div className="flex items-center justify-center gap-1.5 h-14 text-primary border-2 border-dashed border-primary/50 rounded-xl bg-primary/5 mt-2 animate-pulse">
+            {(() => {
+              const Icon = (dragKind === "card" ? KIND_DROP_META.card : KIND_DROP_META.postit).icon;
+              const label = dragKind === "card" ? "une carte" : "un élément";
+              return (<>
+                <Icon className="h-4 w-4" />
+                <span className="text-xs font-bold uppercase tracking-wider">Déposer {label}</span>
+              </>);
+            })()}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
