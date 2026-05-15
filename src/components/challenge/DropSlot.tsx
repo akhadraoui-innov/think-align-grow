@@ -130,10 +130,15 @@ export function DropSlot({
         <span className="font-display font-bold text-sm uppercase tracking-wider text-foreground">
           {slot.label}
         </span>
-        {slot.required && <span className="text-destructive text-xs">*</span>}
-        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
-          {slot.slot_type === "ranked" ? "ordre" : slot.slot_type === "single" ? "1 carte" : "multi"}
-        </span>
+        {slot.required && <span className="text-destructive text-xs font-bold" title="Obligatoire">*</span>}
+        {(() => {
+          const b = SLOT_TYPE_BADGE[slot.slot_type] || SLOT_TYPE_BADGE.single;
+          return (
+            <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded", b.cls)}>
+              {b.label}
+            </span>
+          );
+        })()}
         <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
           {slotResponses.length} carte{slotResponses.length > 1 ? "s" : ""}
           {attachedArtifacts.length > 0 && ` · ${attachedArtifacts.length} note${attachedArtifacts.length > 1 ? "s" : ""}`}
