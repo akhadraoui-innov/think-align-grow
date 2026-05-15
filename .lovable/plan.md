@@ -1,412 +1,187 @@
-## Vision
 
-Construire **Challenge Enriched** : une expérience d'atelier stratégique qui combine
-- la **toile collaborative libre** de Miro/Mural,
-- la **gamification temps-réel** de Kahoot/Klaxoon,
-- une **couche de contexte structurée** indexable pour RAG/IA spécialisées.
+# Audit expert — Challenge Enriched
 
-Chaque session est une **arène de pensée** : tout artefact (carte, post-it, vocal, question, vote, réaction, lien sémantique) est typé, daté, attribué, vectorisable et exportable.
-
-Le mode classique actuel reste intact — `experience_mode = 'classic' | 'enriched'` route vers deux composants frères.
+État livré : 12 tables RAG-ready + bucket privé + 2 edge functions (`challenge-transcribe`, `challenge-agent`) + UI (briefing, sidebar post-its/vocal/questions, inspector). Audit révèle **5 trous critiques sécurité/données**, **10 trous fonctionnels** (RAG promis mais non câblé), **9 points qualité/UX**.
 
 ---
 
-## 1. Modèle de données (rigueur RAG-first)
+## P0 — CRITIQUE (sécurité & data corruption, à corriger en priorité)
 
-### Principes d'architecture
+### S1. RLS INSERT sans `WITH CHECK` sur 4 tables sensibles
+`challenge_artifacts`, `challenge_artifact_links`, `challenge_events`, `challenge_ai_threads` ont une policy INSERT dont `WITH CHECK = NULL` ⇒ **tout utilisateur authentifié peut insérer n'importe quoi dans n'importe quelle session**, contourner workshop_id, usurper author_id.
+**Fix** : ajouter `WITH CHECK ((author_id = auth.uid() OR created_by = auth.uid()) AND is_workshop_participant(...) OR is_workshop_host(...))` sur chaque table.
 
-1. **Une seule table polymorphe `challenge_artifacts`** pour tout ce qui est posable sur le board (carte, post-it, vocal, question, sticker, lien). Évite N tables jumelles, simplifie RLS/Realtime, prêt pour embeddings.
-2. **Séparation contexte vs contenu** : `challenge_session_context` capture l'environnement (objectif, hypothèses, contraintes, parties prenantes) ; les artefacts capturent la production.
-3. **Audit complet** via `challenge_events` (event-sourcing léger) — rejouable, sert à l'IA pour comprendre l'évolution de la pensée.
-4. **Embeddings dès le départ** (`pgvector`) sur artefacts + contexte + transcriptions, indexés HNSW. Prêts pour RAG.
-5. **Liens sémantiques explicites** (`challenge_artifact_links`) : "cause", "renforce", "contredit", "dépend de" — base pour graph IA.
+### S2. Storage policy upload cassée
+Policy `Participants upload challenge media` compare `(storage.foldername(w.name))[1]` (nom textuel du workshop) avec `(storage.foldername(name))[1]` (id de session dans le path). Comparaison toujours fausse (sauf collision improbable) ⇒ **uploads bloqués pour tous, sauf si nom du workshop = sessionId**.
+**Fix** : remplacer par jointure sur `challenge_sessions.id = (storage.foldername(name))[1]::uuid` et vérifier participant via `workshop_id` de la session.
 
-### Migrations
+### S3. Bucket `challenge-media` sans garde-fou
+Aucun `file_size_limit`, aucun `allowed_mime_types` ⇒ risque DoS / upload de binaires arbitraires.
+**Fix** : `file_size_limit = 25_000_000` (25 MB), `allowed_mime_types = {audio/webm, audio/mp4, audio/mpeg, audio/wav}`.
 
+### S4. Edge functions sans validation d'identité
+`challenge-transcribe` et `challenge-agent` utilisent la service role sans vérifier que le JWT appartient à un participant de la session ⇒ tout user authentifié peut déclencher transcription/IA sur n'importe quel artifact.
+**Fix** : extraire JWT, créer client `supabase.auth.getUser(token)`, charger l'artifact, vérifier via RPC `is_workshop_participant`. Refuser sinon.
+
+### S5. Realtime manquant sur 2 tables consommées par le client
+`useChallengeSession` s'abonne à `challenge_session_context` (publication absente) et le briefing devrait propager les events. Idem `challenge_events`.
+**Fix** : `ALTER PUBLICATION supabase_realtime ADD TABLE challenge_session_context, challenge_events`.
+
+---
+
+## P1 — FONCTIONNEL (promesses non tenues du plan initial)
+
+### F1. Embeddings jamais générés (RAG inopérant)
+Colonnes `embedding vector(1536)` + index HNSW créés sur `challenge_artifacts` et `challenge_session_context`, **aucun edge function ni trigger ne les peuple**. Le « contexte RAG » de `challenge-agent` se limite aux 12 derniers artifacts (slice texte), pas de retrieval sémantique.
+**Fix** : edge function `challenge-embed` (text-embedding-3-small via Lovable AI Gateway) déclenchée par trigger DB AFTER INSERT/UPDATE sur les 2 tables, ou via `pg_net` HTTP call. Modifier `challenge-agent` pour faire un `match_artifacts(query_embedding, session_id, k=8)` (RPC SQL avec `<=>`).
+
+### F2. `challenge_events` jamais écrit (event-sourcing absent)
+Pas un seul INSERT depuis le code ⇒ pas de replay, pas d'audit, pas de timeline.
+**Fix** : trigger DB générique `AFTER INSERT/UPDATE/DELETE` sur `challenge_artifacts` + `challenge_session_context` + `challenge_sessions.status` qui logue en JSONB dans `challenge_events`. Optionnel : fonction `log_challenge_event(session_id, type, payload)`.
+
+### F3. Synthèse multi-agents non livrée
+Phase `synthesis` affiche un placeholder « cette étape sera assurée par challenge-synthesize ». Edge function inexistante.
+**Fix** : `challenge-synthesize` qui ingère tous les artifacts + briefing → produit JSON structuré (insights, risques, plan d'action, SWOT) → INSERT dans `challenge_syntheses`.
+
+### F4. Tables livrées mais inutilisées
+`challenge_reactions`, `challenge_votes`, `challenge_artifact_links`, `challenge_syntheses`, `challenge_ai_threads`, `challenge_presence_snapshots`, `challenge_analyses` n'ont aucun consommateur frontend. Schéma sur-dimensionné par rapport à la livraison.
+**Fix** : soit câbler (réactions ⏤ une barre emoji sous chaque artifact, votes ⏤ thumbs/priorité), soit assumer et marquer `// reserved for L6+` dans une note d'archi.
+
+### F5. Pas de filtre par sujet courant
+Sidebar mélange tous les artifacts de la session. `challenge_sessions.current_subject_id` existe mais n'est jamais lu côté client. UX confus en multi-sujets.
+**Fix** : filtrer la sidebar par `subject_id === session.current_subject_id` (avec onglet « Tous »), passer `defaultSubjectId` aux composers depuis ce champ.
+
+### F6. UI manquante : anonymat & tags
+Colonnes `is_anonymous` et `tags[]` existent + indexées, jamais éditables côté UI.
+**Fix** : toggle « Publier anonymement » dans chaque composer, input chips pour les tags dans Inspector.
+
+### F7. Fil de discussion sur artifact absent
+`parent_artifact_id` permet le threading, jamais exploité. Inspector ne montre pas les enfants.
+**Fix** : section « Discussion » dans Inspector (charger artifacts where `parent_artifact_id = current.id`) + composer de réponse.
+
+### F8. Plateau / canvas libre non livré
+Plan annoncait 3 modes (Slots / Plateau / Constellation). Seul Slots existe (via `ChallengeView` legacy). `position jsonb` + `z_index` provisionnés mais inertes.
+**Fix** : composant `PlateauBoard` (CSS transform pan/zoom déjà éprouvé sur Workshop Canvas) qui rend les artifacts à leur `position`, drag → UPDATE.
+
+### F9. Switcher de format de carte
+`challenge_artifacts.format` provisionné, jamais modifié. Pas de variante visuelle.
+**Fix** : composant `CardFormatSwitcher` (mini/normal/expanded/plateau/photo/citation) dans Inspector + rendu adaptatif dans `PostitCard`.
+
+### F10. Bug `upsertContext`
+`useChallengeSession.upsertContext` fait `{...context, ...patch}` sans purger `embedding` (vector) ni `embedding_input` ⇒ si jamais peuplés, le upsert peut échouer (cast vector via REST). Aussi : `attachments` jamais consommé/affiché.
+**Fix** : whitelist explicite des champs envoyés (`scope, goals, hypotheses, constraints, stakeholders, context_data, attachments`).
+
+---
+
+## P2 — Qualité / UX / Robustesse
+
+- **Q1.** `challenge-transcribe` : pas de retry, pas d'abort, charge l'audio entier en base64 (limite ~20 MB Gemini). Ajouter taille max côté client + fallback `openai/gpt-4o-mini-transcribe`.
+- **Q2.** Pas de timeout/abort sur les invocations IA (UI peut rester en `pending_ai` indéfiniment). Worker watchdog ou TTL via trigger.
+- **Q3.** Pas de pagination sur `useChallengeArtifacts.load` ⇒ pour une session longue, full scan.
+- **Q4.** Pas de log `audit_logs_immutable` sur changement `session.status` / suppression d'artifact / suppression de mémo vocal.
+- **Q5.** `config.toml` ne déclare pas de bloc pour `challenge-transcribe` / `challenge-agent` ⇒ `verify_jwt` au défaut Cloud (false). Cumulé avec S4, exposition large.
+- **Q6.** Inspector édit `content` mais ne ré-évalue pas `embedding` (cohérent avec F1, à traiter ensemble).
+- **Q7.** Briefing : pas d'upload de pièces jointes (colonne `attachments` mort).
+- **Q8.** Voice recorder : aucune protection en cas de perte de connexion pendant l'enregistrement (blob jeté au refresh).
+- **Q9.** Sidebar : compteurs incluent les artifacts `resolved` ; pas de toggle « inclure résolus ».
+
+---
+
+## Plan de remédiation — 4 lots
+
+```text
+LOT A — Sécurité (P0) ............................. 1 migration + 2 edge fn
+  S1 RLS WITH CHECK strict (4 tables)
+  S2 Storage upload policy : path = sessionId/userId/file
+  S3 Bucket limits + mime allowlist
+  S4 JWT validation + is_workshop_participant dans transcribe & agent
+  S5 ALTER PUBLICATION (context + events)
+
+LOT B — RAG opérant (F1, F2) ..................... 1 migration + 1 edge fn
+  challenge-embed (text-embedding-3-small)
+  trigger AFTER INSERT/UPDATE → pg_net.http_post → embed
+  RPC match_artifacts(query_embedding, session_id, k)
+  challenge-agent : retrieval sémantique + 12 derniers (hybride)
+  trigger log_challenge_event sur artifacts + sessions
+
+LOT C — Boucle session complète (F3, F5, F6, F7, F10, Q4)
+  challenge-synthesize edge fn → INSERT challenge_syntheses
+  Sidebar filtre par current_subject_id (+ tab Tous)
+  Composers : toggle anonyme + tags
+  Inspector : threading parent_artifact_id + chips tags
+  upsertContext : whitelist champs
+  Briefing : upload attachments → bucket + jsonb
+  Audit logs : status changes + suppressions
+
+LOT D — Plateau & enrichissements (F4, F8, F9, Q1-3, Q8-9)
+  PlateauBoard (drag, zoom, position persist)
+  CardFormatSwitcher + variantes visuelles
+  Réactions emoji + Votes thumbs (challenge_reactions, challenge_votes)
+  Pagination artifacts + résolus toggle
+  Voice : taille max, fallback transcripteur, persistance localStorage
+  IA : timeout + watchdog
+```
+
+---
+
+## Détails techniques (référence)
+
+**Migration S1 (extrait)**
 ```sql
--- 0. Extensions
-CREATE EXTENSION IF NOT EXISTS vector;
-
--- 1. Toggle mode + config sur le template
-ALTER TABLE challenge_templates
-  ADD COLUMN experience_mode text NOT NULL DEFAULT 'classic'
-    CHECK (experience_mode IN ('classic','enriched')),
-  ADD COLUMN enriched_config jsonb NOT NULL DEFAULT '{}'::jsonb,
-  ADD COLUMN context_schema jsonb NOT NULL DEFAULT '{}'::jsonb;
--- enriched_config: {postits, voice, questions, reactions, votes:{points}, timer,
---                   formats:[...], ai_assist:{rag,suggest,synthesize}, anonymous_mode}
--- context_schema:  champs custom à remplir au lancement (questions ouvertes, JSONSchema léger)
-
--- 2. Session enrichie (1:1 avec workshop_id)
-CREATE TABLE challenge_sessions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  workshop_id uuid NOT NULL UNIQUE REFERENCES workshops(id) ON DELETE CASCADE,
-  template_id uuid NOT NULL REFERENCES challenge_templates(id) ON DELETE CASCADE,
-  organization_id uuid REFERENCES organizations(id) ON DELETE SET NULL,
-  status text NOT NULL DEFAULT 'draft'
-    CHECK (status IN ('draft','briefing','running','synthesis','closed','archived')),
-  current_subject_id uuid REFERENCES challenge_subjects(id) ON DELETE SET NULL,
-  config jsonb NOT NULL DEFAULT '{}'::jsonb,            -- override de enriched_config
-  facilitator_notes text,
-  started_at timestamptz, ended_at timestamptz,
-  created_by uuid NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+DROP POLICY "Participants insert artifacts" ON challenge_artifacts;
+CREATE POLICY "Participants insert artifacts" ON challenge_artifacts FOR INSERT
+TO authenticated
+WITH CHECK (
+  author_id = auth.uid()
+  AND (is_workshop_participant(workshop_id, auth.uid())
+    OR is_workshop_host(workshop_id, auth.uid()))
+  AND EXISTS (SELECT 1 FROM challenge_sessions s
+              WHERE s.id = session_id AND s.workshop_id = challenge_artifacts.workshop_id)
 );
-
--- 3. Contexte riche du brief (rempli avant ou pendant le briefing)
-CREATE TABLE challenge_session_context (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id uuid NOT NULL REFERENCES challenge_sessions(id) ON DELETE CASCADE,
-  scope text,                       -- ex: "Lancement produit X EMEA"
-  goals text,                       -- objectifs SMART
-  hypotheses text,                  -- hypothèses de départ
-  constraints text,                 -- budget, délai, techno
-  stakeholders jsonb,               -- [{role, name, weight}]
-  context_data jsonb DEFAULT '{}',  -- réponses au context_schema
-  attachments jsonb DEFAULT '[]',   -- [{kind,url,name}]
-  embedding vector(1536),           -- résumé vectorisé
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(session_id)
-);
-
--- 4. Artefacts polymorphes (cœur du modèle)
-CREATE TYPE challenge_artifact_kind AS ENUM
-  ('card','postit','voice','question','sticker','link_note','vote_summary');
-
-CREATE TABLE challenge_artifacts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id uuid NOT NULL REFERENCES challenge_sessions(id) ON DELETE CASCADE,
-  workshop_id uuid NOT NULL,        -- denormalisé pour RLS rapide
-  subject_id uuid REFERENCES challenge_subjects(id) ON DELETE SET NULL,
-  slot_id uuid REFERENCES challenge_slots(id) ON DELETE SET NULL,
-  card_id uuid REFERENCES cards(id) ON DELETE SET NULL,   -- si kind='card'
-  parent_artifact_id uuid REFERENCES challenge_artifacts(id) ON DELETE CASCADE,
-  kind challenge_artifact_kind NOT NULL,
-  author_id uuid NOT NULL,
-  is_anonymous boolean NOT NULL DEFAULT false,
-  -- Contenu typé
-  content text,                     -- texte (postit, question, link_note)
-  content_rich jsonb,               -- {markdown, blocks, mentions, attachments}
-  transcription text,               -- vocal → texte
-  audio_url text, audio_duration_ms int,
-  -- Sémantique
-  emoji text,                       -- 💡 🚨 ⚠️ ✅ 🎯 ❓ 🔥 📌 🧭 ⏱️
-  criticality text CHECK (criticality IN ('low','medium','high','critical')),
-  category text,                    -- libre, indexé
-  tags text[] DEFAULT '{}',
-  ai_meta jsonb DEFAULT '{}',       -- {sentiment, themes:[], summary, language}
-  -- Présentation
-  format text DEFAULT 'normal',     -- mini/normal/detailed/plateau/photo/quote
-  position jsonb,                   -- {x,y,z,w,h,rotation} pour board libre
-  z_index int NOT NULL DEFAULT 0,
-  color text,                       -- override visuel
-  -- Vectorisation
-  embedding vector(1536),
-  embedding_input text,             -- texte source de l'embedding (audit)
-  -- Cycle de vie
-  status text NOT NULL DEFAULT 'active'
-    CHECK (status IN ('draft','active','resolved','archived')),
-  resolved_by uuid, resolved_at timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX idx_artifacts_session ON challenge_artifacts(session_id);
-CREATE INDEX idx_artifacts_subject ON challenge_artifacts(subject_id);
-CREATE INDEX idx_artifacts_kind ON challenge_artifacts(kind);
-CREATE INDEX idx_artifacts_tags ON challenge_artifacts USING GIN(tags);
-CREATE INDEX idx_artifacts_embedding ON challenge_artifacts
-  USING hnsw (embedding vector_cosine_ops);
-
--- 5. Liens sémantiques (graph)
-CREATE TYPE challenge_link_kind AS ENUM
-  ('supports','contradicts','depends_on','derived_from','answers','references');
-CREATE TABLE challenge_artifact_links (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id uuid NOT NULL,
-  from_id uuid NOT NULL REFERENCES challenge_artifacts(id) ON DELETE CASCADE,
-  to_id uuid NOT NULL REFERENCES challenge_artifacts(id) ON DELETE CASCADE,
-  kind challenge_link_kind NOT NULL,
-  weight numeric DEFAULT 1.0,
-  rationale text,
-  created_by uuid NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(from_id, to_id, kind)
-);
-
--- 6. Réactions (granulaire, agrégeables)
-CREATE TABLE challenge_reactions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  artifact_id uuid NOT NULL REFERENCES challenge_artifacts(id) ON DELETE CASCADE,
-  user_id uuid NOT NULL,
-  emoji text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(artifact_id, user_id, emoji)
-);
-
--- 7. Votes pondérés (priorisation)
-CREATE TABLE challenge_votes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id uuid NOT NULL REFERENCES challenge_sessions(id) ON DELETE CASCADE,
-  artifact_id uuid NOT NULL REFERENCES challenge_artifacts(id) ON DELETE CASCADE,
-  user_id uuid NOT NULL,
-  weight int NOT NULL DEFAULT 1 CHECK (weight BETWEEN 1 AND 10),
-  vote_round text NOT NULL DEFAULT 'default',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(session_id, artifact_id, user_id, vote_round)
-);
-
--- 8. Q&A IA (cartes-questions ↔ réponses agent)
-CREATE TABLE challenge_ai_threads (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id uuid NOT NULL REFERENCES challenge_sessions(id) ON DELETE CASCADE,
-  artifact_id uuid REFERENCES challenge_artifacts(id) ON DELETE CASCADE,
-  agent text NOT NULL,              -- 'qa','synthesizer','devil_advocate','coach','expert:<domain>'
-  user_id uuid,
-  prompt text NOT NULL,
-  response text,
-  rag_context jsonb,                -- {chunks:[{artifact_id,score}], sources}
-  tokens_in int, tokens_out int, model text,
-  status text NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending','streaming','done','error')),
-  error text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-
--- 9. Présence + curseurs temps réel (éphémère via Realtime presence; persistance light)
-CREATE TABLE challenge_presence_snapshots (
-  session_id uuid PRIMARY KEY REFERENCES challenge_sessions(id) ON DELETE CASCADE,
-  snapshot jsonb NOT NULL,          -- {users:[{id,name,cursor,subject_id,last_seen}]}
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-
--- 10. Event-sourcing (audit + IA narrative)
-CREATE TYPE challenge_event_kind AS ENUM
-  ('session.start','session.phase','session.end',
-   'artifact.created','artifact.updated','artifact.moved','artifact.resolved','artifact.deleted',
-   'link.created','link.deleted',
-   'reaction.added','reaction.removed',
-   'vote.cast','vote.round.opened','vote.round.closed',
-   'ai.requested','ai.responded',
-   'timer.started','timer.stopped',
-   'focus.changed');
-CREATE TABLE challenge_events (
-  id bigserial PRIMARY KEY,
-  session_id uuid NOT NULL REFERENCES challenge_sessions(id) ON DELETE CASCADE,
-  actor_id uuid,
-  kind challenge_event_kind NOT NULL,
-  target_id uuid,
-  payload jsonb NOT NULL DEFAULT '{}',
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX idx_events_session_time ON challenge_events(session_id, created_at DESC);
-
--- 11. Synthèses IA (multi-agents, versionnées)
-CREATE TABLE challenge_syntheses (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id uuid NOT NULL REFERENCES challenge_sessions(id) ON DELETE CASCADE,
-  agent text NOT NULL,              -- 'maturity','swot','risks','actions','narrative'
-  version int NOT NULL DEFAULT 1,
-  content jsonb NOT NULL,
-  scores jsonb,                     -- {maturity:0-100, alignment, novelty, ...}
-  rag_sources jsonb,
-  embedding vector(1536),
-  generated_at timestamptz NOT NULL DEFAULT now(),
-  generated_by uuid,
-  UNIQUE(session_id, agent, version)
-);
-
--- 12. Storage bucket (privé, scoped par workshop)
-INSERT INTO storage.buckets (id, name, public)
-  VALUES ('challenge-media','challenge-media', false)
-  ON CONFLICT DO NOTHING;
+-- idem pour challenge_events / challenge_artifact_links / challenge_ai_threads
 ```
 
-### RLS (toutes tables)
-- `is_workshop_participant(workshop_id, auth.uid())` pour SELECT/INSERT.
-- UPDATE/DELETE limité à `author_id = auth.uid()` OR `is_workshop_host(workshop_id, auth.uid())`.
-- `challenge_events` : INSERT par participants, SELECT par participants, **aucun UPDATE/DELETE** (append-only).
-- `challenge_syntheses` : INSERT/UPDATE par host ou via service role (edge functions).
-
-### Realtime
-`ALTER PUBLICATION supabase_realtime ADD TABLE` :
-challenge_sessions, challenge_artifacts, challenge_artifact_links, challenge_reactions, challenge_votes, challenge_ai_threads, challenge_presence_snapshots, challenge_syntheses.
-
-### RPCs critiques (transactions atomiques)
-- `cast_vote(session_id, artifact_id, weight, round)` — vérifie quota points/user.
-- `resolve_artifact(artifact_id)` + log event.
-- `move_artifact(artifact_id, slot_id|position, z_index)` + log event.
-- `open_vote_round / close_vote_round(session_id, round)` — calcule classement et insère `vote_summary` artifact.
-
----
-
-## 2. Pipeline IA / RAG-ready
-
-### Edge functions (5 nouvelles + extension)
-
-| Function | Rôle |
-|---|---|
-| `challenge-transcribe` | Reçoit audio (chunks ou fichier), Lovable AI Gateway (`google/gemini-2.5-flash` audio in), retourne transcription + résumé + langue + sentiment, met à jour artifact. |
-| `challenge-embed` | Trigger après INSERT/UPDATE d'artifact ou contexte : génère embedding via `text-embedding-3-small` (ou Gemini equivalent côté gateway), persiste. Batché toutes les 5s par session. |
-| `challenge-rag` | Endpoint utilitaire : `query` → recherche vectorielle scoped session (`embedding <=> $query`), renvoie top-k chunks (artifacts + contexte + syntheses). Réutilisé par tous les agents. |
-| `challenge-agent` | Routeur d'agents (`qa`, `devil_advocate`, `synthesizer`, `coach`, `expert`). Stream SSE. Prompt système par agent + RAG context + event timeline. Persiste dans `challenge_ai_threads`. |
-| `challenge-synthesize` | (refonte de `analyze-challenge`) Multi-agent : génère `maturity`, `swot`, `risks`, `actions`, `narrative` en parallèle, stocke dans `challenge_syntheses`. |
-| `analyze-challenge` (existant) | Conservé pour mode classic. |
-
-### Garanties
-- **Idempotence embeddings** : hash `embedding_input` ; skip si inchangé.
-- **Quotas** : `check_rate_limit(user, 'challenge_ai_<agent>', 30, 60)`.
-- **Coût visible** : tokens stockés sur `challenge_ai_threads`.
-- **Sources traçables** : chaque réponse IA cite `rag_sources` (artifact_id + score).
-
----
-
-## 3. UX — au-delà de Miro/Mural/Kahoot/Klaxoon
-
-### Surfaces principales
-1. **Briefing** (avant la session) : remplit `challenge_session_context` (formulaire dynamique sur `context_schema`). L'IA `coach` propose objectifs/hypothèses pré-remplies.
-2. **Board hybride** : 3 modes commutables sans rechargement
-   - **Slots** (vue actuelle structurée) — pour cadrer.
-   - **Plateau libre** (canvas infini, pan/zoom, snap-to-grid) — pour explorer.
-   - **Constellation** (auto-layout par embeddings clustering t-SNE côté client via `umap-js`) — pour découvrir des patterns.
-3. **Inspector panel** droit unifié : onglets *Détails / Liens / Réactions+Votes / IA / Historique* pour chaque artefact.
-4. **Animator HUD** (sticky bottom) : phase, timer, focus participant, mode "spotlight" (projection plein écran d'un artefact à tous), kill-switch IA, ouverture/fermeture des rounds de vote.
-5. **Participant rail** gauche : présence temps réel (avatars + curseurs colorés sur le board), main levée, signal "j'ai une question".
-
-### Innovations différenciantes
-- **Mode anonyme par round** (révélation à la fin) — réduit le biais de hiérarchie (mieux que Klaxoon).
-- **Heatmap sémantique** : surimpression du board montrant densité d'idées par thème (clustering embeddings).
-- **Devil's Advocate IA** déclenchable par l'animateur sur un cluster — challenge automatique.
-- **Replay narratif** : l'IA `narrative` rejoue les events en récit éditorial (timeline scroll).
-- **Mode "Boussole"** : 4 axes paramétrables (impact/effort, court/long terme…), drag des artifacts pour positionner, persistance dans `position`.
-- **Capsules vocales** transcrites + résumées + transformables en post-it d'un clic.
-- **Cartes-questions dirigées** : choix destinataire (animateur, groupe, IA, expert externe email). Réponse IA = artifact `question` enfant lié (`answers`).
-- **Export riche** : PDF "dossier de session" (contexte + board snapshot SVG + synthèses + verbatim transcrits + graph des liens) — généré en edge.
-
-### Design system
-- Tokens existants (orange/noir GROWTHINNOV ; portal bleu).
-- Nouveaux tokens criticité : `--criticality-low/medium/high/critical` (HSL).
-- Animations Motion : `layoutId` pour transitions entre modes board.
-- Mobile : Inspector devient bottom-sheet ; Animator HUD se replie.
-- Accessibilité : focus ring, ARIA live region pour annonces IA, raccourcis clavier (`?` pour cheatsheet).
-
----
-
-## 4. Architecture frontend
-
-```
-src/components/challenge/enriched/
-  EnrichedChallengeRoom.tsx          // routeur (slots|plateau|constellation)
-  briefing/
-    BriefingForm.tsx                 // remplit context, JSONSchema-driven
-    ContextSummary.tsx
-  board/
-    SlotsBoard.tsx                   // wrap actuel, lecture seule de l'API enriched
-    PlateauBoard.tsx                 // canvas infini (Konva ou DOM transforms)
-    ConstellationBoard.tsx           // umap-js clustering
-    ArtifactNode.tsx                 // render polymorphe selon kind
-    ArtifactGhost.tsx                // drag preview
-  panels/
-    InspectorPanel.tsx               // Sheet/Drawer
-    AIThreadPanel.tsx
-    LinksGraphPanel.tsx              // mini-graph (vis-network ou react-force-graph)
-  artifacts/
-    PostitEditor.tsx
-    VoiceRecorder.tsx (MediaRecorder)
-    VoicePlayer.tsx (waveform via wavesurfer)
-    QuestionCard.tsx
-    CardFormatSwitcher.tsx
-    StickerPicker.tsx
-  collab/
-    PresenceLayer.tsx                // curseurs Realtime presence
-    ReactionsBar.tsx
-    VotePanel.tsx
-  facilitator/
-    AnimatorHUD.tsx
-    PhaseStepper.tsx
-    Timer.tsx
-    SpotlightOverlay.tsx
-    ModeOverrideMenu.tsx             // override config session
-  ai/
-    DevilAdvocateButton.tsx
-    SynthesisDashboard.tsx           // affiche challenge_syntheses
-    NarrativeReplay.tsx
-src/hooks/
-  useChallengeSession.ts             // CRUD session + realtime
-  useChallengeArtifacts.ts           // CRUD + optimistic + realtime
-  useChallengeLinks.ts
-  useChallengePresence.ts
-  useChallengeReactions.ts
-  useChallengeVotes.ts
-  useChallengeAI.ts                  // streaming SSE
-  useVoiceRecorder.ts
-  useArtifactEmbeddings.ts           // déclenchement debounced
-src/lib/challenge/
-  artifactSchema.ts                  // zod
-  positionMath.ts
-  clustering.ts                      // umap wrapper
+**Migration S2**
+```sql
+DROP POLICY "Participants upload challenge media" ON storage.objects;
+CREATE POLICY "Participants upload challenge media" ON storage.objects FOR INSERT
+TO authenticated WITH CHECK (
+  bucket_id = 'challenge-media'
+  AND (storage.foldername(name))[2] = auth.uid()::text
+  AND EXISTS (
+    SELECT 1 FROM challenge_sessions s
+    WHERE s.id::text = (storage.foldername(name))[1]
+      AND (is_workshop_participant(s.workshop_id, auth.uid())
+        OR is_workshop_host(s.workshop_id, auth.uid()))
+  )
+);
 ```
 
-`ChallengeView.tsx` :
+**Validation JWT (S4) — pattern à intégrer dans les 2 edge fn**
 ```ts
-return template.experience_mode === 'enriched'
-  ? <EnrichedChallengeRoom ... />
-  : <ChallengeBoard ... />;  // existant intact
+const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: req.headers.get("Authorization")! } } });
+const { data: { user } } = await userClient.auth.getUser();
+if (!user) return new Response("unauthorized", { status: 401, headers: corsHeaders });
+const { data: ok } = await admin.rpc("is_workshop_participant", { _workshop_id: artifact.workshop_id, _user_id: user.id });
+if (!ok) return new Response("forbidden", { status: 403, headers: corsHeaders });
+```
+
+**RPC `match_artifacts` (F1)**
+```sql
+CREATE FUNCTION match_artifacts(query vector(1536), _session uuid, k int DEFAULT 8)
+RETURNS TABLE(id uuid, content text, kind challenge_artifact_kind, similarity float)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT id, content, kind, 1 - (embedding <=> query) AS similarity
+  FROM challenge_artifacts
+  WHERE session_id = _session AND embedding IS NOT NULL AND status = 'active'
+  ORDER BY embedding <=> query LIMIT k;
+$$;
 ```
 
 ---
 
-## 5. Sécurité & gouvernance
-- RLS scoped workshop (jamais cross-org).
-- Quotas IA par user/session via `check_rate_limit`.
-- Audit `challenge_events` append-only (RLS no UPDATE/DELETE) + miroir vers `audit_logs_immutable` pour actions sensibles (suppression artifact, fermeture session).
-- Storage bucket `challenge-media` privé, signed URLs 1h, path `{workshop_id}/{user_id}/{uuid}.webm`.
-- Embeddings : pas de PII brute envoyée au gateway → masquage emails/téléphones côté `challenge-embed`.
+## Hors scope de cet audit
 
----
-
-## 6. Performance & Realtime
-- **Optimistic UI** sur création/move artifact, rollback sur erreur.
-- **Debounce** position drag (50ms) + flush sur `pointerup`.
-- **Realtime presence** pour curseurs (pas de DB), snapshot DB seulement à l'idle (1/min).
-- **Batch embeddings** côté EF (queue Postgres `pg_net` ou simple `pg_cron` toutes les 30s).
-- **Pagination artifacts** par subject ; lazy-load des artefacts archivés.
-
----
-
-## 7. Plan de livraison (phasé)
-
-| Lot | Contenu | Bloquant pour |
-|---|---|---|
-| **L0** | Migrations 1→12 + RLS + Realtime + bucket | Tout |
-| **L1** | `EnrichedChallengeRoom` squelette + routing + `BriefingForm` + `challenge_session_context` | UX shell |
-| **L2** | Artefacts polymorphes : SlotsBoard enrichi, PostitEditor, InspectorPanel | Core collab |
-| **L3** | PlateauBoard (canvas infini) + position/drag + PresenceLayer | Mode libre |
-| **L4** | VoiceRecorder + `challenge-transcribe` EF | Vocal |
-| **L5** | QuestionCard + `challenge-agent` (qa) streaming | IA Q&A |
-| **L6** | Embeddings (`challenge-embed`) + `challenge-rag` + ConstellationBoard | RAG visible |
-| **L7** | Reactions + Votes + AnimatorHUD (timer, spotlight, rounds) | Animation |
-| **L8** | Liens sémantiques + LinksGraphPanel | Graph |
-| **L9** | Multi-agent `challenge-synthesize` + SynthesisDashboard + NarrativeReplay | Restitution |
-| **L10** | Export PDF dossier session | Livrable |
-| **L11** | QA visuelle multi-viewport, multi-utilisateur, charge (50 artefacts) | Release |
-
----
-
-## 8. Hors scope (V2)
-- CRDT collaboratif sur même artefact (verrou `updated_at` optimiste suffit V1).
-- Connecteurs externes (Notion, Slack).
-- Voix temps réel multi-pistes (room audio).
-- Marketplace d'agents experts custom par org.
-
----
-
-## 9. Mémoires à créer
-- `mem://features/challenge-enriched-architecture` — modèle artefacts polymorphes + RAG-ready.
-- `mem://features/challenge-enriched-ux` — board 3-modes, animator HUD, anonymat.
-- `mem://constraints/challenge-classic-untouched` — ne jamais modifier `ChallengeBoard.tsx` legacy.
-
----
-
-**Validation requise** : ce plan ajoute 12 tables + 5 EFs + ~25 composants. C'est volumineux mais chaque lot est livrable et testable indépendamment. Confirme pour démarrer L0 (migrations).
+- L'expérience **classique** (`ChallengeView`, `ChallengeBoard`) reste intacte (memory `challenge-classic-untouched`).
+- Performance pgvector au-delà de ~50k artifacts/session (pas le profil cible).
+- Migration des sessions en cours (aucune donnée existante : `count(challenge_artifacts) = 0`).
