@@ -33,12 +33,16 @@ export default function AdminToolkitDetail() {
   const { toolkit, pillars, cards, challengeTemplates, gamePlans, quizQuestions, orgToolkits, isLoading, invalidateAll } = detail;
   const [genLoading, setGenLoading] = useState(false);
   const [scope, setScope] = useState<string>("missing"); // missing | failed | all | pillar:<id>
+  const [lastChangeAt, setLastChangeAt] = useState<number>(Date.now());
+  const [stale, setStale] = useState(false);
+  const [resuming, setResuming] = useState(false);
 
   const cardsWithoutImage = cards.filter((c: any) => !c.image_url).length;
   const cardsFailed = cards.filter((c: any) => c.image_status === "failed").length;
   const cardsQueued = cards.filter((c: any) => c.image_status === "queued").length;
   const cardsGenerating = cards.filter((c: any) => c.image_status === "generating").length;
-  const cardsReady = cards.filter((c: any) => c.image_status === "ready" || (c.image_url && c.image_status !== "failed")).length;
+  // Strict count: only "ready" qualifies as done (avoid counting stale URLs during regen)
+  const cardsReady = cards.filter((c: any) => c.image_status === "ready").length;
   const inFlight = cardsQueued + cardsGenerating;
 
   // Realtime subscription on cards of this toolkit's pillars → live progress without polling
@@ -50,12 +54,21 @@ export default function AdminToolkitDetail() {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "cards", filter: `pillar_id=in.(${pillarIds.join(",")})` },
-        () => { invalidateAll(); },
+        () => { setLastChangeAt(Date.now()); setStale(false); invalidateAll(); },
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolkit?.id, pillars.length]);
+
+  // Stall detector: if cards are in-flight but no realtime change for >75s → assume worker died
+  useEffect(() => {
+    if (inFlight === 0) { setStale(false); return; }
+    const t = setInterval(() => {
+      if (Date.now() - lastChangeAt > 75_000) setStale(true);
+    }, 5000);
+    return () => clearInterval(t);
+  }, [inFlight, lastChangeAt]);
 
   const buildTargetIds = (): string[] => {
     if (scope === "missing") return cards.filter((c: any) => !c.image_url).map((c: any) => c.id);
@@ -77,13 +90,15 @@ export default function AdminToolkitDetail() {
     }
     setGenLoading(true);
     try {
-      // One single fire-and-forget call (server runs in background via EdgeRuntime.waitUntil)
+      // One single fire-and-forget call (server runs in background via EdgeRuntime.waitUntil + auto-resume chunks)
       const { data, error } = await supabase.functions.invoke("academy-generate", {
         body: { action: "generate-card-illustrations-batch", card_ids: ids },
       });
       if (error) throw error;
+      setLastChangeAt(Date.now());
+      setStale(false);
       toast.success(`Génération lancée (${data?.queued ?? ids.length} cartes)`, {
-        description: "Le travail tourne en arrière-plan, vous pouvez fermer cette page. La progression s'affiche en temps réel.",
+        description: "Le travail tourne en arrière-plan, vous pouvez fermer cette page. Reprise automatique en cas de coupure.",
         duration: 6000,
       });
       invalidateAll();
@@ -91,6 +106,30 @@ export default function AdminToolkitDetail() {
       toast.error("Échec du lancement", { description: e?.message });
     } finally {
       setGenLoading(false);
+    }
+  };
+
+  const resumeStuck = async () => {
+    if (!toolkit) return;
+    setResuming(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "sweep-stale-card-illustrations", toolkit_id: toolkit.id },
+      });
+      if (error) throw error;
+      const swept = data?.swept ?? 0;
+      if (swept === 0) {
+        toast.info("Aucune carte bloquée détectée");
+      } else {
+        toast.success(`Reprise de ${swept} carte${swept > 1 ? "s" : ""} bloquée${swept > 1 ? "s" : ""}`);
+      }
+      setLastChangeAt(Date.now());
+      setStale(false);
+      invalidateAll();
+    } catch (e: any) {
+      toast.error("Échec de la reprise", { description: e?.message });
+    } finally {
+      setResuming(false);
     }
   };
 
