@@ -114,6 +114,16 @@ Deno.serve(async (req) => {
       ai_meta: { status: "transcribed", model: "gemini-2.5-flash" },
     }).eq("id", artifact_id);
 
+    // Fire embed for RAG (best-effort)
+    fetch(`${SUPABASE_URL}/functions/v1/challenge-embed`, {
+      method: "POST",
+      headers: {
+        "Authorization": req.headers.get("Authorization") || `Bearer ${SERVICE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ target: "artifact", id: artifact_id }),
+    }).catch((e) => console.warn("embed dispatch", e));
+
     return new Response(JSON.stringify({ ok: true, transcription: text }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error(e);
