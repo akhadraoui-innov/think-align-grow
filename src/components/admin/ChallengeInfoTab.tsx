@@ -102,7 +102,9 @@ export function ChallengeInfoTab({ template, toolkits, pillars, onUpdate }: Prop
         difficulty: form.difficulty,
         toolkit_id: primaryToolkitId,
         pillar_id: form.pillar_id || null,
-      }).eq("id", template.id);
+        experience_mode: form.experience_mode,
+        enriched_config: form.enriched_config,
+      } as any).eq("id", template.id);
       if (error) throw error;
 
       // Sync junction table: delete all then re-insert
