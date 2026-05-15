@@ -41,15 +41,26 @@ export function DropSlot({
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    const types = e.dataTransfer.types;
+    if (types.includes("artifact-id")) setDragKind("artifact");
+    else if (types.includes("card-id")) setDragKind("card");
     setIsDragOver(true);
   }, []);
 
-  const handleDragLeave = useCallback(() => setIsDragOver(false), []);
+  const handleDragLeave = useCallback(() => { setIsDragOver(false); setDragKind(null); }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
+    setDragKind(null);
+
+    // Artifact drop (postit / voice / question / image)
+    const artifactId = e.dataTransfer.getData("artifact-id");
+    if (artifactId && onAttachArtifact) {
+      onAttachArtifact(artifactId);
+      return;
+    }
 
     const cardId = e.dataTransfer.getData("card-id");
     if (!cardId) return;
@@ -68,7 +79,7 @@ export function DropSlot({
 
     // New card from sidebar/staging
     onDrop(slot.id, cardId);
-  }, [slot.id, onDrop, onMoveToSlot]);
+  }, [slot.id, onDrop, onMoveToSlot, onAttachArtifact]);
 
   const handleReorder = useCallback((dragId: string, dropIdx: number) => {
     if (!onUpdateResponse) return;
