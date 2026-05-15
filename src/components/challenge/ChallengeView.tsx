@@ -17,6 +17,7 @@ import {
 } from "@/hooks/useChallengeData";
 import { useChallengeStaging } from "@/hooks/useChallengeStaging";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
+import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ChallengeViewProps {
@@ -26,6 +27,11 @@ interface ChallengeViewProps {
   pillars: DbPillar[];
   isHost: boolean;
   readOnly?: boolean;
+  hideSidebar?: boolean;
+  artifacts?: ChallengeArtifact[];
+  onAttachArtifact?: (slotId: string, artifactId: string, subjectId: string) => void;
+  onDetachArtifact?: (artifactId: string) => void;
+  onSelectArtifact?: (a: ChallengeArtifact) => void;
 }
 
 type ViewMode = "list" | "board";
