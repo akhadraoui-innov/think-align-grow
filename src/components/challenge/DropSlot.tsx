@@ -94,30 +94,37 @@ export function DropSlot({
     setReorderDropIdx(null);
   }, [slotResponses, onUpdateResponse]);
 
+  const totalCount = slotResponses.length + attachedArtifacts.length;
+  const hasContent = totalCount > 0;
+
   return (
     <div
       className={cn(
         "relative rounded-2xl border-2 border-dashed p-4 min-h-[120px] transition-all duration-200",
-        isDragOver && "border-primary bg-primary/5 scale-[1.02]",
-        slotResponses.length > 0 ? "border-solid border-border bg-card" : "border-muted-foreground/30 bg-secondary/20",
-        slot.required && slotResponses.length === 0 && "border-destructive/40"
+        isDragOver && "border-primary bg-primary/5 ring-2 ring-primary/30",
+        hasContent ? "border-solid border-border bg-card" : "border-muted-foreground/30 bg-secondary/20",
+        slot.required && !hasContent && "border-destructive/40",
       )}
       onDragOver={readOnly ? undefined : handleDragOver}
       onDragLeave={readOnly ? undefined : handleDragLeave}
       onDrop={readOnly ? undefined : handleDrop}
     >
-      <div className="mb-2">
-        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+      <div className="mb-2 flex items-center gap-2 flex-wrap">
+        <span className="font-display font-bold text-sm uppercase tracking-wider text-foreground">
           {slot.label}
         </span>
-        {slot.required && <span className="text-destructive ml-1 text-xs">*</span>}
-        <span className="ml-2 text-[10px] text-muted-foreground/70">
-          ({slot.slot_type === "ranked" ? "ordre important" : slot.slot_type === "single" ? "1 carte" : "plusieurs cartes"})
+        {slot.required && <span className="text-destructive text-xs">*</span>}
+        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
+          {slot.slot_type === "ranked" ? "ordre" : slot.slot_type === "single" ? "1 carte" : "multi"}
+        </span>
+        <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+          {slotResponses.length} carte{slotResponses.length > 1 ? "s" : ""}
+          {attachedArtifacts.length > 0 && ` · ${attachedArtifacts.length} note${attachedArtifacts.length > 1 ? "s" : ""}`}
         </span>
       </div>
 
-      {slot.hint && slotResponses.length === 0 && (
-        <p className="text-xs text-muted-foreground/60 italic mb-2">{slot.hint}</p>
+      {slot.hint && !hasContent && (
+        <p className="text-xs text-muted-foreground italic mb-2">{slot.hint}</p>
       )}
 
       <AnimatePresence mode="popLayout">
@@ -139,16 +146,32 @@ export function DropSlot({
         ))}
       </AnimatePresence>
 
-      {slotResponses.length === 0 && !isDragOver && (
+      {attachedArtifacts.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-dashed border-border/60">
+          {attachedArtifacts.map(a => (
+            <SlotArtifactChip
+              key={a.id}
+              artifact={a}
+              onClick={() => onSelectArtifact?.(a)}
+              onDetach={onDetachArtifact ? () => onDetachArtifact(a.id) : undefined}
+              readOnly={readOnly}
+            />
+          ))}
+        </div>
+      )}
+
+      {!hasContent && !isDragOver && (
         <div className="flex items-center justify-center h-16 text-muted-foreground/40">
           <GripVertical className="h-5 w-5 mr-1" />
-          <span className="text-xs">Glissez une carte ici</span>
+          <span className="text-xs">Glissez une carte, un post-it, vocal, question ou image</span>
         </div>
       )}
 
       {isDragOver && (
         <div className="flex items-center justify-center h-16 text-primary">
-          <span className="text-xs font-bold animate-pulse">Déposer ici</span>
+          <span className="text-xs font-bold animate-pulse">
+            Déposer ici{dragKind === "artifact" ? " · note" : dragKind === "card" ? " · carte" : ""}
+          </span>
         </div>
       )}
     </div>
