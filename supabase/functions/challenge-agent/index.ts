@@ -153,6 +153,50 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ============ DECK ASSISTANT MODE (cards copilot) ============
+    if (mode === "deck_assistant") {
+      const { data: session } = await admin.from("challenge_sessions").select("workshop_id").eq("id", session_id).maybeSingle();
+      if (!session) return new Response(JSON.stringify({ error: "session_not_found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!(await isParticipantOrHost(session.workshop_id, user.id))) {
+        return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const briefing = await loadBriefing(session_id);
+      const userMessages = (body?.messages || []) as Array<{ role: "user" | "assistant"; content: string }>;
+      const cardsCtx = (body?.cards_context || []) as Array<{ id: string; title: string; pillar?: string; phase?: string; definition?: string; objective?: string }>;
+      const lastUser = [...userMessages].reverse().find(m => m.role === "user")?.content || "";
+
+      // Lightweight relevance pass on provided cards
+      const tokens = lastUser.toLowerCase().split(/\W+/).filter(t => t.length >= 4);
+      const scored = cardsCtx.map((c) => {
+        const hay = `${c.title} ${c.definition ?? ""} ${c.objective ?? ""}`.toLowerCase();
+        let s = 0;
+        for (const t of tokens) {
+          if (hay.includes(t)) s += 1;
+          if (c.title.toLowerCase().includes(t)) s += 2;
+        }
+        return { c, s };
+      }).sort((a, b) => b.s - a.s);
+      const top = (scored.filter(x => x.s > 0).slice(0, 12).length > 0
+        ? scored.filter(x => x.s > 0).slice(0, 12)
+        : scored.slice(0, 12)).map(x => x.c);
+
+      const cardBlock = top.map((c) => `- [${c.pillar || "—"}/${c.phase || "—"}] ${c.title}${c.definition ? ` — ${c.definition.slice(0, 140)}` : ""}`).join("\n");
+
+      const sys = `Tu es le copilote des cartes méthodologiques d'un atelier d'innovation. Tu aides les participants à : (1) comprendre le sens et l'usage d'une carte, (2) trouver les cartes pertinentes pour leur sujet, (3) suggérer la création d'une carte personnalisée si rien ne convient. Réponds en français, concis (max 6 phrases), avec des puces si tu listes des cartes. Cite toujours le titre exact entre **gras**. Si l'utilisateur veut créer une carte, propose un brouillon (titre, pilier suggéré, phase, définition courte, objectif).`;
+      const sysCtx = `BRIEFING:\n${briefing}\n\nCARTES PERTINENTES:\n${cardBlock || "(aucune)"}`;
+      const messages = [
+        { role: "system", content: sys },
+        { role: "system", content: sysCtx },
+        ...userMessages.slice(-8).map(m => ({ role: m.role, content: m.content })),
+      ];
+
+      const out = await callLLM(messages);
+      if (!out.ok) return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const cited = top.filter(c => out.answer.includes(c.title)).slice(0, 6).map(c => ({ id: c.id, title: c.title }));
+      return new Response(JSON.stringify({ ok: true, answer: out.answer, cited_cards: cited }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // ============ ARTIFACT-BOUND MODES ============
     const artifact_id = body?.artifact_id as string | undefined;
     if (!artifact_id) {

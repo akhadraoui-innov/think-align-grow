@@ -206,22 +206,24 @@ export function DropSlot({
         )}
 
         {!hasContent && !isDragOver && (
-          <>
-            <div className="flex items-center justify-center h-16 text-muted-foreground/40">
-              <GripVertical className="h-5 w-5 mr-1" />
-              <span className="text-xs">Glissez une carte, un post-it, vocal, question ou image</span>
-            </div>
-            {!readOnly && (
-              <SuggestCardsButton
-                slotHint={slot.hint}
-                subjectTitle={subjectTitle}
-                cards={cards}
-                pillars={pillars}
-                placedCardIds={new Set(responses.map(r => r.card_id))}
-                onAdd={(cardId) => onDrop(slot.id, cardId)}
-              />
-            )}
-          </>
+          <div className="flex items-center justify-center h-16 text-muted-foreground/40">
+            <GripVertical className="h-5 w-5 mr-1" />
+            <span className="text-xs">Glissez une carte, un post-it, vocal, question ou image</span>
+          </div>
+        )}
+
+        {/* Suggestions: always available unless single-slot is filled */}
+        {!readOnly && !(slot.slot_type === "single" && slotResponses.length >= 1) && (
+          <SuggestCardsButton
+            slotHint={slot.hint}
+            subjectTitle={subjectTitle}
+            cards={cards}
+            pillars={pillars}
+            placedCardIds={new Set(responses.map(r => r.card_id))}
+            onAdd={(cardId) => onDrop(slot.id, cardId)}
+            compact={hasContent}
+            defaultOpen={!hasContent}
+          />
         )}
 
         {isDragOver && (
