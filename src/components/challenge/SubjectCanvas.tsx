@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, useEffect } from "react";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Maximize2, Camera } from "lucide-react";
 import type { ChallengeSubject, ChallengeSlot, ChallengeResponse } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
@@ -7,6 +7,10 @@ import { DropSlot } from "./DropSlot";
 import { StagingZone, type StagingItem } from "./StagingZone";
 import { cn } from "@/lib/utils";
 import type { CardFormat } from "./FormatSelector";
+import { FocusSubjectMode } from "./enriched/innovations/FocusSubjectMode";
+import { captureSubjectSnapshot } from "./enriched/innovations/SubjectSnapshot";
+import { ActivityHeat, useSlotActivityCounts } from "./enriched/innovations/ActivityHeatmap";
+import { toast } from "sonner";
 
 interface SubjectCanvasProps {
   subject: ChallengeSubject;
@@ -57,8 +61,14 @@ export function SubjectCanvas({
   const requiredFilled = subjectSlots.filter(s => s.required && subjectResponses.some(r => r.slot_id === s.id)).length;
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const focusGridRef = useRef<HTMLDivElement>(null);
   const [canScrollUp, setCanScrollUp] = useState(false);
   const [canScrollDown, setCanScrollDown] = useState(false);
+  const [focusOpen, setFocusOpen] = useState(false);
+
+  const subjectArtifacts = artifacts.filter(a => a.subject_id === subject.id);
+  const slotActivityCounts = useSlotActivityCounts(subjectArtifacts);
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -86,10 +96,76 @@ export function SubjectCanvas({
     onDrop(slotId, cardId);
   }, [onDrop, onUnstage, subjectStaging]);
 
+  const handleSnapshot = useCallback(async () => {
+    const node = focusOpen ? focusGridRef.current : gridRef.current;
+    if (!node) return;
+    try {
+      await captureSubjectSnapshot(node, `${subject.title || "subject"}.png`);
+      toast.success("Capture PNG téléchargée");
+    } catch (e: any) {
+      toast.error("Capture impossible", { description: String(e?.message || e) });
+    }
+  }, [focusOpen, subject.title]);
+
+  const renderSlotsGrid = (mode: "normal" | "focus") => (
+    <div
+      ref={mode === "focus" ? focusGridRef : gridRef}
+      className={cn(
+        "grid gap-4",
+        subjectSlots.length === 1 ? "grid-cols-1" :
+        subjectSlots.length === 2 ? "grid-cols-1 lg:grid-cols-2" :
+        subjectSlots.length === 3 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" :
+        subjectSlots.length === 4 ? "grid-cols-1 sm:grid-cols-2" :
+        subjectSlots.length <= 6 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" :
+        "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+      )}
+    >
+      {subjectSlots.map(slot => {
+        const minH = mode === "focus"
+          ? (subjectSlots.length === 1 ? "min-h-[480px]" : subjectSlots.length === 2 ? "min-h-[420px]" : "min-h-[320px]")
+          : (subjectSlots.length === 1 ? "min-h-[360px]"
+            : subjectSlots.length === 2 ? "min-h-[300px]"
+            : subjectSlots.length <= 4 ? "min-h-[220px]"
+            : "min-h-[160px]");
+        return (
+          <div key={slot.id} className="relative">
+            <ActivityHeat
+              countsBySlot={slotActivityCounts}
+              slotId={slot.id}
+              className="absolute -top-2 -right-2 z-10"
+            />
+            <DropSlot
+              slot={slot}
+              subjectTitle={subject.title}
+              responses={subjectResponses}
+              cards={cards}
+              pillars={pillars}
+              onDrop={handleSlotDrop}
+              onRemove={onRemove}
+              onMoveToSlot={onMoveToSlot}
+              onUpdateResponse={onUpdateResponse}
+              readOnly={readOnly}
+              minHeightClass={minH}
+              attachedArtifacts={artifacts.filter(a => a.slot_id === slot.id && a.kind !== "card")}
+              allArtifacts={artifacts}
+              onAttachArtifact={onAttachArtifact ? (artifactId) => onAttachArtifact(slot.id, artifactId, subject.id) : undefined}
+              onDetachArtifact={onDetachArtifact}
+              onSelectArtifact={onSelectArtifact}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Subject header */}
-      <div className="px-6 py-5 border-b border-border shrink-0">
+      <div
+        className="px-6 py-5 border-b border-border shrink-0 cursor-pointer select-none"
+        onDoubleClick={() => setFocusOpen(true)}
+        title="Double-clic pour passer en mode Focus"
+      >
         <div className="flex items-center gap-3 mb-2">
           <span className={cn("text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg", TYPE_COLORS[subject.type])}>
             {TYPE_LABELS[subject.type]}
@@ -98,6 +174,22 @@ export function SubjectCanvas({
             {filledCount}/{subjectSlots.length} emplacements remplis
             {requiredCount > 0 && ` · ${requiredFilled}/${requiredCount} requis`}
           </span>
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={(e) => { e.stopPropagation(); handleSnapshot(); }}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              title="Exporter le sujet en PNG"
+            >
+              <Camera className="h-3 w-3" /> PNG
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setFocusOpen(true); }}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+              title="Mode Focus"
+            >
+              <Maximize2 className="h-3 w-3" /> Focus
+            </button>
+          </div>
         </div>
         <h2 className="font-display font-black text-xl tracking-tight">{subject.title}</h2>
         {subject.description && (
@@ -107,43 +199,7 @@ export function SubjectCanvas({
 
       {/* Slots grid — adaptive sizing */}
       <div className="relative flex-1 overflow-y-auto min-h-0 p-6" ref={scrollRef} onScroll={checkScroll}>
-        <div className={cn(
-          "grid gap-4",
-          subjectSlots.length === 1 ? "grid-cols-1" :
-          subjectSlots.length === 2 ? "grid-cols-1 lg:grid-cols-2" :
-          subjectSlots.length === 3 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" :
-          subjectSlots.length === 4 ? "grid-cols-1 sm:grid-cols-2" :
-          subjectSlots.length <= 6 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" :
-          "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-        )}>
-          {subjectSlots.map(slot => {
-            const minH = subjectSlots.length === 1 ? "min-h-[360px]"
-              : subjectSlots.length === 2 ? "min-h-[300px]"
-              : subjectSlots.length <= 4 ? "min-h-[220px]"
-              : "min-h-[160px]";
-            return (
-              <DropSlot
-                key={slot.id}
-                slot={slot}
-                subjectTitle={subject.title}
-                responses={subjectResponses}
-                cards={cards}
-                pillars={pillars}
-                onDrop={handleSlotDrop}
-                onRemove={onRemove}
-                onMoveToSlot={onMoveToSlot}
-                onUpdateResponse={onUpdateResponse}
-                readOnly={readOnly}
-                minHeightClass={minH}
-                attachedArtifacts={artifacts.filter(a => a.slot_id === slot.id && a.kind !== "card")}
-                allArtifacts={artifacts}
-                onAttachArtifact={onAttachArtifact ? (artifactId) => onAttachArtifact(slot.id, artifactId, subject.id) : undefined}
-                onDetachArtifact={onDetachArtifact}
-                onSelectArtifact={onSelectArtifact}
-              />
-            );
-          })}
-        </div>
+        {renderSlotsGrid("normal")}
 
         {/* Staging zone — at bottom */}
         {onStage && (
@@ -184,6 +240,16 @@ export function SubjectCanvas({
           </div>
         )}
       </div>
+
+      {/* Focus mode (Innovation #1) */}
+      <FocusSubjectMode
+        open={focusOpen}
+        onOpenChange={setFocusOpen}
+        title={subject.title}
+        onSnapshot={handleSnapshot}
+      >
+        {renderSlotsGrid("focus")}
+      </FocusSubjectMode>
     </div>
   );
 }
