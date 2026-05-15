@@ -72,6 +72,12 @@ export function EnrichedSidebar({
   const [filterCrit, setFilterCrit] = useState<Criticality | "all">("all");
   const [scope, setScope] = useState<"current" | "all">(currentSubjectId ? "current" : "all");
   const [includeResolved, setIncludeResolved] = useState(false);
+  const [explorerOpen, setExplorerOpen] = useState(false);
+
+  const subjectCustomCards = useMemo(
+    () => customCards.filter(c => !currentSubjectId || c.visibility_subject_id === currentSubjectId || c.subject_id === currentSubjectId),
+    [customCards, currentSubjectId],
+  );
 
   // Only show top-level artifacts in the list (children appear in inspector thread)
   const baseList = useMemo(
