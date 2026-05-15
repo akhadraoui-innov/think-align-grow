@@ -10,6 +10,7 @@ import { QuestionComposer } from "./questions/QuestionComposer";
 import { ImageLibrary } from "./images/ImageLibrary";
 import { ImageTile } from "./images/ImageTile";
 import { CardsTab } from "./sidebar/CardsTab";
+import { CardExplorer } from "./cards/CardExplorer";
 import { CRITICALITY_META } from "./constants";
 import { cn } from "@/lib/utils";
 import type { ChallengeArtifact, ArtifactKind, CreateArtifactInput, Criticality } from "@/hooks/useChallengeArtifacts";
