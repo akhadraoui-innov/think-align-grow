@@ -64,8 +64,10 @@ export function ChallengeInfoTab({ template, toolkits, pillars, onUpdate }: Prop
       difficulty: template.difficulty || "intermediate",
       toolkit_id: template.toolkit_id,
       pillar_id: template.pillar_id || "",
+      experience_mode: ((template as any).experience_mode || "classic") as "classic" | "enriched",
+      enriched_config: ((template as any).enriched_config || {}) as Record<string, any>,
     });
-  }, [template.id, template.name, template.description, template.difficulty, template.toolkit_id, template.pillar_id]);
+  }, [template.id, template.name, template.description, template.difficulty, template.toolkit_id, template.pillar_id, (template as any).experience_mode]);
 
   useEffect(() => {
     if (linkedToolkits && !lastSavedRef.current) {
