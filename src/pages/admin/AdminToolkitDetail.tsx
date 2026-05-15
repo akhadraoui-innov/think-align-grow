@@ -228,6 +228,19 @@ export default function AdminToolkitDetail() {
               </p>
             </div>
           )}
+          {(stale || (inFlight === 0 && cardsFailed > 0)) && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5">
+              <p className="text-xs text-foreground">
+                {stale
+                  ? "Aucune progression détectée depuis plus d'une minute. Le worker a peut-être été interrompu."
+                  : `${cardsFailed} carte${cardsFailed > 1 ? "s" : ""} en échec : tu peux relancer ou réveiller les cartes bloquées.`}
+              </p>
+              <Button size="sm" variant="outline" onClick={resumeStuck} disabled={resuming} className="gap-1.5 flex-shrink-0">
+                {resuming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                Reprendre
+              </Button>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="info" className="space-y-4">
