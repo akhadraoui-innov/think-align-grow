@@ -34,6 +34,14 @@ export function CardsTab({ cards, pillars, placedCardIds, onAdd, onOpenExplorer,
   return (
     <div className="flex flex-col h-full">
       <div className="px-3 py-2 border-b border-border space-y-2">
+        {onOpenExplorer && (
+          <Button onClick={onOpenExplorer} variant="outline" size="sm" className="w-full h-8 text-[11px] font-bold uppercase tracking-wider gap-1.5 border-primary/30 text-primary hover:bg-primary/10">
+            <Maximize2 className="h-3.5 w-3.5" /> Explorer plein écran
+            {customCardCount > 0 && (
+              <span className="ml-auto inline-flex items-center gap-0.5 text-amber-500"><Star className="h-3 w-3 fill-amber-400" />{customCardCount}</span>
+            )}
+          </Button>
+        )}
         <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
           {([
             { id: "compact", icon: List, label: "Compact" },
