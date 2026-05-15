@@ -17,6 +17,7 @@ import {
 } from "@/hooks/useChallengeData";
 import { useChallengeStaging } from "@/hooks/useChallengeStaging";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
+import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ChallengeViewProps {
@@ -26,11 +27,16 @@ interface ChallengeViewProps {
   pillars: DbPillar[];
   isHost: boolean;
   readOnly?: boolean;
+  hideSidebar?: boolean;
+  artifacts?: ChallengeArtifact[];
+  onAttachArtifact?: (slotId: string, artifactId: string, subjectId: string) => void;
+  onDetachArtifact?: (artifactId: string) => void;
+  onSelectArtifact?: (a: ChallengeArtifact) => void;
 }
 
 type ViewMode = "list" | "board";
 
-export function ChallengeView({ template, workshopId, cards, pillars, isHost, readOnly }: ChallengeViewProps) {
+export function ChallengeView({ template, workshopId, cards, pillars, isHost, readOnly, hideSidebar, artifacts = [], onAttachArtifact, onDetachArtifact, onSelectArtifact }: ChallengeViewProps) {
   const { subjects, slots, loading } = useChallengeStructure(template.id);
   const { responses, placeCard, removeCard, moveToSlot, updateResponse } = useChallengeResponses(workshopId);
   const { data: analysis, refetch: refetchAnalysis } = useChallengeAnalysis(workshopId);
@@ -133,12 +139,16 @@ export function ChallengeView({ template, workshopId, cards, pillars, isHost, re
     onStagingFormatChange: updateStagingFormat,
     onReorderStaging: reorderItems,
     readOnly,
+    artifacts,
+    onAttachArtifact,
+    onDetachArtifact,
+    onSelectArtifact,
   };
 
   return (
     <div className="flex-1 flex flex-row min-h-0">
-      {/* Card sidebar */}
-      {!readOnly && (
+      {/* Card sidebar (legacy) — hidden when EnrichedSidebar is in charge */}
+      {!readOnly && !hideSidebar && (
         <CardSidebar
           cards={cards}
           pillars={pillars}

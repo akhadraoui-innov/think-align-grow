@@ -2,6 +2,7 @@ import { useCallback, useRef, useState, useEffect } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import type { ChallengeSubject, ChallengeSlot, ChallengeResponse } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
+import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
 import { DropSlot } from "./DropSlot";
 import { StagingZone, type StagingItem } from "./StagingZone";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,10 @@ interface SubjectCanvasProps {
   onStagingFormatChange?: (itemId: string, format: CardFormat) => void;
   onReorderStaging?: (draggedId: string, targetId: string) => void;
   readOnly?: boolean;
+  artifacts?: ChallengeArtifact[];
+  onAttachArtifact?: (slotId: string, artifactId: string, subjectId: string) => void;
+  onDetachArtifact?: (artifactId: string) => void;
+  onSelectArtifact?: (a: ChallengeArtifact) => void;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -42,6 +47,7 @@ export function SubjectCanvas({
   onDrop, onRemove, onMoveToSlot, onUpdateResponse,
   stagingItems = [], onStage, onUnstage, onStagingFormatChange, onReorderStaging,
   readOnly,
+  artifacts = [], onAttachArtifact, onDetachArtifact, onSelectArtifact,
 }: SubjectCanvasProps) {
   const subjectSlots = slots.filter(s => s.subject_id === subject.id);
   const subjectResponses = responses.filter(r => r.subject_id === subject.id);
@@ -120,6 +126,10 @@ export function SubjectCanvas({
               onMoveToSlot={onMoveToSlot}
               onUpdateResponse={onUpdateResponse}
               readOnly={readOnly}
+              attachedArtifacts={artifacts.filter(a => a.slot_id === slot.id && a.kind !== "card")}
+              onAttachArtifact={onAttachArtifact ? (artifactId) => onAttachArtifact(slot.id, artifactId, subject.id) : undefined}
+              onDetachArtifact={onDetachArtifact}
+              onSelectArtifact={onSelectArtifact}
             />
           ))}
         </div>
