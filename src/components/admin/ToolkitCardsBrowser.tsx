@@ -47,12 +47,6 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
   const [boardLayout, setBoardLayout] = useState<BoardLayout>("atelier");
   const [previewCard, setPreviewCard] = useState<Tables<"cards"> | null>(null);
 
-export function ToolkitCardsBrowser({ cards, pillars }: Props) {
-  const [format, setFormat] = useState<CardFormat>("game");
-  const [groupBy, setGroupBy] = useState<GroupBy>("pillar");
-  const [columns, setColumns] = useState(4);
-  const [filterPillar, setFilterPillar] = useState("all");
-  const [filterPhase, setFilterPhase] = useState("all");
 
   const filtered = useMemo(() => {
     let result = cards;
