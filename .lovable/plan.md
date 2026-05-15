@@ -31,9 +31,11 @@
 - ✅ Types ChallengeArtifact/CreateArtifactInput étendus (scope, visibility_subject_id, is_custom_card, card_payload, thread_root_id, thread_order)
 - ⏳ `CardChatDrawer.tsx` (deck_assistant + tool generate_card via challenge-agent)
 
-### Phase B — Threads post-it
-- `PostitThread.tsx` dans `InspectorPanel` (rendu cascade indentée auteur/timestamp)
-- Bouton "+ Continuer" déjà en place sur les chips → ouvre Inspector mode thread (à brancher : `setSelected(a)` actuel ouvre l'inspector, il suffit d'auto-focus le composer)
+### Phase B — Threads post-it ✅
+- ✅ `ThreadPanel` refonte cascade visuelle : papier coloré par criticité, rotation stable, indentation + ligne de connexion (`CornerDownRight`), tri via `thread_order`/`thread_root_id` (fallback BFS), composer riche (criticité + anonyme + ⌘+Entrée)
+
+### Phase E1 — Innovation #3 livrée ✅
+- ✅ `SuggestCardsButton` : top-3 cartes pertinentes (scoring tokens titre/définition vs sujet+directive), affichées dans l'état vide de chaque slot, ajout 1-clic via `onDrop`
 
 ### Phase C — RAG puissant
 - Étendre `challenge-embed` : sources `card`, `subject`, `slot`, `briefing`, `synthesis`, ré-indexation thread
