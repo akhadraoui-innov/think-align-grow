@@ -356,25 +356,86 @@ export function ToolkitCardsBrowser({ cards, pillars }: Props) {
         <Badge variant="secondary" className="text-xs">{filtered.length} carte{filtered.length > 1 ? "s" : ""}</Badge>
       </div>
 
-      {/* Cards */}
-      {groups.map(g => (
-        <div key={g.key} className="space-y-3">
-          {groupBy !== "all" && (
-            <div className="flex items-center gap-2">
-              {"color" in g && g.color && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: g.color as string }} />}
-              <h3 className="text-sm font-semibold text-foreground">{g.label}</h3>
-              <Badge variant="outline" className="text-[10px]">{g.items.length}</Badge>
-            </div>
-          )}
-          <div className={format === "game" || format === "gamified" ? "flex flex-wrap gap-4" : gridClass}>
-            {g.items.map(renderCard)}
-          </div>
+      {/* Plateau view (live playground board) */}
+      {format === "plateau" ? (
+        <div className="rounded-xl border border-border/40 bg-muted/10 overflow-hidden">
+          <PlaygroundBoard
+            layout={boardLayout}
+            cards={filtered}
+            pillars={pillars}
+            accent="hsl(var(--primary))"
+          />
         </div>
-      ))}
-
-      {filtered.length === 0 && (
-        <div className="text-center text-sm text-muted-foreground py-12">Aucune carte trouvée.</div>
+      ) : (
+        <>
+          {groups.map(g => (
+            <div key={g.key} className="space-y-3">
+              {groupBy !== "all" && (
+                <div className="flex items-center gap-2">
+                  {"color" in g && g.color && <div className="h-3 w-3 rounded-full" style={{ backgroundColor: g.color as string }} />}
+                  <h3 className="text-sm font-semibold text-foreground">{g.label}</h3>
+                  <Badge variant="outline" className="text-[10px]">{g.items.length}</Badge>
+                </div>
+              )}
+              <div className={format === "game" || format === "gamified" ? "flex flex-wrap gap-4" : gridClass}>
+                {g.items.map(renderCardWithPreview)}
+              </div>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div className="text-center text-sm text-muted-foreground py-12">Aucune carte trouvée.</div>
+          )}
+        </>
       )}
+
+      {/* Card preview dialog */}
+      <Dialog open={!!previewCard} onOpenChange={(o) => !o && setPreviewCard(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          {previewCard && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-display text-xl">{previewCard.title}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="aspect-[4/3] w-full rounded-xl overflow-hidden border border-border/40 bg-muted/30">
+                  <CardThumb
+                    imageUrl={previewAny?.image_url}
+                    imageStatus={previewAny?.image_status}
+                    imageAttempts={previewAny?.image_attempts ?? undefined}
+                    imageError={previewAny?.image_error}
+                    title={previewCard.title}
+                    pillarColor={previewPillar?.color}
+                    showAdminBadges
+                    className="w-full h-full"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  {previewPillar && (
+                    <Badge style={{ background: previewPillar.color || undefined, color: "white" }}>{previewPillar.name}</Badge>
+                  )}
+                  <Badge variant="outline">{PHASE_LABELS[previewCard.phase] || previewCard.phase}</Badge>
+                  {previewAny?.image_status && (
+                    <Badge variant="secondary">illustration · {previewAny.image_status}</Badge>
+                  )}
+                </div>
+                {previewCard.subtitle && <p className="text-sm italic text-muted-foreground">{previewCard.subtitle}</p>}
+                {previewCard.objective && (
+                  <div><div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Objectif</div><p className="text-sm leading-relaxed">{previewCard.objective}</p></div>
+                )}
+                {previewCard.definition && (
+                  <div><div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Définition</div><p className="text-sm leading-relaxed">{previewCard.definition}</p></div>
+                )}
+                {previewCard.action && (
+                  <div><div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Action</div><p className="text-sm leading-relaxed">{previewCard.action}</p></div>
+                )}
+                {previewCard.kpi && (
+                  <div><div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Indicateurs</div><p className="text-sm leading-relaxed whitespace-pre-line">{previewCard.kpi}</p></div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
