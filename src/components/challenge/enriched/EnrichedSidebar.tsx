@@ -108,6 +108,11 @@ export function EnrichedSidebar({ sessionId, workshopId, currentSubjectId, artif
           {tab === "postit" && <PostitComposer onCreate={onCreate} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
           {tab === "voice" && <VoiceRecorder sessionId={sessionId} onCreate={onCreate} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
           {tab === "question" && <QuestionComposer onCreate={onCreate} sessionId={sessionId} defaultSubjectId={scope === "current" ? currentSubjectId : null} />}
+          {tab === "image" && (
+            <Button onClick={() => setImageOpen(true)} variant="outline" className="w-full justify-start font-bold">
+              <Plus className="h-4 w-4 mr-2" /> Ajouter une image
+            </Button>
+          )}
         </div>
       )}
 
