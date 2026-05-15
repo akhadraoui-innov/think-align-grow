@@ -21,7 +21,7 @@ interface Props {
   workshopId: string;
   currentSubjectId?: string | null;
   artifacts: ChallengeArtifact[];
-  enabled: { postits: boolean; voice: boolean; questions: boolean };
+  enabled: { postits: boolean; voice: boolean; questions: boolean; images?: boolean };
   canEdit: boolean;
   selectedId: string | null;
   reactionsByArtifact: Record<string, ChallengeReaction[]>;
