@@ -187,7 +187,7 @@ export default function AdminToolkitDetail() {
               className="gap-1.5"
               onClick={() => window.open(`/portal/workshops/toolkits/${toolkit.id}/playground`, "_blank")}
             >
-              <Gamepad2 className="h-3.5 w-3.5" /> Terrain de jeu
+              <Eye className="h-3.5 w-3.5" /> Aperçu Playground
             </Button>
             <ToolkitAIChatDialog toolkit={toolkit} pillars={pillars} onUpdate={invalidateAll} />
             <Badge variant="outline" className={s.className}>{s.label}</Badge>
