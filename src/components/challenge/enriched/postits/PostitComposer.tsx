@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, EyeOff } from "lucide-react";
 import { CRITICALITY_META, PROFESSIONAL_EMOJIS } from "../constants";
 import type { Criticality, CreateArtifactInput } from "@/hooks/useChallengeArtifacts";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ export function PostitComposer({ onCreate, defaultSubjectId }: Props) {
   const [criticality, setCriticality] = useState<Criticality>("medium");
   const [category, setCategory] = useState("");
   const [busy, setBusy] = useState(false);
+  const [anon, setAnon] = useState(false);
 
   const submit = async () => {
     if (!content.trim()) return;
@@ -30,6 +31,7 @@ export function PostitComposer({ onCreate, defaultSubjectId }: Props) {
       criticality,
       category: category.trim() || null,
       subject_id: defaultSubjectId ?? null,
+      is_anonymous: anon,
     });
     setBusy(false);
     if (created) {
@@ -102,12 +104,21 @@ export function PostitComposer({ onCreate, defaultSubjectId }: Props) {
         className="h-8 text-xs"
       />
 
-      <div className="flex justify-between gap-2">
-        <Button variant="ghost" size="sm" onClick={() => { setOpen(false); setContent(""); }}>Annuler</Button>
-        <Button size="sm" onClick={submit} disabled={busy || !content.trim()} className="font-bold">
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-          Publier
-        </Button>
+      <div className="flex justify-between gap-2 items-center">
+        <button
+          type="button"
+          onClick={() => setAnon(v => !v)}
+          className={cn("flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded", anon ? "bg-amber-500/15 text-amber-700" : "text-muted-foreground hover:bg-muted")}
+        >
+          <EyeOff className="h-3 w-3" /> {anon ? "Anonyme" : "Public"}
+        </button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={() => { setOpen(false); setContent(""); }}>Annuler</Button>
+          <Button size="sm" onClick={submit} disabled={busy || !content.trim()} className="font-bold">
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+            Publier
+          </Button>
+        </div>
       </div>
     </div>
   );
