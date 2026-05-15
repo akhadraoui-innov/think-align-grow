@@ -61,16 +61,7 @@ function PlateauBoardImpl({ artifacts, canEdit, selectedId, onSelect, onUpdate, 
     return () => ro.disconnect();
   }, []);
 
-  const debounceSave = useCallback((id: string, x: number, y: number) => {
-    const timers = saveTimers.current;
-    const existing = timers.get(id);
-    if (existing) window.clearTimeout(existing);
-    const handle = window.setTimeout(() => {
-      onUpdate(id, { position: { x: Math.round(x), y: Math.round(y) } as any });
-      timers.delete(id);
-    }, 400);
-    timers.set(id, handle);
-  }, [onUpdate]);
+  // (debounced save reserved for future bulk-move feature)
 
   const onPointerDownCard = (e: React.PointerEvent, a: ChallengeArtifact) => {
     if (!canEdit) return;
