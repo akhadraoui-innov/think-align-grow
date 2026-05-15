@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +9,11 @@ import { InspectorPanel } from "./InspectorPanel";
 import { useChallengeSession } from "@/hooks/useChallengeSession";
 import { useChallengeArtifacts, type ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
 import { useChallengeReactions } from "@/hooks/useChallengeReactions";
+import { useChallengePresence } from "@/hooks/useChallengePresence";
 import { SynthesisPanel } from "./SynthesisPanel";
 import { PlateauBoard } from "./PlateauBoard";
+import { PresenceBar } from "./presence/PresenceBar";
+import { CopilotBubble } from "./copilot/CopilotBubble";
 import { cn } from "@/lib/utils";
 import type { ChallengeTemplate } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
