@@ -1,0 +1,404 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─── Custom variant ─────────────────────────────────────────────────────────── */
+@custom-variant dark (&:is(.dark *));
+
+/* ─── Bloomberg Design Tokens ────────────────────────────────────────────────── */
+@theme inline {
+  /* Navy base */
+  --color-background: oklch(11% 0.045 240);
+  --color-foreground: oklch(92% 0.01 240);
+  --color-card: oklch(14% 0.05 240);
+  --color-card-foreground: oklch(92% 0.01 240);
+  --color-popover: oklch(16% 0.055 240);
+  --color-popover-foreground: oklch(92% 0.01 240);
+
+  /* Brand colors */
+  --color-primary: oklch(55% 0.22 240);        /* #1A85FF */
+  --color-primary-foreground: oklch(100% 0 0);
+  --color-secondary: oklch(72% 0.14 75);       /* #C9A84C */
+  --color-secondary-foreground: oklch(11% 0.045 240);
+  --color-accent: oklch(55% 0.22 240 / 0.15);
+  --color-accent-foreground: oklch(55% 0.22 240);
+
+  /* States */
+  --color-muted: oklch(20% 0.06 240);
+  --color-muted-foreground: oklch(55% 0.04 240);
+  --color-border: oklch(25% 0.06 240);
+  --color-input: oklch(18% 0.06 240);
+  --color-ring: oklch(55% 0.22 240);
+
+  /* Semantic */
+  --color-destructive: oklch(55% 0.22 25);
+  --color-destructive-foreground: oklch(100% 0 0);
+
+  /* Radius */
+  --radius: 0.375rem;
+
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Montserrat', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Easings */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* ─── Base styles ────────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--color-border);
+  }
+
+  html {
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    overflow: hidden;
+  }
+
+  /* Scrollbar Bloomberg style */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: oklch(14% 0.05 240);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(30% 0.07 240);
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(40% 0.08 240);
+  }
+
+  /* Selection */
+  ::selection {
+    background: oklch(55% 0.22 240 / 0.3);
+    color: white;
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    outline: 2px solid oklch(55% 0.22 240 / 0.6);
+    outline-offset: 2px;
+  }
+}
+
+/* ─── Typography ─────────────────────────────────────────────────────────────── */
+@layer base {
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  /* Font weights */
+  .font-300 { font-weight: 300; }
+  .font-400 { font-weight: 400; }
+  .font-500 { font-weight: 500; }
+  .font-600 { font-weight: 600; }
+  .font-700 { font-weight: 700; }
+  .font-800 { font-weight: 800; }
+  .font-900 { font-weight: 900; }
+}
+
+/* ─── Bloomberg Component Library ───────────────────────────────────────────── */
+@layer components {
+
+  /* ── KPI Card ── */
+  .kpi-card {
+    background: oklch(14% 0.05 240);
+    border: 1px solid oklch(22% 0.06 240);
+    border-radius: 8px;
+    padding: 12px;
+    transition: border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
+  }
+  .kpi-card:hover {
+    border-color: oklch(30% 0.08 240);
+    box-shadow: 0 4px 16px oklch(0% 0 0 / 0.3);
+  }
+
+  /* ── Bloomberg Table ── */
+  .bloomberg-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    font-family: var(--font-sans);
+  }
+  .bloomberg-table thead tr {
+    background: oklch(17% 0.055 240);
+    border-bottom: 1px solid oklch(28% 0.07 240);
+  }
+  .bloomberg-table thead th {
+    padding: 8px 12px;
+    text-align: right;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(55% 0.04 240);
+    white-space: nowrap;
+  }
+  .bloomberg-table thead th:first-child {
+    text-align: left;
+  }
+  .bloomberg-table tbody tr {
+    border-bottom: 1px solid oklch(19% 0.055 240);
+    transition: background 100ms;
+  }
+  .bloomberg-table tbody tr:hover {
+    background: oklch(17% 0.055 240);
+  }
+  .bloomberg-table tbody td {
+    padding: 6px 12px;
+    text-align: right;
+    color: oklch(80% 0.02 240);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .bloomberg-table tbody td:first-child {
+    text-align: left;
+    color: oklch(85% 0.02 240);
+    font-weight: 500;
+  }
+  .bloomberg-table .row-total td {
+    background: oklch(17% 0.055 240);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: white;
+    border-top: 1px solid oklch(28% 0.07 240);
+    border-bottom: 1px solid oklch(28% 0.07 240);
+  }
+  .bloomberg-table .row-subtotal td {
+    font-weight: 600;
+    color: oklch(88% 0.01 240);
+    border-top: 1px solid oklch(22% 0.06 240);
+  }
+
+  /* ── Bloomberg Input ── */
+  .bloomberg-input {
+    width: 100%;
+    background: oklch(18% 0.06 240);
+    border: 1px solid oklch(28% 0.07 240);
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: white;
+    text-align: right;
+    transition: border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .bloomberg-input::-webkit-outer-spin-button,
+  .bloomberg-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .bloomberg-input:focus {
+    border-color: oklch(55% 0.22 240 / 0.6);
+    box-shadow: 0 0 0 2px oklch(55% 0.22 240 / 0.15);
+  }
+  .bloomberg-input::placeholder {
+    color: oklch(40% 0.04 240);
+  }
+  .bloomberg-input option {
+    background: oklch(18% 0.06 240);
+    color: white;
+  }
+
+  /* ── Status Badge ── */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ── Section Header ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: oklch(17% 0.055 240);
+    border-bottom: 1px solid oklch(22% 0.06 240);
+  }
+
+  /* ── Module Header Gradient ── */
+  .module-header-gradient {
+    background: linear-gradient(180deg, oklch(16% 0.055 240) 0%, oklch(14% 0.05 240) 100%);
+    border-bottom: 1px solid oklch(22% 0.06 240);
+  }
+
+  /* ── Sidebar Nav Item ── */
+  .sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    color: oklch(55% 0.04 240);
+    cursor: pointer;
+    transition: background 120ms var(--ease-out), color 120ms var(--ease-out);
+    border-left: 2px solid transparent;
+    text-decoration: none;
+  }
+  .sidebar-nav-item:hover {
+    background: oklch(20% 0.06 240);
+    color: oklch(80% 0.02 240);
+  }
+  .sidebar-nav-item.active {
+    background: oklch(55% 0.22 240 / 0.1);
+    color: oklch(55% 0.22 240);
+    border-left-color: oklch(55% 0.22 240);
+  }
+
+  /* ── Bloomberg Divider ── */
+  .bloomberg-divider {
+    height: 1px;
+    background: oklch(22% 0.06 240);
+    margin: 4px 8px;
+  }
+
+  /* ── Data Grid Cell ── */
+  .data-cell {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  /* ── Positive / Negative values ── */
+  .value-positive { color: oklch(60% 0.18 145); }
+  .value-negative { color: oklch(55% 0.22 25); }
+  .value-neutral  { color: oklch(80% 0.02 240); }
+  .value-gold     { color: oklch(72% 0.14 75); }
+  .value-blue     { color: oklch(55% 0.22 240); }
+
+  /* ── Ticker style ── */
+  .ticker {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────────── */
+@layer utilities {
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(12px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slide-in-left {
+    from { opacity: 0; transform: translateX(-12px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 oklch(55% 0.22 240 / 0.3); }
+    50%       { box-shadow: 0 0 12px 4px oklch(55% 0.22 240 / 0.15); }
+  }
+
+  .animate-fade-in       { animation: fade-in 200ms var(--ease-out) both; }
+  .animate-slide-in-right { animation: slide-in-right 200ms var(--ease-out) both; }
+  .animate-slide-in-left  { animation: slide-in-left 200ms var(--ease-out) both; }
+  .animate-scale-in      { animation: scale-in 180ms var(--ease-out) both; }
+  .animate-pulse-glow    { animation: pulse-glow 2s ease-in-out infinite; }
+
+  /* Button active state */
+  button:active:not(:disabled) {
+    transform: scale(0.97);
+    transition: transform 100ms var(--ease-out);
+  }
+
+  /* Tabular numbers */
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  /* Truncate */
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Container override */
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Flex min-width fix */
+  .flex { min-width: 0; }
+
+  /* Prose dark */
+  .prose {
+    color: oklch(80% 0.02 240);
+    line-height: 1.7;
+  }
+  .prose h1, .prose h2, .prose h3 {
+    color: white;
+    font-family: var(--font-heading);
+    font-weight: 700;
+  }
+  .prose strong { color: oklch(88% 0.01 240); }
+  .prose code {
+    background: oklch(20% 0.06 240);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+  .prose blockquote {
+    border-left: 3px solid oklch(55% 0.22 240 / 0.5);
+    padding-left: 12px;
+    color: oklch(65% 0.03 240);
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in,
+    .animate-slide-in-right,
+    .animate-slide-in-left,
+    .animate-scale-in,
+    .animate-pulse-glow {
+      animation: none;
+    }
+  }
+}
