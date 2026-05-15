@@ -43,6 +43,7 @@ interface Props {
   pillars?: DbPillar[];
   placedCardIds?: Set<string>;
   onAddCardToStaging?: (cardId: string) => void;
+  customCards?: ChallengeArtifact[];
 }
 
 const TABS: { id: SidebarTab; label: string; icon: any }[] = [
