@@ -262,6 +262,19 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
           selectedArtifact={selectedSync}
         />
       )}
+      {showBoard && (
+        <SemanticSearchPanel
+          open={searchOpen}
+          onOpenChange={setSearchOpen}
+          sessionId={session.id}
+          onJump={(m) => {
+            if (m.source_type === "artifact" || m.source_type === "thread") {
+              const a = artifacts.find(x => x.id === m.source_id);
+              if (a) { setSelected(a); setSearchOpen(false); }
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
