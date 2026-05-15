@@ -45,10 +45,20 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function safeUrl(u: string): string {
+  try {
+    const parsed = new URL(u, "https://example.com");
+    if (["https:", "http:", "mailto:"].includes(parsed.protocol)) return escapeHtml(u);
+    return "#";
+  } catch {
+    return "#";
+  }
+}
+
 function inlineMd(s: string): string {
   // links [text](url)
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, t, u) =>
-    `<a href="${u}" style="color:${BRAND_PRIMARY};text-decoration:underline">${escapeHtml(t)}</a>`,
+    `<a href="${safeUrl(u)}" style="color:${BRAND_PRIMARY};text-decoration:underline">${escapeHtml(t)}</a>`,
   );
   // bold **x**
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
@@ -76,7 +86,7 @@ function renderBody(markdown: string): string {
     const btn = line.match(/^\{\{\s*button:([^|]+)\|([^}]+)\s*\}\}$/);
     if (btn) {
       closeList(); closeQuote();
-      out.push(`<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0"><tr><td align="center" bgcolor="${BRAND_PRIMARY}" style="border-radius:10px"><a href="${btn[2].trim()}" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px">${escapeHtml(btn[1].trim())}</a></td></tr></table>`);
+      out.push(`<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0"><tr><td align="center" bgcolor="${BRAND_PRIMARY}" style="border-radius:10px"><a href="${safeUrl(btn[2].trim())}" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px">${escapeHtml(btn[1].trim())}</a></td></tr></table>`);
       continue;
     }
 

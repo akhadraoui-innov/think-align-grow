@@ -71,6 +71,15 @@ serve(async (req) => {
       });
     }
 
+    // Admin-only: practice studio AI design helpers
+    const adminClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: isSaas } = await adminClient.rpc("is_saas_team", { _user_id: claims.claims.sub });
+    if (!isSaas) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { action, context } = await req.json();
     const def = ACTIONS[action];
     if (!def) {

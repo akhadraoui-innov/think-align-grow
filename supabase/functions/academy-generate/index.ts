@@ -29,6 +29,13 @@ serve(async (req) => {
       });
       const { data: { user }, error: authErr } = await anonClient.auth.getUser();
       if (authErr || !user) throw new Error("Unauthorized");
+      // Admin gate: all actions write to DB with service-role privileges
+      const { data: isSaas } = await supabase.rpc("is_saas_team", { _user_id: user.id });
+      if (!isSaas) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       // expose to action handlers via closure below if needed
       (req as any)._user = user;
     }

@@ -236,6 +236,16 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const { practice_id, messages, evaluate, system_override, preview_practice, session_id } = await req.json();
 
+    // Admin gate for preview/system_override (admin-only Studio features)
+    if (preview_practice || system_override) {
+      const { data: isSaas } = await supabase.rpc("is_saas_team", { _user_id: claimsData.claims.sub });
+      if (!isSaas) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     let systemPrompt: string;
     let model = "google/gemini-2.5-flash";
     let temperature = 0.7;

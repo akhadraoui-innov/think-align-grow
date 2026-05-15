@@ -402,9 +402,10 @@ function ChatFunctionMode({ userId, onSuccess, onBack }: { userId: string; onSuc
     setIsStreaming(true);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/academy-practice`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
         body: JSON.stringify({
           practice_id: "__function_chat__",
           messages: allMsgs.filter(m => m.id !== "welcome").map(m => ({ role: m.role, content: m.content })),
