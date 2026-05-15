@@ -1,88 +1,67 @@
-# Audit & garde-fous — pipeline d'illustrations cartes
+# Audit du pipeline d'illustrations + branchement du preview
 
-## 1. Audit de l'existant
+## 1. État actuel
 
 ### Ce qui marche
-- `EdgeRuntime.waitUntil` → réponse immédiate côté UI
-- Style guide unifié et caché (`toolkits.illustration_style`)
-- Realtime sur `cards` → progression live dans l'admin
-- Concurrence 4, conversion JPEG (compress)
-- Statut multi-état (`queued / generating / ready / failed / pending`)
+- Edge function `academy-generate` : timeout 45 s sur `renderImage`, retry interne (×2 sur 429/5xx), retry par carte (`MAX_IMAGE_ATTEMPTS=3`), heartbeat (`image_last_attempt_at`), chunking auto-resume (12 cartes / invocation), action `sweep-stale-card-illustrations`.
+- Migration colonnes `image_attempts`, `image_last_attempt_at`, `image_error` + index partiel.
+- Admin `AdminToolkitDetail` : bandeau progression strict (`ready` only), détecteur de stalle 75 s, bouton "Reprendre", chunk client BATCH 100.
+- Compress safe : fallback PNG aligne `contentType` + extension.
+- Realtime sur `cards` → progression live.
 
-### Failles identifiées (le job ne va PAS toujours au bout)
+### Trous identifiés (l'audit révèle ce qui manque)
 
-| # | Problème | Conséquence |
-|---|---|---|
-| F1 | `waitUntil` n'a **pas** de garantie d'exécution illimitée. Avec 50 cartes × ~12 s / 4 = ~150 s, on est dans la zone à risque (CPU time / shutdown worker). | Cartes restent à `queued` ou `generating` indéfiniment. |
-| F2 | Aucun **détecteur de stale** : une carte coincée en `generating` n'est jamais réveillée. | Bannière reste "X en cours" pour toujours. |
-| F3 | Pas de **retry par carte** : un 503 transitoire = `failed` direct, jamais re-tenté. | Taux d'échec gonflé, l'utilisateur doit relancer manuellement. |
-| F4 | `compressToJpeg` retourne les **bytes PNG** en fallback mais l'upload force `contentType: image/jpeg` et l'extension `.jpg`. | Fichier corrompu (PNG servi en JPEG) → image cassée dans le portail. |
-| F5 | Pas de **reprise automatique** en cas d'interruption du worker. | Job mort = besoin d'un clic admin. |
-| F6 | UI portail : pendant `queued/generating`, la carte affiche probablement un trou (pas d'image_url) → expérience cassée. | Aucun feedback visuel léger. |
-| F7 | `cardsReady` côté UI compte aussi les cartes "qui ont une URL même si failed après regen" → métrique fausse pendant un retry. | Progression peu fiable. |
-| F8 | Aucun **timeout** sur l'appel image Gemini → un appel pendu bloque un slot de concurrence. | Pipeline qui rame. |
+| # | Trou | Impact |
+|---|------|--------|
+| **T1** | **`CardThumb` n'est branché NULLE PART**. Plan A→D livré, sauf D. Donc le preview léger annoncé n'existe pas dans l'UI. | Pendant la génération l'admin voit toujours une colonne "Cartes" sans miniature, le portail (`PlaygroundCard`) montre un sparkles statique et un texte "Génération…" hors design system. |
+| **T2** | `ToolkitCardsTab` (table d'admin) **n'affiche aucune image**, donc impossible de voir d'un coup d'œil quelles cartes sont prêtes / ratées. | Pas de feedback visuel par ligne, on doit aller sur le terrain de jeu pour vérifier. |
+| **T3** | `selfInvokeResume` envoie `x-internal-key` mais **aucun `Authorization`**. Si `verify_jwt=true` un jour, le handoff casse en silence. À sécuriser maintenant. | Risque futur, et pas d'audit log sur les handoffs. |
+| **T4** | Aucun log structuré côté client lors des gros lancements (50–200 cartes), pas d'`appendAuditLog` sur l'action bulk. | Pas de trace dans `audit_logs_immutable` pour les générations massives. |
+| **T5** | `PlaygroundCard` (portail joueur) n'a pas de retour visuel `failed`/`queued`/`pending` distinct, et pas de skeleton shimmer durant `generating`. | UX dégradée pendant un job en cours côté joueur. |
 
----
+## 2. Plan d'implémentation
 
-## 2. Plan de durcissement
+### A. Brancher `CardThumb` (frontend uniquement)
 
-### A. DB — métadonnées de résilience
-Ajouter à `cards` :
-- `image_attempts INT NOT NULL DEFAULT 0`
-- `image_last_attempt_at TIMESTAMPTZ`
-- `image_error TEXT` (dernier message d'erreur tronqué)
+1. **`PlaygroundCard.tsx`** — remplacer le bloc `card.image_url ? <img/> : <fallback/>` (lignes ~104–133) par `<CardThumb imageUrl imageStatus title={card.title} pillarColor={accent} />`. Conserver le badge phase et l'overlay gradient en superposition absolue.
+2. **`ToolkitCardsTab.tsx`** — ajouter en mode `table` une colonne "Visuel" (60×60) avant le titre, et en mode `visual` une mini-thumb dans chaque cellule, alimentées par `CardThumb` avec `showAdminBadges` (compteur tentatives, retry au clic).
+3. **`PlateauHand.tsx` / `PlateauBoard.tsx`** — repérer les rendus de carte miniature et substituer par `CardThumb` (sans casser les drag handlers existants : wrapper le composant, pas remplacer les props pointer).
+4. **`PortalToolkitPlayground.tsx`** — vérifier que la grille de cartes utilise déjà `PlaygroundCard` (donc bénéficie automatiquement du fix A.1) ; sinon idem A.1.
 
-Index partiel pour le watcher : `CREATE INDEX ON cards (image_last_attempt_at) WHERE image_status IN ('queued','generating');`
+Aucun changement de logique métier. CardThumb existe déjà, semantic tokens, lazy-loading, zéro charge réseau hors `ready`.
 
-### B. Edge function `academy-generate` — garde-fous
+### B. Action retry one-click depuis l'admin (UI only)
 
-1. **Timeout dur sur `renderImage`** (ex. 45 s via `AbortController`). Au-delà → `failed` + retry budgétisé.
-2. **Retry par carte** : jusqu'à 2 ré-essais sur erreurs transitoires (503/réseau/timeout). Compteur stocké dans `image_attempts`. À la 3e tentative → `failed` définitif avec `image_error`.
-3. **Compress safe** : si `compressToJpeg` retombe en fallback PNG → uploader avec `contentType: image/png` ET extension `.png`, ou abandonner la compression et garder le JPEG d'origine. Plus de mismatch contenu/extension.
-4. **Chunking auto-resume** : `processCardsInBackground` traite max **N cartes par invocation** (ex. 12). À la fin du chunk, si `remaining > 0`, **se ré-invoque** elle-même via `fetch` avec une nouvelle action `resume-card-illustrations` (pass un `resume_token` = liste d'IDs restants). Permet des batchs de 100 sans toucher au plafond CPU.
-5. **Heartbeat** : à chaque début de carte, set `image_last_attempt_at = now()` pour tracer la vivacité.
-6. **Nouvelle action `sweep-stale-card-illustrations`** : remet en `queued` toute carte `generating` depuis > 90 s ou `queued` depuis > 5 min sans heartbeat, puis relance le pipeline. Appelée :
-   - automatiquement au début de chaque batch (auto-réparation)
-   - manuellement depuis l'UI ("Reprendre" si bloqué)
+Dans `ToolkitCardsTab`, si `image_status === "failed"` → le clic sur la mini-thumb appelle `supabase.functions.invoke("academy-generate", { body: { action: "generate-card-illustration", card_id }})`. Toast + invalidation. Compteur `n/3` visible.
 
-### C. UI admin (`AdminToolkitDetail.tsx`)
+### C. Sécuriser le handoff edge (`academy-generate/index.ts`)
 
-- **Détection de stalle côté client** : si `inFlight > 0` mais aucun changement realtime depuis 60 s → afficher CTA "Reprendre" qui appelle `sweep-stale-card-illustrations`.
-- **Métrique `cardsReady` corrigée** : compter strictement `image_status === "ready"`.
-- Affichage compteur "tentatives" pour les cartes en `failed` (badge `2/3` ex.).
-- Bouton "Forcer reset des cartes bloquées" en action secondaire.
+1. Dans `selfInvokeResume`, ajouter `Authorization: Bearer ${serviceRoleKey}` en plus de `x-internal-key`. Inoffensif aujourd'hui, robuste si `verify_jwt` repasse à true.
+2. Ajouter un log structuré JSON `action: "self-invoke-resume", remaining, status` au succès/échec pour traçabilité dans `function_edge_logs`.
 
-### D. Preview léger des cartes (portail + admin)
+### D. Audit log côté client
 
-Composant partagé `CardThumb.tsx` qui, selon `image_status` :
-- `ready` → `<img>` avec `loading="lazy"` + `decoding="async"`
-- `generating` → skeleton **shimmer** + petit pulse + 1ère lettre du titre dans gradient pillar.color (jamais de trou blanc)
-- `queued` → skeleton statique + icône horloge
-- `failed` → fond muted + icône `AlertTriangle` + tooltip "Cliquer pour relancer" (admin uniquement)
-- `pending` (sans url) → mini illustration vectorielle SVG à la couleur du pilier (placeholder cohérent design system)
+Dans `AdminToolkitDetail.launchGeneration`, après la boucle de chunks, appeler `appendAuditLog({ action: "toolkit.illustrations.bulk_generate", entityType: "toolkit", entityId: toolkit.id, payload: { scope, total: ids.length, queued } })`. Idem pour `resumeStuck` avec action `toolkit.illustrations.sweep`.
 
-Réutilisé dans : `ToolkitCardsTab`, `PlateauHand`, `PlateauBoard`, `PortalToolkitPlayground`. Zéro charge réseau pour les états non-`ready`.
+### E. Sweep auto au lancement (anti double-clic, anti-fantôme)
 
----
+Dans `generateCardIllustrationsBatch` (edge), avant de lancer, exécuter en passant un mini sweep sur les cartes du toolkit dont `image_last_attempt_at < now() - 90s` ET `image_status in ('queued','generating')`. Évite de relancer un job qui est déjà en cours, et libère les zombies.
 
-## 3. Fichiers touchés
+## 3. Détails techniques
 
-- **Migration** `supabase/migrations/...` — colonnes `image_attempts`, `image_last_attempt_at`, `image_error` + index partiel.
-- `supabase/functions/academy-generate/index.ts` — timeout, retry, chunking + auto-resume, action `sweep-stale-card-illustrations`, fix compress/contentType, heartbeat.
-- `src/pages/admin/AdminToolkitDetail.tsx` — détection stalle, CTA "Reprendre", compteur strict.
-- `src/components/cards/CardThumb.tsx` — **nouveau** composant preview léger réutilisable.
-- Remplacements ponctuels dans `ToolkitCardsTab`, `PlateauHand`, `PlateauBoard` pour utiliser `CardThumb`.
+```text
+Fichiers touchés :
+  src/components/playground/PlaygroundCard.tsx        (CardThumb)
+  src/components/playground/PlateauHand.tsx           (CardThumb)
+  src/components/playground/PlateauBoard.tsx          (CardThumb)
+  src/components/admin/ToolkitCardsTab.tsx            (colonne visuel + retry)
+  src/pages/admin/AdminToolkitDetail.tsx              (appendAuditLog)
+  supabase/functions/academy-generate/index.ts        (Auth header handoff + sweep auto)
+```
 
-## 4. Mesures attendues
+Aucune migration DB. Aucun nouveau secret. Pas de changement de schéma.
 
-| Métrique | Avant | Après |
-|---|---|---|
-| Taux de cartes restant `queued/generating` après job | 5–20 % | < 1 % (auto-sweep + resume) |
-| Visuel cassé en cours de génération | Trou blanc | Skeleton/placeholder cohérent |
-| Reprise après crash worker | Manuelle | Automatique (chunking + sweeper) |
-| Échec sur 503 isolé | `failed` direct | Retry × 2 transparent |
-| Risque fichier image corrompu | Possible | Nul (contentType aligné) |
-
-## Hors scope
-- Génération vidéo des cartes
-- Édition manuelle du style guide dans l'UI (déjà côté backend, à exposer plus tard)
+## 4. Hors scope
+- Refonte du style guide image
+- Réécriture de `compressToJpeg` (déjà safe)
+- Génération vidéo, A/B prompt

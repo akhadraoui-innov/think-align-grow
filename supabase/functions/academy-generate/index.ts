@@ -1870,6 +1870,8 @@ async function selfInvokeResume(card_ids: string[]) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // Robust to verify_jwt=true: pass service-role both as bearer + internal key
+        "Authorization": `Bearer ${serviceRoleKey}`,
         "x-internal-key": serviceRoleKey,
       },
       body: JSON.stringify({ action: "resume-card-illustrations", card_ids }),
@@ -1877,8 +1879,9 @@ async function selfInvokeResume(card_ids: string[]) {
     });
     clearTimeout(t);
     await resp.text().catch(() => {});
+    console.log(JSON.stringify({ action: "self-invoke-resume", remaining: card_ids.length, status: resp.status }));
   } catch (e) {
-    console.warn("self-invoke resume failed", e instanceof Error ? e.message : e);
+    console.warn(JSON.stringify({ action: "self-invoke-resume", remaining: card_ids.length, status: "error", error: e instanceof Error ? e.message : String(e) }));
   }
 }
 
@@ -1925,12 +1928,32 @@ async function generateCardIllustrationsBatch(supabase: any, params: any, apiKey
   if (!Array.isArray(card_ids) || card_ids.length === 0) throw new Error("Missing card_ids");
   if (card_ids.length > 100) throw new Error("Batch too large (max 100)");
 
-  await supabase.from("cards").update({ image_status: "queued" }).in("id", card_ids);
+  // Anti-fantôme: don't re-queue cards that are actively generating with a recent heartbeat (<90s).
+  // Avoids fighting an in-flight worker and corrupting `image_attempts`.
+  const cutoff = new Date(Date.now() - 90_000).toISOString();
+  const { data: activeRows } = await supabase
+    .from("cards")
+    .select("id")
+    .in("id", card_ids)
+    .eq("image_status", "generating")
+    .gte("image_last_attempt_at", cutoff);
+  const skipIds = new Set((activeRows || []).map((r: any) => r.id));
+  const eligibleIds = card_ids.filter((id: string) => !skipIds.has(id));
+  if (skipIds.size) {
+    console.log(JSON.stringify({ action: "generate-card-illustrations-batch", skipped_active: skipIds.size }));
+  }
+  if (eligibleIds.length === 0) {
+    return new Response(JSON.stringify({ success: true, queued: 0, skipped: skipIds.size, async: true }), {
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
+
+  await supabase.from("cards").update({ image_status: "queued" }).in("id", eligibleIds);
 
   const { data: cards } = await supabase
     .from("cards")
     .select("*, pillars!inner(*, toolkit_id, toolkits!inner(*))")
-    .in("id", card_ids);
+    .in("id", eligibleIds);
 
   const list = cards || [];
   if (list.length === 0) {

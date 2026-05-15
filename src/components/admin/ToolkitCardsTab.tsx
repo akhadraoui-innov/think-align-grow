@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, Loader2, Save, Trash2, X, Tag, Settings2, FileText, Layers, LayoutGrid, List } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { ToolkitCardsBrowser } from "./ToolkitCardsBrowser";
+import { CardThumb } from "@/components/cards/CardThumb";
 
 const PHASE_LABELS: Record<string, string> = {
   foundations: "Fondations", model: "Modèle", growth: "Croissance", execution: "Exécution",
@@ -110,6 +111,19 @@ export function ToolkitCardsTab({ cards, pillars, toolkitId, onUpdate }: Props) 
     if (t && !form.tags.includes(t)) { set("tags", [...form.tags, t]); setTagInput(""); }
   };
 
+  const retryCardImage = async (cardId: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("academy-generate", {
+        body: { action: "generate-card-illustration", card_id: cardId },
+      });
+      if (error) throw error;
+      toast({ title: "Génération relancée" });
+      onUpdate();
+    } catch (e: any) {
+      toast({ title: "Échec", description: e?.message, variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -145,6 +159,7 @@ export function ToolkitCardsTab({ cards, pillars, toolkitId, onUpdate }: Props) 
               <TableHeader>
                 <TableRow className="bg-muted/20 border-b border-border/30">
                   <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/70 py-2.5 w-12">#</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/70 py-2.5 w-[68px]">Visuel</TableHead>
                   <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/70 py-2.5">Titre</TableHead>
                   <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/70 py-2.5">Phase</TableHead>
                   <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/70 py-2.5">Qualification</TableHead>
@@ -162,6 +177,20 @@ export function ToolkitCardsTab({ cards, pillars, toolkitId, onUpdate }: Props) 
                       onClick={() => openEdit(c)}
                     >
                       <TableCell className="text-muted-foreground/50 text-xs font-mono py-2.5">{c.sort_order}</TableCell>
+                      <TableCell className="py-2 w-[68px]" onClick={(e) => e.stopPropagation()}>
+                        <div className="w-12 h-12">
+                          <CardThumb
+                            imageUrl={cAny.image_url}
+                            imageStatus={cAny.image_status}
+                            imageAttempts={cAny.image_attempts ?? undefined}
+                            imageError={cAny.image_error}
+                            title={c.title}
+                            pillarColor={pillar.color}
+                            showAdminBadges
+                            onRetry={cAny.image_status === "failed" ? () => retryCardImage(c.id) : undefined}
+                          />
+                        </div>
+                      </TableCell>
                       <TableCell className="py-2.5">
                         <p className="font-medium text-sm text-foreground leading-tight">{c.title}</p>
                         {c.subtitle && <p className="text-xs text-muted-foreground/60 mt-0.5">{c.subtitle}</p>}

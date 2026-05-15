@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Loader2, Settings, Layers, LayoutGrid, Swords, Map, HelpCircle, Building2, Sparkles, Image as ImageIcon, Gamepad2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { appendAuditLog } from "@/lib/auditClient";
 import { ToolkitInfoTab } from "@/components/admin/ToolkitInfoTab";
 import { ToolkitPillarsTab } from "@/components/admin/ToolkitPillarsTab";
 import { ToolkitCardsTab } from "@/components/admin/ToolkitCardsTab";
@@ -107,6 +108,12 @@ export default function AdminToolkitDetail() {
         description: "Le travail tourne en arrière-plan, vous pouvez fermer cette page. Reprise automatique en cas de coupure.",
         duration: 6000,
       });
+      appendAuditLog({
+        action: "toolkit.illustrations.bulk_generate",
+        entityType: "toolkit",
+        entityId: toolkit.id,
+        payload: { scope, requested: ids.length, queued },
+      });
       invalidateAll();
     } catch (e: any) {
       toast.error("Échec du lancement", { description: e?.message });
@@ -131,6 +138,12 @@ export default function AdminToolkitDetail() {
       }
       setLastChangeAt(Date.now());
       setStale(false);
+      appendAuditLog({
+        action: "toolkit.illustrations.sweep",
+        entityType: "toolkit",
+        entityId: toolkit.id,
+        payload: { swept },
+      });
       invalidateAll();
     } catch (e: any) {
       toast.error("Échec de la reprise", { description: e?.message });

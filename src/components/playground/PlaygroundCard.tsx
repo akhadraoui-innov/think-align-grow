@@ -1,12 +1,18 @@
 import { motion } from "framer-motion";
-import { Sparkles, Target, Zap, Clock, Award } from "lucide-react";
+import { Target, Zap, Clock, Award } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { CardThumb } from "@/components/cards/CardThumb";
 import { PHASE_LABELS } from "@/hooks/useToolkitData";
 import type { Tables } from "@/integrations/supabase/types";
 
-type Card = Tables<"cards"> & { image_url?: string | null; image_status?: string | null };
+type Card = Tables<"cards"> & {
+  image_url?: string | null;
+  image_status?: string | null;
+  image_attempts?: number | null;
+  image_error?: string | null;
+};
 type Pillar = Tables<"pillars">;
 
 export type PlaygroundCardProps = {
@@ -102,29 +108,17 @@ export function PlaygroundCard({
             </div>
 
             {/* Illustration */}
-            <div className={cn("relative w-full overflow-hidden flex-shrink-0 bg-muted", imgH)}>
-              {card.image_url ? (
-                <img
-                  src={card.image_url}
-                  alt=""
-                  loading="lazy"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center"
-                  style={{
-                    background: `radial-gradient(circle at 30% 30%, ${accent}33, transparent 60%), linear-gradient(135deg, ${accent}11, ${phaseColor}22)`,
-                  }}
-                >
-                  {card.image_status === "generating" ? (
-                    <div className="animate-pulse text-xs text-muted-foreground">Génération…</div>
-                  ) : (
-                    <Sparkles className="w-10 h-10 opacity-30" style={{ color: accent }} />
-                  )}
-                </div>
-              )}
-              <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-card to-transparent" />
+            <div className={cn("relative w-full overflow-hidden flex-shrink-0", imgH)}>
+              <CardThumb
+                imageUrl={card.image_url}
+                imageStatus={card.image_status}
+                imageAttempts={card.image_attempts ?? undefined}
+                imageError={card.image_error}
+                title={card.title}
+                pillarColor={accent}
+                className="!rounded-none !aspect-auto h-full border-0"
+              />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-card to-transparent" />
               <div className="absolute top-2 left-2">
                 <Badge variant="secondary" className="text-[9px] uppercase backdrop-blur bg-white/85">
                   {PHASE_LABELS[card.phase as string] || card.phase}
