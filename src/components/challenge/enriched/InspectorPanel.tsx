@@ -2,7 +2,8 @@ import { X, Bot, Tag, Calendar, User, MessageCircle, Loader2, Sparkles, Wand2 } 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { CRITICALITY_META } from "./constants";
 import { VoicePlayer } from "./voice/VoicePlayer";
