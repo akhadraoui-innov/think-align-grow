@@ -86,25 +86,77 @@ export function InspectorPanel({
           </div>
         )}
 
-        <div>
-          <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1">Contenu</p>
-          {editing && canEdit ? (
-            <div className="space-y-2">
-              <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={5} />
-              <div className="flex justify-end gap-1">
-                <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setContent(artifact.content || ""); }}>Annuler</Button>
-                <Button size="sm" onClick={async () => { await onUpdate(artifact.id, { content }); setEditing(false); }}>Enregistrer</Button>
+        {artifact.kind === "image" && (
+          <div>
+            <ImageTile artifact={artifact} />
+            {artifact.ai_meta?.alt && (
+              <p className="text-[11px] text-muted-foreground italic mt-1">{artifact.ai_meta.alt}</p>
+            )}
+          </div>
+        )}
+
+        {artifact.kind !== "image" && (
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1">Contenu</p>
+            {editing && canEdit && !lockedByOther ? (
+              <div className="space-y-2">
+                <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={5} />
+                <div className="flex justify-end gap-1">
+                  <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setContent(artifact.content || ""); }}>Annuler</Button>
+                  <Button size="sm" onClick={async () => { await onUpdate(artifact.id, { content }); setEditing(false); }}>Enregistrer</Button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <p
-              className={cn("text-sm whitespace-pre-wrap rounded-md p-3 bg-muted/30", canEdit && "cursor-pointer hover:bg-muted/50")}
-              onClick={() => canEdit && setEditing(true)}
-            >{artifact.content || <em className="text-muted-foreground">(vide)</em>}</p>
-          )}
-        </div>
+            ) : (
+              <p
+                className={cn("text-sm whitespace-pre-wrap rounded-md p-3 bg-muted/30", canEdit && !lockedByOther && "cursor-pointer hover:bg-muted/50")}
+                onClick={() => canEdit && !lockedByOther && setEditing(true)}
+              >{artifact.content || <em className="text-muted-foreground">(vide)</em>}</p>
+            )}
+            {lockedByOther && <p className="text-[10px] text-amber-600 mt-1">🔒 Un autre participant édite ce contenu.</p>}
+          </div>
+        )}
 
         <ReactionBar artifactId={artifact.id} reactions={reactions} me={me} onToggle={onToggleReaction} />
+
+        {/* AI ACTIONS — POSTIT */}
+        {artifact.kind === "postit" && canEdit && (
+          <div className="rounded-md border border-border p-3 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold">
+              <Sparkles className="h-3.5 w-3.5 text-primary" /> Boost IA
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { id: "reformuler", label: "Reformuler" },
+                { id: "challenger", label: "Challenger" },
+                { id: "approfondir", label: "Approfondir" },
+              ].map(c => (
+                <Button key={c.id} size="sm" variant="outline" disabled={askingAi} onClick={() => callAgent("postit_action", c.id)} className="h-7 text-[11px]">
+                  {askingAi && aiAction === c.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Wand2 className="h-3 w-3 mr-1" />}
+                  {c.label}
+                </Button>
+              ))}
+            </div>
+            {aiResponse && (
+              <div className="rounded bg-primary/5 border border-primary/20 p-2.5 text-sm whitespace-pre-wrap">{aiResponse}</div>
+            )}
+          </div>
+        )}
+
+        {/* AI — IMAGE DESCRIBE */}
+        {artifact.kind === "image" && canEdit && (
+          <div className="rounded-md border border-border p-3 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold">
+              <Sparkles className="h-3.5 w-3.5 text-primary" /> Lecture IA
+            </div>
+            <Button size="sm" variant="outline" disabled={askingAi} onClick={() => callAgent("image_describe")} className="w-full">
+              {askingAi ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Wand2 className="h-3.5 w-3.5 mr-1" />}
+              Décrire & critiquer
+            </Button>
+            {aiResponse && (
+              <div className="rounded bg-primary/5 border border-primary/20 p-2.5 text-sm whitespace-pre-wrap">{aiResponse}</div>
+            )}
+          </div>
+        )}
 
         {artifact.kind === "voice" && artifact.audio_url && (
           <div>
@@ -115,6 +167,15 @@ export function InspectorPanel({
                 <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1">Transcription</p>
                 <p className="text-sm whitespace-pre-wrap">{artifact.transcription}</p>
               </div>
+            )}
+            {canEdit && artifact.transcription && (
+              <Button size="sm" variant="outline" className="w-full mt-2" disabled={askingAi} onClick={() => callAgent("voice_summary")}>
+                {askingAi ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+                Synthèse IA
+              </Button>
+            )}
+            {aiResponse && (
+              <div className="mt-2 rounded bg-primary/5 border border-primary/20 p-2.5 text-sm whitespace-pre-wrap">{aiResponse}</div>
             )}
           </div>
         )}
