@@ -1476,29 +1476,44 @@ async function buildToolkitPrompt(apiKey: string, toolkit: any): Promise<string>
   return typeof promptResult === "string" ? promptResult.trim() : `Collective intelligence workshop about ${toolkit.name}`;
 }
 
-async function renderImage(apiKey: string, prompt: string): Promise<{ ok: boolean; bytes?: Uint8Array; status?: number }> {
+async function renderImage(apiKey: string, prompt: string, timeoutMs = 45000): Promise<{ ok: boolean; bytes?: Uint8Array; status?: number; error?: string }> {
   let imgResp: Response | null = null;
   let lastStatus = 0;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image-preview",
-        messages: [{ role: "user", content: prompt }],
-        modalities: ["image", "text"],
-      }),
-    });
-    lastStatus = imgResp.status;
-    if (imgResp.ok) break;
-    if (imgResp.status !== 429 && imgResp.status < 500) break;
-    await imgResp.text().catch(() => {});
-    await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+  let lastErr = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3.1-flash-image-preview",
+          messages: [{ role: "user", content: prompt }],
+          modalities: ["image", "text"],
+        }),
+        signal: ctrl.signal,
+      });
+    } catch (e) {
+      lastErr = e instanceof Error ? e.message : String(e);
+      lastStatus = 0; // network/timeout
+    } finally {
+      clearTimeout(t);
+    }
+    if (imgResp) {
+      lastStatus = imgResp.status;
+      if (imgResp.ok) break;
+      // non-retriable: stop
+      if (imgResp.status !== 429 && imgResp.status < 500) break;
+      await imgResp.text().catch(() => {});
+      imgResp = null;
+    }
+    if (attempt === 0) await new Promise((r) => setTimeout(r, 1500));
   }
-  if (!imgResp || !imgResp.ok) return { ok: false, status: lastStatus };
+  if (!imgResp || !imgResp.ok) return { ok: false, status: lastStatus, error: lastErr || (lastStatus ? `HTTP ${lastStatus}` : "request failed") };
   const data = await imgResp.json();
   const base64Url = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-  if (!base64Url) return { ok: false, status: lastStatus };
+  if (!base64Url) return { ok: false, status: lastStatus, error: "empty image payload" };
   const base64Data = base64Url.replace(/^data:image\/\w+;base64,/, "");
   const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
   return { ok: true, bytes };
