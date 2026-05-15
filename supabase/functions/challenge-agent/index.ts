@@ -43,6 +43,46 @@ async function embed(text: string): Promise<number[] | null> {
   } catch (e) { console.error("embed err", e); return null; }
 }
 
+async function loadBriefing(session_id: string) {
+  const { data: ctx } = await admin
+    .from("challenge_session_context")
+    .select("*")
+    .eq("session_id", session_id)
+    .maybeSingle();
+  if (!ctx) return "(briefing non renseigné)";
+  return `PÉRIMÈTRE: ${ctx.scope || "—"}
+OBJECTIFS: ${ctx.goals || "—"}
+HYPOTHÈSES: ${ctx.hypotheses || "—"}
+CONTRAINTES: ${ctx.constraints || "—"}
+PARTIES PRENANTES: ${(ctx.stakeholders || []).map((s: any) => s.role || s).join(", ") || "—"}`;
+}
+
+async function callLLM(messages: any[], opts: { model?: string; timeoutMs?: number } = {}) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 60_000);
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST", signal: ctrl.signal,
+      headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: opts.model || "google/gemini-2.5-flash", messages }),
+    });
+    if (!resp.ok) {
+      const txt = await resp.text();
+      console.error("AI gateway:", resp.status, txt);
+      return { ok: false as const, error: txt.slice(0, 300), status: resp.status };
+    }
+    const data = await resp.json();
+    const answer = (data?.choices?.[0]?.message?.content ?? "").toString().trim();
+    return { ok: true as const, answer };
+  } finally { clearTimeout(t); }
+}
+
+const POSTIT_ACTION_PROMPTS: Record<string, string> = {
+  reformuler: "Reformule ce post-it en une version plus claire, percutante et professionnelle (1-2 phrases). Garde le sens.",
+  challenger: "Challenge ce post-it : pointe l'angle mort, la faiblesse, la contradiction. Sois constructif mais incisif (3-4 phrases).",
+  approfondir: "Approfondis ce post-it : déroule les implications, ouvre 2-3 pistes concrètes, propose une question à creuser.",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -53,18 +93,72 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const artifact_id = body?.artifact_id as string | undefined;
-    const session_id = body?.session_id as string | undefined;
     const mode = (body?.mode as string | undefined) || "qa";
-    if (!artifact_id || !session_id) {
-      return new Response(JSON.stringify({ error: "artifact_id and session_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const session_id = body?.session_id as string | undefined;
+    if (!session_id) {
+      return new Response(JSON.stringify({ error: "session_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { data: artifact } = await admin
-      .from("challenge_artifacts")
-      .select("*")
-      .eq("id", artifact_id)
-      .maybeSingle();
+    // ============ COPILOT MODE (no artifact required) ============
+    if (mode === "copilot") {
+      const { data: session } = await admin.from("challenge_sessions").select("workshop_id").eq("id", session_id).maybeSingle();
+      if (!session) return new Response(JSON.stringify({ error: "session_not_found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!(await isParticipantOrHost(session.workshop_id, user.id))) {
+        return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const briefing = await loadBriefing(session_id);
+      const ctx = body?.context || {};
+      const userMessages = (body?.messages || []) as Array<{ role: "user" | "assistant"; content: string }>;
+      const lastUser = [...userMessages].reverse().find(m => m.role === "user")?.content || "";
+
+      // Hybrid retrieval
+      const qEmb = lastUser ? await embed(lastUser) : null;
+      let semantic: any[] = [];
+      if (qEmb) {
+        const { data: matches } = await admin.rpc("match_challenge_artifacts", {
+          _query: qEmb as any, _session: session_id, _k: 8, _exclude: null,
+        });
+        semantic = (matches as any[]) || [];
+      }
+      const { data: recent } = await admin
+        .from("challenge_artifacts")
+        .select("id, kind, content, emoji, criticality, transcription, ai_meta")
+        .eq("session_id", session_id)
+        .order("created_at", { ascending: false })
+        .limit(15);
+      const seen = new Set<string>();
+      const merged = [...semantic, ...(recent || [])].filter((a: any) => { if (seen.has(a.id)) return false; seen.add(a.id); return true; });
+      const ctxBlock = merged.slice(0, 16).map((a: any) => {
+        const txt = a.content || a.transcription || a.ai_meta?.alt || a.ai_meta?.description || "";
+        return `- [${a.kind}${a.criticality ? `/${a.criticality}` : ""}] ${a.emoji || ""} ${txt}`.trim();
+      }).join("\n");
+
+      let focusBlock = "";
+      if (ctx.artifact_id) {
+        const { data: a } = await admin.from("challenge_artifacts").select("kind, content, transcription, ai_meta, criticality").eq("id", ctx.artifact_id).maybeSingle();
+        if (a) focusBlock = `\nÉLÉMENT EN FOCUS: [${a.kind}${a.criticality ? `/${a.criticality}` : ""}] ${a.content || a.transcription || a.ai_meta?.alt || ""}`;
+      }
+
+      const sys = `Tu es le Co-pilote IA d'un atelier d'innovation collaboratif. Tu réponds en français, ton de coach senior, concis (max 6 phrases), structuré avec puces si utile, actionnable. Tu peux poser une contre-question si la demande est floue. Tu cites les éléments du plateau quand pertinent.`;
+      const sysCtx = `BRIEFING:\n${briefing}\n\nCONTEXTE PLATEAU (extrait pertinent):\n${ctxBlock || "(aucun)"}${focusBlock}`;
+      const messages = [
+        { role: "system", content: sys },
+        { role: "system", content: sysCtx },
+        ...userMessages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+      ];
+
+      const out = await callLLM(messages);
+      if (!out.ok) return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ============ ARTIFACT-BOUND MODES ============
+    const artifact_id = body?.artifact_id as string | undefined;
+    if (!artifact_id) {
+      return new Response(JSON.stringify({ error: "artifact_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { data: artifact } = await admin.from("challenge_artifacts").select("*").eq("id", artifact_id).maybeSingle();
     if (!artifact || artifact.session_id !== session_id) {
       return new Response(JSON.stringify({ error: "artifact_not_found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -72,35 +166,85 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { data: ctx } = await admin
-      .from("challenge_session_context")
-      .select("*")
-      .eq("session_id", session_id)
-      .maybeSingle();
+    const briefing = await loadBriefing(session_id);
 
-    const briefing = ctx ? `
-PÉRIMÈTRE: ${ctx.scope || "—"}
-OBJECTIFS: ${ctx.goals || "—"}
-HYPOTHÈSES: ${ctx.hypotheses || "—"}
-CONTRAINTES: ${ctx.constraints || "—"}
-PARTIES PRENANTES: ${(ctx.stakeholders || []).map((s: any) => s.role || s).join(", ") || "—"}
-`.trim() : "(briefing non renseigné)";
+    // Mark thinking
+    await admin.from("challenge_artifacts").update({
+      ai_meta: { ...(artifact.ai_meta || {}), status: "thinking", recipient: artifact.ai_meta?.recipient || "ai" },
+    }).eq("id", artifact_id);
 
-    // Hybrid retrieval: semantic (if question has embedding) + 12 most recent
+    // ===== POSTIT ACTION =====
+    if (mode === "postit_action") {
+      const action = (body?.action as string) || "reformuler";
+      const instr = POSTIT_ACTION_PROMPTS[action] || POSTIT_ACTION_PROMPTS.reformuler;
+      const out = await callLLM([
+        { role: "system", content: `Tu es un coach senior. Réponds en français, concis et actionnable. ${instr}` },
+        { role: "user", content: `BRIEFING:\n${briefing}\n\nPOST-IT:\n${artifact.content || ""}` },
+      ]);
+      if (!out.ok) {
+        await admin.from("challenge_artifacts").update({ ai_meta: { ...(artifact.ai_meta || {}), status: "failed" } }).eq("id", artifact_id);
+        return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      await admin.from("challenge_artifacts").update({
+        ai_meta: { ...(artifact.ai_meta || {}), status: "answered", response: out.answer, action, mode, answered_at: new Date().toISOString() },
+      }).eq("id", artifact_id);
+      return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ===== IMAGE DESCRIBE (vision) =====
+    if (mode === "image_describe") {
+      const url = artifact.content as string | null;
+      if (!url) {
+        return new Response(JSON.stringify({ error: "no_image_url" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const out = await callLLM([
+        { role: "system", content: "Tu décris une image dans le contexte d'un atelier d'innovation. Tu produis : (1) une description objective en 2 phrases, (2) un titre court, (3) une critique constructive en 2 phrases (ce qui marche / ce qu'on pourrait améliorer). Réponds en français, structuré en markdown léger." },
+        { role: "user", content: [
+          { type: "text", text: `BRIEFING:\n${briefing}\n\nDécris cette image.` },
+          { type: "image_url", image_url: { url } },
+        ] as any },
+      ], { model: "google/gemini-2.5-flash" });
+      if (!out.ok) {
+        await admin.from("challenge_artifacts").update({ ai_meta: { ...(artifact.ai_meta || {}), status: "failed" } }).eq("id", artifact_id);
+        return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      await admin.from("challenge_artifacts").update({
+        ai_meta: { ...(artifact.ai_meta || {}), status: "answered", description: out.answer, response: out.answer, mode, answered_at: new Date().toISOString() },
+      }).eq("id", artifact_id);
+      return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ===== VOICE SUMMARY =====
+    if (mode === "voice_summary") {
+      const transcript = (artifact.transcription || "").trim();
+      if (!transcript) {
+        return new Response(JSON.stringify({ error: "no_transcription" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const out = await callLLM([
+        { role: "system", content: "Tu synthétises un mémo vocal d'atelier. Produis : (1) un résumé en 2 phrases, (2) 3 bullets clés, (3) 1-2 actions concrètes. Réponds en français, markdown léger." },
+        { role: "user", content: `BRIEFING:\n${briefing}\n\nTRANSCRIPTION:\n${transcript}` },
+      ]);
+      if (!out.ok) {
+        await admin.from("challenge_artifacts").update({ ai_meta: { ...(artifact.ai_meta || {}), status: "failed" } }).eq("id", artifact_id);
+        return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      await admin.from("challenge_artifacts").update({
+        ai_meta: { ...(artifact.ai_meta || {}), status: "answered", summary: out.answer, response: out.answer, mode, answered_at: new Date().toISOString() },
+      }).eq("id", artifact_id);
+      return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ===== DEFAULT: QA (existing question/answer behavior with hybrid retrieval) =====
     const queryText = (artifact.content || "").toString();
     const queryEmbedding = queryText ? await embed(queryText) : null;
 
     let semanticHits: any[] = [];
     if (queryEmbedding) {
       const { data: matches } = await admin.rpc("match_challenge_artifacts", {
-        _query: queryEmbedding as any,
-        _session: session_id,
-        _k: 8,
-        _exclude: artifact_id,
+        _query: queryEmbedding as any, _session: session_id, _k: 8, _exclude: artifact_id,
       });
       semanticHits = (matches as any[]) || [];
     }
-
     const { data: recent } = await admin
       .from("challenge_artifacts")
       .select("id, kind, content, emoji, criticality")
@@ -121,68 +265,24 @@ PARTIES PRENANTES: ${(ctx.stakeholders || []).map((s: any) => s.role || s).join(
       .map((a: any) => `- [${a.kind}${a.criticality ? `/${a.criticality}` : ""}${a.source === "semantic" ? ` sim=${(a.similarity ?? 0).toFixed(2)}` : ""}] ${a.emoji || ""} ${a.content}`)
       .join("\n");
 
-    const systemPrompt = `Tu es un coach senior en innovation/stratégie qui assiste un atelier collaboratif. Tu réponds en français, de manière concise (max 6 phrases), structurée, actionnable. Tu peux poser une contre-question si la question est trop floue. Tu cites le briefing quand c'est utile. Tu ne fabriques pas de chiffres.`;
-
-    const userPrompt = `BRIEFING DE LA SESSION:
-${briefing}
-
-ARTEFACTS PERTINENTS DE L'ATELIER:
-${contextBlock || "(aucun)"}
-
-QUESTION DU PARTICIPANT:
-${queryText || "(vide)"}
-
-Réponds maintenant.`;
-
-    await admin.from("challenge_artifacts").update({
-      ai_meta: { ...(artifact.ai_meta || {}), status: "thinking", recipient: artifact.ai_meta?.recipient || "ai" },
-    }).eq("id", artifact_id);
-
-    const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), 60_000);
-    let resp: Response;
-    try {
-      resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        signal: ctrl.signal,
-        headers: { "Authorization": `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-        }),
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    if (!resp.ok) {
-      const txt = await resp.text();
-      console.error("AI gateway:", resp.status, txt);
-      await admin.from("challenge_artifacts").update({
-        ai_meta: { ...(artifact.ai_meta || {}), status: "failed", error: txt.slice(0, 200) },
-      }).eq("id", artifact_id);
+    const out = await callLLM([
+      { role: "system", content: `Tu es un coach senior en innovation/stratégie qui assiste un atelier collaboratif. Tu réponds en français, de manière concise (max 6 phrases), structurée, actionnable. Tu peux poser une contre-question si la question est trop floue. Tu cites le briefing quand c'est utile. Tu ne fabriques pas de chiffres.` },
+      { role: "user", content: `BRIEFING DE LA SESSION:\n${briefing}\n\nARTEFACTS PERTINENTS:\n${contextBlock || "(aucun)"}\n\nQUESTION:\n${queryText || "(vide)"}\n\nRéponds maintenant.` },
+    ]);
+    if (!out.ok) {
+      await admin.from("challenge_artifacts").update({ ai_meta: { ...(artifact.ai_meta || {}), status: "failed" } }).eq("id", artifact_id);
       return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
-    const data = await resp.json();
-    const answer = (data?.choices?.[0]?.message?.content ?? "").toString().trim();
-
     await admin.from("challenge_artifacts").update({
       ai_meta: {
         ...(artifact.ai_meta || {}),
-        status: "answered",
-        response: answer,
-        model: "gemini-2.5-flash",
+        status: "answered", response: out.answer, model: "gemini-2.5-flash",
         retrieval: { semantic: semanticHits.length, recent: (recent || []).length },
-        mode,
-        answered_at: new Date().toISOString(),
+        mode, answered_at: new Date().toISOString(),
       },
     }).eq("id", artifact_id);
 
-    return new Response(JSON.stringify({ ok: true, answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error(e);
     return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
