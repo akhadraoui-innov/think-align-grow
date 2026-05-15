@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export type ArtifactKind = "card" | "postit" | "voice" | "question" | "sticker" | "link_note" | "vote_summary";
+export type ArtifactKind = "card" | "postit" | "voice" | "question" | "image" | "sticker" | "link_note" | "vote_summary";
 export type Criticality = "low" | "medium" | "high" | "critical";
 
 export interface ChallengeArtifact {
@@ -155,7 +155,7 @@ export function useChallengeArtifacts(sessionId: string | undefined, workshopId:
 
   const grouped = useMemo(() => {
     const g: Record<ArtifactKind, ChallengeArtifact[]> = {
-      card: [], postit: [], voice: [], question: [], sticker: [], link_note: [], vote_summary: [],
+      card: [], postit: [], voice: [], question: [], image: [], sticker: [], link_note: [], vote_summary: [],
     };
     for (const a of artifacts) g[a.kind]?.push(a);
     return g;

@@ -1691,6 +1691,48 @@ export type Database = {
           },
         ]
       }
+      challenge_artifact_locks: {
+        Row: {
+          artifact_id: string
+          expires_at: string
+          locked_at: string
+          locked_by: string
+          session_id: string
+          workshop_id: string
+        }
+        Insert: {
+          artifact_id: string
+          expires_at?: string
+          locked_at?: string
+          locked_by: string
+          session_id: string
+          workshop_id: string
+        }
+        Update: {
+          artifact_id?: string
+          expires_at?: string
+          locked_at?: string
+          locked_by?: string
+          session_id?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_artifact_locks_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: true
+            referencedRelation: "challenge_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_artifact_locks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_artifacts: {
         Row: {
           ai_meta: Json
@@ -1829,6 +1871,44 @@ export type Database = {
           },
         ]
       }
+      challenge_copilot_threads: {
+        Row: {
+          created_at: string
+          id: string
+          messages: Json
+          session_id: string
+          updated_at: string
+          user_id: string
+          workshop_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          session_id: string
+          updated_at?: string
+          user_id: string
+          workshop_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          session_id?: string
+          updated_at?: string
+          user_id?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_copilot_threads_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_events: {
         Row: {
           actor_id: string | null
@@ -1860,6 +1940,60 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "challenge_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_interactions: {
+        Row: {
+          actor_id: string
+          artifact_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          session_id: string
+          slot_id: string | null
+          subject_id: string | null
+          workshop_id: string
+        }
+        Insert: {
+          actor_id: string
+          artifact_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          session_id: string
+          slot_id?: string | null
+          subject_id?: string | null
+          workshop_id: string
+        }
+        Update: {
+          actor_id?: string
+          artifact_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          session_id?: string
+          slot_id?: string | null
+          subject_id?: string | null
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_interactions_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_interactions_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "challenge_sessions"
@@ -6338,6 +6472,10 @@ export type Database = {
           vt: string
         }[]
       }
+      release_artifact_lock: {
+        Args: { _artifact_id: string }
+        Returns: undefined
+      }
       replay_dlq_message: { Args: { _message_id: string }; Returns: Json }
       requires_2fa: { Args: { _user_id: string }; Returns: boolean }
       review_email_security_flag: {
@@ -6351,6 +6489,10 @@ export type Database = {
       sign_email_payload: { Args: { _payload: Json }; Returns: string }
       spend_credits: {
         Args: { _amount: number; _description: string; _user_id: string }
+        Returns: Json
+      }
+      try_acquire_artifact_lock: {
+        Args: { _artifact_id: string }
         Returns: Json
       }
       ucm_increment_quota: {
@@ -6385,6 +6527,7 @@ export type Database = {
         | "sticker"
         | "link_note"
         | "vote_summary"
+        | "image"
       challenge_event_kind:
         | "session.start"
         | "session.phase"
@@ -6569,6 +6712,7 @@ export const Constants = {
         "sticker",
         "link_note",
         "vote_summary",
+        "image",
       ],
       challenge_event_kind: [
         "session.start",
