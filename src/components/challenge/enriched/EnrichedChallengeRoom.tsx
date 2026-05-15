@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map, Clock } from "lucide-react";
+import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map, Clock, Search } from "lucide-react";
+import { SemanticSearchPanel } from "./innovations/SemanticSearchPanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
