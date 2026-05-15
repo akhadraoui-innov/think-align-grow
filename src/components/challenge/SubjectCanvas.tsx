@@ -2,6 +2,7 @@ import { useCallback, useRef, useState, useEffect } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import type { ChallengeSubject, ChallengeSlot, ChallengeResponse } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
+import type { ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
 import { DropSlot } from "./DropSlot";
 import { StagingZone, type StagingItem } from "./StagingZone";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,10 @@ interface SubjectCanvasProps {
   onStagingFormatChange?: (itemId: string, format: CardFormat) => void;
   onReorderStaging?: (draggedId: string, targetId: string) => void;
   readOnly?: boolean;
+  artifacts?: ChallengeArtifact[];
+  onAttachArtifact?: (slotId: string, artifactId: string, subjectId: string) => void;
+  onDetachArtifact?: (artifactId: string) => void;
+  onSelectArtifact?: (a: ChallengeArtifact) => void;
 }
 
 const TYPE_LABELS: Record<string, string> = {
