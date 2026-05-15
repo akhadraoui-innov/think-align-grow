@@ -36,7 +36,7 @@ interface ChallengeViewProps {
 
 type ViewMode = "list" | "board";
 
-export function ChallengeView({ template, workshopId, cards, pillars, isHost, readOnly }: ChallengeViewProps) {
+export function ChallengeView({ template, workshopId, cards, pillars, isHost, readOnly, hideSidebar, artifacts = [], onAttachArtifact, onDetachArtifact, onSelectArtifact }: ChallengeViewProps) {
   const { subjects, slots, loading } = useChallengeStructure(template.id);
   const { responses, placeCard, removeCard, moveToSlot, updateResponse } = useChallengeResponses(workshopId);
   const { data: analysis, refetch: refetchAnalysis } = useChallengeAnalysis(workshopId);
