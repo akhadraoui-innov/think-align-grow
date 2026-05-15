@@ -90,14 +90,20 @@ export default function AdminToolkitDetail() {
     }
     setGenLoading(true);
     try {
-      // One single fire-and-forget call (server runs in background via EdgeRuntime.waitUntil + auto-resume chunks)
-      const { data, error } = await supabase.functions.invoke("academy-generate", {
-        body: { action: "generate-card-illustrations-batch", card_ids: ids },
-      });
-      if (error) throw error;
+      // Chunk client-side: server enforces max 100 ids per call. Each call is fire-and-forget (background worker).
+      const BATCH = 100;
+      let queued = 0;
+      for (let i = 0; i < ids.length; i += BATCH) {
+        const chunk = ids.slice(i, i + BATCH);
+        const { data, error } = await supabase.functions.invoke("academy-generate", {
+          body: { action: "generate-card-illustrations-batch", card_ids: chunk },
+        });
+        if (error) throw error;
+        queued += data?.queued ?? chunk.length;
+      }
       setLastChangeAt(Date.now());
       setStale(false);
-      toast.success(`Génération lancée (${data?.queued ?? ids.length} cartes)`, {
+      toast.success(`Génération lancée (${queued} cartes)`, {
         description: "Le travail tourne en arrière-plan, vous pouvez fermer cette page. Reprise automatique en cas de coupure.",
         duration: 6000,
       });
