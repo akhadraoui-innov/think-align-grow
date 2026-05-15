@@ -112,12 +112,12 @@ Deno.serve(async (req) => {
       const userMessages = (body?.messages || []) as Array<{ role: "user" | "assistant"; content: string }>;
       const lastUser = [...userMessages].reverse().find(m => m.role === "user")?.content || "";
 
-      // Hybrid retrieval
+      // Hybrid RAG retrieval — unified embeddings (artifacts + threads + cards + briefing + synthesis)
       const qEmb = lastUser ? await embed(lastUser) : null;
       let semantic: any[] = [];
       if (qEmb) {
-        const { data: matches } = await admin.rpc("match_challenge_artifacts", {
-          _query: qEmb as any, _session: session_id, _k: 8, _exclude: null,
+        const { data: matches } = await admin.rpc("match_challenge_context", {
+          _session_id: session_id, _query: qEmb as any, _kinds: null, _k: 12,
         });
         semantic = (matches as any[]) || [];
       }
@@ -126,13 +126,16 @@ Deno.serve(async (req) => {
         .select("id, kind, content, emoji, criticality, transcription, ai_meta")
         .eq("session_id", session_id)
         .order("created_at", { ascending: false })
-        .limit(15);
-      const seen = new Set<string>();
-      const merged = [...semantic, ...(recent || [])].filter((a: any) => { if (seen.has(a.id)) return false; seen.add(a.id); return true; });
-      const ctxBlock = merged.slice(0, 16).map((a: any) => {
+        .limit(10);
+      const recentBlock = (recent || []).map((a: any) => {
         const txt = a.content || a.transcription || a.ai_meta?.alt || a.ai_meta?.description || "";
         return `- [${a.kind}${a.criticality ? `/${a.criticality}` : ""}] ${a.emoji || ""} ${txt}`.trim();
       }).join("\n");
+      const ragBlock = semantic.slice(0, 12).map((m: any) => {
+        const t = (m.content || "").toString().slice(0, 280);
+        return `• [${m.source_type}${m.score != null ? ` ~${(m.score as number).toFixed(2)}` : ""}] ${t}`;
+      }).join("\n");
+      const ctxBlock = `# RECHERCHE SÉMANTIQUE\n${ragBlock || "(aucune)"}\n\n# RÉCENT\n${recentBlock || "(aucun)"}`;
 
       let focusBlock = "";
       if (ctx.artifact_id) {
