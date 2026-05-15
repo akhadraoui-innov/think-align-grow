@@ -34,6 +34,7 @@
 - ✅ #6 `PresentationMode` (réutilisable depuis playground)
 - ✅ #7 `StickerLayer` : palette emoji + collage 1-clic sur le plateau (artifact `sticker` avec position monde)
 - ✅ #8 `SubjectSnapshot` (PNG par sujet)
+- ✅ #9 `SemanticSearchPanel` (sheet header → `useChallengeRAG`, filtres par type, jump vers artifact)
 
 ### Phase D — PlateauBoard pro ✅
 - ✅ `PlateauMiniMap` (overview + viewport rect + clic pour téléporter)
