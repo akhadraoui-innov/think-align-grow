@@ -169,7 +169,7 @@ export function DropSlot({
       </AnimatePresence>
 
       {attachedArtifacts.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-dashed border-border/60">
+        <div className="flex flex-wrap items-start gap-2 mt-2 pt-2 border-t border-dashed border-border/60">
           {attachedArtifacts.map(a => (
             <SlotArtifactChip
               key={a.id}
