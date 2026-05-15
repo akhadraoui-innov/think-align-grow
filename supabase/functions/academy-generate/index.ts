@@ -1698,7 +1698,7 @@ function buildCardPrompt(card: any, pillar: any, toolkit: any, style: StyleGuide
   ].filter(Boolean).join(" ");
 }
 
-async function compressToJpeg(pngBytes: Uint8Array, maxSize = 768, quality = 82): Promise<Uint8Array> {
+async function compressToJpeg(pngBytes: Uint8Array, maxSize = 768, quality = 82): Promise<{ bytes: Uint8Array; ext: "jpg" | "png"; mime: string }> {
   try {
     const img = await Image.decode(pngBytes);
     const longest = Math.max(img.width, img.height);
@@ -1706,12 +1706,16 @@ async function compressToJpeg(pngBytes: Uint8Array, maxSize = 768, quality = 82)
       const scale = maxSize / longest;
       img.resize(Math.round(img.width * scale), Math.round(img.height * scale));
     }
-    return await img.encodeJPEG(quality);
+    const out = await img.encodeJPEG(quality);
+    return { bytes: out, ext: "jpg", mime: "image/jpeg" };
   } catch (e) {
     console.warn("compress fallback to png", e instanceof Error ? e.message : e);
-    return pngBytes;
+    // fallback: keep PNG, mime aligned to avoid corrupted file
+    return { bytes: pngBytes, ext: "png", mime: "image/png" };
   }
 }
+
+const MAX_IMAGE_ATTEMPTS = 3;
 
 async function renderCardIllustration(
   supabase: any,
@@ -1720,39 +1724,60 @@ async function renderCardIllustration(
   pillar: any,
   toolkit: any,
   style: StyleGuide,
-): Promise<{ ok: boolean; url?: string; status?: number }> {
-  await supabase.from("cards").update({ image_status: "generating" }).eq("id", card.id);
+): Promise<{ ok: boolean; url?: string; status?: number; transient?: boolean }> {
+  const nowIso = new Date().toISOString();
+  const currentAttempts = Number(card.image_attempts || 0);
+  await supabase.from("cards").update({
+    image_status: "generating",
+    image_last_attempt_at: nowIso,
+    image_attempts: currentAttempts + 1,
+  }).eq("id", card.id);
   try {
     const prompt = buildCardPrompt(card, pillar, toolkit, style);
     const img = await renderImage(apiKey, prompt);
     if (!img.ok) {
-      await supabase.from("cards").update({ image_status: "failed" }).eq("id", card.id);
-      return { ok: false, status: img.status };
+      const isQuota = img.status === 402;
+      const isTransient = img.status === 429 || img.status === 503 || img.status === 0; // 0 = network/timeout
+      const exhausted = currentAttempts + 1 >= MAX_IMAGE_ATTEMPTS;
+      const finalStatus = isQuota ? "pending" : (isTransient && !exhausted ? "queued" : "failed");
+      await supabase.from("cards").update({
+        image_status: finalStatus,
+        image_error: (img.error || `image error ${img.status}`).slice(0, 500),
+      }).eq("id", card.id);
+      return { ok: false, status: img.status, transient: isTransient && !exhausted };
     }
     const compressed = await compressToJpeg(img.bytes!);
-    const fileName = `card-illustrations/${toolkit.id}/${card.id}.jpg`;
+    const fileName = `card-illustrations/${toolkit.id}/${card.id}.${compressed.ext}`;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const { error: uploadErr } = await supabase.storage
       .from("academy-assets")
-      .upload(fileName, compressed, { contentType: "image/jpeg", upsert: true });
+      .upload(fileName, compressed.bytes, { contentType: compressed.mime, upsert: true });
     if (uploadErr) {
-      await supabase.from("cards").update({ image_status: "failed" }).eq("id", card.id);
-      return { ok: false };
+      const exhausted = currentAttempts + 1 >= MAX_IMAGE_ATTEMPTS;
+      await supabase.from("cards").update({
+        image_status: exhausted ? "failed" : "queued",
+        image_error: `upload: ${uploadErr.message}`.slice(0, 500),
+      }).eq("id", card.id);
+      return { ok: false, transient: !exhausted };
     }
-    // Cache-bust via timestamp param (URL always stable, but new upload replaces bytes)
     const publicUrl = `${supabaseUrl}/storage/v1/object/public/academy-assets/${fileName}?v=${Date.now()}`;
     await supabase.from("cards").update({
       image_url: publicUrl,
       image_prompt: prompt,
       image_status: "ready",
+      image_error: null,
     }).eq("id", card.id);
     return { ok: true, url: publicUrl };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.warn("card illustration failed", card.id, msg);
     const isQuota = /credits exhausted/i.test(msg);
-    await supabase.from("cards").update({ image_status: isQuota ? "pending" : "failed" }).eq("id", card.id);
-    return { ok: false, status: isQuota ? 402 : undefined };
+    const exhausted = currentAttempts + 1 >= MAX_IMAGE_ATTEMPTS;
+    await supabase.from("cards").update({
+      image_status: isQuota ? "pending" : (exhausted ? "failed" : "queued"),
+      image_error: msg.slice(0, 500),
+    }).eq("id", card.id);
+    return { ok: false, status: isQuota ? 402 : undefined, transient: !exhausted && !isQuota };
   }
 }
 
