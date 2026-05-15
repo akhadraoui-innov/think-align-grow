@@ -58,7 +58,7 @@ export function EnrichedSidebar({
   sessionId, workshopId, currentSubjectId, artifacts, enabled, canEdit, selectedId,
   reactionsByArtifact, votesByArtifact, me,
   onSelect, onCreate, onUpdate, onDelete, onToggleReaction, onToggleVote,
-  cards = [], pillars = [], placedCardIds, onAddCardToStaging,
+  cards = [], pillars = [], placedCardIds, onAddCardToStaging, customCards = [],
 }: Props) {
   const allowedTabs = TABS.filter(t =>
     (t.id === "card" && (enabled.cards ?? true) && cards.length > 0) ||
