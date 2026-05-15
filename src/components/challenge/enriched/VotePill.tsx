@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChallengeVote } from "@/hooks/useChallengeReactions";
@@ -9,7 +10,7 @@ interface Props {
   onToggle: (artifactId: string) => void;
 }
 
-export function VotePill({ artifactId, votes, me, onToggle }: Props) {
+function VotePillImpl({ artifactId, votes, me, onToggle }: Props) {
   const total = votes.reduce((s, v) => s + (v.weight || 1), 0);
   const mine = votes.some(v => v.user_id === me);
   return (

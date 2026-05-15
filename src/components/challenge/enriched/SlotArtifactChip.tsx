@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { StickyNote, Mic, HelpCircle, Image as ImageIcon, X, Sparkles, Plus, Maximize2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CRITICALITY_META } from "./constants";
@@ -31,7 +31,7 @@ function rotForId(id: string) {
 const IMG_SIZES = { S: 88, M: 144, L: 220 } as const;
 type ImgSize = keyof typeof IMG_SIZES;
 
-export function SlotArtifactChip({ artifact, onClick, onDetach, onContinue, readOnly, childrenArtifacts = [] }: Props) {
+function SlotArtifactChipImpl({ artifact, onClick, onDetach, onContinue, readOnly, childrenArtifacts = [] }: Props) {
   const { kind } = artifact;
   const threadCount = childrenArtifacts.length;
 
