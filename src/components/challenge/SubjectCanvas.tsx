@@ -105,33 +105,44 @@ export function SubjectCanvas({
         )}
       </div>
 
-      {/* Slots grid */}
+      {/* Slots grid — adaptive sizing */}
       <div className="relative flex-1 overflow-y-auto min-h-0 p-6" ref={scrollRef} onScroll={checkScroll}>
         <div className={cn(
           "grid gap-4",
-          subjectSlots.length <= 3 ? "grid-cols-1 sm:grid-cols-3" :
-          subjectSlots.length <= 4 ? "grid-cols-1 sm:grid-cols-2" :
+          subjectSlots.length === 1 ? "grid-cols-1" :
+          subjectSlots.length === 2 ? "grid-cols-1 lg:grid-cols-2" :
+          subjectSlots.length === 3 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" :
+          subjectSlots.length === 4 ? "grid-cols-1 sm:grid-cols-2" :
           subjectSlots.length <= 6 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" :
           "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
         )}>
-          {subjectSlots.map(slot => (
-            <DropSlot
-              key={slot.id}
-              slot={slot}
-              responses={subjectResponses}
-              cards={cards}
-              pillars={pillars}
-              onDrop={handleSlotDrop}
-              onRemove={onRemove}
-              onMoveToSlot={onMoveToSlot}
-              onUpdateResponse={onUpdateResponse}
-              readOnly={readOnly}
-              attachedArtifacts={artifacts.filter(a => a.slot_id === slot.id && a.kind !== "card")}
-              onAttachArtifact={onAttachArtifact ? (artifactId) => onAttachArtifact(slot.id, artifactId, subject.id) : undefined}
-              onDetachArtifact={onDetachArtifact}
-              onSelectArtifact={onSelectArtifact}
-            />
-          ))}
+          {subjectSlots.map(slot => {
+            const minH = subjectSlots.length === 1 ? "min-h-[360px]"
+              : subjectSlots.length === 2 ? "min-h-[300px]"
+              : subjectSlots.length <= 4 ? "min-h-[220px]"
+              : "min-h-[160px]";
+            return (
+              <DropSlot
+                key={slot.id}
+                slot={slot}
+                subjectTitle={subject.title}
+                responses={subjectResponses}
+                cards={cards}
+                pillars={pillars}
+                onDrop={handleSlotDrop}
+                onRemove={onRemove}
+                onMoveToSlot={onMoveToSlot}
+                onUpdateResponse={onUpdateResponse}
+                readOnly={readOnly}
+                minHeightClass={minH}
+                attachedArtifacts={artifacts.filter(a => a.slot_id === slot.id && a.kind !== "card")}
+                allArtifacts={artifacts}
+                onAttachArtifact={onAttachArtifact ? (artifactId) => onAttachArtifact(slot.id, artifactId, subject.id) : undefined}
+                onDetachArtifact={onDetachArtifact}
+                onSelectArtifact={onSelectArtifact}
+              />
+            );
+          })}
         </div>
 
         {/* Staging zone — at bottom */}

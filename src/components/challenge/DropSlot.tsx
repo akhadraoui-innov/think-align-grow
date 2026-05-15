@@ -26,6 +26,7 @@ const KIND_DROP_META: Record<string, { icon: any; label: string }> = {
 
 interface DropSlotProps {
   slot: ChallengeSlot;
+  subjectTitle?: string;
   responses: ChallengeResponse[];
   cards: DbCard[];
   pillars: DbPillar[];
@@ -34,15 +35,18 @@ interface DropSlotProps {
   onMoveToSlot?: (responseId: string, newSlotId: string, cardId: string) => void;
   onUpdateResponse?: (responseId: string, updates: { format?: string; maturity?: number; rank?: number }) => void;
   readOnly?: boolean;
+  minHeightClass?: string;
   attachedArtifacts?: ChallengeArtifact[];
+  allArtifacts?: ChallengeArtifact[];
   onAttachArtifact?: (artifactId: string) => void;
   onDetachArtifact?: (artifactId: string) => void;
   onSelectArtifact?: (a: ChallengeArtifact) => void;
 }
 
 export function DropSlot({
-  slot, responses, cards, pillars, onDrop, onRemove, onMoveToSlot, onUpdateResponse, readOnly,
-  attachedArtifacts = [], onAttachArtifact, onDetachArtifact, onSelectArtifact,
+  slot, subjectTitle, responses, cards, pillars, onDrop, onRemove, onMoveToSlot, onUpdateResponse, readOnly,
+  minHeightClass = "min-h-[120px]",
+  attachedArtifacts = [], allArtifacts = [], onAttachArtifact, onDetachArtifact, onSelectArtifact,
 }: DropSlotProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragKind, setDragKind] = useState<string | null>(null);
