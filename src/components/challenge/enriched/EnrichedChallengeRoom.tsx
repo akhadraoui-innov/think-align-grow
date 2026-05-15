@@ -1,10 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Loader2, Sparkles, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
 import { BriefingForm } from "./briefing/BriefingForm";
+import { EnrichedSidebar } from "./EnrichedSidebar";
+import { InspectorPanel } from "./InspectorPanel";
 import { useChallengeSession } from "@/hooks/useChallengeSession";
+import { useChallengeArtifacts, type ChallengeArtifact } from "@/hooks/useChallengeArtifacts";
 import type { ChallengeTemplate } from "@/hooks/useChallengeData";
 import type { DbCard, DbPillar } from "@/hooks/useToolkitData";
 
@@ -17,14 +20,20 @@ interface Props {
   readOnly?: boolean;
 }
 
-/**
- * Enriched experience shell. L1 skeleton:
- *   - briefing (host edits context)
- *   - running (delegates to ChallengeView for now; future lots add post-its / voice / IA)
- *   - synthesis (placeholder)
- */
 export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, isHost, readOnly }: Props) {
   const { session, context, loading, setStatus, upsertContext } = useChallengeSession(workshopId, template.id, isHost);
+  const { artifacts, create, update, remove } = useChallengeArtifacts(session?.id, workshopId);
+  const [selected, setSelected] = useState<ChallengeArtifact | null>(null);
+
+  const enabled = useMemo(() => {
+    const cfg = (template as any).enriched_config || {};
+    return {
+      postits: cfg.postits !== false,
+      voice: cfg.voice !== false,
+      questions: cfg.questions !== false,
+      ai: cfg.ai !== false,
+    };
+  }, [template]);
 
   const statusBadge = useMemo(() => {
     const map: Record<string, string> = {
@@ -38,6 +47,9 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
     return map[session?.status ?? "draft"];
   }, [session?.status]);
 
+  // keep selected in sync with realtime updates
+  const selectedSync = selected ? artifacts.find(a => a.id === selected.id) ?? null : null;
+
   if (loading || !session) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -45,6 +57,9 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
       </div>
     );
   }
+
+  const canEdit = !readOnly;
+  const showBoard = session.status === "running";
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -67,42 +82,69 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto">
-        {session.status === "briefing" && (
-          <BriefingForm
-            context={context}
-            readOnly={!isHost || readOnly}
-            onSave={upsertContext}
-            onStart={isHost ? () => setStatus("running") : undefined}
-            canStart={!!context?.scope || !!context?.goals}
-          />
-        )}
-
-        {session.status === "running" && (
-          <ChallengeView
-            template={template}
+      <div className="flex-1 min-h-0 flex overflow-hidden">
+        {showBoard && (enabled.postits || enabled.voice || enabled.questions) && (
+          <EnrichedSidebar
+            sessionId={session.id}
             workshopId={workshopId}
-            cards={cards}
-            pillars={pillars}
-            isHost={isHost}
-            readOnly={readOnly}
+            artifacts={artifacts}
+            enabled={enabled}
+            canEdit={canEdit}
+            selectedId={selectedSync?.id ?? null}
+            onSelect={(a) => setSelected(a)}
+            onCreate={create}
+            onUpdate={update}
+            onDelete={remove}
           />
         )}
 
-        {session.status === "synthesis" && (
-          <div className="max-w-2xl mx-auto p-10 text-center">
-            <h3 className="font-display text-xl font-black uppercase tracking-tight">Synthèse multi-agents</h3>
-            <p className="text-sm text-muted-foreground mt-2">
-              Cette étape sera assurée par <code>challenge-synthesize</code> (L9). En attendant, l'animateur peut clôturer la session.
-            </p>
-            {isHost && (
-              <Button className="mt-6" onClick={() => setStatus("closed")}>Clôturer définitivement</Button>
-            )}
-          </div>
-        )}
+        <div className="flex-1 min-w-0 overflow-auto">
+          {session.status === "briefing" && (
+            <BriefingForm
+              context={context}
+              readOnly={!isHost || readOnly}
+              onSave={upsertContext}
+              onStart={isHost ? () => setStatus("running") : undefined}
+              canStart={!!context?.scope || !!context?.goals}
+            />
+          )}
 
-        {(session.status === "closed" || session.status === "archived" || session.status === "draft") && (
-          <div className="p-10 text-center text-sm text-muted-foreground">Session {session.status}.</div>
+          {showBoard && (
+            <ChallengeView
+              template={template}
+              workshopId={workshopId}
+              cards={cards}
+              pillars={pillars}
+              isHost={isHost}
+              readOnly={readOnly}
+            />
+          )}
+
+          {session.status === "synthesis" && (
+            <div className="max-w-2xl mx-auto p-10 text-center">
+              <h3 className="font-display text-xl font-black uppercase tracking-tight">Synthèse multi-agents</h3>
+              <p className="text-sm text-muted-foreground mt-2">
+                Cette étape sera assurée par <code>challenge-synthesize</code> (L9).
+              </p>
+              {isHost && (
+                <Button className="mt-6" onClick={() => setStatus("closed")}>Clôturer définitivement</Button>
+              )}
+            </div>
+          )}
+
+          {(session.status === "closed" || session.status === "archived" || session.status === "draft") && (
+            <div className="p-10 text-center text-sm text-muted-foreground">Session {session.status}.</div>
+          )}
+        </div>
+
+        {selectedSync && showBoard && (
+          <InspectorPanel
+            artifact={selectedSync}
+            sessionId={session.id}
+            canEdit={canEdit}
+            onClose={() => setSelected(null)}
+            onUpdate={update}
+          />
         )}
       </div>
     </div>
