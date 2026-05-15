@@ -113,6 +113,20 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
               </button>
             </div>
           )}
+          {showBoard && timelineEvents.length > 1 && (
+            <button
+              onClick={() => { setTimelineOpen(o => !o); if (timelineOpen) setTimeCutoff(null); }}
+              className={cn(
+                "h-7 px-2 rounded-md border text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors",
+                timelineOpen || timeCutoff
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:bg-muted",
+              )}
+              title="Frise chronologique"
+            >
+              <Clock className="h-3 w-3" /> Timeline
+            </button>
+          )}
           {isHost && session.status === "running" && (
             <Button size="sm" variant="outline" onClick={() => setStatus("briefing")}>
               <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Briefing
