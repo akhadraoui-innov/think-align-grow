@@ -146,11 +146,15 @@ export function InspectorPanel({
             </div>
             <div className="flex flex-wrap gap-1.5">
               {[
-                { id: "reformuler", label: "Reformuler" },
-                { id: "challenger", label: "Challenger" },
-                { id: "approfondir", label: "Approfondir" },
+                { id: "reformuler", label: "Reformuler", mode: "postit_action" as const },
+                { id: "challenger", label: "Challenger", mode: "postit_action" as const },
+                { id: "approfondir", label: "Approfondir", mode: "postit_action" as const },
+                { id: "devils_advocate", label: "🔥 Avocat du diable", mode: "devils_advocate" as const },
+                { id: "coach", label: "🧭 Coach", mode: "coach" as const },
               ].map(c => (
-                <Button key={c.id} size="sm" variant="outline" disabled={askingAi} onClick={() => callAgent("postit_action", c.id)} className="h-7 text-[11px]">
+                <Button key={c.id} size="sm" variant="outline" disabled={askingAi}
+                  onClick={() => c.mode === "postit_action" ? callAgent("postit_action", c.id) : callAgent(c.mode)}
+                  className="h-7 text-[11px]">
                   {askingAi && aiAction === c.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Wand2 className="h-3 w-3 mr-1" />}
                   {c.label}
                 </Button>
