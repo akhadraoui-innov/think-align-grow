@@ -53,7 +53,7 @@ export function InspectorPanel({
 
   const callAgent = async (mode: string, action?: string) => {
     setAskingAi(true);
-    if (action) setAiAction(action);
+    setAiAction(action || mode);
     await supabase.functions.invoke("challenge-agent", {
       body: { artifact_id: artifact.id, session_id: sessionId, mode, action },
     });
