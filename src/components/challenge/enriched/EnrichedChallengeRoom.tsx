@@ -138,6 +138,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
               <Search className="h-3 w-3" /> Recherche
             </button>
           )}
+          {showBoard && isHost && <ReindexButton sessionId={session.id} />}
           {isHost && session.status === "running" && (
             <Button size="sm" variant="outline" onClick={() => setStatus("briefing")}>
               <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Briefing
