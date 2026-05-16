@@ -2092,6 +2092,53 @@ export type Database = {
           },
         ]
       }
+      challenge_rag_metrics: {
+        Row: {
+          created_at: string
+          hit_count: number
+          id: string
+          kinds: string[]
+          latency_ms: number | null
+          query: string
+          session_id: string
+          top_score: number | null
+          user_id: string | null
+          workshop_id: string
+        }
+        Insert: {
+          created_at?: string
+          hit_count?: number
+          id?: string
+          kinds?: string[]
+          latency_ms?: number | null
+          query: string
+          session_id: string
+          top_score?: number | null
+          user_id?: string | null
+          workshop_id: string
+        }
+        Update: {
+          created_at?: string
+          hit_count?: number
+          id?: string
+          kinds?: string[]
+          latency_ms?: number | null
+          query?: string
+          session_id?: string
+          top_score?: number | null
+          user_id?: string | null
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_rag_metrics_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_reactions: {
         Row: {
           artifact_id: string
@@ -2247,6 +2294,7 @@ export type Database = {
       }
       challenge_sessions: {
         Row: {
+          anonymous_mode: boolean
           config: Json
           created_at: string
           created_by: string
@@ -2257,6 +2305,9 @@ export type Database = {
           invite_code: string | null
           organization_id: string | null
           slug: string | null
+          spotlight_artifact_id: string | null
+          spotlight_slot_id: string | null
+          spotlight_subject_id: string | null
           started_at: string | null
           status: string
           template_id: string
@@ -2264,6 +2315,7 @@ export type Database = {
           workshop_id: string
         }
         Insert: {
+          anonymous_mode?: boolean
           config?: Json
           created_at?: string
           created_by: string
@@ -2274,6 +2326,9 @@ export type Database = {
           invite_code?: string | null
           organization_id?: string | null
           slug?: string | null
+          spotlight_artifact_id?: string | null
+          spotlight_slot_id?: string | null
+          spotlight_subject_id?: string | null
           started_at?: string | null
           status?: string
           template_id: string
@@ -2281,6 +2336,7 @@ export type Database = {
           workshop_id: string
         }
         Update: {
+          anonymous_mode?: boolean
           config?: Json
           created_at?: string
           created_by?: string
@@ -2291,6 +2347,9 @@ export type Database = {
           invite_code?: string | null
           organization_id?: string | null
           slug?: string | null
+          spotlight_artifact_id?: string | null
+          spotlight_slot_id?: string | null
+          spotlight_subject_id?: string | null
           started_at?: string | null
           status?: string
           template_id?: string
@@ -2420,6 +2479,9 @@ export type Database = {
           id: string
           sort_order: number
           template_id: string
+          timer_duration_seconds: number | null
+          timer_paused_at: string | null
+          timer_started_at: string | null
           title: string
           type: Database["public"]["Enums"]["challenge_subject_type"]
         }
@@ -2428,6 +2490,9 @@ export type Database = {
           id?: string
           sort_order?: number
           template_id: string
+          timer_duration_seconds?: number | null
+          timer_paused_at?: string | null
+          timer_started_at?: string | null
           title: string
           type?: Database["public"]["Enums"]["challenge_subject_type"]
         }
@@ -2436,6 +2501,9 @@ export type Database = {
           id?: string
           sort_order?: number
           template_id?: string
+          timer_duration_seconds?: number | null
+          timer_paused_at?: string | null
+          timer_started_at?: string | null
           title?: string
           type?: Database["public"]["Enums"]["challenge_subject_type"]
         }
@@ -2458,6 +2526,8 @@ export type Database = {
           generated_by: string | null
           id: string
           rag_sources: Json | null
+          scope: string
+          scope_id: string | null
           scores: Json | null
           session_id: string
           version: number
@@ -2470,6 +2540,8 @@ export type Database = {
           generated_by?: string | null
           id?: string
           rag_sources?: Json | null
+          scope?: string
+          scope_id?: string | null
           scores?: Json | null
           session_id: string
           version?: number
@@ -2482,6 +2554,8 @@ export type Database = {
           generated_by?: string | null
           id?: string
           rag_sources?: Json | null
+          scope?: string
+          scope_id?: string | null
           scores?: Json | null
           session_id?: string
           version?: number
