@@ -146,7 +146,7 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
               sessionId={session.id}
               scope="subject"
               scopeId={session.current_subject_id}
-              label={template.subjects?.find(s => s.id === session.current_subject_id)?.title}
+              label="sujet courant"
               canRegenerate={isHost}
             />
           )}
