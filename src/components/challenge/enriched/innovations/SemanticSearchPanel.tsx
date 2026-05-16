@@ -15,6 +15,7 @@ const KIND_LABEL: Record<RagSourceType, string> = {
   briefing: "Briefing",
   thread: "Fil",
   synthesis: "Synthèse",
+  interaction: "Action",
 };
 
 const KIND_COLOR: Record<RagSourceType, string> = {
@@ -25,6 +26,7 @@ const KIND_COLOR: Record<RagSourceType, string> = {
   briefing: "bg-slate-500/15 text-slate-700 dark:text-slate-300",
   thread: "bg-pink-500/15 text-pink-700 dark:text-pink-300",
   synthesis: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  interaction: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300",
 };
 
 interface Props {
@@ -34,7 +36,7 @@ interface Props {
   onJump?: (match: RagMatch) => void;
 }
 
-const ALL_KINDS: RagSourceType[] = ["artifact", "card", "subject", "slot", "briefing", "thread", "synthesis"];
+const ALL_KINDS: RagSourceType[] = ["artifact", "card", "subject", "slot", "briefing", "thread", "synthesis", "interaction"];
 
 export function SemanticSearchPanel({ open, onOpenChange, sessionId, onJump }: Props) {
   const { search, matches, loading, error } = useChallengeRAG(sessionId);
