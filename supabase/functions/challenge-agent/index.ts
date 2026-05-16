@@ -343,6 +343,46 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ===== DEVIL'S ADVOCATE =====
+    if (mode === "devils_advocate") {
+      const text = (artifact.content || artifact.transcription || "").toString();
+      if (!text.trim()) {
+        return new Response(JSON.stringify({ error: "empty_artifact" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const out = await callLLM([
+        { role: "system", content: "Tu es l'avocat du diable. Tu produis 3 à 5 puces qui contredisent, challengent ou exposent les angles morts de l'idée. Sois incisif, factuel, constructif. Réponds en français, markdown léger (puces -). Pas de préambule." },
+        { role: "user", content: `BRIEFING:\n${briefing}\n\nIDÉE À CHALLENGER:\n${text}` },
+      ]);
+      if (!out.ok) {
+        await admin.from("challenge_artifacts").update({ ai_meta: { ...(artifact.ai_meta || {}), status: "failed" } }).eq("id", artifact_id);
+        return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      await admin.from("challenge_artifacts").update({
+        ai_meta: { ...(artifact.ai_meta || {}), status: "answered", devils_advocate: out.answer, response: out.answer, mode, answered_at: new Date().toISOString() },
+      }).eq("id", artifact_id);
+      return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ===== COACH POSTURE =====
+    if (mode === "coach") {
+      const text = (artifact.content || artifact.transcription || "").toString();
+      if (!text.trim()) {
+        return new Response(JSON.stringify({ error: "empty_artifact" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const out = await callLLM([
+        { role: "system", content: "Tu es un coach exécutif. Tu adoptes une posture de questionnement (jamais de réponse directe). Produis : (1) un miroir court (1 phrase qui reformule ce que tu entends), (2) 3 questions ouvertes puissantes (numérotées), (3) une invitation à approfondir. Réponds en français, markdown léger. Pas de préambule." },
+        { role: "user", content: `BRIEFING:\n${briefing}\n\nÉLÉMENT:\n${text}` },
+      ]);
+      if (!out.ok) {
+        await admin.from("challenge_artifacts").update({ ai_meta: { ...(artifact.ai_meta || {}), status: "failed" } }).eq("id", artifact_id);
+        return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      await admin.from("challenge_artifacts").update({
+        ai_meta: { ...(artifact.ai_meta || {}), status: "answered", coach: out.answer, response: out.answer, mode, answered_at: new Date().toISOString() },
+      }).eq("id", artifact_id);
+      return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // ===== DEFAULT: QA (existing question/answer behavior with hybrid retrieval) =====
     const queryText = (artifact.content || "").toString();
     const queryEmbedding = queryText ? await embed(queryText) : null;
