@@ -200,6 +200,68 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, answer: out.answer, cited_cards: cited }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ============ SCOPE SYNTHESES (slot / subject) ============
+    if (mode === "synthesize_slot" || mode === "synthesize_subject") {
+      const scope: "slot" | "subject" = mode === "synthesize_slot" ? "slot" : "subject";
+      const scope_id = (scope === "slot" ? body?.slot_id : body?.subject_id) as string | undefined;
+      if (!scope_id) {
+        return new Response(JSON.stringify({ error: `${scope}_id required` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const { data: session } = await admin.from("challenge_sessions").select("workshop_id").eq("id", session_id).maybeSingle();
+      if (!session) return new Response(JSON.stringify({ error: "session_not_found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!(await isParticipantOrHost(session.workshop_id, user.id))) {
+        return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const briefing = await loadBriefing(session_id);
+      let scopeMeta: any = {};
+      if (scope === "slot") {
+        const { data: s } = await admin.from("challenge_slots").select("*, challenge_subjects(title)").eq("id", scope_id).maybeSingle();
+        scopeMeta = { title: s?.label || s?.title || "", subject: (s as any)?.challenge_subjects?.title };
+      } else {
+        const { data: s } = await admin.from("challenge_subjects").select("title, description").eq("id", scope_id).maybeSingle();
+        scopeMeta = { title: s?.title, description: s?.description };
+      }
+      const filterField = scope === "slot" ? "slot_id" : "subject_id";
+      const { data: arts } = await admin
+        .from("challenge_artifacts")
+        .select("id, kind, content, transcription, criticality, ai_meta")
+        .eq("session_id", session_id)
+        .eq(filterField, scope_id)
+        .eq("status", "active")
+        .order("created_at", { ascending: true })
+        .limit(200);
+      const block = (arts || []).map((a: any) => {
+        const t = a.content || a.transcription || a.ai_meta?.alt || a.ai_meta?.description || "";
+        return `- [${a.kind}${a.criticality ? `/${a.criticality}` : ""}] ${t}`.trim();
+      }).join("\n") || "(aucun artefact)";
+      const sys = `Tu es un facilitateur senior. Tu synthétises le travail collectif réalisé sur ${scope === "slot" ? "un slot d'idéation" : "un sujet d'atelier"}. Produis en français un markdown structuré avec exactement ces sections : ## Ce qui ressort, ## Tensions et angles morts, ## Risques, ## Prochaine action recommandée. Sois concis, percutant, factuel — ne réinvente rien qui ne soit pas dans les artefacts.`;
+      const usr = `BRIEFING:\n${briefing}\n\n${scope.toUpperCase()}: ${scopeMeta.title || scope_id}${scopeMeta.subject ? ` (sujet : ${scopeMeta.subject})` : ""}${scopeMeta.description ? `\nDescription : ${scopeMeta.description}` : ""}\n\nARTEFACTS:\n${block}`;
+      const out = await callLLM([{ role: "system", content: sys }, { role: "user", content: usr }]);
+      if (!out.ok) return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      // Persist a versioned synthesis
+      const { data: prev } = await admin
+        .from("challenge_syntheses")
+        .select("version")
+        .eq("session_id", session_id)
+        .eq("agent", `synthesizer_${scope}`)
+        .eq("scope", scope)
+        .eq("scope_id", scope_id)
+        .order("version", { ascending: false })
+        .limit(1);
+      const nextV = ((prev?.[0]?.version as number) || 0) + 1;
+      const { data: syn } = await admin.from("challenge_syntheses").insert({
+        session_id,
+        agent: `synthesizer_${scope}`,
+        version: nextV,
+        scope, scope_id,
+        content: { markdown: out.answer },
+        generated_by: user.id,
+      }).select("id").maybeSingle();
+
+      return new Response(JSON.stringify({ ok: true, answer: out.answer, synthesis_id: syn?.id, version: nextV }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // ============ ARTIFACT-BOUND MODES ============
     const artifact_id = body?.artifact_id as string | undefined;
     if (!artifact_id) {
@@ -277,6 +339,46 @@ Deno.serve(async (req) => {
       }
       await admin.from("challenge_artifacts").update({
         ai_meta: { ...(artifact.ai_meta || {}), status: "answered", summary: out.answer, response: out.answer, mode, answered_at: new Date().toISOString() },
+      }).eq("id", artifact_id);
+      return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ===== DEVIL'S ADVOCATE =====
+    if (mode === "devils_advocate") {
+      const text = (artifact.content || artifact.transcription || "").toString();
+      if (!text.trim()) {
+        return new Response(JSON.stringify({ error: "empty_artifact" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const out = await callLLM([
+        { role: "system", content: "Tu es l'avocat du diable. Tu produis 3 à 5 puces qui contredisent, challengent ou exposent les angles morts de l'idée. Sois incisif, factuel, constructif. Réponds en français, markdown léger (puces -). Pas de préambule." },
+        { role: "user", content: `BRIEFING:\n${briefing}\n\nIDÉE À CHALLENGER:\n${text}` },
+      ]);
+      if (!out.ok) {
+        await admin.from("challenge_artifacts").update({ ai_meta: { ...(artifact.ai_meta || {}), status: "failed" } }).eq("id", artifact_id);
+        return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      await admin.from("challenge_artifacts").update({
+        ai_meta: { ...(artifact.ai_meta || {}), status: "answered", devils_advocate: out.answer, response: out.answer, mode, answered_at: new Date().toISOString() },
+      }).eq("id", artifact_id);
+      return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ===== COACH POSTURE =====
+    if (mode === "coach") {
+      const text = (artifact.content || artifact.transcription || "").toString();
+      if (!text.trim()) {
+        return new Response(JSON.stringify({ error: "empty_artifact" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const out = await callLLM([
+        { role: "system", content: "Tu es un coach exécutif. Tu adoptes une posture de questionnement (jamais de réponse directe). Produis : (1) un miroir court (1 phrase qui reformule ce que tu entends), (2) 3 questions ouvertes puissantes (numérotées), (3) une invitation à approfondir. Réponds en français, markdown léger. Pas de préambule." },
+        { role: "user", content: `BRIEFING:\n${briefing}\n\nÉLÉMENT:\n${text}` },
+      ]);
+      if (!out.ok) {
+        await admin.from("challenge_artifacts").update({ ai_meta: { ...(artifact.ai_meta || {}), status: "failed" } }).eq("id", artifact_id);
+        return new Response(JSON.stringify({ error: "ai_failed" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      await admin.from("challenge_artifacts").update({
+        ai_meta: { ...(artifact.ai_meta || {}), status: "answered", coach: out.answer, response: out.answer, mode, answered_at: new Date().toISOString() },
       }).eq("id", artifact_id);
       return new Response(JSON.stringify({ ok: true, answer: out.answer }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }

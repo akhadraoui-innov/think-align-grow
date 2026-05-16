@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type RagSourceType = "artifact" | "card" | "subject" | "slot" | "briefing" | "thread" | "synthesis";
+export type RagSourceType = "artifact" | "card" | "subject" | "slot" | "briefing" | "thread" | "synthesis" | "interaction";
 
 export interface RagMatch {
   id: string;
