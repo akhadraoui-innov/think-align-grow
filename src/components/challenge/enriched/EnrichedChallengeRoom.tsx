@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map, Clock, Search } from "lucide-react";
 import { SemanticSearchPanel } from "./innovations/SemanticSearchPanel";
 import { ReindexButton } from "./innovations/ReindexButton";
+import { ScopedSynthesisPanel } from "./innovations/ScopedSynthesisPanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
@@ -140,6 +141,15 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
             </button>
           )}
           {showBoard && isHost && <ReindexButton sessionId={session.id} />}
+          {showBoard && session.current_subject_id && (
+            <ScopedSynthesisPanel
+              sessionId={session.id}
+              scope="subject"
+              scopeId={session.current_subject_id}
+              label={template.subjects?.find(s => s.id === session.current_subject_id)?.title}
+              canRegenerate={isHost}
+            />
+          )}
           {isHost && session.status === "running" && (
             <Button size="sm" variant="outline" onClick={() => setStatus("briefing")}>
               <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Briefing
