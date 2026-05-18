@@ -177,6 +177,14 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
         </div>
       </div>
 
+      {showBoard && (
+        <SpotlightBanner
+          active={!isHost && !!((session as any).spotlight_artifact_id || (session as any).spotlight_subject_id || (session as any).spotlight_slot_id)}
+          isHost={isHost}
+          sessionId={session.id}
+        />
+      )}
+
       {showBoard && timelineOpen && timelineEvents.length > 1 && (
         <div className="px-4 py-2 border-b border-border bg-muted/30 shrink-0">
           <SessionTimeline events={timelineEvents} onScrub={setTimeCutoff} />
