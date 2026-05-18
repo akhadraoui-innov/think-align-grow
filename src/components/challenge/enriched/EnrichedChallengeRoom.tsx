@@ -3,6 +3,10 @@ import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map, Clock, Search } from "lu
 import { SemanticSearchPanel } from "./innovations/SemanticSearchPanel";
 import { ReindexButton } from "./innovations/ReindexButton";
 import { ScopedSynthesisPanel } from "./innovations/ScopedSynthesisPanel";
+import { ExportPdfButton } from "./innovations/ExportPdfButton";
+import { SubjectTimer } from "./innovations/SubjectTimer";
+import { SpotlightBanner } from "./innovations/Spotlight";
+import { AnonymousToggle } from "./innovations/AnonymousToggle";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
@@ -106,7 +110,13 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
         <h2 className="font-display font-bold text-sm uppercase tracking-widest">Challenge enrichi</h2>
         <Badge className={statusBadge} variant="outline">{session.status}</Badge>
         {showBoard && <div className="hidden md:block"><PresenceBar peers={peers} /></div>}
+        {showBoard && session.current_subject_id && (
+          <SubjectTimer subjectId={session.current_subject_id} isHost={isHost} />
+        )}
         <div className="ml-auto flex items-center gap-2">
+          {showBoard && isHost && (
+            <AnonymousToggle sessionId={session.id} active={!!(session as any).anonymous_mode} />
+          )}
           {showBoard && (
             <div className="flex items-center rounded-md border border-border p-0.5">
               <button onClick={() => setView("cards")} className={cn("h-7 px-2 rounded text-[11px] font-bold uppercase tracking-wider flex items-center gap-1", view === "cards" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
@@ -141,6 +151,9 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
             </button>
           )}
           {showBoard && isHost && <ReindexButton sessionId={session.id} />}
+          {isHost && (session.status === "synthesis" || session.status === "closed" || session.status === "archived") && (
+            <ExportPdfButton sessionId={session.id} />
+          )}
           {showBoard && session.current_subject_id && (
             <ScopedSynthesisPanel
               sessionId={session.id}
@@ -163,6 +176,14 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
           )}
         </div>
       </div>
+
+      {showBoard && (
+        <SpotlightBanner
+          active={!isHost && !!((session as any).spotlight_artifact_id || (session as any).spotlight_subject_id || (session as any).spotlight_slot_id)}
+          isHost={isHost}
+          sessionId={session.id}
+        />
+      )}
 
       {showBoard && timelineOpen && timelineEvents.length > 1 && (
         <div className="px-4 py-2 border-b border-border bg-muted/30 shrink-0">
