@@ -110,7 +110,13 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
         <h2 className="font-display font-bold text-sm uppercase tracking-widest">Challenge enrichi</h2>
         <Badge className={statusBadge} variant="outline">{session.status}</Badge>
         {showBoard && <div className="hidden md:block"><PresenceBar peers={peers} /></div>}
+        {showBoard && session.current_subject_id && (
+          <SubjectTimer subjectId={session.current_subject_id} isHost={isHost} />
+        )}
         <div className="ml-auto flex items-center gap-2">
+          {showBoard && isHost && (
+            <AnonymousToggle sessionId={session.id} active={!!(session as any).anonymous_mode} />
+          )}
           {showBoard && (
             <div className="flex items-center rounded-md border border-border p-0.5">
               <button onClick={() => setView("cards")} className={cn("h-7 px-2 rounded text-[11px] font-bold uppercase tracking-wider flex items-center gap-1", view === "cards" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
