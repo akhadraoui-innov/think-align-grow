@@ -3,6 +3,7 @@ import { Loader2, Sparkles, ArrowLeft, LayoutGrid, Map, Clock, Search } from "lu
 import { SemanticSearchPanel } from "./innovations/SemanticSearchPanel";
 import { ReindexButton } from "./innovations/ReindexButton";
 import { ScopedSynthesisPanel } from "./innovations/ScopedSynthesisPanel";
+import { ExportPdfButton } from "./innovations/ExportPdfButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChallengeView } from "@/components/challenge/ChallengeView";
