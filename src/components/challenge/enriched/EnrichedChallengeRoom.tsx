@@ -142,6 +142,9 @@ export function EnrichedChallengeRoom({ template, workshopId, cards, pillars, is
             </button>
           )}
           {showBoard && isHost && <ReindexButton sessionId={session.id} />}
+          {isHost && (session.status === "synthesis" || session.status === "closed" || session.status === "archived") && (
+            <ExportPdfButton sessionId={session.id} />
+          )}
           {showBoard && session.current_subject_id && (
             <ScopedSynthesisPanel
               sessionId={session.id}
